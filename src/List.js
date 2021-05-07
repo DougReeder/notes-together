@@ -1,0 +1,67 @@
+// List.js - List component for Notes Together
+// Copyright © 2021 Doug Reeder
+
+import React, {useState, useEffect} from 'react';
+import {searchNotes} from "./idbNotes";
+import sanitizeHtml from 'sanitize-html-react';
+import './List.css';
+
+const uniformList = {allowedTags: [ 'p', 'div',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+    'i', 'b', 'strike', 'sub', 'sup',
+    'br', 'hr', 'pre',
+    'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td',
+  ],
+  allowedAttributes: {
+    a: [ 'href', 'name', 'target' ],
+    img: [ 'src', 'srcset', 'alt' ]
+  },
+  allowedSchemes: [ 'data' ],
+  transformTags: {
+    'h1': 'div',
+    'h2': 'div',
+    'h3': 'div',
+    'h4': 'div',
+    'h5': 'div',
+    'h6': 'div',
+    'blockquote': 'div',
+    'code': 'div',
+    'em': 'i',
+    'strong': 'b'
+  },
+  nonTextTags: [ 'style', 'script', 'noscript' ]
+};
+// TODO: allow SVG tags
+
+function List(props) {
+  const [notes, setNotes] = useState([]);
+  console.log("List props:", props, "   notes:", notes);
+
+  useEffect(() => {
+    searchNotes(props.searchStr).then(notes => {
+      setNotes(notes);
+    })
+  }, [props.searchStr]);
+
+  let listItems;
+  if (notes.length > 0) {
+    listItems = notes.map(
+        (note) => {
+          const incipit = note.text.slice(0, 300);
+          const cleanHtml = sanitizeHtml(incipit, uniformList);
+          return <article key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
+                          className={note.id === props.selectedNoteId ? 'selected' : ''}
+          ></article>
+        }
+    );
+  } else {
+    listItems = <div className="advice">No notes</div>
+  }
+  return (
+      <div className="list">
+        {listItems}
+      </div>
+  );
+}
+
+export default List;

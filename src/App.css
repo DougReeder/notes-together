@@ -1,38 +1,115 @@
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+}
+
+.panelContainer {
+  width: 100vw;
+  height: 100vh;
+}
+
+@media all and (min-width: 640px) {
+  .panelContainer {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .panelMain {
+    width: 320px;
+    height: 100vh;
+    flex: 1 1 auto;
+  }
+
+  .panelDetail {
+    width: 320px;
+    height: 100vh;
+    flex: 2 1 auto;
   }
 }
 
+@media all and (max-width: 639px) {
+  .panelContainer {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .panelMain {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    vertical-align: top;
+    white-space: normal;
+    transform: translateX(0);
+    transition: transform 0.3s;
+  }
+  .panelMain.right {
+    transform: translateX(-100%);
+  }
+
+  .panelDetail {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    vertical-align: top;
+    white-space: normal;
+    transform: translateX(0);
+    transition: transform 0.3s;
+  }
+  .panelDetail.right {
+    transform: translateX(-100%);
+  }
+}
+
+.panelMain {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+}
+.panelDetail {
+  box-sizing: border-box;
+  padding: 1em;
+
+  position: relative;
+
+  overflow-x: hidden;
+}
+
+
 .App-header {
+  min-height: 3em;
+  flex: 0 0 auto;
+
+  text-align: center;
   background-color: #282c34;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  font-size: calc(6px + 1vmin);
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.list{
+  flex: 1 1 auto;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.advice {
+  position: absolute;
+  /*width: 310px;*/
+  margin: 0 auto;
+  left: 1em;
+  right: 1em;
+  top: 66px;
+  padding: 6px;
+  background: #d0f0ff;
+  border: 1px solid;
+  border-radius: 6px;
+}
+.advice .head {
+  font-weight:bold;
+  font-size: larger;
+  text-align: center;
+  text-transform: capitalize;
 }

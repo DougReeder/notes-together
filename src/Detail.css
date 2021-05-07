@@ -1,0 +1,4 @@
+
+article[contenteditable] > *:first-child {
+    margin-top: 0;
+}
