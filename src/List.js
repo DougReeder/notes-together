@@ -34,14 +34,17 @@ const uniformList = {allowedTags: [ 'p', 'div',
 // TODO: allow SVG tags
 
 function List(props) {
+  const {searchStr, selectedNoteId, changeCount} = props;
+
   const [notes, setNotes] = useState([]);
   console.log("List props:", props, "   notes:", notes);
 
   useEffect(() => {
-    searchNotes(props.searchStr).then(notes => {
+    searchNotes(searchStr).then(notes => {
       setNotes(notes);
+      changeCount(notes.length);
     })
-  }, [props.searchStr]);
+  }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   let listItems;
   if (notes.length > 0) {

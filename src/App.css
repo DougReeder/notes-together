@@ -1,4 +1,5 @@
 .App {
+  /*font-size: calc(6px + 1vmin);*/
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -84,11 +85,18 @@
   text-align: center;
   background-color: #282c34;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  font-size: calc(6px + 1vmin);
+  justify-content: space-around;
   color: white;
+}
+.App-header input {
+  margin-left: 1ex;
+  flex: 1 1 auto;
+}
+.count {
+  margin-left: 2ex;
+  margin-right: 2ex;
 }
 
 .list{
