@@ -24,17 +24,24 @@ const uniformList = {allowedTags: [ 'p', 'div',
     'h4': 'div',
     'h5': 'div',
     'h6': 'div',
+    'header': 'div',
+    'footer': 'div',
+    'main': 'div',
+    'section': 'div',
+    'article': 'div',
+    'aside': 'div',
+    'textarea': 'div',
     'blockquote': 'div',
     'code': 'div',
     'em': 'i',
     'strong': 'b'
   },
-  nonTextTags: [ 'style', 'script', 'noscript' ]
+  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl' ]
 };
 // TODO: allow SVG tags
 
 function List(props) {
-  const {searchStr, selectedNoteId, changeCount} = props;
+  const {searchStr, changeCount, selectedNoteId, handleSelect} = props;
 
   const [notes, setNotes] = useState([]);
   console.log("List props:", props, "   notes:", notes);
@@ -46,14 +53,22 @@ function List(props) {
     })
   }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  function onClick(evt) {
+    const article = evt.target.closest("article");
+    const id = Number(article?.dataset?.id);
+    if (Number.isFinite(id)) {
+      handleSelect(id);
+    }
+  }
+
   let listItems;
   if (notes.length > 0) {
     listItems = notes.map(
         (note) => {
           const incipit = note.text.slice(0, 300);
           const cleanHtml = sanitizeHtml(incipit, uniformList);
-          return <article key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
-                          className={note.id === props.selectedNoteId ? 'selected' : ''}
+          return <article data-id={note.id} key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
+                          className={note.id === selectedNoteId ? 'selected' : ''}
           ></article>
         }
     );
@@ -61,7 +76,7 @@ function List(props) {
     listItems = <div className="advice">No notes</div>
   }
   return (
-      <div className="list">
+      <div className="list" onClick={onClick}>
         {listItems}
       </div>
   );

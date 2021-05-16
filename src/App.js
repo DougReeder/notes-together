@@ -5,22 +5,23 @@ import './App.css';
 
 function App() {
   const [searchStr, setSearchStr] = useState("");
+  const onSearchChange = event => setSearchStr(event.target.value);
+
   const [count, setCount] = useState(0);
-  const [selectedNoteId] = useState(null);
-
-  const onChange = event => setSearchStr(event.target.value);
-
   const changeCount = value => setCount(value);
+
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const handleSelect = id => setSelectedNoteId(id);
 
   return (
       <div className="App panelContainer">
         <div className="panelMain">
           <header className="App-header">
             <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onChange} />
+                   title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} />
             <div className="count">{count}</div>
           </header>
-          <List searchStr={searchStr} selectedNoteId={selectedNoteId} changeCount={changeCount}></List>
+          <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
         </div>
         <div className="panelDetail">
           <Detail noteId={selectedNoteId}></Detail>

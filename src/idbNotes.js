@@ -3,8 +3,14 @@
 
 const notes = {
   101: "<h1>The rain in Spain</h1> stays mainly in the plain <i>foo",
-  102: "<UL><LI>erste</LI><li><SUP>foo</li><li>dritte",
-  103: "<blockquote>Four score and seven years ago, our forefathers set forth on this continent a new nation <strike>foo",
+  102: "<UL><LI>H<sub>2</sub>O</LI><li>C<SUP>3</SUP>I</li><li>dritte",
+  103: `Lincoln's Gettysburg Address<blockquote>
+    <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
+
+    <p>Now we are engaged in a great civil war, testing whether that nation or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.
+
+    <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.
+ <strike>foo`,
   104: "<dl><dt>Here we go</dt><dd>gathering nuts in May <b>foo",
   105: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner",
   106: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman. <sub>foo",
@@ -17,13 +23,13 @@ async function searchNotes(searchStr) {
       const foundNotes = [];
       if (!searchStr) {
         for (const [key, value] of Object.entries(notes)) {
-          foundNotes.push({id:key, text: value});
+          foundNotes.push({id:Number(key), text: value});
         }
       } else {
         const re = new RegExp(searchStr, "i");
         for (const [key, value] of Object.entries(notes)) {
           if (re.test(value)) {
-            foundNotes.push({id:key, text: value});
+            foundNotes.push({id:Number(key), text: value});
           }
         }
       }
@@ -33,4 +39,16 @@ async function searchNotes(searchStr) {
   });
 }
 
-export {searchNotes};
+async function getNote(id) {
+  return await new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (notes.hasOwnProperty(id)) {
+        resolve({id: id, text: notes[id]});
+      } else {
+        reject(new Error("no note with id="+id));
+      }
+    }, 100);
+  });
+}
+
+export {searchNotes, getNote};
