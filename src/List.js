@@ -61,6 +61,33 @@ function List(props) {
     }
   }
 
+  const externalChangeListener = evt => {
+    if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
+    const notesChanged = evt.data?.notesChanged || {};
+    const notesAdded = evt.data?.notesAdded || {};
+    const notesDeleted = evt.data?.notesDeleted || {};
+    console.log("List externalChange", notesChanged, notesAdded, notesDeleted);
+
+    const newNotes = [];
+    notes.forEach((note, i) => {
+      if (notesChanged.hasOwnProperty(note.id)) {
+        // TODO: verify that it still matches search string
+        newNotes.push(notesChanged[note.id]);
+      } else if (! notesDeleted.hasOwnProperty(note.id)) {
+        newNotes.push(note);
+      }
+    });
+    // TODO: add notes from notesAdded that match (& sort?)
+    setNotes(newNotes);
+  };
+  useEffect( () => {
+    window.addEventListener("message", externalChangeListener);
+
+    return function removeExternalChangeListener() {
+      window.removeEventListener("message", externalChangeListener);
+    };
+  });
+
   let listItems;
   if (notes.length > 0) {
     listItems = notes.map(

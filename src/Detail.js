@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {getNote} from "./idbNotes";
+import PropTypes from 'prop-types';
+import {getNote, upsertNote} from "./idbNotes";
 import ContentEditable from 'react-contenteditable';
 import sanitizeHtml from 'sanitize-html-react';
 // import {Parser, HtmlRenderer} from 'commonmark';
@@ -41,32 +42,40 @@ const semanticOnly = {
 };
 // TODO: allow SVG tags
 
-function Detail(props) {
-  const {noteId} = props;
+function Detail({noteId}) {
 
-  const [note, setNote] = useState(null);
-  console.log("Detail props:", props, "   note:", note);
+  const [text, setText] = useState(null);
+  console.log("Detail noteId:", noteId, text?.slice(0, 50));
 
   useEffect(() => {
     if (Number.isFinite(noteId)) {
       getNote(noteId).then(theNote => {
-        setNote(theNote);
+        setText(theNote.text);
       }).catch(err => {
         console.error(err);
       });
     }
   }, [noteId]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleChange = async evt => {
+    try {
+      setText(evt.target.value);
+      await upsertNote(noteId, evt.target.value);
+    } catch (err) {
+      console.error("while handling Detail text change:", err);
+    }
+  }
+
   // const markdownReader = new Parser({smart: true});
   // const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
 
   let content;
-  if (note) {
+  if ('string' === typeof text) {
     content =
         (<ContentEditable
-            html={sanitizeHtml(note.text, semanticOnly)} // innerHTML of the editable div
+            html={sanitizeHtml(text, semanticOnly)} // innerHTML of the editable div
             disabled={false}       // use true to disable editing
-            // onChange={this.handleChange} // handle innerHTML change
+            onChange={handleChange} // handle innerHTML change
             // onPaste={this.pasteSemanticOnly}
             tagName='article' // Use a custom HTML tag (uses a div by default)
         />);
@@ -78,5 +87,9 @@ function Detail(props) {
   }
   return content;
 }
+
+Detail.propTypes = {
+  noteId: PropTypes.number,
+};
 
 export default Detail;

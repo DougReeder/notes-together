@@ -39,8 +39,8 @@ async function searchNotes(searchStr) {
   });
 }
 
-async function getNote(id) {
-  return await new Promise((resolve, reject) => {
+function getNote(id) {
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (notes.hasOwnProperty(id)) {
         resolve({id: id, text: notes[id]});
@@ -51,4 +51,22 @@ async function getNote(id) {
   });
 }
 
-export {searchNotes, getNote};
+function upsertNote(id, newText) {
+  if (!Number.isSafeInteger(id)) {
+    throw new Error("id must be safe integer");
+  } else if ('string' !== typeof newText) {
+    throw new Error("newText must be string");
+  }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      notes[id] = newText;
+      console.log("upsertNote", id, newText?.slice(0, 50));
+      const notesChanged = {};
+      notesChanged[id] = {id, text: newText};
+      window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesAdded: {}, notesDeleted: {}}, window.location.origin);
+      resolve(id);
+    }, 100);
+  });
+}
+
+export {searchNotes, getNote, upsertNote};

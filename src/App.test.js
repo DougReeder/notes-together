@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+test('renders search field', async () => {
+  const { container } = render(<App />);
+  const searchEl = container.querySelector('input[type=search]')
+  expect(searchEl).toBeInTheDocument();
+});
+
+test('renders count', async () => {
+  const { container } = render(<App />);
+  const countEl = container.querySelector('div.count')
+  expect(countEl).toBeInTheDocument();
+  expect(countEl.innerHTML).toMatch(/\d+/);
 });
