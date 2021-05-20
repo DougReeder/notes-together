@@ -3,8 +3,12 @@ import PropTypes from 'prop-types';
 import {getNote, upsertNote} from "./idbNotes";
 import ContentEditable from 'react-contenteditable';
 import sanitizeHtml from 'sanitize-html-react';
-// import {Parser, HtmlRenderer} from 'commonmark';
+import {Parser, HtmlRenderer} from 'commonmark';
 import "./Detail.css";
+
+
+const markdownReader = new Parser({smart: true});
+const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
 
 
 // eslint-disable-next-line
@@ -45,7 +49,7 @@ const semanticOnly = {
 function Detail({noteId}) {
 
   const [text, setText] = useState(null);
-  console.log("Detail noteId:", noteId, text?.slice(0, 50));
+  console.log("Detail noteId:", noteId, "   text:", text?.slice(0, 50));
 
   useEffect(() => {
     if (Number.isFinite(noteId)) {
@@ -66,8 +70,34 @@ function Detail({noteId}) {
     }
   }
 
-  // const markdownReader = new Parser({smart: true});
-  // const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
+  const pasteSemanticOnly = evt => {
+    console.log("pasteSemanticOnly types:", evt.clipboardData.types);
+
+    if (evt.clipboardData.types.indexOf('text/html') > -1) {
+      let html = evt.clipboardData.getData('text/html');
+      pasteHtml(html);
+      return true;
+    } else if (evt.clipboardData.types.indexOf('text/plain') > -1) {
+      let html = evt.clipboardData.getData('text/plain');
+      if (/s/.test(html)) {
+        const parsed = markdownReader.parse(html);
+        html = markdownWriter.render(parsed);
+      }
+      pasteHtml(html);
+      return true;
+    } else {   // use default handling for images, etc.
+      // TODO: convert text/rtf to HTML
+      // TODO: extract image metadata and append
+      return false;
+    }
+
+    function pasteHtml(html) {
+      evt.preventDefault();
+      html = sanitizeHtml(html, semanticOnly);
+      document.execCommand('insertHTML', false, html);
+    }
+  };
+
 
   let content;
   if ('string' === typeof text) {
@@ -76,7 +106,7 @@ function Detail({noteId}) {
             html={sanitizeHtml(text, semanticOnly)} // innerHTML of the editable div
             disabled={false}       // use true to disable editing
             onChange={handleChange} // handle innerHTML change
-            // onPaste={this.pasteSemanticOnly}
+            onPaste={pasteSemanticOnly}
             tagName='article' // Use a custom HTML tag (uses a div by default)
         />);
   } else {

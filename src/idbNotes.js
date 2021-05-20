@@ -26,7 +26,7 @@ async function searchNotes(searchStr) {
           foundNotes.push({id:Number(key), text: value});
         }
       } else {
-        const re = new RegExp(searchStr, "i");
+        const re = new RegExp("\\b" + searchStr, "i");
         for (const [key, value] of Object.entries(notes)) {
           if (re.test(value)) {
             foundNotes.push({id:Number(key), text: value});
