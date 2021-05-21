@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {getNote, upsertNote} from "./idbNotes";
 import ContentEditable from 'react-contenteditable';
-import sanitizeHtml from 'sanitize-html-react';
+import sanitizeHtml from 'sanitize-html';
 import {Parser, HtmlRenderer} from 'commonmark';
 import "./Detail.css";
 
@@ -39,7 +39,9 @@ const semanticOnly = {
   },
   nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl' ],
   allowProtocolRelative: false,
+  enforceHtmlBoundary: true,
   parser: {
+    decodeEntities: false,
     lowerCaseTags: true,
     lowerCaseAttributeNames: true,
   }
@@ -63,7 +65,7 @@ function Detail({noteId}) {
 
   const handleChange = async evt => {
     try {
-      setText(evt.target.value);
+      // setText(evt.target.value);
       await upsertNote(noteId, evt.target.value);
     } catch (err) {
       console.error("while handling Detail text change:", err);

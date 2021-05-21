@@ -3,7 +3,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {searchNotes} from "./idbNotes";
-import sanitizeHtml from 'sanitize-html-react';
+import sanitizeHtml from 'sanitize-html';
 import './List.css';
 
 const uniformList = {allowedTags: [ 'p', 'div',
@@ -36,7 +36,11 @@ const uniformList = {allowedTags: [ 'p', 'div',
     'em': 'i',
     'strong': 'b'
   },
-  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl' ]
+  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl' ],
+  enforceHtmlBoundary: true,
+  parser: {
+    decodeEntities: false,
+  }
 };
 // TODO: allow SVG tags
 
