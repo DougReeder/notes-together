@@ -1,3 +1,4 @@
+import {isLikelyMarkdown} from "./util";
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {getNote, upsertNote} from "./idbNotes";
@@ -65,7 +66,7 @@ function Detail({noteId}) {
 
   const handleChange = async evt => {
     try {
-      // setText(evt.target.value);
+      setText(evt.target.value);
       await upsertNote(noteId, evt.target.value);
     } catch (err) {
       console.error("while handling Detail text change:", err);
@@ -76,16 +77,20 @@ function Detail({noteId}) {
     console.log("pasteSemanticOnly types:", evt.clipboardData.types);
 
     if (evt.clipboardData.types.indexOf('text/html') > -1) {
+      evt.preventDefault();
       let html = evt.clipboardData.getData('text/html');
       pasteHtml(html);
       return true;
     } else if (evt.clipboardData.types.indexOf('text/plain') > -1) {
-      let html = evt.clipboardData.getData('text/plain');
-      if (/s/.test(html)) {
-        const parsed = markdownReader.parse(html);
-        html = markdownWriter.render(parsed);
+      evt.preventDefault();
+      const text = evt.clipboardData.getData('text/plain');
+      if (isLikelyMarkdown(text)) {
+        const parsed = markdownReader.parse(text);
+        const html = markdownWriter.render(parsed);
+        pasteHtml(html);
+      } else {
+        document.execCommand('insertText', false, text);
       }
-      pasteHtml(html);
       return true;
     } else {   // use default handling for images, etc.
       // TODO: convert text/rtf to HTML
@@ -94,7 +99,6 @@ function Detail({noteId}) {
     }
 
     function pasteHtml(html) {
-      evt.preventDefault();
       html = sanitizeHtml(html, semanticOnly);
       document.execCommand('insertHTML', false, html);
     }
