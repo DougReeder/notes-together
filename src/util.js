@@ -7,7 +7,7 @@ function isLikelyMarkdown(text) {
   if (/(^|\s)(_|\*|`)(?!\2).+(\2(\s|$))/.test(text)) {
     return true;   // emphasis or code
   }
-  if (/\[[^\]]+\]\(https?:\/\/\S+\)/.test(text)) {
+  if (/\[[^\]]+]\(https?:\/\/\S+\)/.test(text)) {
     return true;   // link
   }
   if (/(^|\n)\s{0,3}```(.*\n)+\s?```/.test(text)) {
@@ -19,10 +19,10 @@ function isLikelyMarkdown(text) {
   if (/(^|\n)\s{0,3}>/.test(text)) {
     return true;   // block quote
   }
-  if (/(^|\n)\s{0,3}\d[\.\)]\s.*\s+\d[\.\)]\s/.test(text)) {
+  if (/(^|\n)\s{0,3}\d[.)]\s.*\s+\d[.)]\s/.test(text)) {
     return true;   // ordered list
   }
-  if (/(^|\n)\s{0,3}[\*+-]\s.*\s+[\*+-]\s/.test(text)) {
+  if (/(^|\n)\s{0,3}[*+-]\s.*\s+[*+-]\s/.test(text)) {
     return true;   // unordered list
   }
   return false;

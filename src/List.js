@@ -48,7 +48,7 @@ function List(props) {
   const {searchStr, changeCount, selectedNoteId, handleSelect} = props;
 
   const [notes, setNotes] = useState([]);
-  console.log("List props:", props, "   notes:", notes);
+  // console.log("List props:", props, "   notes:", notes);
 
   useEffect(() => {
     searchNotes(searchStr).then(notes => {
