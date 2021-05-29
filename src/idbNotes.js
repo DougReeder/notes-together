@@ -1,7 +1,8 @@
 // idbNotes.js - IndexedDB facade for Notes Together
 // Copyright © 2021 Doug Reeder
 
-import {createMemoryNote} from "./Note";
+import {createMemoryNote, semanticOnly} from "./Note";
+import sanitizeHtml from "sanitize-html";
 
 const notes = {
   101: "<h1>The rain in Spain</h1> stays mainly in the plain <i>foo",
@@ -28,7 +29,13 @@ const notes = {
  </g>
 </svg>
 `,
-  108: "<h2>Star Trek II: The Wrath of Khan</h2>The best one"
+  108: "<h2>Star Trek II: The Wrath of Khan</h2>The best one",
+  109: `The <ruby>
+  漢 <rp>(</rp><rt>Kan</rt><rp>)</rp>
+  字 <rp>(</rp><rt>ji</rt><rp>)</rp>
+</ruby> for tomorrow is <ruby>
+  明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp>
+</ruby>`,
 };
 
 async function searchNotes(searchStr) {
@@ -71,6 +78,8 @@ function upsertNote(note) {
   } else if ('string' !== typeof note.text) {
     throw new Error("newText must be string");
   }
+  note.text = sanitizeHtml(note.text, semanticOnly);
+
   return new Promise((resolve) => {
     setTimeout(() => {
       const notesChanged = {}, notesAdded = {};

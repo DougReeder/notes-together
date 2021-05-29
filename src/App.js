@@ -6,6 +6,7 @@ import Detail from './Detail'
 import './App.css';
 
 function App() {
+  // TODO: replace string with set of normalized search terms
   const [searchStr, setSearchStr] = useState("");
   const onSearchChange = event => setSearchStr(event.target.value);
 
@@ -34,7 +35,7 @@ function App() {
           <button onClick={addNote}><span>+</span></button>
         </div>
         <div className="panelDetail">
-          <Detail noteId={selectedNoteId}></Detail>
+          <Detail noteId={selectedNoteId} searchStr={searchStr}></Detail>
         </div>
       </div>
   );

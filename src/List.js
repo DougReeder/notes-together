@@ -37,7 +37,7 @@ const uniformList = {allowedTags: [ 'p', 'div',
     'em': 'i',
     'strong': 'b'
   },
-  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl' ],
+  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl', 'rp', 'rt' ],
   enforceHtmlBoundary: true,
   parser: {
     decodeEntities: false,
