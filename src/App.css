@@ -68,6 +68,22 @@
   display: flex;
   flex-direction: column;
 }
+
+.panelMain > button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+
+  width: 52px;
+  height: 52px;
+  border-radius: 26px;
+  font-size: 6ex;
+}
+.panelMain > button > span {
+  position: relative;
+  top: -6px;
+}
+
 .panelDetail {
   box-sizing: border-box;
   padding: 1em;

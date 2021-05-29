@@ -1,3 +1,5 @@
+import {createMemoryNote} from './Note';
+import {upsertNote} from './idbNotes';
 import React, {useState} from 'react';
 import List from './List';
 import Detail from './Detail'
@@ -13,15 +15,23 @@ function App() {
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const handleSelect = id => setSelectedNoteId(id);
 
+  async function addNote() {
+    const newNote = createMemoryNote(null, "<br />" + searchStr);
+    // console.log("adding note:", newNote);
+    setSelectedNoteId(newNote.id);
+    await upsertNote(newNote);
+  }
+
   return (
-      <div className="App panelContainer">
+      <div className="App panelContainer" role="application">
         <div className="panelMain">
           <header className="App-header">
             <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} />
+                   title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} role="search" />
             <div className="count">{count}</div>
           </header>
           <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
+          <button onClick={addNote}><span>+</span></button>
         </div>
         <div className="panelDetail">
           <Detail noteId={selectedNoteId}></Detail>

@@ -2,6 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import React, {useState, useEffect} from 'react';
+import PropTypes from 'prop-types';
 import {searchNotes} from "./idbNotes";
 import sanitizeHtml from 'sanitize-html';
 import './List.css';
@@ -58,8 +59,8 @@ function List(props) {
   }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   function onClick(evt) {
-    const article = evt.target.closest("article");
-    const id = Number(article?.dataset?.id);
+    const noteEl = evt.target.closest("li.note");
+    const id = Number(noteEl?.dataset?.id);
     if (Number.isFinite(id)) {
       handleSelect(id);
     }
@@ -73,6 +74,7 @@ function List(props) {
     console.log("List externalChange", notesChanged, notesAdded, notesDeleted);
 
     const newNotes = [];
+    let isSelectedInList = false;
     notes.forEach((note, i) => {
       if (notesChanged.hasOwnProperty(note.id)) {
         // TODO: verify that it still matches search string
@@ -80,9 +82,22 @@ function List(props) {
       } else if (! notesDeleted.hasOwnProperty(note.id)) {
         newNotes.push(note);
       }
+
+      if (note.id === selectedNoteId) {
+        isSelectedInList = true;
+      }
     });
     // TODO: add notes from notesAdded that match (& sort?)
+
+    if (!isSelectedInList) {
+      let selectedNote = notesChanged[selectedNoteId] || notesAdded[selectedNoteId];
+      if (selectedNote && ! notesDeleted.hasOwnProperty(selectedNoteId)) {
+        newNotes.unshift(selectedNote);
+      }
+    }
+
     setNotes(newNotes);
+    changeCount(newNotes.length);
   };
   useEffect( () => {
     window.addEventListener("message", externalChangeListener);
@@ -98,19 +113,26 @@ function List(props) {
         (note) => {
           const incipit = note.text.slice(0, 300);
           const cleanHtml = sanitizeHtml(incipit, uniformList);
-          return <article data-id={note.id} key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
-                          className={note.id === selectedNoteId ? 'selected' : ''}
-          ></article>
+          return <li data-id={note.id} key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
+                          className={'note ' + (note.id === selectedNoteId ? 'selected' : '')}
+          ></li>
         }
     );
   } else {
     listItems = <div className="advice">No notes</div>
   }
   return (
-      <div className="list" onClick={onClick}>
+      <ol className="list" onClick={onClick}>
         {listItems}
-      </div>
+      </ol>
   );
+}
+
+List.propTypes = {
+  searchStr: PropTypes.string,
+  changeCount: PropTypes.func,
+  selectedNoteId: PropTypes.number,
+  handleSelect: PropTypes.func
 }
 
 export default List;

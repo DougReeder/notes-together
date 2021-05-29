@@ -1,4 +1,5 @@
-import {render, act, screen, waitFor, findByText, fireEvent} from '@testing-library/react';
+import {createMemoryNote} from './Note';
+import {render, act, screen, waitFor, findByText, fireEvent, getByText} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getNote, upsertNote} from "./idbNotes.js";
 import Detail from "./Detail";
@@ -37,7 +38,7 @@ test("saves on edit", async () => {
 
     userEvent.type(textEl, typedText)
     expect(upsertNote).toHaveBeenCalledTimes(typedText.length);
-    expect(upsertNote).toHaveBeenLastCalledWith(noteId, initialText+typedText);
+    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText+typedText));
   });
 });
 

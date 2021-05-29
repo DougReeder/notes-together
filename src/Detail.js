@@ -1,3 +1,4 @@
+import {createMemoryNote} from './Note';
 import {isLikelyMarkdown} from "./util";
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
@@ -124,7 +125,7 @@ function Detail({noteId}) {
   const handleChange = async evt => {
     try {
       setText(evt.target.value);
-      await upsertNote(noteId, evt.target.value);
+      await upsertNote(createMemoryNote(noteId, evt.target.value));
     } catch (err) {
       console.error("while handling Detail text change:", err);
     }

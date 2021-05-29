@@ -1,6 +1,8 @@
 // idbNotes.js - IndexedDB facade for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import {createMemoryNote} from "./Note";
+
 const notes = {
   101: "<h1>The rain in Spain</h1> stays mainly in the plain <i>foo",
   102: "<UL><LI>H<sub>2</sub>O</LI><li>C<SUP>3</SUP>I</li><li>dritte",
@@ -35,7 +37,7 @@ async function searchNotes(searchStr) {
       const foundNotes = [];
       if (!searchStr) {
         for (const [key, value] of Object.entries(notes)) {
-          foundNotes.push({id:Number(key), text: value});
+          foundNotes.push(createMemoryNote(Number(key), value));
         }
       } else {
         const re = new RegExp("\\b" + searchStr, "i");
@@ -63,20 +65,24 @@ function getNote(id) {
   });
 }
 
-function upsertNote(id, newText) {
-  if (!Number.isSafeInteger(id)) {
+function upsertNote(note) {
+  if (!Number.isSafeInteger(note.id)) {
     throw new Error("id must be safe integer");
-  } else if ('string' !== typeof newText) {
+  } else if ('string' !== typeof note.text) {
     throw new Error("newText must be string");
   }
   return new Promise((resolve) => {
     setTimeout(() => {
-      notes[id] = newText;
-      console.log("upsertNote", id, newText?.slice(0, 50));
-      const notesChanged = {};
-      notesChanged[id] = {id, text: newText};
-      window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesAdded: {}, notesDeleted: {}}, window.location.origin);
-      resolve(id);
+      const notesChanged = {}, notesAdded = {};
+      if (notes.hasOwnProperty(note.id)) {
+        notesChanged[note.id] = note;   // postMessage will clone
+      } else {
+        notesAdded[note.id] = note;   // postMessage will clone
+      }
+      notes[note.id] = note.text;
+      console.log("upsertNote", note.id, note.text?.slice(0, 50));
+      window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesAdded, notesDeleted: {}}, window.location.origin);
+      resolve(note.id);
     }, 100);
   });
 }

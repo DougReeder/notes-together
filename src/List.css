@@ -1,12 +1,20 @@
 
-.list {
+ol.list {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
+
+    list-style:none;
+    padding-inline-start: 0;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+
 }
 
-.list article {
+ol.list > li {
     height: 5ex;
     overflow: hidden;
 
@@ -16,30 +24,30 @@
     color: #000 !important;
 }
 
-.list article:nth-child(odd) {
+ol.list > li:nth-child(odd) {
     background-color: white;
     border: 1em solid white;
 }
 
-.list article:nth-child(even) {
+ol.list > li:nth-child(even) {
     background-color: #eee;
     border: 1em solid #eee;
 }
 
-.list article.selected {
+ol.list > li.selected {
     background-color: lightblue;
     border: 1em solid lightblue;
 }
 
-.list article > * {
+ol.list > li > * {
     margin-top: 0;
     margin-bottom: 0;
 }
 
-.list ul, .list ol {
+ol.list ul, ol.list ol {
     padding-left: 1em;
 }
 
-.list th {
+ol.list th {
     font-weight: normal;
 }
