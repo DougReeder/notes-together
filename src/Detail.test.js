@@ -1,17 +1,10 @@
 import {createMemoryNote} from './Note';
-import {render, act, screen, waitFor, findByText, fireEvent, getByText} from '@testing-library/react';
+import {render, act, screen, waitFor, findByRole, findByText, fireEvent, getByText} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getNote, upsertNote} from "./idbNotes.js";
 import Detail from "./Detail";
 
 jest.mock('./idbNotes.js');
-
-test('renders hint, if noteId does not exist', async () => {
-  const noteId = null;
-  const {getByText} = render(<Detail noteId={noteId}></Detail>);
-  const adviceEl = getByText("Select a note on the left to display it in full.");
-  expect(adviceEl).toBeInTheDocument();
-});
 
 test('renders text of note', async () => {
   const noteId = 42;
@@ -25,21 +18,33 @@ test('renders text of note', async () => {
   });
 });
 
-test("saves on edit", async () => {
+xtest("saves on edit", async () => {
   const noteId = 43;
   const initialText = "Hello";
   const typedText = " world";
-  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: initialText}));
+  await act(async () => {
+    await upsertNote(createMemoryNote(noteId, initialText));
+  });
+  // getNote.mockResolvedValue(Promise.resolve({id: noteId, text: initialText}));
 
   await act(async () => {
-    const {findByRole} = render(<Detail noteId={noteId}></Detail>);
-    const textEl = await findByRole('article');
-    expect(textEl).toBeInTheDocument();
+    // getNote.mockImplementation(() => new Promise((resolve) => {
+    //   setTimeout( () => {
+    //     resolve({id: noteId, text: initialText});
+    //   }, 100);
+    // }));
 
-    userEvent.type(textEl, typedText)
-    expect(upsertNote).toHaveBeenCalledTimes(typedText.length);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText+typedText));
+    const {findByRole} = render(<Detail noteId={noteId}></Detail>);
   });
+  const textEl = await findByRole('article');
+  expect(textEl).toBeInTheDocument();
+
+  userEvent.type(textEl, typedText)
+
+  const finalNote = await getNote(noteId);
+  expect(finalNote.text).toEqual(initialText+typedText);
+  // expect(upsertNote).toHaveBeenCalledTimes(typedText.length);
+  // expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText+typedText));
 });
 
 // paste into ContentEditable not supported by DOM Testing Library

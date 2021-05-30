@@ -6,7 +6,7 @@ import sanitizeHtml from "sanitize-html";
 
 const notes = {
   101: "<h1>The rain in Spain</h1> stays mainly in the plain <i>foo",
-  102: "<UL><LI>H<sub>2</sub>O</LI><li>C<SUP>3</SUP>I</li><li>dritte",
+  102: "<ul><li>H<sub>2</sub>O</li><li>C<sup>3</sup>I</li><li>dritte",
   103: `Lincoln's Gettysburg Address<blockquote>
     <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
@@ -89,7 +89,7 @@ function upsertNote(note) {
         notesAdded[note.id] = note;   // postMessage will clone
       }
       notes[note.id] = note.text;
-      console.log("upsertNote", note.id, note.text?.slice(0, 50));
+      // console.log("upsertNote", note.id, note.text?.slice(0, 50));
       window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesAdded, notesDeleted: {}}, window.location.origin);
       resolve(note.id);
     }, 100);

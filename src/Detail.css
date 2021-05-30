@@ -1,4 +1,8 @@
 
+article[contenteditable] {
+    background-color: white;
+}
+
 article[contenteditable] > *:first-child {
     margin-top: 0;
 }

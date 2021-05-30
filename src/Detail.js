@@ -1,6 +1,6 @@
 import {createMemoryNote, semanticOnly} from './Note';
 import {isLikelyMarkdown} from "./util";
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {getNote, upsertNote} from "./idbNotes";
 import ContentEditable from 'react-contenteditable';
@@ -13,21 +13,21 @@ const markdownReader = new Parser({smart: true});
 const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
 const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
-
 function Detail({noteId, searchStr}) {
+  const articleRef = useRef(null);
 
-  const [text, setText] = useState(null);
-  // console.log("Detail noteId:", noteId, "   text:", text?.slice(0, 50));
+  // console.log("Detail noteId:", noteId, "   searchStr:", searchStr);
 
   useEffect(() => {
     if (Number.isFinite(noteId)) {
       getNote(noteId).then(theNote => {
-        setText(theNote.text);
+        articleRef.current.el.current.innerHTML =
+            sanitizeHtml(theNote.text, semanticAddMark);
       }).catch(err => {
         console.error(err);
       });
     }
-  }, [noteId]);  // eslint-disable-line react-hooks/exhaustive-deps
+  });  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (/\S/.test(searchStr)) {
@@ -44,7 +44,6 @@ function Detail({noteId, searchStr}) {
 
   const handleChange = async evt => {
     try {
-      setText(evt.target.value);
       await upsertNote(createMemoryNote(noteId, evt.target.value));
     } catch (err) {
       console.error("while handling Detail text change:", err);
@@ -90,23 +89,14 @@ function Detail({noteId, searchStr}) {
   };
 
 
-  let content;
-  if ('string' === typeof text) {
-    content =
-        (<ContentEditable
-            html={sanitizeHtml(text, semanticAddMark)} // innerHTML of the editable div
+  return (<ContentEditable
+            html=""
             disabled={false}       // use true to disable editing
             onChange={handleChange} // handle innerHTML change
             onPaste={pasteSemanticOnly}
             tagName='article' // Use a custom HTML tag (uses a div by default)
+            ref={articleRef}
         />);
-  } else {
-    content =
-        (<div>
-          <div className="advice">Select a note on the left to display it in full.</div>
-        </div>);
-  }
-  return content;
 }
 
 Detail.propTypes = {
