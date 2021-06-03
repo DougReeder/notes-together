@@ -1,11 +1,12 @@
 // List.js - List component for Notes Together
 // Copyright © 2021 Doug Reeder
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
-import {searchNotes} from "./idbNotes";
+import {searchNotes, deleteNote} from "./idbNotes";
 import sanitizeHtml from 'sanitize-html';
 import './List.css';
+import {CSSTransition} from "react-transition-group";
 
 const uniformList = {allowedTags: [ 'p', 'div',
     'ul', 'ol', 'li', 'dl', 'dt', 'dd',
@@ -51,6 +52,9 @@ function List(props) {
   const [notes, setNotes] = useState([]);
   // console.log("List props:", props, "   notes:", notes);
 
+  const lastSelectedNoteId = useRef([]);
+  const [itemButtonsIds, setItemButtonIds] = useState({});
+
   useEffect(() => {
     searchNotes(searchStr).then(notes => {
       setNotes(notes);
@@ -58,29 +62,26 @@ function List(props) {
     })
   }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  function onClick(evt) {
-    const noteEl = evt.target.closest("li.note");
-    const id = Number(noteEl?.dataset?.id);
-    if (Number.isFinite(id)) {
-      handleSelect(id);
-    }
-  }
-
   const externalChangeListener = evt => {
     if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
     const notesChanged = evt.data?.notesChanged || {};
     const notesAdded = evt.data?.notesAdded || {};
     const notesDeleted = evt.data?.notesDeleted || {};
-    console.log("List externalChange", notesChanged, notesAdded, notesDeleted);
 
     const newNotes = [];
     let isSelectedInList = false;
-    notes.forEach((note, i) => {
+    let isChanged = false;
+    notes.forEach((note) => {
       if (notesChanged.hasOwnProperty(note.id)) {
         // TODO: verify that it still matches search string
         newNotes.push(notesChanged[note.id]);
-      } else if (! notesDeleted.hasOwnProperty(note.id)) {
-        newNotes.push(note);
+        isChanged = true;
+      } else {
+        if (notesDeleted.hasOwnProperty(note.id)) {
+          isChanged = true;
+        } else {
+          newNotes.push(note);
+        }
       }
 
       if (note.id === selectedNoteId) {
@@ -92,12 +93,17 @@ function List(props) {
     if (!isSelectedInList) {
       let selectedNote = notesChanged[selectedNoteId] || notesAdded[selectedNoteId];
       if (selectedNote && ! notesDeleted.hasOwnProperty(selectedNoteId)) {
+        // note just added
         newNotes.unshift(selectedNote);
+        isChanged = true;
       }
     }
 
-    setNotes(newNotes);
-    changeCount(newNotes.length);
+    if (isChanged) {
+      console.log("List externalChange", notesChanged, notesAdded, notesDeleted);
+      setNotes(newNotes);
+      changeCount(newNotes.length);
+    }
   };
   useEffect( () => {
     window.addEventListener("message", externalChangeListener);
@@ -107,22 +113,77 @@ function List(props) {
     };
   });
 
+  function onClick(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const noteEl = evt.target.closest("li.note");
+    const id = Number(noteEl?.dataset?.id);
+    if (Number.isFinite(id)) {
+      lastSelectedNoteId.current.unshift(selectedNoteId);
+      lastSelectedNoteId.current.length = 2;
+      handleSelect(id);
+    }
+  }
+
+  // TODO: mobile-friendly way to invoke this, such as swipe
+  function onDoubleClick(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const noteEl = evt.target.closest("li.note");
+    const id = Number(noteEl?.dataset?.id);
+    const newItemButtonIds = Object.assign({}, itemButtonsIds);
+    for (let currentId in newItemButtonIds) {
+      newItemButtonIds[currentId] = false;
+    }
+    if (Number.isFinite(id) && !(id in newItemButtonIds)) {
+      handleSelect(lastSelectedNoteId.current[1]);
+      newItemButtonIds[id] = true;
+    }
+    setItemButtonIds(newItemButtonIds);
+  }
+
+  function exitItemButtons(id) {
+    const newItemButtonIds = Object.assign({}, itemButtonsIds);
+    delete newItemButtonIds[id];
+    setItemButtonIds(newItemButtonIds);
+  }
+
+  function deleteItem(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const noteEl = evt.target.closest("li.note");
+    const id = Number(noteEl?.dataset?.id);
+    deleteNote(id);
+  }
+
   let listItems;
   if (notes.length > 0) {
     listItems = notes.map(
         (note) => {
           const incipit = note.text.slice(0, 300);
           const cleanHtml = sanitizeHtml(incipit, uniformList);
-          return <li data-id={note.id} key={note.id.toString()} dangerouslySetInnerHTML={{__html: cleanHtml}}
-                          className={'note ' + (note.id === selectedNoteId ? 'selected' : '')}
-          ></li>
+          let itemButtons;
+          if (note.id in itemButtonsIds) {
+            itemButtons = (
+                <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
+                  <div className="itemButtons">
+                    <button type="button" onClick={deleteItem}>Delete</button>
+                    {/*<button type="button">Share</button>*/}
+                  </div>
+                </CSSTransition>);
+          }
+          return <li data-id={note.id} key={note.id.toString()}
+                     className={'note ' + (note.id === selectedNoteId ? 'selected' : '')}>
+            <div className="incipit" dangerouslySetInnerHTML={{__html: cleanHtml}}></div>
+            {itemButtons}
+          </li>
         }
     );
   } else {
     listItems = <div className="advice">No notes</div>
   }
   return (
-      <ol className="list" onClick={onClick}>
+      <ol className="list" onClick={onClick} onDoubleClick={onDoubleClick}>
         {listItems}
       </ol>
   );

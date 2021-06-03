@@ -1,6 +1,6 @@
 import {createMemoryNote} from './Note';
 import {upsertNote} from './idbNotes';
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import List from './List';
 import Detail from './Detail'
 import './App.css';
@@ -23,7 +23,24 @@ function App() {
     await upsertNote(newNote);
   }
 
-  return (
+  const externalChangeListener = evt => {
+    if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
+
+    const notesDeleted = evt.data?.notesDeleted || {};
+    if (notesDeleted.hasOwnProperty(selectedNoteId)) {
+      console.log("selected note deleted", notesDeleted);
+      setSelectedNoteId(null);
+    }
+  }
+  useEffect( () => {
+    window.addEventListener("message", externalChangeListener);
+
+    return function removeExternalChangeListener() {
+      window.removeEventListener("message", externalChangeListener);
+    };
+  });
+
+    return (
       <div className="App panelContainer" role="application">
         <div className="panelMain">
           <header className="App-header">

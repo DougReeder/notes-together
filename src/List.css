@@ -15,33 +15,82 @@ ol.list {
 }
 
 ol.list > li {
-    height: 5ex;
+    height: 9ex;
     overflow: hidden;
 
     line-height: 2.5ex;
     word-wrap: break-word;
     font-weight: 400 !important;
     color: #000 !important;
+
+    border-width: 0;
+    position: relative;
 }
 
 ol.list > li:nth-child(odd) {
     background-color: white;
-    border: 1em solid white;
 }
 
 ol.list > li:nth-child(even) {
     background-color: #eee;
-    border: 1em solid #eee;
 }
 
 ol.list > li.selected {
     background-color: lightblue;
-    border: 1em solid lightblue;
 }
 
-ol.list > li > * {
+.incipit {
+    box-sizing: border-box;
+    height: 9ex;
+    overflow: hidden;
+    padding: 2ex 2ex 0 2ex;
+    border-bottom: 2ex solid white;
+}
+ol.list > li:nth-child(even) > .incipit {
+    border-color: #eee;
+}
+ol.list > li.selected > .incipit {
+    border-color: lightblue;
+}
+
+.incipit > * {
     margin-top: 0;
     margin-bottom: 0;
+}
+
+.itemButtons {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 10;
+
+    background-color: rgba(0, 0, 0, 0.60);
+
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.slideFromLeft-appear {
+    right: 100%;
+}
+.slideFromLeft-appear-active {
+    right: 0;
+    transition: right 333ms;
+}
+.slideFromLeft-exit {
+    right: 0;
+}
+.slideFromLeft-exit-active {
+    right: 100%;
+    transition: right 333ms;
+}
+
+.itemButtons > button {
+    flex: 0 0 auto;
+
+    padding: 2ex;
 }
 
 ol.list ul, ol.list ol {

@@ -73,8 +73,8 @@ function getNote(id) {
 }
 
 function upsertNote(note) {
-  if (!Number.isSafeInteger(note.id)) {
-    throw new Error("id must be safe integer");
+  if (!Number.isFinite(note.id)) {
+    throw new Error("id must be finite");
   } else if ('string' !== typeof note.text) {
     throw new Error("newText must be string");
   }
@@ -96,4 +96,22 @@ function upsertNote(note) {
   });
 }
 
-export {searchNotes, getNote, upsertNote};
+function deleteNote(id) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (Number.isFinite(id)) {
+        delete notes[id];
+
+        const notesDeleted = {};
+        notesDeleted[id] = true;
+        window.postMessage({kind: 'NOTE_CHANGE', notesChanged: {}, notesAdded: {}, notesDeleted}, window.location.origin);
+
+        resolve(id);
+      } else {
+        reject(new Error("not finite: " + id));
+      }
+    }, 100);
+  });
+}
+
+export {searchNotes, getNote, upsertNote, deleteNote};
