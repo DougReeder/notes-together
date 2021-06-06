@@ -11,7 +11,7 @@ import {CSSTransition} from "react-transition-group";
 const uniformList = {allowedTags: [ 'p', 'div',
     'ul', 'ol', 'li', 'dl', 'dt', 'dd',
     'i', 'b', 'strike', 'sub', 'sup',
-    'br', 'hr', 'pre',
+    'code', 'br', 'hr', 'pre',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td',
   ],
   allowedAttributes: {
@@ -34,7 +34,6 @@ const uniformList = {allowedTags: [ 'p', 'div',
     'aside': 'div',
     'textarea': 'div',
     'blockquote': 'div',
-    'code': 'div',
     'em': 'i',
     'strong': 'b'
   },

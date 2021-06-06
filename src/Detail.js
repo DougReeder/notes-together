@@ -68,7 +68,17 @@ function Detail({noteId, searchStr}) {
       const text = evt.clipboardData.getData('text/plain');
       if (isLikelyMarkdown(text)) {
         const parsed = markdownReader.parse(text);
-        const html = markdownWriter.render(parsed);
+        let html = markdownWriter.render(parsed);
+        html = html.replace(/(?<=[A-Za-z])\^2(?!\d)/g, "²");
+        html = html.replace(/(?<=[A-Za-z])\^3(?!\d)/g, "³");
+        html = html.replace(/(?<=[A-Za-z])\^1(?!\d)/g, "¹");
+        html = html.replace(/(?<=[A-Za-z])\^0(?!\d)/g, "⁰");
+        html = html.replace(/(?<=[A-Za-z])\^4(?!\d)/g, "⁴");
+        html = html.replace(/(?<=[A-Za-z])\^5(?!\d)/g, "⁵");
+        html = html.replace(/(?<=[A-Za-z])\^6(?!\d)/g, "⁶");
+        html = html.replace(/(?<=[A-Za-z])\^7(?!\d)/g, "⁷");
+        html = html.replace(/(?<=[A-Za-z])\^8(?!\d)/g, "⁸");
+        html = html.replace(/(?<=[A-Za-z])\^9(?!\d)/g, "⁹");
         pasteHtml(html);
       } else if (/<svg\s[^>]*>/.test(text)) {
         pasteHtml(text);

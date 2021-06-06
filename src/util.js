@@ -4,7 +4,7 @@ function isLikelyMarkdown(text) {
   if (/(^|\s)(__|\*\*)(?=\S).+(\2(\s|$))/.test(text)) {
     return true;   // strong emphasis
   }
-  if (/(^|\s)(_|\*|`)(?!\2).+(\2(\s|$))/.test(text)) {
+  if (/(^|\s)([_*`])(?!\2).+(\2(\s|$))/.test(text)) {
     return true;   // emphasis or code
   }
   if (/\[[^\]]+]\(https?:\/\/\S+\)/.test(text)) {
@@ -24,6 +24,9 @@ function isLikelyMarkdown(text) {
   }
   if (/(^|\n)\s{0,3}[*+-]\s.*\s+[*+-]\s/.test(text)) {
     return true;   // unordered list
+  }
+  if (/(?<=[A-Za-z])\^[23](?!\d)/.test(text)) {
+    return true;   // letter-caret-2 or letter-caret-3
   }
   return false;
 }

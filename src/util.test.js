@@ -89,4 +89,16 @@ describe("isLikelyMarkdown", () => {
   test("should flag unordered lists using plus", () => {
     expect(isLikelyMarkdown(" + erste\n  + zwitte")).toBeTruthy();
   });
+
+  test("should flag letter-caret-2", () => {
+    expect(isLikelyMarkdown("r^2")).toBeTruthy();
+  });
+
+  test("should flag letter-caret-3", () => {
+    expect(isLikelyMarkdown("I^3C")).toBeTruthy();
+  });
+
+  test("should not flag letter-caret-1", () => {
+    expect(isLikelyMarkdown("...as asserted by Fong^1")).toBeFalsy();
+  });
 });
