@@ -69,7 +69,7 @@
   flex-direction: column;
 }
 
-.panelMain > button {
+.actionBtn {
   position: absolute;
   right: 10px;
   bottom: 10px;
@@ -79,7 +79,7 @@
   border-radius: 26px;
   font-size: 6ex;
 }
-.panelMain > button > span {
+.actionBtn > span {
   position: relative;
   top: -6px;
 }
@@ -111,8 +111,9 @@
   flex: 1 1 auto;
 }
 .count {
-  margin-left: 2ex;
-  margin-right: 2ex;
+  margin-left: 1.5ch;
+  margin-right: 1.5ch;
+  min-width: 3ch;
 }
 
 .list{
@@ -121,17 +122,44 @@
 
 .advice {
   position: absolute;
-  /*width: 310px;*/
   margin: 0 auto;
-  left: 1em;
-  right: 1em;
-  top: 66px;
-  padding: 6px;
+  left: 2ch;
+  right: 2ch;
+  top: 6ch;
+  max-width: 52ch;
+  padding: 1ch;
   background: #d0f0ff;
   border: 1px solid;
-  border-radius: 6px;
+  border-radius: 1ch;
 }
-.advice .head {
+.advice h2 {
+  margin-block-start: 0;
+  margin-block-end: 1ex;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  font-weight:bold;
+  font-size: larger;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.error {
+  position: absolute;
+  margin: 0 auto;
+  left: 2ch;
+  right: 2ch;
+  top: 6ch;
+  max-width: 52ch;
+  padding: 1ch;
+  background: #ff9c9c;
+  border: 1px solid;
+  border-radius: 1ch;
+}
+.error h2 {
+  margin-block-start: 0;
+  margin-block-end: 1ex;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
   font-weight:bold;
   font-size: larger;
   text-align: center;

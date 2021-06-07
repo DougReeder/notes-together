@@ -217,53 +217,93 @@ describe("searchNotes", () => {
     await upsertNote(note3);
   });
 
-  it("should return all notes when search string is empty", async () => {
-    const matched = await searchNotes("");
-    const matchedTestIds = [];
-    matched.forEach(note => {
-      if (note.id < Number.MIN_SAFE_INTEGER) {
-        matchedTestIds.push(note.id);
+  it("should return all notes when search string is empty", done => {
+    searchNotes("", callback);
+
+    function callback(err, matched, {isFinal}) {
+      if (err) { return done(err) }
+      try {
+        if (!isFinal) return;
+
+        const matchedTestIds = [];
+        matched.forEach(note => {
+          if (note.id < Number.MIN_SAFE_INTEGER) {
+            matchedTestIds.push(note.id);
+          }
+        });
+        expect(matchedTestIds).toContain(note1.id);
+        expect(matchedTestIds).toContain(note2.id);
+        expect(matchedTestIds).toContain(note3.id);
+        done();
+      } catch (err2) {
+        done(err2);
       }
-    });
-    expect(matchedTestIds).toContain(note1.id);
-    expect(matchedTestIds).toContain(note2.id);
-    expect(matchedTestIds).toContain(note3.id);
+    }
   });
 
-  it("should return notes containing words which start with the only search word", async () => {
+  it("should return notes containing words which start with the only search word", done => {
+    searchNotes("th", callback);
 
-    const matched = await searchNotes("th");
-    const matchedTestIds = [];
-    matched.forEach(note => {
-      if (note.id < Number.MIN_SAFE_INTEGER) {
-        matchedTestIds.push(note.id);
+    function callback(err, matched, {isFinal}) {
+      if (err) { return done(err) }
+      try {
+        if (!isFinal) return;
+
+        const matchedTestIds = [];
+        matched.forEach(note => {
+          if (note.id < Number.MIN_SAFE_INTEGER) {
+            matchedTestIds.push(note.id);
+          }
+        });
+        expect(matchedTestIds).toContain(note1.id);
+        expect(matchedTestIds).not.toContain(note2.id);
+        expect(matchedTestIds).toContain(note3.id);
+        done();
+      } catch (err2) {
+        done(err2);
       }
-    });
-    expect(matchedTestIds).toContain(note1.id);
-    expect(matchedTestIds).not.toContain(note2.id);
-    expect(matchedTestIds).toContain(note3.id);
+    }
   });
 
-  it("should return notes containing words which start with two search words", async () => {
+  it("should return notes containing words which start with each of the search words", done => {
+    searchNotes("th don", callback);
 
-    const matched = await searchNotes("th don");
-    const matchedTestIds = [];
-    matched.forEach(note => {
-      if (note.id < Number.MIN_SAFE_INTEGER) {
-        matchedTestIds.push(note.id);
+    function callback(err, matched, {isFinal}) {
+      if (err) { return done(err) }
+      try {
+        if (!isFinal) return;
+
+        const matchedTestIds = [];
+        matched.forEach(note => {
+          if (note.id < Number.MIN_SAFE_INTEGER) {
+            matchedTestIds.push(note.id);
+          }
+        });
+        expect(matchedTestIds).not.toContain(note1.id);
+        expect(matchedTestIds).not.toContain(note2.id);
+        expect(matchedTestIds).toContain(note3.id);
+        done();
+      } catch (err2) {
+        done(err2);
       }
-    });
-    expect(matchedTestIds).not.toContain(note1.id);
-    expect(matchedTestIds).not.toContain(note2.id);
-    expect(matchedTestIds).toContain(note3.id);
+    }
   });
 });
 
 afterAll(async () => {
-  const notes = await searchNotes("");
-  for (let i = 0; i < notes.length; ++i) {
-    if (notes[i].id < Number.MIN_SAFE_INTEGER) {
-      await deleteNote(notes[i].id);
+  return new Promise((resolve, reject) => {
+    searchNotes("", callback);
+
+    async function callback(err, notes, {isFinal}) {
+      if (err) return reject(err);
+      if (!isFinal) return;
+
+      for (let i = 0; i < notes.length; ++i) {
+        if (notes[i].id < Number.MIN_SAFE_INTEGER) {
+          await deleteNote(notes[i].id);
+        }
+      }
+      resolve();
     }
-  }
+  });
 });

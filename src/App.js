@@ -10,8 +10,8 @@ function App() {
   const [searchStr, setSearchStr] = useState("");
   const onSearchChange = event => setSearchStr(event.target.value);
 
-  const [count, setCount] = useState(0);
-  const changeCount = value => setCount(value);
+  const [count, setCount] = useState(" ");
+  const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
 
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const handleSelect = id => setSelectedNoteId(id);
@@ -49,7 +49,7 @@ function App() {
             <div className="count">{count}</div>
           </header>
           <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
-          <button onClick={addNote}><span>+</span></button>
+          <button className="actionBtn" onClick={addNote}><span>+</span></button>
         </div>
         <div className="panelDetail">
           <Detail noteId={selectedNoteId} searchStr={searchStr}></Detail>

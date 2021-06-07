@@ -5,12 +5,18 @@ import removeDiacritics from "./diacritics";
 import {semanticOnly} from "./Note";
 import sanitizeHtml from "sanitize-html";
 
+/** callback may be called *multiple* times */
 
 const notes = {};
 
-async function searchNotes(searchStr) {
-  return await new Promise((resolve, reject) => {
-    setTimeout(() => {
+/**
+ * Searches for notes which match (as a prefix) each word in searchStr.
+ * @param searchStr
+ * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than 500 matching notes
+ */
+function searchNotes(searchStr, callback) {
+  setTimeout(() => {
+    try {
       const foundNotes = [];
       const searchWords = parseWords(searchStr);
       if (searchWords.size === 0) {
@@ -32,9 +38,15 @@ async function searchNotes(searchStr) {
         }
       }
       // console.log(`searchNotes returning ${foundNotes.length} notes`);
-      resolve(foundNotes);
-    }, 500);
-  });
+      callback(null, foundNotes.slice(0,3), {isPartial: true, isFinal: false});
+
+      setTimeout( () => {
+        callback(null, foundNotes, {isPartial: false, isFinal: true});
+      }, 500);
+    } catch (err) {
+      callback(err);
+    }
+  }, 500);
 }
 
 function getNote(id) {
@@ -152,19 +164,19 @@ function normalizeWord(word) {
   return word;
 }
 
-upsertNote({id: 101, text:"<h1>The rain in Spain</h1> stays mainly in the plain <i>foo"});
-upsertNote({id: 102, text: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>grüßen"});
-upsertNote({id: 103, text: `Lincoln's Gettysburg Address<blockquote>
+upsertNote({id: Number.MAX_SAFE_INTEGER + 2, text:"<h1>The rain in Spain</h1> stays mainly in the plain <i>foo"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 3, text: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>grüßen"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 4, text: `Lincoln's Gettysburg Address<blockquote>
     <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
     <p>Now we are engaged in a great civil war, testing whether that nation or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.
 
     <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.
  <strike>foo`});
-upsertNote({id: 104, text: "<dl><dt>Here we go</dt><dd>gathering nuts in May <code>foo"});
-upsertNote({id: 105, text: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner"});
-upsertNote({id: 106, text: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman. <sub>foo"});
-upsertNote({id: 107, text: `tensile structures
+upsertNote({id: Number.MAX_SAFE_INTEGER + 7, text: "<dl><dt>Here we go</dt><dd>gathering nuts in May <code>foo"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 8, text: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 11, text: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman. <sub>foo"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 12, text: `tensile structures
 <svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 226.77 226.77" xmlns="http://www.w3.org/2000/svg">
  <g transform="translate(8.964 4.2527)" fill-rule="evenodd" stroke="#000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="4">
   <path d="m63.02 200.61-43.213-174.94 173.23 49.874z"/>
@@ -176,8 +188,8 @@ upsertNote({id: 107, text: `tensile structures
  </g>
 </svg>
 `});
-upsertNote({id: 108, text: "<h2>Star Trek II: The Wrath of Khan</h2>The best one"});
-upsertNote({id: 109, text: `The <ruby>
+upsertNote({id: Number.MAX_SAFE_INTEGER + 15, text: "<h2>Star Trek II: The Wrath of Khan</h2>The best one"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 16, text: `The <ruby>
   漢 <rp>(</rp><rt>Kan</rt><rp>)</rp>
   字 <rp>(</rp><rt>ji</rt><rp>)</rp>
 </ruby> for tomorrow is <ruby>

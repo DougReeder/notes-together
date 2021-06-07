@@ -48,6 +48,7 @@ const uniformList = {allowedTags: [ 'p', 'div',
 function List(props) {
   const {searchStr, changeCount, selectedNoteId, handleSelect} = props;
 
+  const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
   // console.log("List props:", props, "   notes:", notes);
 
@@ -55,10 +56,22 @@ function List(props) {
   const [itemButtonsIds, setItemButtonIds] = useState({});
 
   useEffect(() => {
-    searchNotes(searchStr).then(notes => {
-      setNotes(notes);
-      changeCount(notes.length);
-    })
+    searchNotes(searchStr, callback);
+
+    function callback(err, notes, {isPartial, isFinal}) {
+      try {
+        if (err) {
+          return setListErr(err);
+        } else {
+          setListErr(null);
+        }
+
+        setNotes(notes);
+        changeCount(notes.length, isPartial);
+      } catch (err2) {
+        setListErr(err2);
+      }
+    }
   }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const externalChangeListener = evt => {
@@ -156,7 +169,9 @@ function List(props) {
   }
 
   let listItems;
-  if (notes.length > 0) {
+  if (listErr) {
+    listItems = <div className="error"><h2>Restart your device</h2>{listErr.message}</div>
+  } else if (notes.length > 0) {
     listItems = notes.map(
         (note) => {
           const incipit = note.text.slice(0, 300);
@@ -179,7 +194,20 @@ function List(props) {
         }
     );
   } else {
-    listItems = <div className="advice">No notes</div>
+    if (searchStr.trim().length > 0) {
+      listItems = <div className="advice">
+        <h2>No Matching Notes</h2>
+        Try just the first few letters of your search word(s), or synonyms of them.
+      </div>
+    } else {
+      listItems = <div className="advice">
+        <h2>Write or import some notes!</h2>
+        To create a new note, tap the <button className="actionBtn" style={{position:"static", transform: "scale(0.7)", verticalAlign: "middle"}}><span>+</span></button> button.
+        You can paste text and images into it.
+      </div>
+      // TODO: and insert pictures
+      // TODO: To import text, Markdown or HTML notes, tap the menu button, then <b>Import file as multiple notes</b>.
+    }
   }
   return (
       <ol className="list" onClick={onClick} onDoubleClick={onDoubleClick}>
