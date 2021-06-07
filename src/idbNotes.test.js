@@ -110,6 +110,27 @@ describe("parseWords", () => {
     expect(wordArr).toContain("OUUUUYTHY");
     expect(wordArr.length).toEqual(2);
   });
+
+  it('should parse "℥" symbol as OZ', () => {
+    const wordArr = Array.from(parseWords("23℥brimstone"));
+
+    expect(wordArr).toContain("23OZ");
+    expect(wordArr).toContain("BRIMSTONE");
+  });
+
+  it('should parse "℻" symbol as FAX', () => {
+    const wordArr = Array.from(parseWords("order℻614-555-1212"));
+
+    expect(wordArr).toContain("ORDER");
+    expect(wordArr).toContain("FAX");
+    expect(wordArr).toContain("6145551212");
+  });
+
+  it('should parse "℞" symbol as Rx', () => {
+    const wordArr = Array.from(parseWords("℞2901"));
+
+    expect(wordArr).toContain("RX2901");
+  })
 });
 
 describe("upsertNote", () => {
@@ -184,7 +205,7 @@ describe("upsertNote", () => {
     await upsertNote(original);
 
     const retrieved = await getNote(originalId);
-    expect(retrieved.text).toEqual("<div>A mind is a <strike>terrible thing to waste</strike></div>");
+    expect(retrieved.text).toEqual("<header>A mind is a <strike>terrible thing to waste</strike></header>");
   });
 });
 

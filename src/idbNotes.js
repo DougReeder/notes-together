@@ -165,7 +165,7 @@ function normalizeWord(word) {
 }
 
 upsertNote({id: Number.MAX_SAFE_INTEGER + 2, text:"<h1>The rain in Spain</h1> stays mainly in the plain <i>foo"});
-upsertNote({id: Number.MAX_SAFE_INTEGER + 3, text: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>grüßen"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 3, text: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>2º libro, la Calle 3ª</li><li>grüßen"});
 upsertNote({id: Number.MAX_SAFE_INTEGER + 4, text: `Lincoln's Gettysburg Address<blockquote>
     <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
@@ -188,13 +188,16 @@ upsertNote({id: Number.MAX_SAFE_INTEGER + 12, text: `tensile structures
  </g>
 </svg>
 `});
-upsertNote({id: Number.MAX_SAFE_INTEGER + 15, text: "<h2>Star Trek II: The Wrath of Khan</h2>The best one"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 15, text: "<h1>Star Trek II: The Wrath of Khan</h1>the best of everything that was best about Star Trek TOS<br>adventure, science-fiction"});
 upsertNote({id: Number.MAX_SAFE_INTEGER + 16, text: `The <ruby>
   漢 <rp>(</rp><rt>Kan</rt><rp>)</rp>
   字 <rp>(</rp><rt>ji</rt><rp>)</rp>
 </ruby> for tomorrow is <ruby>
   明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp>
 </ruby>`});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 19, text: "<h2>Star Trek III: The Search for Spock</h2>has difficulties standing on its own; it relies heavily on knowledge of <em>Khan</em>.<br>adventure, science-fiction"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 20, text: "<h3>Star Trek IV: The Voyage Home</h3>the funniest of all the star trek films due to the fact that it is played totally tongue in cheek<br>adventure, science-fiction"});
+upsertNote({id: Number.MAX_SAFE_INTEGER + 23, text: "<h4>Star Wars: Episode IV - A New Hope</h4>the characters I liked most in this one are old Obi-Wan Kenobi, wonderfully portrayed by Alec Guinness, and Han Solo<br>adventure, science-fiction"});
 
 
 export {searchNotes, getNote, upsertNote, deleteNote, parseWords};

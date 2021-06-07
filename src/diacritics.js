@@ -13,6 +13,7 @@ const diacritics = {
     "\u00AA": "a",   // FEMININE ORDINAL INDICATOR
     "\u00B2": "2",   // SUPERSCRIPT TWO
     "\u00B3": "3",
+    // "\u00B5": "u",   // micro sign
     "\u00B9": "1",
     "\u00BA": "o",   // MASCULINE ORDINAL INDICATOR
     "\u00C0": "A",   // LATIN CAPITAL LETTER A WITH GRAVE
@@ -696,6 +697,12 @@ const diacritics = {
     "\u2091": "e",   // LATIN SUBSCRIPT SMALL LETTER E
     "\u2092": "o",   // LATIN SUBSCRIPT SMALL LETTER o
     "\u2093": "x",   // LATIN SUBSCRIPT SMALL LETTER X
+    // Letterlike Symbols
+    "\u2116": " Number ",
+    "\u211E": "Rx",
+    "\u2121": " Telephone ",
+    "\u2125": "oz ",
+    "\u213B": " Fax ",
     // Number Forms
     "\u2184": "c",   // LATIN SMALL LETTER REVERSED C
     // Enclosed Alphanumerics

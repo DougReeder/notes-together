@@ -14,7 +14,8 @@ function createMemoryNote(id, text) {
 
 // eslint-disable-next-line
 const semanticOnly = {
-  allowedTags: ['h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'ul', 'ol',
+  allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'ul', 'ol',
+    'header', 'footer', 'main', 'section', 'aside',
     'li', 'dl', 'dt', 'dd', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre',
     'img', 'del', 'ins', 'kbd', 'q', 'samp', 'sub', 'sup', 'var',
@@ -69,13 +70,7 @@ const semanticOnly = {
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
   transformTags: {
-    'h1': 'h2',
-    'header': 'div',
-    'footer': 'div',
-    'main': 'div',
-    'section': 'div',
     'article': 'div',
-    'aside': 'div',
     'textarea': 'div',
     'em': 'i',
     'strong': 'b',
