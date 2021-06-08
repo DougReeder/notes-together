@@ -111,6 +111,30 @@ describe("parseWords", () => {
     expect(wordArr.length).toEqual(2);
   });
 
+  it('in the default locale, tokenizes φίλοι οίκος σεισμός χημεία λαμπάς Αλέξανδρος Μακεδών Ἰωάννης Άγιος Νικόλαος to PHILOI OIKOS SEISMOS CHEMEIA LAMPAS ALEXANDROS MAKEDON IOANNES AGIOS NIKOLAOS', async () => {
+    const wordArr = Array.from(parseWords("φίλοι οίκος σεισμός χημεία λαμπάς Αλέξανδρος Μακεδών Ἰωάννης Άγιος Νικόλαος"));
+
+    expect(wordArr).toContain("PHILOI");
+    expect(wordArr).toContain("OIKOS");
+    expect(wordArr).toContain("SEISMOS");
+    expect(wordArr).toContain("CHEMEIA");
+    expect(wordArr).toContain("LAMPAS");
+    expect(wordArr).toContain("ALEXANDROS");
+    expect(wordArr).toContain("MAKEDON");
+    expect(wordArr).toContain("IOANNES");
+    expect(wordArr).toContain("AGIOS");
+    expect(wordArr).toContain("NIKOLAOS");
+  });
+
+  it("should allow Greek text to be searchable in any locale", () => {
+    const greek = "φίλοι οίκος σεισμός χημεία λαμπάς Αλέξανδρος Μακεδών Ἰωάννης Άγιος Νικόλαος";
+    const wordSet = parseWords(greek);
+    const wordSet2 = parseWords(greek.toUpperCase());
+
+    expect(wordSet.size).toEqual(10);
+    expect(wordSet2).toEqual(wordSet);
+  });
+
   it('should parse "℥" symbol as OZ', () => {
     const wordArr = Array.from(parseWords("23℥brimstone"));
 

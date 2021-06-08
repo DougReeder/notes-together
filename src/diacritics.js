@@ -373,6 +373,88 @@ const diacritics = {
     "\u024D": "r",
     "\u024E": "Y",
     "\u024F": "y",
+    // Greek - this doesn't handle diphthongs properly,
+    // so is not a proper transliteration.
+    // It can be useful, however.
+    "\u037A": "i",   // iota subscript
+
+    "\u0386": "A",   // Alpha w/ tonos
+    "\u0388": "E",   // Epsilon w/ tonos
+    "\u0389": "E",   // Eta w/ tonos
+    "\u038A": "I",   // Iota w/ tonos
+    "\u038C": "O",   // Omicron w/ tonos
+    "\u038E": "Y",   // Upsilon w/ tonos
+    "\u038F": "O",   // Omega w/ tonos
+    "\u0390": "i",   // iota w/ dialytika & tonos
+
+    "\u0391": "A",   // Alpha
+    "\u0392": "B",   // Beta
+    "\u0393": "G",   // Gamma
+    "\u0394": "D",   // Delta
+    "\u0395": "E",   // Epsilon
+    "\u0396": "Z",   // Zeta
+    "\u0397": "E",   // Eta
+    "\u0398": "Th",  // Theta
+    "\u0399": "I",   // Iota
+    "\u039A": "K",   // Kappa
+    "\u039B": "L",   // Lambda
+    "\u039C": "M",   // Mu
+    "\u039D": "N",   // Nu
+    "\u039E": "X",   // Xi
+    "\u039F": "O",   // Omicron
+    "\u03A0": "P",   // Pi
+    "\u03A1": "R",   // Rho
+    "\u03A3": "S",   // Sigma
+    "\u03A4": "T",   // Tau
+    "\u03A5": "Y",   // Upsilon
+    "\u03A6": "Ph",  // Phi
+    "\u03A7": "Ch",  // Chi
+    "\u03A8": "Ps",  // Psi
+    "\u03A9": "O",   // Omega
+
+    "\u03AA": "I",   // Capital Iota with Dialytika
+    "\u03AB": "Y",   // Capital Upsilon with Dialytika
+
+    "\u03AC": "a",   // small alpha w/ tonos
+    "\u03AD": "e",   // small epsilon w/ tonos
+    "\u03AE": "e",   // small eta w/ tonos
+    "\u03AF": "i",   // small iota w/ tonos
+    "\u03B0": "y",   // small upsilon w/ dialytika & tonos
+
+    "\u03B1": "a",   // alpha
+    "\u03B2": "b",   // beta
+    "\u03B3": "g",   // gamma
+    "\u03B4": "d",   // delta
+    "\u03B5": "e",   // epsilon
+    "\u03B6": "z",   // zeta
+    "\u03B7": "e",   // eta
+    "\u03B8": "th",  // theta
+    "\u03B9": "i",   // iota
+    "\u03BA": "k",   // kappa
+    "\u03BB": "l",   // lambda
+    "\u03BC": "m",   // mu
+    "\u03BD": "n",   // nu
+    "\u03BE": "x",   // xi
+    "\u03BF": "o",   // omicron
+    "\u03C0": "p",   // pi
+    "\u03C1": "r",   // rho
+    "\u03C2": "s",   // sigma (final)
+    "\u03C3": "s",   // sigma
+    "\u03C4": "t",   // tau
+    "\u03C5": "y",   // upsilon
+    "\u03C6": "ph",  // phi
+    "\u03C7": "ch",  // chi
+    "\u03C8": "ps",  // psi
+    "\u03C9": "o",   // omega
+
+    "\u03CA": "i",   // iota w/ dialytika
+    "\u03CB": "y",   // upsilon w/ dialytika
+    "\u03CC": "o",   // omicron w/ tonos
+    "\u03CD": "y",   // upsilon w/ tonos
+    "\u03CE": "o",   // omega w/ tonos
+
+    // TODO: Extended Greek
+    "\u1F38": "I",   // iota w/ psili
 // IPA Extensions
     "\u0250": "a",   // LATIN SMALL LETTER TURNED A
     "\u0253": "b",
@@ -702,6 +784,7 @@ const diacritics = {
     "\u211E": "Rx",
     "\u2121": " Telephone ",
     "\u2125": "oz ",
+    "\u212B": "A",   // Ångström
     "\u213B": " Fax ",
     // Number Forms
     "\u2184": "c",   // LATIN SMALL LETTER REVERSED C
