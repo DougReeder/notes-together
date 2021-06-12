@@ -24,7 +24,8 @@ function Detail({noteId, searchStr}) {
         articleRef.current.el.current.innerHTML =
             sanitizeHtml(theNote.text, semanticAddMark);
       }).catch(err => {
-        console.error(err);
+        console.error("while getting note:", err);
+        alert("Restart your device: " + err.message);
       });
     }
   });  // eslint-disable-line react-hooks/exhaustive-deps

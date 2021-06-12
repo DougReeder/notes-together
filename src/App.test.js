@@ -1,7 +1,16 @@
-import {render, waitFor} from '@testing-library/react';
+import auto from "fake-indexeddb/auto.js";
 import App from './App';
+import {render, waitFor} from '@testing-library/react';
 import userEvent from "@testing-library/user-event";
+import {init} from "./idbNotes";
 
+
+beforeAll(done => {
+  init("testDb").then(theDb => {
+    // console.log("fake db:", db.name, db.version, db.objectStoreNames);
+    done();
+  });
+});
 
 test('adds a note with search words when add button pressed', async () => {
   const searchWords = "a perfectly arranged marriage";
@@ -12,7 +21,7 @@ test('adds a note with search words when add button pressed', async () => {
   const countEl = app.querySelector('div.count')
   expect(countEl).toBeInTheDocument();
 
-  await waitFor( () => expect(parseInt(countEl.innerHTML, 10)).toBeGreaterThan(0)
+  await waitFor( () => expect(parseInt(countEl.innerHTML, 10)).toBeGreaterThanOrEqual(0)
   );
   const oldCount = parseInt(countEl.innerHTML, 10);
 

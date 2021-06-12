@@ -1,10 +1,11 @@
 // List.js - List component for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import {INCIPIT_LENGTH} from "./Note";
+import sanitizeHtml from 'sanitize-html';
+import {findNotes, deleteNote} from "./idbNotes";
 import React, {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
-import {searchNotes, deleteNote} from "./idbNotes";
-import sanitizeHtml from 'sanitize-html';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 
@@ -56,15 +57,17 @@ function List(props) {
   const [itemButtonsIds, setItemButtonIds] = useState({});
 
   useEffect(() => {
-    searchNotes(searchStr, callback);
+    // console.log("launching search")
+    findNotes(searchStr, callback);
 
-    function callback(err, notes, {isPartial, isFinal}) {
+    function callback(err, notes, {isPartial, isFinal} = {}) {
       try {
         if (err) {
           return setListErr(err);
         } else {
           setListErr(null);
         }
+        console.log(`search returned with ${notes?.length} notes`);
 
         setNotes(notes);
         changeCount(notes.length, isPartial);
@@ -77,13 +80,13 @@ function List(props) {
   const externalChangeListener = evt => {
     if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
     const notesChanged = evt.data?.notesChanged || {};
-    const notesAdded = evt.data?.notesAdded || {};
     const notesDeleted = evt.data?.notesDeleted || {};
 
     const newNotes = [];
     let isSelectedInList = false;
     let isChanged = false;
     notes.forEach((note) => {
+      // TODO: delete should override change
       if (notesChanged.hasOwnProperty(note.id)) {
         // TODO: verify that it still matches search string
         newNotes.push(notesChanged[note.id]);
@@ -100,10 +103,10 @@ function List(props) {
         isSelectedInList = true;
       }
     });
-    // TODO: add notes from notesAdded that match (& sort?)
+    // TODO: add notes from notesChanged that match (& sort?)
 
     if (!isSelectedInList) {
-      let selectedNote = notesChanged[selectedNoteId] || notesAdded[selectedNoteId];
+      let selectedNote = notesChanged[selectedNoteId];
       if (selectedNote && ! notesDeleted.hasOwnProperty(selectedNoteId)) {
         // note just added
         newNotes.unshift(selectedNote);
@@ -112,7 +115,7 @@ function List(props) {
     }
 
     if (isChanged) {
-      console.log("List externalChange", notesChanged, notesAdded, notesDeleted);
+      console.log("List externalChange", notesChanged, notesDeleted);
       setNotes(newNotes);
       changeCount(newNotes.length);
     }
@@ -174,7 +177,7 @@ function List(props) {
   } else if (notes.length > 0) {
     listItems = notes.map(
         (note) => {
-          const incipit = note.text.slice(0, 300);
+          const incipit = note.hasOwnProperty('incipit') ? note.incipit : note.text.slice(0, INCIPIT_LENGTH);
           const cleanHtml = sanitizeHtml(incipit, uniformList);
           let itemButtons;
           if (note.id in itemButtonsIds) {
