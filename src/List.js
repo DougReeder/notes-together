@@ -11,7 +11,7 @@ import {CSSTransition} from "react-transition-group";
 
 const uniformList = {allowedTags: [ 'p', 'div',
     'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-    'i', 'b', 'strike', 'sub', 'sup',
+    'strike', 'sub', 'sup',
     'code', 'br', 'hr', 'pre',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td',
   ],
@@ -35,8 +35,6 @@ const uniformList = {allowedTags: [ 'p', 'div',
     'aside': 'div',
     'textarea': 'div',
     'blockquote': 'div',
-    'em': 'i',
-    'strong': 'b'
   },
   nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl', 'rp', 'rt' ],
   enforceHtmlBoundary: true,
@@ -114,8 +112,8 @@ function List(props) {
       }
     }
 
+    console.log("List externalChange", isChanged, notesChanged, notesDeleted);
     if (isChanged) {
-      console.log("List externalChange", notesChanged, notesDeleted);
       setNotes(newNotes);
       changeCount(newNotes.length);
     }

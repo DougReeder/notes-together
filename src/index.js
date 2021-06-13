@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import {init} from "./idbNotes";
+import '@fontsource/roboto';
 import reportWebVitals from './reportWebVitals';
-import {init, seedNotes} from "./idbNotes";
 
 init().then(db => {
   // console.log("db initialized:", db.name, db.version, db.objectStoreNames);
-  return seedNotes();
 });
 
 ReactDOM.render(
