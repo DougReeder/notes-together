@@ -87,16 +87,16 @@ function Detail({noteId, searchStr}) {
         if (isLikelyMarkdown(text)) {
           const parsed = markdownReader.parse(text);
           let html = markdownWriter.render(parsed);
-          html = html.replace(/(?<=[A-Za-z])\^2(?!\d)/g, "²");
-          html = html.replace(/(?<=[A-Za-z])\^3(?!\d)/g, "³");
-          html = html.replace(/(?<=[A-Za-z])\^1(?!\d)/g, "¹");
-          html = html.replace(/(?<=[A-Za-z])\^0(?!\d)/g, "⁰");
-          html = html.replace(/(?<=[A-Za-z])\^4(?!\d)/g, "⁴");
-          html = html.replace(/(?<=[A-Za-z])\^5(?!\d)/g, "⁵");
-          html = html.replace(/(?<=[A-Za-z])\^6(?!\d)/g, "⁶");
-          html = html.replace(/(?<=[A-Za-z])\^7(?!\d)/g, "⁷");
-          html = html.replace(/(?<=[A-Za-z])\^8(?!\d)/g, "⁸");
-          html = html.replace(/(?<=[A-Za-z])\^9(?!\d)/g, "⁹");
+          html = html.replace(/([A-Za-z])\^2(?!\d)/g, "$1²");
+          html = html.replace(/([A-Za-z])\^3(?!\d)/g, "$1³");
+          html = html.replace(/([A-Za-z])\^1(?!\d)/g, "$1¹");
+          html = html.replace(/([A-Za-z])\^0(?!\d)/g, "$1⁰");
+          html = html.replace(/([A-Za-z])\^4(?!\d)/g, "$1⁴");
+          html = html.replace(/([A-Za-z])\^5(?!\d)/g, "$1⁵");
+          html = html.replace(/([A-Za-z])\^6(?!\d)/g, "$1⁶");
+          html = html.replace(/([A-Za-z])\^7(?!\d)/g, "$1⁷");
+          html = html.replace(/([A-Za-z])\^8(?!\d)/g, "$1⁸");
+          html = html.replace(/([A-Za-z])\^9(?!\d)/g, "$1⁹");
           pasteHtml(html);
         } else if (/<svg\s[^>]*>/.test(text)) {
           pasteHtml(text);

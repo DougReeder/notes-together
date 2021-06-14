@@ -25,7 +25,7 @@ function isLikelyMarkdown(text) {
   if (/(^|\n)\s{0,3}[*+-]\s.*\s+[*+-]\s/.test(text)) {
     return true;   // unordered list
   }
-  if (/(?<=[A-Za-z])\^[23](?!\d)/.test(text)) {
+  if (/[A-Za-z]\^[23](?!\d)/.test(text)) {
     return true;   // letter-caret-2 or letter-caret-3
   }
   return false;
