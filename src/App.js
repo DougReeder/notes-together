@@ -20,10 +20,14 @@ function App() {
   const handleSelect = id => setSelectedNoteId(id);
 
   async function addNote() {
-    const newNote = createMemoryNote(null, "<br />" + searchStr);
-    // console.log("adding note:", newNote);
-    setSelectedNoteId(newNote.id);
-    await upsertNote(newNote);
+    try {
+      const newNote = createMemoryNote(null, "<br />" + searchStr);
+      // console.log("adding note:", newNote);
+      setSelectedNoteId(newNote.id);
+      await upsertNote(newNote);
+    } catch (err) {
+      setTransientErr(err);
+    }
   }
 
   const externalChangeListener = evt => {

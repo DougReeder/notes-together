@@ -226,7 +226,10 @@ function getNote(id) {
         if (evt.target.result) {
           resolve(evt.target.result);
         } else {
-          reject(new Error("no note with id=" + id));
+          const err = new Error("no note with id=" + id);
+          console.log("getNote:", err.message);
+          err.name = "MissingError";
+          reject(err);
         }
       };
       getRequest.onerror = function (evt) {
