@@ -38,6 +38,7 @@ function Detail({noteId, searchStr}) {
   const [noteText, setNoteText] = useState();
 
   useEffect(() => {
+    setNoteErr(null);
     if (Number.isFinite(noteId)) {
       getNote(noteId).then(theNote => {
         setNoteText(sanitizeHtml(theNote.text, semanticAddMark))

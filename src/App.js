@@ -109,9 +109,9 @@ function App() {
               <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
             </Menu>
           </header>
-          <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
+          <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
           <button className="actionBtn" onClick={addNote}><span>+</span></button>
-          <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose}>
+          <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
             <Alert onClose={handleSnackbarClose} severity="error">
               <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
               {transientErr?.message || transientErr?.name || transientErr?.toString()}

@@ -45,7 +45,7 @@ const uniformList = {allowedTags: [ 'p', 'div',
 // TODO: allow SVG tags
 
 function List(props) {
-  const {searchStr, changeCount, selectedNoteId, handleSelect} = props;
+  const {searchStr, changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -76,46 +76,50 @@ function List(props) {
   }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const externalChangeListener = evt => {
-    if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
-    const notesChanged = evt.data?.notesChanged || {};
-    const notesDeleted = evt.data?.notesDeleted || {};
+    try {
+      if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
+      const notesChanged = evt.data?.notesChanged || {};
+      const notesDeleted = evt.data?.notesDeleted || {};
 
-    const newNotes = [];
-    let isSelectedInList = false;
-    let isChanged = false;
-    notes.forEach((note) => {
-      // TODO: delete should override change
-      if (notesChanged.hasOwnProperty(note.id)) {
-        // TODO: verify that it still matches search string
-        newNotes.push(notesChanged[note.id]);
-        isChanged = true;
-      } else {
-        if (notesDeleted.hasOwnProperty(note.id)) {
+      const newNotes = [];
+      let isSelectedInList = false;
+      let isChanged = false;
+      notes.forEach((note) => {
+        // TODO: delete should override change
+        if (notesChanged.hasOwnProperty(note.id)) {
+          // TODO: verify that it still matches search string
+          newNotes.push(notesChanged[note.id]);
           isChanged = true;
         } else {
-          newNotes.push(note);
+          if (notesDeleted.hasOwnProperty(note.id)) {
+            isChanged = true;
+          } else {
+            newNotes.push(note);
+          }
+        }
+
+        if (note.id === selectedNoteId) {
+          isSelectedInList = true;
+        }
+      });
+      // TODO: add notes from notesChanged that match (& sort?)
+
+      if (!isSelectedInList) {
+        let selectedNote = notesChanged[selectedNoteId];
+        if (selectedNote && !notesDeleted.hasOwnProperty(selectedNoteId)) {
+          // note just added
+          newNotes.unshift(selectedNote);
+          isChanged = true;
         }
       }
 
-      if (note.id === selectedNoteId) {
-        isSelectedInList = true;
+      console.log("List externalChange", isChanged, notesChanged, notesDeleted);
+      if (isChanged) {
+        setNotes(newNotes);
+        changeCount(newNotes.length);
       }
-    });
-    // TODO: add notes from notesChanged that match (& sort?)
-
-    if (!isSelectedInList) {
-      let selectedNote = notesChanged[selectedNoteId];
-      if (selectedNote && ! notesDeleted.hasOwnProperty(selectedNoteId)) {
-        // note just added
-        newNotes.unshift(selectedNote);
-        isChanged = true;
-      }
-    }
-
-    console.log("List externalChange", isChanged, notesChanged, notesDeleted);
-    if (isChanged) {
-      setNotes(newNotes);
-      changeCount(newNotes.length);
+    } catch (err) {
+      setTransientErr(err);
     }
   };
   useEffect( () => {
@@ -127,46 +131,62 @@ function List(props) {
   });
 
   function onClick(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const noteEl = evt.target.closest("li.note");
-    const id = Number(noteEl?.dataset?.id);
-    if (Number.isFinite(id)) {
-      lastSelectedNoteId.current.unshift(selectedNoteId);
-      lastSelectedNoteId.current.length = 2;
-      handleSelect(id);
+    try {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const noteEl = evt.target.closest("li.note");
+      const id = Number(noteEl?.dataset?.id);
+      if (Number.isFinite(id)) {
+        lastSelectedNoteId.current.unshift(selectedNoteId);
+        lastSelectedNoteId.current.length = 2;
+        handleSelect(id);
+      }
+    } catch (err) {
+      setTransientErr(err);
     }
   }
 
   // TODO: mobile-friendly way to invoke this, such as swipe
   function onDoubleClick(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const noteEl = evt.target.closest("li.note");
-    const id = Number(noteEl?.dataset?.id);
-    const newItemButtonIds = Object.assign({}, itemButtonsIds);
-    for (let currentId in newItemButtonIds) {
-      newItemButtonIds[currentId] = false;
+    try {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const noteEl = evt.target.closest("li.note");
+      const id = Number(noteEl?.dataset?.id);
+      const newItemButtonIds = Object.assign({}, itemButtonsIds);
+      for (let currentId in newItemButtonIds) {
+        newItemButtonIds[currentId] = false;
+      }
+      if (Number.isFinite(id) && !(id in newItemButtonIds)) {
+        handleSelect(lastSelectedNoteId.current[1]);
+        newItemButtonIds[id] = true;
+      }
+      setItemButtonIds(newItemButtonIds);
+    } catch (err) {
+      setTransientErr(err);
     }
-    if (Number.isFinite(id) && !(id in newItemButtonIds)) {
-      handleSelect(lastSelectedNoteId.current[1]);
-      newItemButtonIds[id] = true;
-    }
-    setItemButtonIds(newItemButtonIds);
   }
 
   function exitItemButtons(id) {
-    const newItemButtonIds = Object.assign({}, itemButtonsIds);
-    delete newItemButtonIds[id];
-    setItemButtonIds(newItemButtonIds);
+    try {
+      const newItemButtonIds = Object.assign({}, itemButtonsIds);
+      delete newItemButtonIds[id];
+      setItemButtonIds(newItemButtonIds);
+    } catch (err) {
+      setTransientErr(err);
+    }
   }
 
-  function deleteItem(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const noteEl = evt.target.closest("li.note");
-    const id = Number(noteEl?.dataset?.id);
-    deleteNote(id);
+  async function deleteItem(evt) {
+    try {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const noteEl = evt.target.closest("li.note");
+      const id = Number(noteEl?.dataset?.id);
+      await deleteNote(id);
+    } catch (err) {
+      setTransientErr(err);
+    }
   }
 
   let listItems;
@@ -221,7 +241,8 @@ List.propTypes = {
   searchStr: PropTypes.string,
   changeCount: PropTypes.func,
   selectedNoteId: PropTypes.number,
-  handleSelect: PropTypes.func
+  handleSelect: PropTypes.func,
+  setTransientErr: PropTypes.func,
 }
 
 export default List;

@@ -278,21 +278,25 @@ function deleteNote(id) {
       const itemStore = transaction.objectStore("note");
       const deleteRequest = itemStore['delete'](id);
       deleteRequest.onsuccess = function (evt) {
-        // noteService.setFirstUnexportedChange().then(function (prefResult) {
-        const notesDeleted = {};
-        notesDeleted[id] = true;
-        window.postMessage({
-          kind: 'NOTE_CHANGE',
-          notesChanged: {},
-          notesDeleted
-        }, window.location.origin);
+        try {
+          // noteService.setFirstUnexportedChange().then(function (prefResult) {
+          const notesDeleted = {};
+          notesDeleted[id] = true;
+          window.postMessage({
+            kind: 'NOTE_CHANGE',
+            notesChanged: {},
+            notesDeleted
+          }, window.location.origin);
 
-        // evt.target.result is always undefined
-        resolve(id);
-        // });
+          // evt.target.result is always undefined
+          resolve(id);
+        } catch (err) {
+          console.error("IDB deleteNote 1:", err);
+          reject(err);
+        }
       };
       deleteRequest.onerror = function (evt) {
-        console.error("IDB deleteNote:", evt.target.error);
+        console.error("IDB deleteNote 2:", evt.target.error);
         evt.stopPropagation();
         reject(evt.target.error);
       };
