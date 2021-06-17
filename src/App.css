@@ -86,10 +86,10 @@
 
 .panelDetail {
   box-sizing: border-box;
-  padding: 1em;
 
   position: relative;
 
+  background-color: #eeeeee;
   overflow-x: hidden;
 }
 

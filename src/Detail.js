@@ -7,6 +7,7 @@ import ContentEditable from 'react-contenteditable';
 import sanitizeHtml from 'sanitize-html';
 import {Parser, HtmlRenderer} from 'commonmark';
 import "./Detail.css";
+import {Box, Input, Toolbar} from "@material-ui/core";
 import {Alert, AlertTitle} from "@material-ui/lab";
 
 
@@ -30,18 +31,20 @@ function Detail({noteId, searchStr}) {
         delete semanticAddMark.textFilter;
       }
     } catch (err) {
-      console.error("Detail handleChange:", err);
+      console.error("Detail set textFilter:", err);
       setNoteErr(err);
     }
   }, [searchStr]);
 
   const [noteText, setNoteText] = useState();
+  const [noteDate, setNoteDate] = useState();
 
   useEffect(() => {
     setNoteErr(null);
     if (Number.isFinite(noteId)) {
       getNote(noteId).then(theNote => {
-        setNoteText(sanitizeHtml(theNote.text, semanticAddMark))
+        setNoteText(sanitizeHtml(theNote.text, semanticAddMark));
+        setNoteDate(theNote.date);
       }).catch(err => {
         // eslint-disable-next-line
         switch (err.name) {
@@ -58,12 +61,28 @@ function Detail({noteId, searchStr}) {
     }
   }, [noteId, searchStr]);
 
-  const handleChange = async evt => {
+  const handleTextChange = async evt => {
     try {
       setNoteErr(null);
-      await upsertNote(createMemoryNote(noteId, evt.target.value));
+      setNoteText(evt.target.value);
+      await upsertNote(createMemoryNote(noteId, evt.target.value, noteDate));
     } catch (err) {
-      console.error("Detail handleChange:", err);
+      console.error("Detail handleTextChange:", err);
+      setNoteErr(err);
+    }
+  }
+
+  async function handleDateChange(evt) {
+    try {
+      setNoteErr(null);
+      const year = parseInt(evt.target.value.slice(0, 4), 10);
+      const month = parseInt(evt.target.value.slice(5, 7), 10);
+      const day = parseInt(evt.target.value.slice(8, 10), 10);
+      const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
+      setNoteDate(newDate);
+      await upsertNote(createMemoryNote(noteId, noteText, newDate));
+    } catch (err) {
+      console.error("Detail handleDateChange:", err);
       setNoteErr(err);
     }
   }
@@ -122,20 +141,37 @@ function Detail({noteId, searchStr}) {
 
   const [noteErr, setNoteErr] = useState();
 
-  if (!noteErr) {
-    return (<ContentEditable
-        html={noteText || ""}
-        disabled={false}       // use true to disable editing
-        onChange={handleChange} // handle innerHTML change
-        onPaste={pasteSemanticOnly}
-        tagName='article' // Use a custom HTML tag (uses a div by default)
-    />);
-  } else {
-    return (<Alert severity={noteErr.severity || "error"}>
+  const monthStr = ("0" + (noteDate?.getMonth()+1)).slice(-2);
+  const dayStr = ("0" + noteDate?.getDate()).slice(-2);
+  const dateStr = `${noteDate?.getFullYear()}-${monthStr}-${dayStr}`;
+
+  let content;
+  if (noteErr) {
+    content = (<Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
       <AlertTitle>{noteErr?.userMsg || "Restart your device"}</AlertTitle>
       {noteErr?.message || noteErr?.name || noteErr?.toString()}
     </Alert>);
+  } else {
+    content = (<ContentEditable
+        html={noteText || ""}
+        disabled={false}       // use true to disable editing
+        onChange={handleTextChange} // handle innerHTML change
+        onPaste={pasteSemanticOnly}
+        tagName='article' // Use a custom HTML tag (uses a div by default)
+        style={{padding: "2ex"}}
+    />);
   }
+
+  return (<Box style={{height: "100%"}} display="flex" flexDirection="column" alignItems="stretch" bgcolor="background.paper">
+      <Box flexGrow={1} flexShrink={1} style={{overflowY: "auto", backgroundColor: "#fff"}}>
+        {content}
+      </Box>
+      <Box flexGrow={0} style={{backgroundColor: "#ccc"}}>
+        <Toolbar>
+          {Boolean(noteDate) && ! noteErr ? <Input type="date" value={dateStr} onChange={handleDateChange} /> : null}
+        </Toolbar>
+      </Box>
+  </Box>);
 }
 
 Detail.propTypes = {
