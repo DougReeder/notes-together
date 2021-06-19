@@ -1,5 +1,5 @@
 import {createMemoryNote} from './Note';
-import {upsertNote, deleteFillerNotes} from './idbNotes';
+import {parseWords, upsertNote, deleteFillerNotes} from './idbNotes';
 import React, {useState, useEffect} from 'react';
 import List from './List';
 import Detail from './Detail'
@@ -11,7 +11,11 @@ import {randomNote, seedNotes} from "./testNotes";
 function App() {
   // TODO: replace string with set of normalized search terms
   const [searchStr, setSearchStr] = useState("");
-  const onSearchChange = event => setSearchStr(event.target.value);
+  const [searchWords, setSearchWords] = useState(new Set());
+  const onSearchChange = evt => {
+    setSearchStr(evt.target.value);
+    setSearchWords(parseWords(evt.target.value));
+  }
 
   const [count, setCount] = useState(" ");
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
@@ -109,7 +113,7 @@ function App() {
               <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
             </Menu>
           </header>
-          <List searchStr={searchStr} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
+          <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
           <button className="actionBtn" onClick={addNote}><span>+</span></button>
           <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
             <Alert onClose={handleSnackbarClose} severity="error">

@@ -69,10 +69,10 @@ let findNotesTransaction;
 /**
  * Searches for notes which match (as a prefix) each word in searchStr.
  * Returns *stubs*: notes with incipit instead of the full text.
- * @param searchStr
+ * @param searchWords Set of keywords
  * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than MAX_NOTES_FOUND matching notes
  */
-function findNotes(searchStr, callback) {
+function findNotes(searchWords, callback) {
   dbPrms.then(db => {
     if (findNotesTransaction) {
       // aborts any pending call in favor of this call
@@ -97,12 +97,11 @@ function findNotes(searchStr, callback) {
     //   evt.stopPropagation();
     // }
     const noteStore = findNotesTransaction.objectStore("note");
-    const searchWords = parseWords(searchStr);
 
     if (searchWords.size === 0) {
       sortedNotes(callback, noteStore);
     } else {
-      searchNotes(callback, noteStore, searchWords);
+      searchNotes(callback, noteStore, new Set(searchWords));
     }
   }).catch(err => {
     callback(err);
@@ -405,4 +404,4 @@ function deleteFillerNotes() {
 }
 
 
-export {init, findNotes, getNote, upsertNote, deleteNote, parseWords, deleteFillerNotes};
+export {init, findNotes, getNote, upsertNote, deleteNote, toDbNote, parseWords, deleteFillerNotes};

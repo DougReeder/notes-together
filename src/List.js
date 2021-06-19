@@ -2,6 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import {INCIPIT_LENGTH} from "./Note";
+import {uniformList, updateListWithChanges} from "./listUtil";
 import sanitizeHtml from 'sanitize-html';
 import {findNotes, deleteNote} from "./idbNotes";
 import React, {useState, useEffect, useRef} from 'react';
@@ -9,43 +10,9 @@ import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 
-const uniformList = {allowedTags: [ 'p', 'div',
-    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-    'strike', 'sub', 'sup',
-    'code', 'br', 'hr', 'pre',
-    'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td',
-  ],
-  allowedAttributes: {
-    a: [ 'href', 'name', 'target' ],
-    img: [ 'src', 'srcset', 'alt' ]
-  },
-  allowedSchemes: [ 'data' ],
-  transformTags: {
-    'h1': 'div',
-    'h2': 'div',
-    'h3': 'div',
-    'h4': 'div',
-    'h5': 'div',
-    'h6': 'div',
-    'header': 'div',
-    'footer': 'div',
-    'main': 'div',
-    'section': 'div',
-    'article': 'div',
-    'aside': 'div',
-    'textarea': 'div',
-    'blockquote': 'div',
-  },
-  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl', 'rp', 'rt' ],
-  enforceHtmlBoundary: true,
-  parser: {
-    decodeEntities: false,
-  }
-};
-// TODO: allow SVG tags
 
 function List(props) {
-  const {searchStr, changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
+  const {searchWords, changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -56,7 +23,7 @@ function List(props) {
 
   useEffect(() => {
     // console.log("launching search")
-    findNotes(searchStr, callback);
+    findNotes(searchWords, callback);
 
     function callback(err, notes, {isPartial, isFinal} = {}) {
       try {
@@ -73,7 +40,7 @@ function List(props) {
         setListErr(err2);
       }
     }
-  }, [searchStr]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchWords]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const externalChangeListener = evt => {
     try {
@@ -81,37 +48,7 @@ function List(props) {
       const notesChanged = evt.data?.notesChanged || {};
       const notesDeleted = evt.data?.notesDeleted || {};
 
-      const newNotes = [];
-      let isSelectedInList = false;
-      let isChanged = false;
-      notes.forEach((note) => {
-        // TODO: delete should override change
-        if (notesChanged.hasOwnProperty(note.id)) {
-          // TODO: verify that it still matches search string
-          newNotes.push(notesChanged[note.id]);
-          isChanged = true;
-        } else {
-          if (notesDeleted.hasOwnProperty(note.id)) {
-            isChanged = true;
-          } else {
-            newNotes.push(note);
-          }
-        }
-
-        if (note.id === selectedNoteId) {
-          isSelectedInList = true;
-        }
-      });
-      // TODO: add notes from notesChanged that match (& sort?)
-
-      if (!isSelectedInList) {
-        let selectedNote = notesChanged[selectedNoteId];
-        if (selectedNote && !notesDeleted.hasOwnProperty(selectedNoteId)) {
-          // note just added
-          newNotes.unshift(selectedNote);
-          isChanged = true;
-        }
-      }
+      const {isChanged, newNotes} = updateListWithChanges(notes, notesChanged, notesDeleted, searchWords);
 
       console.log("List externalChange", isChanged, notesChanged, notesDeleted);
       if (isChanged) {
@@ -215,7 +152,7 @@ function List(props) {
         }
     );
   } else {
-    if (searchStr.trim().length > 0) {
+    if (searchWords.size > 0) {
       listItems = <div className="advice">
         <h2>No Matching Notes</h2>
         Try just the first few letters of your search word(s), or synonyms of them.
@@ -238,7 +175,7 @@ function List(props) {
 }
 
 List.propTypes = {
-  searchStr: PropTypes.string,
+  searchWords: PropTypes.instanceOf(Set),
   changeCount: PropTypes.func,
   selectedNoteId: PropTypes.number,
   handleSelect: PropTypes.func,

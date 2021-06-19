@@ -405,7 +405,7 @@ describe("findNotes", () => {
   });
 
   it("should return all notes when no words in search string", done => {
-    findNotes(" .@ *) -—-", callback);
+    findNotes(parseWords(" .@ *) -—-"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -447,7 +447,7 @@ describe("findNotes", () => {
   });
 
   it("should return notes containing words which start with the only search word", done => {
-    findNotes("th", callback);
+    findNotes(parseWords("th"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -489,7 +489,7 @@ describe("findNotes", () => {
   });
 
   it("should return notes containing words which start with each of the search words", done => {
-    findNotes("th don", callback);
+    findNotes(parseWords("th don"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -546,7 +546,7 @@ describe("findNotes (max)", () => {
   });
 
   it("should return 500 notes when search string is empty", done => {
-    findNotes("", callback);
+    findNotes(new Set(), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -584,7 +584,7 @@ describe("findNotes (max)", () => {
   });
 
   it("should return 500 notes with multiple search words", done => {
-    findNotes("Some-thin rathE s.h.o.r.", callback);
+    findNotes(parseWords("Some-thin rathE s.h.o.r."), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -650,7 +650,7 @@ xdescribe("findNotes (stress)", () => {
   });
 
   it("should return a maximum of 500 notes when search string is empty", done => {
-    findNotes("", callback);
+    findNotes(new Set(), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -688,7 +688,8 @@ xdescribe("findNotes (stress)", () => {
   });
 
   it("should return a maximum of 500 notes with multiple search words", done => {
-    findNotes("177 congres declaratio governmen self-eviden", callback);
+    const searchWords = parseWords("177 congres declaratio governmen self-eviden");
+    findNotes(searchWords, callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
