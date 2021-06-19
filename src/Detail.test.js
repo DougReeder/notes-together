@@ -1,5 +1,10 @@
 import {createMemoryNote} from './Note';
-import {render, act, screen, waitFor, findByRole, findByText, fireEvent, getByText} from '@testing-library/react';
+import {
+  render,
+  act,
+  waitFor,
+  waitForElementToBeRemoved
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getNote, upsertNote} from "./idbNotes.js";
 import Detail from "./Detail";
@@ -15,6 +20,21 @@ test('renders text of note', async () => {
     const {findByText} = render(<Detail noteId={noteId}></Detail>);
     const textEl = await findByText(noteText);
     expect(textEl).toBeInTheDocument();
+  });
+});
+
+test("clears text & date when noteId set to null", async () => {
+  const noteId = 69;
+  const noteText = "Dogcatcher Emeritus";
+  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+
+  await act(async () => {
+    const {findByText, rerender, queryByText} = render(<Detail noteId={noteId}></Detail>);
+    const textEl = await findByText(noteText);
+    expect(textEl).toBeInTheDocument();
+
+    rerender(<Detail noteId={null}></Detail>);
+    await waitForElementToBeRemoved(() => queryByText(noteText));
   });
 });
 

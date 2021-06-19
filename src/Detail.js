@@ -58,6 +58,9 @@ function Detail({noteId, searchStr}) {
         }
         setNoteErr(err);
       });
+    } else {
+      setNoteText("");
+      setNoteDate(null);
     }
   }, [noteId, searchStr]);
 
