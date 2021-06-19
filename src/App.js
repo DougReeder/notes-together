@@ -23,15 +23,21 @@ function App() {
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const handleSelect = id => setSelectedNoteId(id);
 
+  const [focusOnLoad, setFocusOnLoad] = useState(false);
   async function addNote() {
     try {
-      const newNote = createMemoryNote(null, "<br />" + searchStr);
+      const initialText = searchStr.trim() ? "<br />" + searchStr.trim() + "&nbsp;" : "";
+      const newNote = createMemoryNote(null, initialText);
       // console.log("adding note:", newNote);
-      setSelectedNoteId(newNote.id);
       await upsertNote(newNote);
+      setFocusOnLoad(true);
+      setSelectedNoteId(newNote.id);
     } catch (err) {
       setTransientErr(err);
     }
+  }
+  function clearFocusOnLoad() {
+    setFocusOnLoad(false);
   }
 
   const externalChangeListener = evt => {
@@ -123,7 +129,7 @@ function App() {
           </Snackbar>
         </div>
         <div className="panelDetail">
-          <Detail noteId={selectedNoteId} searchStr={searchStr}></Detail>
+          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad ? clearFocusOnLoad : null}></Detail>
         </div>
       </div>
   );

@@ -1,6 +1,6 @@
 import {createMemoryNote, semanticOnly} from './Note';
 import {isLikelyMarkdown} from "./util";
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import PropTypes from 'prop-types';
 import {getNote, upsertNote} from "./idbNotes";
 import ContentEditable from 'react-contenteditable';
@@ -15,7 +15,7 @@ const markdownReader = new Parser({smart: true});
 const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
 const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
-function Detail({noteId, searchStr}) {
+function Detail({noteId, searchStr = "", focusOnLoadCB}) {
 
   useEffect(() => {
     try {
@@ -38,6 +38,7 @@ function Detail({noteId, searchStr}) {
 
   const [noteText, setNoteText] = useState();
   const [noteDate, setNoteDate] = useState();
+  const editable = useRef(null);
 
   useEffect(() => {
     setNoteErr(null);
@@ -45,6 +46,10 @@ function Detail({noteId, searchStr}) {
       getNote(noteId).then(theNote => {
         setNoteText(sanitizeHtml(theNote.text, semanticAddMark));
         setNoteDate(theNote.date);
+        if ('function' === typeof focusOnLoadCB) {
+          editable?.current?.el?.current?.focus();
+          focusOnLoadCB();
+        }
       }).catch(err => {
         // eslint-disable-next-line
         switch (err.name) {
@@ -62,7 +67,7 @@ function Detail({noteId, searchStr}) {
       setNoteText("");
       setNoteDate(null);
     }
-  }, [noteId, searchStr]);
+  }, [noteId, searchStr, focusOnLoadCB]);
 
   const handleTextChange = async evt => {
     try {
@@ -158,6 +163,7 @@ function Detail({noteId, searchStr}) {
     content = (<ContentEditable
         html={noteText || ""}
         disabled={false}       // use true to disable editing
+        ref={editable}
         onChange={handleTextChange} // handle innerHTML change
         onPaste={pasteSemanticOnly}
         tagName='article' // Use a custom HTML tag (uses a div by default)
@@ -179,6 +185,8 @@ function Detail({noteId, searchStr}) {
 
 Detail.propTypes = {
   noteId: PropTypes.number,
+  searchStr: PropTypes.string,
+  focusOnLoadCB: PropTypes.func,
 };
 
 export default Detail;

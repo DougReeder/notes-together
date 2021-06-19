@@ -1,6 +1,7 @@
 import {createMemoryNote} from './Note';
 import {
   render,
+  screen,
   act,
   waitFor,
   waitForElementToBeRemoved
@@ -20,6 +21,7 @@ test('renders text of note', async () => {
     const {findByText} = render(<Detail noteId={noteId}></Detail>);
     const textEl = await findByText(noteText);
     expect(textEl).toBeInTheDocument();
+    expect(textEl).not.toHaveFocus();
   });
 });
 
@@ -32,9 +34,27 @@ test("clears text & date when noteId set to null", async () => {
     const {findByText, rerender, queryByText} = render(<Detail noteId={noteId}></Detail>);
     const textEl = await findByText(noteText);
     expect(textEl).toBeInTheDocument();
+    expect(textEl).not.toHaveFocus();
 
     rerender(<Detail noteId={null}></Detail>);
     await waitForElementToBeRemoved(() => queryByText(noteText));
+    expect(textEl).not.toHaveFocus();
+  });
+});
+
+test('sets focus if requested', async () => {
+  const noteId = 23;
+  const noteText = "ambivalent"
+  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+  const focusOnLoadCB = jest.fn();
+
+  await act(async () => {
+    const {findByText} = render(<Detail noteId={noteId} focusOnLoadCB={focusOnLoadCB}></Detail>);
+    const textEl = await findByText(noteText);
+    expect(textEl).toBeInTheDocument();
+
+    expect(textEl).toHaveFocus();
+    expect(focusOnLoadCB.mock.calls.length).toBe(1);
   });
 });
 
@@ -56,7 +76,7 @@ xtest("saves on edit", async () => {
 
     const {findByRole} = render(<Detail noteId={noteId}></Detail>);
   });
-  const textEl = await findByRole('article');
+  const textEl = await screen.findByRole('article');
   expect(textEl).toBeInTheDocument();
 
   userEvent.type(textEl, typedText)
