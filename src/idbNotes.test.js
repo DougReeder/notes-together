@@ -3,7 +3,7 @@
 
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
-import {init, getNote, findNotes, upsertNote, deleteNote, parseWords} from "./idbNotes";
+import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, parseWords} from "./idbNotes";
 
 function generateTestId() {
   return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
@@ -12,7 +12,7 @@ function generateTestId() {
 let db;
 
 beforeAll(done => {
-  init("testDb").then(theDb => {
+  initDb("testDb").then(theDb => {
     db = theDb;
     // console.log("fake db:", db.name, db.version, db.objectStoreNames);
     done();
@@ -248,49 +248,52 @@ describe("parseWords", () => {
   })
 });
 
-describe("getNote", () => {
+describe("getNoteDb", () => {
   beforeAll(async () => {
     await deleteTestNotes();
   });
 
   it("should reject when id is undefined", async () => {
-    await expect(getNote(undefined)).rejects.toThrow();
+    await expect(getNoteDb(undefined)).rejects.toThrow();
   });
 
-  it("should reject when note doesn't exist", async () => {
-    await expect(getNote(0)).rejects.toThrow("no note");
+  it("should return undefined when note doesn't exist", async () => {
+    await expect(getNoteDb(0)).resolves.toBeUndefined();
   });
 })
 
 
-describe("upsertNote", () => {
+describe("upsertNoteDb", () => {
   beforeAll(async () => {
     await deleteTestNotes();
   });
 
   it("should fail when passed a non-object", async () => {
-    await expect(upsertNote()).rejects.toThrow();
+    await expect(upsertNoteDb()).rejects.toThrow();
   });
 
-  it("should fail when passed a non-clonable date", async () => {
+  it("should use current date when passed a non-date, non-string in date field", async () => {
     const note = createMemoryNote(generateTestId(), "something");
     note.date = document.documentElement;
-    await expect(upsertNote(note)).rejects.toThrow();
+
+    const savedNote = await upsertNoteDb(note);
+
+    expect(savedNote.date).toBeInstanceOf(Date);
   });
 
   it("should fail when passed a note without ID", async () => {
-    await expect(upsertNote({})).rejects.toThrow('id');
+    await expect(upsertNoteDb({})).rejects.toThrow('id');
   });
 
   it("should fail when passed a note without text", async () => {
-    await expect(upsertNote({id:Number.MIN_SAFE_INTEGER-2})).rejects.toThrow('text');
+    await expect(upsertNoteDb({id:Number.MIN_SAFE_INTEGER-2})).rejects.toThrow('text');
   });
 
   it("should extract normalized keywords from note", async () => {
     const originalText = "editor-in-chief\n================<br>foo_bar Foo.bar </strong>_underlined_\n";
     const original = createMemoryNote(generateTestId(), originalText);
 
-    const savedNote = await upsertNote(original);
+    const savedNote = await upsertNoteDb(original);
     expect(savedNote.text).toEqual("editor-in-chief\n================<br />foo_bar Foo.bar _underlined_\n");
     expect(savedNote.wordArr).toContain("EDITORINCHIEF");
     expect(savedNote.wordArr).toContain("FOOBAR");
@@ -304,7 +307,7 @@ describe("upsertNote", () => {
     const originalText = "tar tarp tarpaulin workgroup workflow doorknob 2.10 2.10.3.8 door";
     const original = createMemoryNote(generateTestId(), originalText);
 
-    const savedNote = await upsertNote(original);
+    const savedNote = await upsertNoteDb(original);
     expect(savedNote.text).toEqual(originalText);
     expect(savedNote.wordArr).toContain("TARPAULIN");
     expect(savedNote.wordArr).not.toContain("TAR");
@@ -319,34 +322,66 @@ describe("upsertNote", () => {
     expect(savedNote.wordArr.length).toEqual(5);
   });
 
+  it("should pass through a date of type Date", async () => {
+    const memNote = createMemoryNote(generateTestId(), "excellent", new Date('2021-02-01T09:00:00.000Z'));
+
+    const savedNote = await upsertNoteDb(memNote);
+
+    expect(savedNote.date).toBeInstanceOf(Date);
+    expect(savedNote.date).toEqual(memNote.date);
+  });
+
+  it("should parse a string date into a Date", async () => {
+    const memNote = createMemoryNote(generateTestId(), "archangel");
+    memNote.date = '2021-03-01T06:00:00.000Z';
+
+    const savedNote = await upsertNoteDb(memNote);
+
+    expect(savedNote.date).toBeInstanceOf(Date);
+  });
+
+  it("should parse a number date into a Date", async () => {
+    const memNote = createMemoryNote(generateTestId(), "redecorate");
+    memNote.date = 1624176186133;
+
+    const savedNote = await upsertNoteDb(memNote);
+
+    expect(savedNote.date).toBeInstanceOf(Date);
+  });
+
   it("should insert a note",async () => {
     const originalId = generateTestId();
     const originalText = "Beggars <div>in Spain</div>";
-    const original = createMemoryNote(originalId, originalText);
+    const originalDate = new Date(1997, 5, 16, 9);
+    const original = createMemoryNote(originalId, originalText, originalDate);
 
-    const savedNote = await upsertNote(original);
+    const savedNote = await upsertNoteDb(original);
     expect(savedNote.id).toEqual(originalId);
     expect(savedNote.wordArr).toContain("BEGGARS");
     expect(savedNote.wordArr).toContain("IN");
     expect(savedNote.wordArr).toContain("SPAIN");
     expect(savedNote.wordArr.length).toEqual(3);
 
-    const retrieved = await getNote(originalId);
+    const retrieved = await getNoteDb(originalId);
     expect(retrieved.text).toEqual(originalText);
+    expect(retrieved.date).toEqual(originalDate);
   });
 
   it("should update a note",async () => {
     const originalId = generateTestId();
     const originalText = "<h1>In Memory Yet Green</h1>";
-    const original = createMemoryNote(originalId, originalText);
+    const originalDate = new Date(2003, 2, 15);
+    const original = createMemoryNote(originalId, originalText, originalDate);
 
-    await upsertNote(original);
+    await upsertNoteDb(original);
     const updatedText = "<h2>In Joy Still Felt</h2>";
-    const updated = createMemoryNote(originalId, updatedText);
-    await upsertNote(updated);
-    const retrieved = await getNote(originalId);
+    const updatedDate = new Date(2010, 3, 16);
+    const updated = createMemoryNote(originalId, updatedText, updatedDate);
+    await upsertNoteDb(updated);
+    const retrieved = await getNoteDb(originalId);
 
     expect(retrieved.text).toEqual(updatedText);
+    expect(retrieved.date).toEqual(updatedDate);
   });
 
   it("should normalize markup",async () => {
@@ -354,35 +389,35 @@ describe("upsertNote", () => {
     const originalText = "<header>A mind is a <strike>terrible thing</blockquote> to waste";
     const original = createMemoryNote(originalId, originalText);
 
-    await upsertNote(original);
+    await upsertNoteDb(original);
 
-    const retrieved = await getNote(originalId);
+    const retrieved = await getNoteDb(originalId);
     expect(retrieved.text).toEqual("<header>A mind is a <strike>terrible thing to waste</strike></header>");
   });
 });
 
-describe("deleteNote", () => {
+describe("deleteNoteDb", () => {
   it("should fail when passed a non-number", async () => {
-    await expect(deleteNote(undefined)).rejects.toThrow();
+    await expect(deleteNoteDb(undefined)).rejects.toThrow();
   });
 
   it("should remove note from storage", async () => {
     const id = generateTestId();
     const note = createMemoryNote(id, "Aroint, thee, knave!")
-    await upsertNote(note);
+    await upsertNoteDb(note);
 
-    const deletedId = await deleteNote(id);
+    const deletedId = await deleteNoteDb(id);
     expect(deletedId).toEqual(id);
-    await expect(getNote(id)).rejects.toThrow("no note");
+    await expect(getNoteDb(id)).resolves.toBeUndefined();
   });
 
   it("should succeed in deleting non-existent note", async () => {
-    const deletedId = await deleteNote(0);
+    const deletedId = await deleteNoteDb(0);
     expect(deletedId).toEqual(0);
   });
 });
 
-describe("findNotes", () => {
+describe("findStubs", () => {
   const note1 = createMemoryNote(generateTestId(), "<h2>The world</h2> set free");
   const note2 = createMemoryNote(generateTestId(), "Math <th>is not</th> my favorite");
   const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>");
@@ -390,22 +425,22 @@ describe("findNotes", () => {
   beforeAll(async () => {
     await deleteTestNotes();
 
-    await upsertNote(note1);
-    await upsertNote(note2);
-    await upsertNote(note3);
+    await upsertNoteDb(note1);
+    await upsertNoteDb(note2);
+    await upsertNoteDb(note3);
 
     for (let i = 0; i < 10; ++i) {
-      await upsertNote(createMemoryNote(generateTestId(), note1.text));
-      await upsertNote(createMemoryNote(generateTestId(), note2.text));
-      await upsertNote(createMemoryNote(generateTestId(), note3.text));
+      await upsertNoteDb(createMemoryNote(generateTestId(), note1.text));
+      await upsertNoteDb(createMemoryNote(generateTestId(), note2.text));
+      await upsertNoteDb(createMemoryNote(generateTestId(), note3.text));
     }
-    await upsertNote(createMemoryNote(generateTestId(), note2.text));
-    await upsertNote(createMemoryNote(generateTestId(), note3.text));
-    await upsertNote(createMemoryNote(generateTestId(), note3.text));
+    await upsertNoteDb(createMemoryNote(generateTestId(), note2.text));
+    await upsertNoteDb(createMemoryNote(generateTestId(), note3.text));
+    await upsertNoteDb(createMemoryNote(generateTestId(), note3.text));
   });
 
   it("should return all notes when no words in search string", done => {
-    findNotes(parseWords(" .@ *) -—-"), callback);
+    findStubs(parseWords(" .@ *) -—-"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -447,7 +482,7 @@ describe("findNotes", () => {
   });
 
   it("should return notes containing words which start with the only search word", done => {
-    findNotes(parseWords("th"), callback);
+    findStubs(parseWords("th"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -489,7 +524,7 @@ describe("findNotes", () => {
   });
 
   it("should return notes containing words which start with each of the search words", done => {
-    findNotes(parseWords("th don"), callback);
+    findStubs(parseWords("th don"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
@@ -534,19 +569,19 @@ describe("findNotes", () => {
   });
 });
 
-describe("findNotes (max)", () => {
+describe("findStubs (max)", () => {
   const text = "something rather short";
 
   beforeAll(async () => {
     await deleteTestNotes();
 
     for (let i = 0; i < 500; ++i) {
-      await upsertNote(createMemoryNote(generateTestId(), text));
+      await upsertNoteDb(createMemoryNote(generateTestId(), text));
     }
   });
 
   it("should return 500 notes when search string is empty", done => {
-    findNotes(new Set(), callback);
+    findStubs(new Set(), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -584,7 +619,7 @@ describe("findNotes (max)", () => {
   });
 
   it("should return 500 notes with multiple search words", done => {
-    findNotes(parseWords("Some-thin rathE s.h.o.r."), callback);
+    findStubs(parseWords("Some-thin rathE s.h.o.r."), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -622,7 +657,7 @@ describe("findNotes (max)", () => {
   });
 });
 
-xdescribe("findNotes (stress)", () => {
+xdescribe("findStubs (stress)", () => {
   jest.setTimeout(30000);
 
   const text = `<h1>In Congress, July 4, 1776</h1>
@@ -645,12 +680,12 @@ xdescribe("findNotes (stress)", () => {
     await deleteTestNotes();
 
     for (let i = 0; i < 600; ++i) {
-      await upsertNote(createMemoryNote(generateTestId(), text));
+      await upsertNoteDb(createMemoryNote(generateTestId(), text));
     }
   });
 
   it("should return a maximum of 500 notes when search string is empty", done => {
-    findNotes(new Set(), callback);
+    findStubs(new Set(), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {
@@ -689,7 +724,7 @@ xdescribe("findNotes (stress)", () => {
 
   it("should return a maximum of 500 notes with multiple search words", done => {
     const searchWords = parseWords("177 congres declaratio governmen self-eviden");
-    findNotes(searchWords, callback);
+    findStubs(searchWords, callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) {

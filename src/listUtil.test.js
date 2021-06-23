@@ -3,7 +3,8 @@
 
 import {updateListWithChanges} from "./listUtil";
 import {createMemoryNote} from "./Note";
-import {parseWords, toDbNote} from "./idbNotes";
+import {parseWords} from "./storage";
+import {toDbNote} from "./idbNotes";
 
 function generateTestId() {
   return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);

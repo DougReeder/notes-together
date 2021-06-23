@@ -7,10 +7,10 @@ import {
   waitForElementToBeRemoved
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {getNote, upsertNote} from "./idbNotes.js";
+import {upsertNote, getNote} from './storage';
 import Detail from "./Detail";
 
-jest.mock('./idbNotes.js');
+jest.mock('./storage.js');
 
 test('renders text of note', async () => {
   const noteId = 42;
@@ -56,6 +56,19 @@ test('sets focus if requested', async () => {
     expect(textEl).toHaveFocus();
     expect(focusOnLoadCB.mock.calls.length).toBe(1);
   });
+});
+
+it('renders error if note missing', async () => {
+  const noteId = 666;
+  getNote.mockResolvedValue(Promise.resolve(undefined));
+
+  await act(async () => {
+    render(<Detail noteId={noteId}></Detail>);
+  });
+
+  const textEl = await screen.findByText("no note with id=666");
+  expect(textEl).toBeInTheDocument();
+  expect(textEl).not.toHaveFocus();
 });
 
 xtest("saves on edit", async () => {

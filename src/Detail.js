@@ -2,7 +2,7 @@ import {createMemoryNote, semanticOnly} from './Note';
 import {isLikelyMarkdown} from "./util";
 import React, {useEffect, useRef, useState} from 'react';
 import PropTypes from 'prop-types';
-import {getNote, upsertNote} from "./idbNotes";
+import {getNote, upsertNote} from './storage';
 import ContentEditable from 'react-contenteditable';
 import sanitizeHtml from 'sanitize-html';
 import {Parser, HtmlRenderer} from 'commonmark';
@@ -44,22 +44,26 @@ function Detail({noteId, searchStr = "", focusOnLoadCB}) {
     setNoteErr(null);
     if (Number.isFinite(noteId)) {
       getNote(noteId).then(theNote => {
-        setNoteText(sanitizeHtml(theNote.text, semanticAddMark));
-        setNoteDate(theNote.date);
-        if ('function' === typeof focusOnLoadCB) {
-          editable?.current?.el?.current?.focus();
-          focusOnLoadCB();
+        if ('object' === typeof theNote) {
+          setNoteText(sanitizeHtml(theNote.text, semanticAddMark));
+          setNoteDate(theNote.date);
+          if ('function' === typeof focusOnLoadCB) {
+            editable?.current?.el?.current?.focus();
+            focusOnLoadCB();
+          }
+        } else {
+          const err = new Error("no note with id=" + noteId);
+          err.userMsg = "Did you delete this note in another tab?"
+          err.severity = 'warning';
+          setNoteErr(err);
         }
       }).catch(err => {
-        // eslint-disable-next-line
         switch (err.name) {
-          case "MissingError":
-            err.userMsg = "Did you delete this note in another tab?"
-            err.severity = 'warning';
-            break;
           case "SyntaxError":   // RegEx
             err.userMsg = "You can't search on that"
             err.severity = 'warning';
+            break;
+          default:
         }
         setNoteErr(err);
       });

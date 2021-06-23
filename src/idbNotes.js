@@ -1,4 +1,5 @@
-// idbNotes.js - IndexedDB facade for Notes Together
+// idbNotes.js - IndexedDB code for Notes Together
+// Should only be called by storage abstraction, not from front end.
 // Copyright © 2021 Doug Reeder
 
 import removeDiacritics from "./diacritics";
@@ -10,7 +11,7 @@ const MAX_NOTES_FOUND = 500;
 const dbNameDefault = "noteDb";
 let dbPrms;
 
-function init(dbName = dbNameDefault) {
+function initDb(dbName = dbNameDefault) {
   dbPrms = new Promise((resolve, reject) => {
     if (!window.indexedDB) {
       const err = new Error("missing IndexedDB: " + navigator.userAgent);
@@ -20,7 +21,7 @@ function init(dbName = dbNameDefault) {
 
     const openRequest = indexedDB.open(dbName, 1);
     openRequest.onerror = function (evt) {
-      console.error("IDB init:", evt.target.error || evt.target);
+      console.error("IDB initDb:", evt.target.error || evt.target);
       const err = evt.target?.error || new Error(evt.target.toString());
       if (evt.target.error?.name === 'InvalidStateError') {
         err.userMsg = "Private Browsing mode prohibits storing anything.  Run Notes Together in a non-private window.";
@@ -65,49 +66,49 @@ function init(dbName = dbNameDefault) {
 }
 
 
-let findNotesTransaction;
+let findStubsTransaction;
 /**
  * Searches for notes which match (as a prefix) each word in searchStr.
  * Returns *stubs*: notes with incipit instead of the full text.
  * @param searchWords Set of keywords
  * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than MAX_NOTES_FOUND matching notes
  */
-function findNotes(searchWords, callback) {
+function findStubs(searchWords, callback) {
   dbPrms.then(db => {
-    if (findNotesTransaction) {
+    if (findStubsTransaction) {
       // aborts any pending call in favor of this call
       // console.warn(`Aborting previous fetchNotes transaction. New searchStr: "${searchStr}"`);
-      findNotesTransaction.abort();
+      findStubsTransaction.abort();
     }
-    findNotesTransaction = db.transaction('note', "readonly");
-    findNotesTransaction.onerror = function (evt) {
+    findStubsTransaction = db.transaction('note', "readonly");
+    findStubsTransaction.onerror = function (evt) {
       const msg = evt.target.errorMessage || evt.target.error.message || evt.target.error.name || evt.target.error.toString() || evt.target.errorCode;
       if (evt.target.error?.name === 'AbortError') {
         console.log("IDB:", evt.target.error?.name, msg);
       } else {
-        console.error("IDB findNotes:", evt.target.error);
+        console.error("IDB findStubs:", evt.target.error);
         callback(evt.target.error);
         // TODO: user-visible transient message
       }
       evt.stopPropagation();
-      findNotesTransaction = null;
+      findStubsTransaction = null;
     };
-    // findNotesTransaction.onabort = function (evt) {
+    // findStubsTransaction.onabort = function (evt) {
     //   console.log("xaction aborted for", searchStr);
     //   evt.stopPropagation();
     // }
-    const noteStore = findNotesTransaction.objectStore("note");
+    const noteStore = findStubsTransaction.objectStore("note");
 
     if (searchWords.size === 0) {
-      sortedNotes(callback, noteStore);
+      sortedStubs(callback, noteStore);
     } else {
-      searchNotes(callback, noteStore, new Set(searchWords));
+      searchStubs(callback, noteStore, new Set(searchWords));
     }
   }).catch(err => {
     callback(err);
   });
 }
-function sortedNotes(callback, itemStore) {
+function sortedStubs(callback, itemStore) {
   const foundStubs = [];
   let lastCallback = Date.now();
   let isFirstResults = true;
@@ -116,13 +117,13 @@ function sortedNotes(callback, itemStore) {
     try {
       const cursor = evt.target.result;
       if (!cursor) {   // all notes retrieved
-        findNotesTransaction = null;
+        findStubsTransaction = null;
         callback(null, foundStubs, {isPartial: false, isFinal: true, isSearch: false});
       } else {
 //						console.log(cursor.key, cursor.value);
 
         if (foundStubs.length === MAX_NOTES_FOUND) {
-          findNotesTransaction = null;
+          findStubsTransaction = null;
           callback(null, foundStubs, {isPartial: true, isFinal: true, isSearch: false});
           return;   // abandon cursor by not advancing
         }
@@ -140,12 +141,12 @@ function sortedNotes(callback, itemStore) {
         cursor.continue();
       }
     } catch (err) {
-      findNotesTransaction = null;
+      findStubsTransaction = null;
       callback(err);
     }
   };
 }
-function searchNotes(callback, itemStore, searchWords) {
+function searchStubs(callback, itemStore, searchWords) {
   // Finds the longest word, which will probably narrow the search the most.
   let indexWord = "";
   for (let word of searchWords) {
@@ -180,7 +181,7 @@ function searchNotes(callback, itemStore, searchWords) {
 
         if (foundStubs.length === MAX_NOTES_FOUND) {
           foundStubs.sort(compareByDate);
-          findNotesTransaction = null;
+          findStubsTransaction = null;
           callback(null, foundStubs, {isPartial: true, isFinal: true, isSearch: true});
           return;   // abandon cursor by not continuing
         }
@@ -200,11 +201,11 @@ function searchNotes(callback, itemStore, searchWords) {
         cursor.continue();
       } else {   // no cursor -> end
         foundStubs.sort(compareByDate);
-        findNotesTransaction = null;
+        findStubsTransaction = null;
         callback(null, foundStubs, {isPartial: false, isFinal: true, isSearch: true});
       }
     } catch (err) {
-      findNotesTransaction = null;
+      findStubsTransaction = null;
       callback(err);
     }
   };
@@ -215,24 +216,17 @@ function compareByDate(itemA, itemB) {
 }
 
 
-function getNote(id) {
+function getNoteDb(id) {
   return dbPrms.then(db => {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', "readonly");
       const itemStore = transaction.objectStore("note");
       const getRequest = itemStore.get(id);
       getRequest.onsuccess = function (evt) {
-        if (evt.target.result) {
-          resolve(evt.target.result);
-        } else {
-          const err = new Error("no note with id=" + id);
-          console.log("getNote:", err.message);
-          err.name = "MissingError";
-          reject(err);
-        }
+        resolve(evt.target.result);   // undefined if missing
       };
       getRequest.onerror = function (evt) {
-        console.error("IDB getNote:", evt.target.error);
+        console.error("IDB getNoteDb:", evt.target.error);
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -240,7 +234,7 @@ function getNote(id) {
   });
 }
 
-function upsertNote(note) {
+function upsertNoteDb(note) {
   return dbPrms.then(db => {
     const dbNote = toDbNote(note);
 
@@ -253,7 +247,7 @@ function upsertNote(note) {
         if (evt.target.result === dbNote.id) {   // TODO: remove this backstop
           const notesChanged = {};
           notesChanged[dbNote.id] = dbNote;   // postMessage will clone
-          // console.log("IDB: upsertNote", dbNote.id, dbNote.text?.slice(0, 50));
+          // console.log("IDB: upsertNoteDb", dbNote.id, dbNote.text?.slice(0, 50));
           window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesDeleted: {}}, window?.location?.origin);
           resolve(dbNote);
         } else {
@@ -262,7 +256,7 @@ function upsertNote(note) {
         // });
       };
       putRequest.onerror = function (evt) {
-        console.error("IDB upsertNote:", evt.target.error);
+        console.error("IDB upsertNoteDb:", evt.target.error);
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -270,7 +264,7 @@ function upsertNote(note) {
   });
 }
 
-function deleteNote(id) {
+function deleteNoteDb(id) {
   return dbPrms.then(db => {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', "readwrite");
@@ -290,12 +284,12 @@ function deleteNote(id) {
           // evt.target.result is always undefined
           resolve(id);
         } catch (err) {
-          console.error("IDB deleteNote 1:", err);
+          console.error("IDB deleteNoteDb 1:", err);
           reject(err);
         }
       };
       deleteRequest.onerror = function (evt) {
-        console.error("IDB deleteNote 2:", evt.target.error);
+        console.error("IDB deleteNoteDb 2:", evt.target.error);
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -330,11 +324,20 @@ function toDbNote(memoryNote) {
     }
   }
 
+  let date;
+  if (memoryNote.date instanceof Date) {
+    date = memoryNote.date;
+  } else if ('string' === typeof memoryNote.date || 'number' === typeof memoryNote.date) {
+    date = new Date(memoryNote.date);
+  } else {
+    date = new Date();
+  }
+
   return {
     id: memoryNote.id,
     text: sanitizedText,
     wordArr: Array.from(wordSet),
-    date: memoryNote.date || new Date(),
+    date: date,
   };
 }
 
@@ -367,35 +370,27 @@ function normalizeWord(word) {
 }
 
 
-function deleteFillerNotes() {
+function findFillerNoteIds() {
   return dbPrms.then(db => {
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction('note', 'readwrite');
+      const transaction = db.transaction('note', 'readonly');
       transaction.onerror = function (evt) {
-        console.error("IDB deleteFillerNotes x:", evt.target.error);
+        console.error("IDB findFillerNoteIds x:", evt.target.error);
         reject(evt.target.error);
       }
       const noteStore = transaction.objectStore("note");
-      const notesDeleted = {};
-      noteStore.openCursor(IDBKeyRange.lowerBound(Number.MAX_SAFE_INTEGER, true)).onsuccess = function (evt) {
+      const noteIds = new Set();
+      noteStore.openCursor(IDBKeyRange.upperBound(Number.MIN_SAFE_INTEGER, true)).onsuccess = function (evt) {
         try {
           const cursor = evt.target.result;
           if (cursor) {
-            const id = cursor.key;
-            cursor.delete().onsuccess = function (evt2) {
-              notesDeleted[id] = true;
-            }
+            noteIds.add(cursor.key);
             cursor.continue();
           } else {
-            window.postMessage({
-              kind: 'NOTE_CHANGE',
-              notesChanged: {},
-              notesDeleted
-            }, window.location.origin);
-            resolve(notesDeleted);
+            resolve(noteIds);
           }
         } catch (err) {
-          console.error("IDB deleteFillerNotes:", err);
+          console.error("IDB findFillerNoteIds:", err);
           reject(err);
         }
       }
@@ -404,4 +399,4 @@ function deleteFillerNotes() {
 }
 
 
-export {init, findNotes, getNote, upsertNote, deleteNote, toDbNote, parseWords, deleteFillerNotes};
+export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, toDbNote, parseWords, findFillerNoteIds};

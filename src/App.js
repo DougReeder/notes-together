@@ -1,12 +1,14 @@
 import {createMemoryNote} from './Note';
-import {parseWords, upsertNote, deleteFillerNotes} from './idbNotes';
+import {init, upsertNote, parseWords, deleteNote} from './storage';
+import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect} from 'react';
 import List from './List';
 import Detail from './Detail'
 import './App.css';
 import {Menu, MenuItem, Snackbar} from "@material-ui/core";
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {randomNote, seedNotes} from "./testNotes";
+import {randomNote, seedNotes} from "./fillerNotes";
+import Widget from "remotestorage-widget";
 
 function App() {
   // TODO: replace string with set of normalized search terms
@@ -57,6 +59,14 @@ function App() {
     };
   });
 
+  useEffect( () => {
+    init().then(remoteStorage => {   // init is idempotent
+      console.log("remoteStorage displaying login widget");
+      const widget = new Widget(remoteStorage);
+      widget.attach('panelMain');   // login
+    });
+   }, []);
+
   const [testMenuAnchorEl, setTestMenuAnchorEl] = React.useState(null);
 
   function openTestMenu(evt) {
@@ -89,7 +99,9 @@ function App() {
   async function handleDeleteFillerNotes() {
     try {
       setTestMenuAnchorEl(null);
-      await deleteFillerNotes();
+      for (const noteId of await findFillerNoteIds()) {
+        deleteNote(noteId);
+      }
     } catch (err) {
       setTransientErr(err);
     }
@@ -103,7 +115,7 @@ function App() {
 
   return (
       <div className="App panelContainer" role="application">
-        <div className="panelMain">
+        <div className="panelMain" id="panelMain">
           <header className="App-header">
             <input type="search" placeholder="Enter search word(s)"
                    title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} role="search" />

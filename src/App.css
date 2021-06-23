@@ -165,3 +165,10 @@
   text-align: center;
   text-transform: capitalize;
 }
+
+
+/* Remote Storage Widget (not React code) */
+#remotestorage-widget {
+  position: absolute;
+  bottom: 0;
+}

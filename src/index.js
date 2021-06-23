@@ -1,13 +1,13 @@
+import {init} from "./storage";
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import App from './App';
-import {init} from "./idbNotes";
+import './index.css';
 import '@fontsource/roboto';
 import reportWebVitals from './reportWebVitals';
 
-init().then(db => {
-  // console.log("db initialized:", db.name, db.version, db.objectStoreNames);
+init().then(remoteStorage => {   // init is idempotent
+  // console.log("remoteStorage initialized:", remoteStorage);
 });
 
 ReactDOM.render(
