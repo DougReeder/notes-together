@@ -2,9 +2,7 @@
 // Should only be called by storage abstraction, not from front end.
 // Copyright © 2021 Doug Reeder
 
-import removeDiacritics from "./diacritics";
-import {INCIPIT_LENGTH, semanticOnly} from "./Note";
-import sanitizeHtml from "sanitize-html";
+import {INCIPIT_LENGTH} from "./Note";
 
 const FIRST_RESULTS_MS = 84;
 const MAX_NOTES_FOUND = 500;
@@ -234,24 +232,26 @@ function getNoteDb(id) {
   });
 }
 
-function upsertNoteDb(note) {
+function upsertNoteDb(cleanNote) {
   return dbPrms.then(db => {
-    const dbNote = toDbNote(note);
+    if (!('wordArr' in cleanNote)) {
+      throw new Error("wordArr required for full-text search");
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', "readwrite");
       const noteStore = transaction.objectStore("note");
-      const putRequest = noteStore.put(dbNote);
+      const putRequest = noteStore.put(cleanNote);
       putRequest.onsuccess = function (evt) {
         // noteService.setFirstUnexportedChange().then(function (prefResult) {
-        if (evt.target.result === dbNote.id) {   // TODO: remove this backstop
+        if (evt.target.result === cleanNote.id) {   // TODO: remove this backstop
           const notesChanged = {};
-          notesChanged[dbNote.id] = dbNote;   // postMessage will clone
-          // console.log("IDB: upsertNoteDb", dbNote.id, dbNote.text?.slice(0, 50));
+          notesChanged[cleanNote.id] = cleanNote;   // postMessage will clone
+          // console.log("IDB: upsertNoteDb", note.id, note.text?.slice(0, 50));
           window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesDeleted: {}}, window?.location?.origin);
-          resolve(dbNote);
+          resolve(cleanNote);
         } else {
-          reject(new Error(`saved id ${evt.target?.result} doesn't match passed id ${dbNote.id}`))
+          reject(new Error(`saved id ${evt.target?.result} doesn't match passed id ${cleanNote.id}`))
         }
         // });
       };
@@ -298,78 +298,6 @@ function deleteNoteDb(id) {
 }
 
 
-const semanticExtractKeywords = JSON.parse(JSON.stringify(semanticOnly));
-
-function toDbNote(memoryNote) {
-  if (!Number.isFinite(memoryNote.id)) {
-    throw new Error("id must be finite");
-  } else if ('string' !== typeof memoryNote.text) {
-    throw new Error("text must be string");
-  }
-
-  const wordSet = new Set();
-  semanticExtractKeywords.textFilter = function (text) {
-    const someWords = parseWords(text);
-    for (let word of someWords) {
-      wordSet.add(word);
-    }
-    return text;
-  }
-  const sanitizedText = sanitizeHtml(memoryNote.text, semanticExtractKeywords);
-  for (let candidateWord of wordSet) {
-    for (let otherWord of wordSet) {
-      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
-        wordSet.delete(otherWord);
-      }
-    }
-  }
-
-  let date;
-  if (memoryNote.date instanceof Date) {
-    date = memoryNote.date;
-  } else if ('string' === typeof memoryNote.date || 'number' === typeof memoryNote.date) {
-    date = new Date(memoryNote.date);
-  } else {
-    date = new Date();
-  }
-
-  return {
-    id: memoryNote.id,
-    text: sanitizedText,
-    wordArr: Array.from(wordSet),
-    date: date,
-  };
-}
-
-function parseWords(text) {
-  text = removeDiacritics(text);
-
-  const wordSet = new Set();
-  // initializes regexp and its lastIndex property outside the loop
-  // ASCII, Unicode, no-break & soft hyphens
-  // ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
-  const wordRE = /[-‐‑­'’ʼ.^\wÑñ]+/g;
-  let result, normalizedWord;
-
-  while ((result = wordRE.exec(text)) !== null) {
-    if ((normalizedWord = normalizeWord(result[0]))) {
-      wordSet.add(normalizedWord);
-    }
-  }
-  return wordSet
-}
-
-function normalizeWord(word) {
-  // ASCII, Unicode, no-break & soft hyphens
-  word = word.toUpperCase().replace(/-|‐|‑|­|_|^'+|'+$|^\.+|\.+$|\^/g, "");
-  // not a word containing only digits and decimal points
-  if (! /^[\d.]+$/.test(word)) {
-    word = word.replace(/\./g, "");
-  }
-  return word;
-}
-
-
 function findFillerNoteIds() {
   return dbPrms.then(db => {
     return new Promise((resolve, reject) => {
@@ -399,4 +327,4 @@ function findFillerNoteIds() {
 }
 
 
-export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, toDbNote, parseWords, findFillerNoteIds};
+export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds};

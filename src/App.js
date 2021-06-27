@@ -100,7 +100,7 @@ function App() {
     try {
       setTestMenuAnchorEl(null);
       for (const noteId of await findFillerNoteIds()) {
-        deleteNote(noteId);
+        await deleteNote(noteId);
       }
     } catch (err) {
       setTransientErr(err);

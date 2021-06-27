@@ -1,9 +1,11 @@
 // storage.js - abstraction for for RemoteStorage and IndexedDB for Notes Together
 // Copyright © 2021 Doug Reeder
 
-import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, parseWords} from "./idbNotes";
+import removeDiacritics from "./diacritics";
+import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs} from "./idbNotes";
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
+import {sanitizeNote} from "./sanitizeNote";
 
 let initPrms;
 
@@ -33,7 +35,7 @@ function initRemote() {
             case 'remote':
               if (evt.newValue) {   // create or update
                 console.log("remoteStorage incoming upsert:", evt.newValue);
-                upsertNoteDb(evt.newValue);
+                upsertNote(evt.newValue, true);
               } else {   // delete
                 console.log("remoteStorage incoming delete:", evt.oldValue);
                 deleteNoteDb(evt.oldValue.id);
@@ -87,10 +89,34 @@ function initRemote() {
 }
 
 
-function upsertNote(memoryNote) {
-  return remotePrms.then(remoteStorage => {
-    return remoteStorage.notes.upsert(memoryNote)
-  }).then(upsertNoteDb);
+async function upsertNote(memoryNote, isIndexedDbOnly) {
+  const wordSet = new Set();
+  const textFilter = function (text) {
+    for (const word of parseWords(text)) {
+      wordSet.add(word);
+    }
+    return text;
+  }
+
+  let cleanNote;
+  if (isIndexedDbOnly) {
+    cleanNote = sanitizeNote(memoryNote, textFilter);
+  } else {
+    const remoteStorage = await remotePrms;
+    cleanNote = await remoteStorage.notes.upsert(memoryNote, textFilter);
+  }
+
+  for (let candidateWord of wordSet) {
+    for (let otherWord of wordSet) {
+      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
+        wordSet.delete(otherWord);
+      }
+    }
+  }
+  cleanNote.wordArr = Array.from(wordSet);
+
+  await upsertNoteDb(cleanNote);
+  return cleanNote;
 }
 
 
@@ -98,6 +124,35 @@ function deleteNote(id) {
   return remotePrms.then(remoteStorage => {
     return Promise.all([remoteStorage.notes.delete(id), deleteNoteDb(id)]);
   });
+}
+
+
+function parseWords(text) {
+  text = removeDiacritics(text);
+
+  const wordSet = new Set();
+  // initializes regexp and its lastIndex property outside the loop
+  // ASCII, Unicode, no-break & soft hyphens
+  // ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
+  const wordRE = /[-‐‑­'’ʼ.^\wÑñ]+/g;
+  let result, normalizedWord;
+
+  while ((result = wordRE.exec(text)) !== null) {
+    if ((normalizedWord = normalizeWord(result[0]))) {
+      wordSet.add(normalizedWord);
+    }
+  }
+  return wordSet
+}
+
+function normalizeWord(word) {
+  // ASCII, Unicode, no-break & soft hyphens
+  word = word.toUpperCase().replace(/-|‐|‑|­|_|^'+|'+$|^\.+|\.+$|\^/g, "");
+  // not a word containing only digits and decimal points
+  if (! /^[\d.]+$/.test(word)) {
+    word = word.replace(/\./g, "");
+  }
+  return word;
 }
 
 export {init, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords};

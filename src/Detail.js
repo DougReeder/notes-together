@@ -1,4 +1,5 @@
-import {createMemoryNote, semanticOnly} from './Note';
+import {createMemoryNote} from './Note';
+import {semanticOnly} from './sanitizeNote';
 import {isLikelyMarkdown} from "./util";
 import React, {useEffect, useRef, useState} from 'react';
 import PropTypes from 'prop-types';

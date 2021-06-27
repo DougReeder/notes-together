@@ -3,11 +3,40 @@
 
 import {updateListWithChanges} from "./listUtil";
 import {createMemoryNote} from "./Note";
+import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
-import {toDbNote} from "./idbNotes";
 
 function generateTestId() {
   return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
+}
+
+const startDate = Date.parse('2016-01-01');
+function createIndexedNote(text, date) {
+  if (!date) {
+    date = new Date(startDate + Math.random() * 31 * 24 * 60 * 60 * 1000);
+  }
+  const memNote = createMemoryNote(generateTestId(), text, date);
+
+  const wordSet = new Set();
+  const textFilter = function (text) {
+    for (const word of parseWords(text)) {
+      wordSet.add(word);
+    }
+    return text;
+  }
+
+  const cleanNote = sanitizeNote(memNote, textFilter);
+
+  for (let candidateWord of wordSet) {
+    for (let otherWord of wordSet) {
+      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
+        wordSet.delete(otherWord);
+      }
+    }
+  }
+  cleanNote.wordArr = Array.from(wordSet);
+
+  return cleanNote;
 }
 
 
@@ -76,7 +105,7 @@ describe("updateListWithChanges", () => {
       targetNote,
       createMemoryNote(generateTestId(), "third"),
     ];
-    const updatedNote = toDbNote(createMemoryNote(targetNote.id, "new"));
+    const updatedNote = sanitizeNote(createMemoryNote(targetNote.id, "new"));
     const notesChanged = {};
     notesChanged[updatedNote.id] = updatedNote;
 
@@ -95,7 +124,7 @@ describe("updateListWithChanges", () => {
       targetNote,
       createMemoryNote(generateTestId(), "third", new Date(2000, 0, 10)),
     ];
-    const updatedNote = toDbNote(createMemoryNote(targetNote.id, targetNote.text, new Date(2000, 0, 31)));
+    const updatedNote = sanitizeNote(createMemoryNote(targetNote.id, targetNote.text, new Date(2000, 0, 31)));
     const notesChanged = {};
     notesChanged[updatedNote.id] = updatedNote;
 
@@ -112,12 +141,12 @@ describe("updateListWithChanges", () => {
 
   it("should add notes (no search words)", () => {
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first"),
-      createMemoryNote(generateTestId(), "second"),
-      createMemoryNote(generateTestId(), "third"),
+      createIndexedNote("first"),
+      createIndexedNote("second"),
+      createIndexedNote("third"),
     ];
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "new"));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "newer"));
+    const newNoteA = createIndexedNote("new");
+    const newNoteB = createIndexedNote("newer");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -133,12 +162,12 @@ describe("updateListWithChanges", () => {
   it("should add notes if they match", () => {
     const searchWords = parseWords("fo");
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first foo"),
-      createMemoryNote(generateTestId(), "second foo"),
-      createMemoryNote(generateTestId(), "third foo"),
+      createIndexedNote("first foo"),
+      createIndexedNote("second foo"),
+      createIndexedNote("third foo"),
     ];
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "new foo"));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "new foolish"));
+    const newNoteA = createIndexedNote("new foo");
+    const newNoteB = createIndexedNote("new foolish");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -154,12 +183,12 @@ describe("updateListWithChanges", () => {
   it("should not add notes if they don't match", () => {
     const searchWords = parseWords("fo");
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first foo"),
-      createMemoryNote(generateTestId(), "second foo"),
-      createMemoryNote(generateTestId(), "third foo"),
+      createIndexedNote("first foo"),
+      createIndexedNote("second foo"),
+      createIndexedNote("third foo"),
     ];
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "new f"));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "new of"));
+    const newNoteA = createIndexedNote( "new f");
+    const newNoteB = createIndexedNote("new of");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -174,12 +203,12 @@ describe("updateListWithChanges", () => {
 
   it("should sort new notes in place (with no search words)", () => {
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first", new Date(2000, 0, 30)),
-      createMemoryNote(generateTestId(), "second", new Date(2000, 0, 20)),
-      createMemoryNote(generateTestId(), "third", new Date(2000, 0, 10)),
+      createIndexedNote("first", new Date(2000, 0, 30)),
+      createIndexedNote("second", new Date(2000, 0, 20)),
+      createIndexedNote("third", new Date(2000, 0, 10)),
     ];
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "newer", new Date(2000, 0, 25)));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "new", new Date(2000, 0, 15)));
+    const newNoteA = createIndexedNote( "newer", new Date(2000, 0, 25));
+    const newNoteB = createIndexedNote("new", new Date(2000, 0, 15));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -197,12 +226,12 @@ describe("updateListWithChanges", () => {
   it("should sort new notes in place (with search words)", () => {
     const searchWords = parseWords("fo ba");
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first foo bar", new Date(2000, 0, 30)),
-      createMemoryNote(generateTestId(), "second foo bar", new Date(2000, 0, 20)),
-      createMemoryNote(generateTestId(), "third foo bar", new Date(2000, 0, 10)),
+      createIndexedNote( "first foo bar", new Date(2000, 0, 30)),
+      createIndexedNote("second foo bar", new Date(2000, 0, 20)),
+      createIndexedNote("third foo bar", new Date(2000, 0, 10)),
     ];
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "newer bar foo", new Date(2000, 0, 25)));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "bar new foo", new Date(2000, 0, 15)));
+    const newNoteA = createIndexedNote("newer bar foo", new Date(2000, 0, 25));
+    const newNoteB = createIndexedNote("bar new foo", new Date(2000, 0, 15));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -220,17 +249,17 @@ describe("updateListWithChanges", () => {
   it("should delete, modify, add and sort (with search words)", () => {
     const searchWords = parseWords("fo ba");
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first foo bar", new Date(2000, 0, 30)),
-      createMemoryNote(generateTestId(), "second foo bar", new Date(2000, 0, 20)),
-      createMemoryNote(generateTestId(), "third foo bar", new Date(2000, 0, 10)),
+      createIndexedNote("first foo bar", new Date(2000, 0, 30)),
+      createIndexedNote("second foo bar", new Date(2000, 0, 20)),
+      createIndexedNote("third foo bar", new Date(2000, 0, 10)),
     ];
 
     const notesDeleted = {};
     notesDeleted[generateTestId()] = true;
     notesDeleted[oldNotes[1].id] = true;
 
-    const newNoteA = toDbNote(createMemoryNote(generateTestId(), "not a match", new Date(2000, 0, 25)));
-    const newNoteB = toDbNote(createMemoryNote(generateTestId(), "bar new foo", new Date(2000, 0, 5)));
+    const newNoteA = createIndexedNote("not a match", new Date(2000, 0, 25));
+    const newNoteB = createIndexedNote("bar new foo", new Date(2000, 0, 5));
     const changingNote = createMemoryNote(oldNotes[2].id, "changed foo bar", new Date(2000, 0, 10));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;

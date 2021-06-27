@@ -1,6 +1,8 @@
 // RemoteNotes.js - RemoteStorage module for notes containing semantic HTML
 // Copyright © 2021 Doug Reeder under the MIT License
 
+import {sanitizeNote} from "./sanitizeNote";
+
 const subscriptions = new Set();
 
 // Ids for normal notes should be >= -9007199254740991 and <= 9007199254740991.
@@ -47,38 +49,14 @@ const RemoteNotes = {
     return {
       exports: {
         // available as remoteStorage.notes.upsert();
-        upsert: function(memoryNote) {
-          return new Promise((resolve, reject) => {
-            // console.debug("notes.upsert", memoryNote);
-            let id;
-            if (Number.isFinite(memoryNote.id)) {
-              id = memoryNote.id;
-            } else {
-              id = Math.ceil((Math.random() - 0.5) * 2 * Number.MAX_SAFE_INTEGER);
-            }
+        upsert: async function (memoryNote, textFilter) {
+          // console.debug("notes.upsert", memoryNote);
+          const cleanNote = sanitizeNote(memoryNote, textFilter);
 
-            if ('string' !== typeof memoryNote.text) {
-              throw new Error("note must have text property")
-            }
-
-            let date;
-            if (memoryNote.date instanceof Date) {
-              date = memoryNote.date;
-            } else if ('string' === typeof memoryNote.date || 'number' === typeof memoryNote.date) {
-              // ms since epoch, string RFC 2822, or string ISO 8601
-              date = new Date(memoryNote.date);
-            } else {
-              date = new Date();
-            }
-            const remoteNote = {id, text: memoryNote.text, date: date.toISOString()};
-
-            const path = id.toFixed();
-
-            resolve(privateClient.storeObject("note", path, remoteNote).then(function (revision) {
-              // console.log("revision:", revision);
-              return {id, text: memoryNote.text, date};
-            }));
-          });
+          const remoteNote = {id: cleanNote.id, text: cleanNote.text, date: cleanNote.date.toISOString()};
+          const path = cleanNote.id.toFixed();
+          await privateClient.storeObject("note", path, remoteNote);
+          return cleanNote;
         },
 
         // list: async function () {
