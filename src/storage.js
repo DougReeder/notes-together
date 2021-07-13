@@ -35,10 +35,10 @@ function initRemote() {
             case 'remote':
               if (evt.newValue) {   // create or update
                 console.log("remoteStorage incoming upsert:", evt.newValue);
-                upsertNote(evt.newValue, true);
+                await upsertNote(evt.newValue, true);
               } else {   // delete
                 console.log("remoteStorage incoming delete:", evt.oldValue);
-                deleteNoteDb(evt.oldValue.id);
+                await deleteNoteDb(evt.oldValue.id);
               }
               break;
             case 'conflict':

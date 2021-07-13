@@ -1095,7 +1095,8 @@ switch ((navigator.language || navigator.userLanguage).slice(0, 2).toLowerCase()
 }
 
 function removeDiacritics(str) {
-    var chars = str.split(''), i = chars.length - 1, altered = false, ch;
+    const chars = str.split('');
+    let i = chars.length - 1, altered = false, ch;
     for (; i >= 0; i--) {
         ch = chars[i];
         if (diacritics.hasOwnProperty(ch)) {
