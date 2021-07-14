@@ -5,6 +5,7 @@ import App from './App';
 import './index.css';
 import '@fontsource/roboto';
 import reportWebVitals from './reportWebVitals';
+import {SnackbarProvider} from "notistack";
 
 init().then(remoteStorage => {   // init is idempotent
   // console.log("remoteStorage initialized:", remoteStorage);
@@ -12,7 +13,9 @@ init().then(remoteStorage => {   // init is idempotent
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <SnackbarProvider maxSnack={3} dense={true} preventDuplicate={true}>
+      <App />
+    </SnackbarProvider>
   </React.StrictMode>,
   document.getElementById('root')
 );

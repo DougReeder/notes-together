@@ -7,6 +7,8 @@ import Detail from './Detail'
 import './App.css';
 import {Menu, MenuItem, Snackbar} from "@material-ui/core";
 import {Alert, AlertTitle} from "@material-ui/lab";
+import {useSnackbar} from "notistack";
+import Slide from '@material-ui/core/Slide';
 import {randomNote, seedNotes} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 
@@ -42,13 +44,27 @@ function App() {
     setFocusOnLoad(false);
   }
 
-  const externalChangeListener = evt => {
-    if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE') return;
+  const {enqueueSnackbar} = useSnackbar();
 
-    const notesDeleted = evt.data?.notesDeleted || {};
-    if (notesDeleted.hasOwnProperty(selectedNoteId)) {
-      console.log("selected note deleted", notesDeleted);
-      setSelectedNoteId(null);
+  const externalChangeListener = evt => {
+    if (evt.origin !== window.location.origin) return;
+
+    switch (evt.data?.kind) {   // eslint-disable-line default-case
+      case 'NOTE_CHANGE':
+        const notesDeleted = evt.data?.notesDeleted || {};
+        if (notesDeleted.hasOwnProperty(selectedNoteId)) {
+          console.log("selected note deleted", notesDeleted);
+          setSelectedNoteId(null);
+        }
+        break;
+      case 'TRANSIENT_MSG':
+        enqueueSnackbar(evt.data?.message || "Restart your device", {
+          anchorOrigin: {horizontal: 'right', vertical: 'bottom'},
+          variant: evt.data?.severity || 'error',
+          key: evt.data?.key,
+          TransitionComponent: Slide,
+        });
+        break;
     }
   }
   useEffect( () => {

@@ -57,7 +57,7 @@ function initDb(dbName = dbNameDefault) {
   });
 
   dbPrms.catch(err => {
-    window?.alert(err.userMsg || err.message);
+    window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
   });
 
   return dbPrms;
@@ -86,7 +86,6 @@ function findStubs(searchWords, callback) {
       } else {
         console.error("IDB findStubs:", evt.target.error);
         callback(evt.target.error);
-        // TODO: user-visible transient message
       }
       evt.stopPropagation();
       findStubsTransaction = null;

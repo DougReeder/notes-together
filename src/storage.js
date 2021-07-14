@@ -44,8 +44,10 @@ function initRemote() {
             case 'conflict':
               if (!evt.oldValue && !evt.newValue) {
                 console.log("remoteStorage deleted on both", evt.relativePath);
+                // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
               } else {
                 console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+                window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "conflict", key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
               }
               break;
             // case 'local':
@@ -54,7 +56,7 @@ function initRemote() {
           }
         } catch (err) {
           console.error("remoteStorage notes subscribe:", err);
-          // TODO: notify user
+          window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
         }
       });
     });
@@ -73,7 +75,9 @@ function initRemote() {
     });
 
     remoteStorage.on('error', function (err) {
-      console.error("remoteStorage error", err);
+      console.error("remoteStorage error", err.name, err.message);
+      if ('Unauthorized' === err.name) { return; }
+      window.postMessage({kind: 'TRANSIENT_MSG', message: err.message}, window?.location?.origin);
     });
 
     remoteStorage.on('network-offline', () => {

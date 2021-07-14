@@ -42,6 +42,7 @@ const RemoteNotes = {
           callback(evt);
         } catch (err) {
           console.error("notes change subscriber:", err);
+          window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
         }
       }
     });
