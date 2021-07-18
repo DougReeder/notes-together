@@ -468,4 +468,25 @@ const sentences = [
 ];
 
 
-export {seedNotes, randomNote};
+function hammerStorage() {
+  const id = 2 * Number.MIN_SAFE_INTEGER;
+  const fullText = `To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them.`;
+  const date = new Date(Date.now() + 24*60*60*1000);
+
+  let i=0;
+  const timer = setInterval(() => {
+    // doesn't wait for promise to be fulfilled, as keyboard events don't wait
+    upsertNote(createMemoryNote(id, fullText.slice(0, ++i), date));
+    if (i>=fullText.length) {
+      clearInterval(timer);
+    }
+  }, 55);
+  // 146 ms/char = 82 wpm; average is 41
+  // 55 ms/char = 218 wpm; fastest human is 216 wpm
+}
+
+export {seedNotes, randomNote, hammerStorage};

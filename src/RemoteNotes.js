@@ -47,6 +47,57 @@ const RemoteNotes = {
       }
     });
 
+    let working = false;
+    const queue = [];
+    const recent = new Set();
+    function enqueueStoreObject(remoteNote) {
+      return new Promise((resolve, reject) => {
+        // console.log("enqueueing upsert", working, recent.size, queue.length);
+        const prevSameInd = queue.findIndex(entry => {
+          return entry.remoteNote.id === remoteNote.id;
+        });
+        if (prevSameInd > -1) {
+          queue[prevSameInd]?.resolve();
+          queue.splice(prevSameInd, 1, {remoteNote, resolve, reject});
+        } else {
+          queue.push({remoteNote, resolve, reject});
+        }
+        dequeueStoreObject();
+      });
+    }
+    async function dequeueStoreObject() {
+      if (working) { return; }
+      // find the next item in the queue, with an ID not recently used
+      const nextCleanInd = queue.findIndex(entry => {
+        return ! recent.has(entry?.remoteNote?.id);
+      });
+      if (-1 === nextCleanInd) {
+        return;
+      }
+      const [item] = queue.splice(nextCleanInd, 1);
+      // console.log("next clean item:", nextCleanInd, item?.remoteNote);
+      try {
+        working = true;
+        const {remoteNote, resolve} = item;
+        recent.add(remoteNote.id);
+        const path = remoteNote.id.toFixed();
+        const value = await privateClient.storeObject("note", path, remoteNote);
+        resolve(value);
+      } catch (err) {
+        item.reject(err);
+      } finally {
+        working = false;
+        // console.log("dequeueing upsert", queue.length);
+        dequeueStoreObject();
+        // remotestorage.js can't keep up; timeout is an ugly hack
+        setTimeout(() => {
+          // console.log("(delayed) dequeueing upsert", queue.length);
+          recent.delete(item?.remoteNote?.id);
+          dequeueStoreObject();
+        }, 1000);
+      }
+    }
+
     return {
       exports: {
         // available as remoteStorage.notes.upsert();
@@ -55,8 +106,7 @@ const RemoteNotes = {
           const cleanNote = sanitizeNote(memoryNote, textFilter);
 
           const remoteNote = {id: cleanNote.id, text: cleanNote.text, date: cleanNote.date.toISOString()};
-          const path = cleanNote.id.toFixed();
-          await privateClient.storeObject("note", path, remoteNote);
+          await enqueueStoreObject(remoteNote);
           return cleanNote;
         },
 

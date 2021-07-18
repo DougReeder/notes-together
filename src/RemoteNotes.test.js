@@ -92,6 +92,49 @@ describe("RemoteNotes", () => {
       expect(retrieved.text).toEqual(updatedText);
       expect(retrieved.date).toEqual(original.date);
     });
+
+    it("should update multiple notes", () => {
+      return new Promise((resolve, reject) => {
+        const id1 = generateTestId();
+        const text1 = "O beautiful for spacious skies";
+        const date1 = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
+        const id2 = generateTestId();
+        const text2 = "For amber waves of grain";
+        const date2 = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
+        const id3 = generateTestId();
+        const text3 = "For purple mountains majesty";
+        const date3 = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
+        const maxLength = Math.max(text1.length, text2.length, text3.length);
+
+        let i=0;
+        const timer = setInterval(async () => {
+          try {
+            ++i;
+            const pr1 = remoteStorage.notes.upsert(createMemoryNote(id1, text1.slice(0, i), date1));
+            const pr2 = remoteStorage.notes.upsert(createMemoryNote(id2, text2.slice(0, i), date2));
+            const pr3 = remoteStorage.notes.upsert(createMemoryNote(id3, text3.slice(0, i), date3));
+            /* eslint-disable jest/no-conditional-expect */
+            if (i < maxLength) {
+              await expect(pr1).resolves.toBeTruthy();
+              await expect(pr2).resolves.toBeTruthy();
+              await expect(pr3).resolves.toBeTruthy();
+            } else {
+              clearInterval(timer);
+
+              const cleanNotes = await Promise.all([pr1, pr2, pr3]);
+              expect(cleanNotes[0]?.text).toEqual(text1);
+              expect(cleanNotes[1]?.text).toEqual(text2);
+              expect(cleanNotes[2]?.text).toEqual(text3);
+              resolve();
+            }
+            /* eslint-enable jest/no-conditional-expect */
+          } catch (err) {
+            reject(err);
+          }
+        }, 0);
+
+      });
+    })
   });
 
   describe("get", () => {

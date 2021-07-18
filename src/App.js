@@ -9,7 +9,7 @@ import {Menu, MenuItem, Snackbar} from "@material-ui/core";
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {useSnackbar} from "notistack";
 import Slide from '@material-ui/core/Slide';
-import {randomNote, seedNotes} from "./fillerNotes";
+import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 
 function App() {
@@ -112,6 +112,15 @@ function App() {
     }
   }
 
+  async function handleHammer() {
+    try {
+      setTestMenuAnchorEl(null);
+      await hammerStorage();
+    } catch (err) {
+      setTransientErr(err);
+    }
+  }
+
   async function handleDeleteFillerNotes() {
     try {
       setTestMenuAnchorEl(null);
@@ -144,6 +153,7 @@ function App() {
             >
               <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
               <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
+              <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
               <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
             </Menu>
           </header>
