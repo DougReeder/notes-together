@@ -6,6 +6,8 @@ import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs} from "./idbNot
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
 import {sanitizeNote} from "./sanitizeNote";
+import {mergeConflicts} from "./mergeConflicts";
+import {createMemoryNote} from "./Note";
 
 let initPrms;
 
@@ -47,7 +49,13 @@ function initRemote() {
                 // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
               } else {
                 console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-                window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "conflict", key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
+                requestIdleCallback(async () => {
+                  const {mergedMarkup, incipit} = mergeConflicts(evt.oldValue.text, evt.newValue.text);
+                  const message = `Conflict in "${incipit}..."`;
+                  window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
+                  const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+                  await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate));
+                });
               }
               break;
             // case 'local':
