@@ -78,7 +78,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB}) {
     try {
       setNoteErr(null);
       setNoteText(evt.target.value);
-      await upsertNote(createMemoryNote(noteId, evt.target.value, noteDate));
+      await upsertNote(createMemoryNote(noteId, evt.target.value, noteDate), 'DETAIL');
     } catch (err) {
       console.error("Detail handleTextChange:", err);
       setNoteErr(err);
@@ -93,7 +93,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB}) {
       const day = parseInt(evt.target.value.slice(8, 10), 10);
       const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
       setNoteDate(newDate);
-      await upsertNote(createMemoryNote(noteId, noteText, newDate));
+      await upsertNote(createMemoryNote(noteId, noteText, newDate), 'DETAIL');
     } catch (err) {
       console.error("Detail handleDateChange:", err);
       setNoteErr(err);
@@ -157,6 +157,29 @@ function Detail({noteId, searchStr = "", focusOnLoadCB}) {
   const monthStr = ("0" + (noteDate?.getMonth()+1)).slice(-2);
   const dayStr = ("0" + noteDate?.getDate()).slice(-2);
   const dateStr = `${noteDate?.getFullYear()}-${monthStr}-${dayStr}`;
+
+  const externalChangeListener = evt => {
+    try {
+      if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE' ||
+          'DETAIL' === evt.data?.initiator) return;
+      const notesChanged = evt.data?.notesChanged || {};
+      if (! notesChanged.hasOwnProperty(noteId)) return;
+      console.log("Detail externalChange", notesChanged);
+
+      setNoteErr(null);
+      setNoteText(notesChanged[noteId].text);
+      setNoteDate(notesChanged[noteId].date);
+    } catch (err) {
+      setNoteErr(err);
+    }
+  };
+  useEffect( () => {
+    window.addEventListener("message", externalChangeListener);
+
+    return function removeExternalChangeListener() {
+      window.removeEventListener("message", externalChangeListener);
+    };
+  });
 
   let content;
   if (noteErr) {

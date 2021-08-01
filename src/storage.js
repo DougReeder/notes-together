@@ -37,7 +37,7 @@ function initRemote() {
             case 'remote':
               if (evt.newValue) {   // create or update
                 console.log("remoteStorage incoming upsert:", evt.newValue);
-                await upsertNote(evt.newValue, true);
+                await upsertNote(evt.newValue, 'REMOTE');
               } else {   // delete
                 console.log("remoteStorage incoming delete:", evt.oldValue);
                 await deleteNoteDb(evt.oldValue.id);
@@ -54,6 +54,7 @@ function initRemote() {
                   const message = `Conflict in "${incipit}..."`;
                   window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
                   const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+                  // initiator is **not** 'REMOTE' for this purpose
                   await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate));
                 });
               }
@@ -101,7 +102,13 @@ function initRemote() {
 }
 
 
-async function upsertNote(memoryNote, isIndexedDbOnly) {
+/**
+ * Inserts or updates a note in IDB and RemoteStorage, when needed.
+ * @param memoryNote
+ * @param initiator: 'REMOTE', 'DETAIL' or undefined
+ * @return {Promise<{date: Date, id: number, text: string}>}
+ */
+async function upsertNote(memoryNote, initiator) {
   const wordSet = new Set();
   const textFilter = function (text) {
     for (const word of parseWords(text)) {
@@ -111,7 +118,7 @@ async function upsertNote(memoryNote, isIndexedDbOnly) {
   }
 
   let cleanNote;
-  if (isIndexedDbOnly) {
+  if ('REMOTE' === initiator) {
     cleanNote = sanitizeNote(memoryNote, textFilter);
   } else {
     const remoteStorage = await remotePrms;
@@ -127,7 +134,7 @@ async function upsertNote(memoryNote, isIndexedDbOnly) {
   }
   cleanNote.wordArr = Array.from(wordSet);
 
-  await upsertNoteDb(cleanNote);
+  await upsertNoteDb(cleanNote, initiator);
   return cleanNote;
 }
 

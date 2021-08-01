@@ -316,7 +316,7 @@ describe("storage", () => {
       const updatedText = "<h2>Eleven Years of Trying</h2>";
       const updatedDate = new Date(2010, 3, 16);
       const updated = createMemoryNote(originalId, updatedText, updatedDate);
-      await upsertNote(updated);
+      await upsertNote(updated, 'DETAIL');
 
       const retrieved = await getNote(originalId);
       expect(retrieved.text).toEqual(updatedText);
@@ -332,13 +332,13 @@ describe("storage", () => {
       expect(retrieved.wordArr.length).toEqual(4);
     });
 
-    it("should insert an indexed note only in IndexedDb, when isIndexedDbOnly is true", async () => {
+    it("should insert an indexed note only in IndexedDb, when initiator is REMOTE", async () => {
       const originalId = generateTestId();
       const originalText = "offer of offertory off";
       const originalDate = new Date(1999, 8, 23, 17);
       const original = createMemoryNote(originalId, originalText, originalDate);
 
-      const savedNote = await upsertNote(original, true);
+      const savedNote = await upsertNote(original, 'REMOTE');
       expect(savedNote.id).toEqual(originalId);
       expect(savedNote.wordArr).toContain("OFFERTORY");
       expect(savedNote.wordArr.length).toEqual(1);

@@ -231,7 +231,7 @@ function getNoteDb(id) {
   });
 }
 
-function upsertNoteDb(cleanNote) {
+function upsertNoteDb(cleanNote, initiator) {
   return dbPrms.then(db => {
     if (!('wordArr' in cleanNote)) {
       throw new Error("wordArr required for full-text search");
@@ -247,7 +247,7 @@ function upsertNoteDb(cleanNote) {
           const notesChanged = {};
           notesChanged[cleanNote.id] = cleanNote;   // postMessage will clone
           // console.log("IDB: upsertNoteDb", note.id, note.text?.slice(0, 50));
-          window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesDeleted: {}}, window?.location?.origin);
+          window.postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}}, window?.location?.origin);
           resolve(cleanNote);
         } else {
           reject(new Error(`saved id ${evt.target?.result} doesn't match passed id ${cleanNote.id}`))

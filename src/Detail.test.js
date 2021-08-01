@@ -71,6 +71,27 @@ it('renders error if note missing', async () => {
   expect(textEl).not.toHaveFocus();
 });
 
+// jsdom doesn't set origin correctly: https://github.com/jsdom/jsdom/issues/2745
+// test('renders updated text on window message', async () => {
+//   const noteId = 19;
+//   const noteText = "The plot was okay."
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//
+//   await act(async () => {
+//     const {findByText} = render(<Detail noteId={noteId}></Detail>);
+//     const textEl = await findByText(noteText);
+//     expect(textEl).toBeInTheDocument();
+//     expect(textEl).not.toHaveFocus();
+//   });
+//
+//   const updatedText = "The plot was okay; characterization was superb!";
+//   const notesChanged = {};
+//   notesChanged[noteId] = createMemoryNote(noteId, updatedText);
+//   window.postMessage({kind: 'NOTE_CHANGE', notesChanged, notesDeleted: {}}, window?.location?.origin);
+//   const againTextEl = await screen.findByText(updatedText);
+//   expect(againTextEl).not.toHaveFocus();
+// });
+
 xtest("saves on edit", async () => {
   const noteId = 43;
   const initialText = "Hello";
