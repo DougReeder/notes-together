@@ -23,6 +23,9 @@ test('renders text of note', async () => {
     expect(textEl).toBeInTheDocument();
     expect(textEl).not.toHaveFocus();
   });
+
+  const back = await screen.findByRole('button');
+  expect(back).toBeInTheDocument();
 });
 
 test("clears text & date when noteId set to null", async () => {

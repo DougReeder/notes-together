@@ -8,7 +8,8 @@ import ContentEditable from 'react-contenteditable';
 import sanitizeHtml from 'sanitize-html';
 import {Parser, HtmlRenderer} from 'commonmark';
 import "./Detail.css";
-import {Box, Input, Toolbar} from "@material-ui/core";
+import {AppBar, Box, IconButton, Input, Toolbar} from "@material-ui/core";
+import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import {Alert, AlertTitle} from "@material-ui/lab";
 
 
@@ -16,7 +17,7 @@ const markdownReader = new Parser({smart: true});
 const markdownWriter = new HtmlRenderer({softbreak: "<br />"});
 const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
-function Detail({noteId, searchStr = "", focusOnLoadCB}) {
+function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   useEffect(() => {
     try {
@@ -200,13 +201,16 @@ function Detail({noteId, searchStr = "", focusOnLoadCB}) {
   }
 
   return (<Box style={{height: "100%"}} display="flex" flexDirection="column" alignItems="stretch" bgcolor="background.paper">
-      <Box flexGrow={1} flexShrink={1} style={{overflowY: "auto", backgroundColor: "#fff"}}>
-        {content}
-      </Box>
-      <Box flexGrow={0} style={{backgroundColor: "#ccc"}}>
-        <Toolbar>
+      <AppBar position="sticky" style={{flexGrow: 0, backgroundColor: "#ccc"}}>
+        <Toolbar display="flex" style={{justifyContent: "space-between"}}>
+          <IconButton className="narrowLayoutOnly" edge="start" onClick={setMustShowPanel?.bind(this, 'LIST')} >
+            <ArrowBackIcon />
+          </IconButton>
           {Boolean(noteDate) && ! noteErr ? <Input type="date" value={dateStr} onChange={handleDateChange} /> : null}
         </Toolbar>
+      </AppBar>
+      <Box style={{overflowY: "auto", flexGrow: 1, flexShrink: 1, backgroundColor: "#fff"}}>
+        {content}
       </Box>
   </Box>);
 }

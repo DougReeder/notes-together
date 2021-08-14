@@ -25,7 +25,10 @@ function App() {
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
 
   const [selectedNoteId, setSelectedNoteId] = useState(null);
-  const handleSelect = id => setSelectedNoteId(id);
+  function handleSelect(id) {
+    setSelectedNoteId(id);
+    setMustShowPanel('DETAIL');
+  }
 
   const [focusOnLoad, setFocusOnLoad] = useState(false);
   async function addNote() {
@@ -36,6 +39,7 @@ function App() {
       await upsertNote(newNote);
       setFocusOnLoad(true);
       setSelectedNoteId(newNote.id);
+      setMustShowPanel('DETAIL');
     } catch (err) {
       setTransientErr(err);
     }
@@ -43,6 +47,9 @@ function App() {
   function clearFocusOnLoad() {
     setFocusOnLoad(false);
   }
+
+  // LIST or DETAIL
+  const [mustShowPanel, setMustShowPanel] = useState('LIST');
 
   const {enqueueSnackbar} = useSnackbar();
 
@@ -139,7 +146,7 @@ function App() {
   }
 
   return (
-      <div className="App panelContainer" role="application">
+      <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
         <div className="panelMain" id="panelMain">
           <header className="App-header">
             <input type="search" placeholder="Enter search word(s)"
@@ -167,7 +174,7 @@ function App() {
           </Snackbar>
         </div>
         <div className="panelDetail">
-          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad ? clearFocusOnLoad : null}></Detail>
+          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
         </div>
       </div>
   );

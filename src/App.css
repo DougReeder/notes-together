@@ -1,64 +1,83 @@
 .App {
-  /*font-size: calc(6px + 1vmin);*/
 }
 
 @media (prefers-reduced-motion: no-preference) {
 }
 
 .panelContainer {
-  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: stretch;
+}
+
+.panelMain {
   height: 100vh;
 }
 
-@media all and (min-width: 640px) {
-  .panelContainer {
-    display: flex;
-    align-items: stretch;
-  }
-
-  .panelMain {
-    width: 320px;
-    height: 100vh;
-    flex: 1 1 auto;
-  }
-
-  .panelDetail {
-    width: 320px;
-    height: 100vh;
-    flex: 2 1 auto;
-  }
+.panelDetail {
+  height: 100vh;
 }
 
-@media all and (max-width: 639px) {
+@supports (-webkit-touch-callout: none) {   /* Safari iOS */
   .panelContainer {
+    height: -webkit-fill-available;
+
     white-space: nowrap;
     overflow: hidden;
   }
 
   .panelMain {
-    width: 100%;
-    height: 100%;
-    display: inline-block;
-    vertical-align: top;
-    white-space: normal;
-    transform: translateX(0);
-    transition: transform 0.3s;
-  }
-  .panelMain.right {
-    transform: translateX(-100%);
+    height: -webkit-fill-available;
   }
 
   .panelDetail {
-    width: 100%;
-    height: 100%;
-    display: inline-block;
-    vertical-align: top;
-    white-space: normal;
+    height: -webkit-fill-available;
+  }
+}
+
+@media all and (min-width: 640px) {
+  .panelContainer {
+    width: 100vw;
+  }
+
+  .panelMain {
+    width: 320px;
+    flex: 1 1 auto;
+  }
+
+  .panelDetail {
+    width: 320px;
+    flex: 2 1 auto;
+  }
+
+  .narrowLayoutOnly {
+    display: none !important;
+  }
+}
+
+@media all and (max-width: 639px) {
+  .panelContainer {
+    width: 200vw;
     transform: translateX(0);
     transition: transform 0.3s;
   }
-  .panelDetail.right {
-    transform: translateX(-100%);
+  .panelContainer.right {
+    transform: translateX(-100vw);
+  }
+
+  .panelMain {
+    width: 100vw;
+    display: inline-block;
+    vertical-align: top;
+    white-space: normal;
+  }
+
+  .panelDetail {
+    width: 100vw;
+    display: inline-block;
+    vertical-align: top;
+    white-space: normal;
   }
 }
 
@@ -109,6 +128,7 @@
 .App-header input {
   margin-left: 1ex;
   flex: 1 1 auto;
+  font-size: 16px;
 }
 .count {
   margin-left: 1.5ch;
@@ -171,4 +191,13 @@
 #remotestorage-widget {
   position: absolute;
   bottom: 0;
+  /*bottom: env(safe-area-inset-bottom);*/
+  max-width: 80%;
+}
+
+#remotestorage-widget .rs-widget {
+  max-width: 95vw;
+}
+#remotestorage-widget .rs-widget.rs-closed {
+  max-width: 56px;
 }
