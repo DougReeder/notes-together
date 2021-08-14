@@ -5,12 +5,27 @@ import React, {useState, useEffect} from 'react';
 import List from './List';
 import Detail from './Detail'
 import './App.css';
-import {Menu, MenuItem, Snackbar} from "@material-ui/core";
+import {Fab, Menu, MenuItem, Snackbar} from "@material-ui/core";
+import {makeStyles} from '@material-ui/core/styles';
+import Slide from '@material-ui/core/Slide';
+import AddIcon from '@material-ui/icons/Add';
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {useSnackbar} from "notistack";
-import Slide from '@material-ui/core/Slide';
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    '& > *': {
+      margin: theme.spacing(1),
+    },
+  },
+  fab: {
+    position: 'absolute',
+    right: '0.75rem',
+    bottom: '0.75rem',
+  },
+}));
 
 function App() {
   // TODO: replace string with set of normalized search terms
@@ -145,6 +160,8 @@ function App() {
     setTransientErr(null);
   }
 
+  const classes = useStyles();
+
   return (
       <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
         <div className="panelMain" id="panelMain">
@@ -165,7 +182,7 @@ function App() {
             </Menu>
           </header>
           <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
-          <button className="actionBtn" onClick={addNote}><span>+</span></button>
+          <Fab onClick={addNote} className={classes.fab} color="primary" aria-label="add"><AddIcon /></Fab>
           <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
             <Alert onClose={handleSnackbarClose} severity="error">
               <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>

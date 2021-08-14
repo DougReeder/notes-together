@@ -88,21 +88,6 @@
   flex-direction: column;
 }
 
-.actionBtn {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-
-  width: 52px;
-  height: 52px;
-  border-radius: 26px;
-  font-size: 6ex;
-}
-.actionBtn > span {
-  position: relative;
-  top: -6px;
-}
-
 .panelDetail {
   box-sizing: border-box;
 
