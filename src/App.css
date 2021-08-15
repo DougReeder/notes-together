@@ -4,8 +4,23 @@
 @media (prefers-reduced-motion: no-preference) {
 }
 
+html {
+  touch-action: none;
+  overflow: hidden;
+}
+body {
+  touch-action: none;
+  overflow: hidden;
+}
+#root {
+  touch-action: none;
+  overflow: hidden;
+}
+
 .panelContainer {
   height: 100vh;
+  touch-action: none;
+  overflow-x: hidden;
 
   display: flex;
   align-items: stretch;
