@@ -1,9 +1,10 @@
 
-article[contenteditable] {
+[role=textbox] {
+    padding: 1rem;
     background-color: white;
 }
 
-article[contenteditable] > *:first-child {
+[role=textbox] > *:first-child {
     margin-top: 0;
 }
 

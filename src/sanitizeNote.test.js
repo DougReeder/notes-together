@@ -17,6 +17,7 @@ describe("sanitizeNote", () => {
   it("should remove forbidden tags and attributes", () => {
     const original = createMemoryNote(generateTestId(),
         `Our <a href="/menu">menu</a> is extensive!
+<img srcset="https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=480 480w, https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=1080 1080w" src="https://mdg.imgix.net/book-cover.jpg" class="img-fluid" alt="Markdown Guide book cover" loading="lazy" sizes="100vw">
 <script>alert("Hello World!");</script>
 <button name="button">Press me</button>
 <input type="text" id="name" name="name" required minlength="4" maxlength="8" size="10">
@@ -29,7 +30,8 @@ unstyled text <font color="red" size="-2">small red text</font> unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.text).toEqual(
-        `Our menu is extensive!
+        `Our <a href="/menu">menu</a> is extensive!
+<img srcset="https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=480 480w, https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=1080 1080w" src="https://mdg.imgix.net/book-cover.jpg" alt="Markdown Guide book cover" sizes="100vw" />
 
 
 

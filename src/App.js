@@ -48,7 +48,7 @@ function App() {
   const [focusOnLoad, setFocusOnLoad] = useState(false);
   async function addNote() {
     try {
-      const initialText = searchStr.trim() ? "<br />" + searchStr.trim() + "&nbsp;" : "";
+      const initialText = searchStr.trim() ? `<p></p><p>${searchStr.trim()}&nbsp;</p>` : "";
       const newNote = createMemoryNote(null, initialText);
       // console.log("adding note:", newNote);
       await upsertNote(newNote);

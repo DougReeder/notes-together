@@ -90,12 +90,12 @@ describe("isLikelyMarkdown", () => {
     expect(isLikelyMarkdown(" + erste\n  + zwitte")).toBeTruthy();
   });
 
-  test("should flag letter-caret-2", () => {
-    expect(isLikelyMarkdown("r^2")).toBeTruthy();
+  test("should flag link", () => {
+    expect(isLikelyMarkdown("[link with title](http://nodeca.github.io/pica/demo/ \"title text!\")) An adorable corgi!")).toBeTruthy();
   });
 
-  test("should flag letter-caret-3", () => {
-    expect(isLikelyMarkdown("I^3C")).toBeTruthy();
+  test("should flag image", () => {
+    expect(isLikelyMarkdown("![cardigan corgi](https://images.dog.ceo/breeds/corgi-cardigan/n02113186_1030.jpg) An adorable corgi!")).toBeTruthy();
   });
 
   test("should not flag letter-caret-1", () => {
