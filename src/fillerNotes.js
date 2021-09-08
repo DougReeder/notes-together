@@ -73,7 +73,7 @@ async function seedNotes() {
 
 function randomNote() {
   const id = Number.MIN_SAFE_INTEGER - 30 + Math.floor(Math.random() * Number.MIN_SAFE_INTEGER);
-  const text = Math.random() < 0.7 ? movieText() : listText();
+  const text = Math.random() < 0.666 ? movieText() : listText();
   const date = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
 
   return upsertNote(createMemoryNote(id, text, date));
@@ -129,13 +129,15 @@ function emphasizeTitle(titleText, suffix) {
   suffix = suffix ? suffix : '';
 
   const r = Math.random();
-  if (r < 0.2) {
-    return "<b>" + titleText + "</b>" + suffix + "\n";
-  } else if (r < 0.4) {
+  if (r < 0.1) {
+    return "<p><b>" + titleText + "</b>" + suffix + "</p>\n";
+  } else if (r < 0.2) {
     return '<i>' + titleText + '</i>' + suffix + '\n';
-  } else if (r < 0.5) {
-    return '<h2>' + titleText + suffix + '</h2>\n';
+  } else if (r < 0.4) {
+    return '<h1>' + titleText + '<i>' + suffix + '</i></h1>\n';
   } else if (r < 0.6) {
+    return '<h2>' + titleText + suffix + '</h2>\n';
+  } else if (r < 0.8) {
     return '<h3>' + titleText + suffix + '</h3>\n';
   } else {
     return titleText + suffix + '\n';

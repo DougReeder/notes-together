@@ -170,7 +170,7 @@ bare text`;
     }
   });
 
-  it("should wrap links, so all the children of an Element are the same", () => {
+  it("should wrap links sibling to blocks, so all the children of an Element are the same", () => {
     const html = `<a href="http://example.com">link text</a>
 <p>lorem ipsum</p>`;
 

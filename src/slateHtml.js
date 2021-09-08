@@ -225,6 +225,7 @@ const RenderingElement = props => {
 
   switch (element.type) {
     default:
+    case 'paragraph':
       return <p {...attributes}>{children}</p>
     case 'quote':
       return <blockquote {...attributes}>{children}</blockquote>

@@ -1,17 +1,22 @@
 import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
-import React, {useEffect, useState, useMemo, useCallback} from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useReducer} from 'react';
 import PropTypes from 'prop-types';
 import {getNote, upsertNote} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
-import {AppBar, Box, IconButton, Input, Toolbar} from "@material-ui/core";
+import {AppBar, Box, IconButton, Input, MenuItem, Select, Toolbar} from "@material-ui/core";
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+import FormatBoldIcon from '@material-ui/icons/FormatBold';
+import FormatItalicIcon from '@material-ui/icons/FormatItalic';
+import CodeIcon from '@material-ui/icons/Code';
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Element} from 'slate'
-import { Slate, Editable, withReact} from 'slate-react';
+import {createEditor, Editor, Element as SlateElement} from 'slate'
+import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
+import isHotkey from 'is-hotkey';
+import {getRelevantBlockType, changeBlockType} from "./slateUtil";
 
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
@@ -54,8 +59,10 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           replaceNote(theNote);
 
           if ('function' === typeof focusOnLoadCB) {
-            // editable?.current?.el?.current?.focus();
-            focusOnLoadCB();
+            setTimeout(() => {
+              focusOnLoadCB();
+              ReactEditor.focus(editor);
+            }, 4);
           }
         } else {
           const err = new Error("no note with id=" + noteId);
@@ -77,7 +84,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       setEditorValue([{type: 'paragraph', children: [{text: ""}]}]);
       setNoteDate(null);
     }
-  }, [noteId, searchStr, focusOnLoadCB]);
+  }, [noteId, searchStr, focusOnLoadCB, editor]);
 
   function replaceNote(theNote) {
     try {
@@ -91,7 +98,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         slateNodes.push({type: 'paragraph', children: [{text: ""}]});
       }
       // Children of editor must be Elements.
-      const containsElement = slateNodes.some(slateNode => Element.isElement(slateNode));
+      const containsElement = slateNodes.some(slateNode => SlateElement.isElement(slateNode));
       if (!containsElement) {
         slateNodes = [{type: 'paragraph', children: slateNodes}];
         console.log("slateNodes encased in paragraph:", slateNodes);
@@ -117,6 +124,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         console.log(`HTML ${noteId}:`, html);
         await upsertNote(createMemoryNote(noteId, html, noteDate), 'DETAIL');
       } else {
+        forceUpdate();   // updates the mark indicators
         console.log("selection change:", editor.operations.map(op => op.type));
       }
     } catch (err) {
@@ -172,7 +180,46 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   const renderElement = useCallback(props => <RenderingElement {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
 
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+  // Defines our own custom set of helpers.
+  function isMarkActive(editor, format) {
+    const marks = Editor.marks(editor);
+    return marks ? marks[format] === true : false
+  }
+
+  function toggleMark(editor, format) {
+    const isActive = isMarkActive(editor, format)
+
+    if (isActive) {
+      Editor.removeMark(editor, format)
+    } else {
+      Editor.addMark(editor, format, true)
+    }
+    forceUpdate();   // so buttons can change colors
+  }
+
+  const selectedBlockType = getRelevantBlockType(editor);
+  console.log(`selectedBlockType: "${selectedBlockType}"`);
+
+  function handleSelectedBlockTypeChange(evt) {
+    const targetType = evt.target.value;
+    console.log(`${selectedBlockType} -> ${targetType}`);
+    switch (targetType) {
+      default:
+        changeBlockType(editor, targetType);
+        return;
+      case 'multiple':
+      case 'list-item':
+      case 'image':
+      case 'n/a':
+      case '':
+        return;
+    }
+  }
+
   let content;
+  let noteControls = null;
   if (noteErr) {
     content = (<Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
       <AlertTitle>{noteErr?.userMsg || "Restart your device"}</AlertTitle>
@@ -197,9 +244,94 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             placeholder="Type or paste some text or an image."
+            onKeyDown={evt => {
+              switch (evt.key) {   // eslint-disable-line default-case
+                case 'Enter':
+                  if (evt.shiftKey || isHotkey('mod+Enter', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    editor.insertText('\n');
+                  }
+                  break;
+                case 'i':
+                  if (isHotkey('mod+i', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'italic');
+                  }
+                  break;
+                case 'b':
+                  if (isHotkey('mod+b', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'bold');
+                  }
+                  break;
+                case '`': {
+                  if (isHotkey('mod+`', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'code');
+                  } else if (isHotkey('mod+shift+`', evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'code');
+                  }
+                  break;
+                }
+              }
+            }}
         />
       </Slate>
     );
+    noteControls = (<>
+      <Input type="date" value={dateStr} onChange={handleDateChange}/>
+      <IconButton aria-label="Format italic"
+                  color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
+                  onMouseDown={evt => {
+                    evt.preventDefault();
+                    toggleMark(editor, 'italic');
+                    // ReactEditor.focus(editor);
+                  }}>
+        <FormatItalicIcon/>
+      </IconButton>
+      <IconButton aria-label="Format bold"
+                  color={isMarkActive(editor, 'bold') ? 'primary' : 'default'}
+                  onMouseDown={evt => {
+                    evt.preventDefault();
+                    toggleMark(editor, 'bold');
+                    // ReactEditor.focus(editor);
+                  }}>
+        <FormatBoldIcon/>
+      </IconButton>
+      <IconButton aria-label="Format monospaced"
+                  color={isMarkActive(editor, 'code') ? 'primary' : 'default'}
+                  onMouseDown={evt => {
+                    evt.preventDefault();
+                    toggleMark(editor, 'code');
+                    // ReactEditor.focus(editor);
+                  }}>
+        <CodeIcon/>
+      </IconButton>
+      <Select
+          labelId="type-select-label"
+          id="type-select"
+          value={selectedBlockType}
+          onChange={handleSelectedBlockTypeChange}
+          style={{minWidth: '15ch'}}
+      >
+        <MenuItem value={'paragraph'}>Body</MenuItem>
+        <MenuItem value={'quote'}>Block Quote</MenuItem>
+        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
+        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
+        <MenuItem value={'numbered-list'}>1. Numbered List</MenuItem>
+        <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
+        <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
+        <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
+        <MenuItem value={'heading-four'}><h4>Subheading 4</h4></MenuItem>
+        <MenuItem value={'heading-five'}><h5>Subheading 5</h5></MenuItem>
+        <MenuItem value={'heading-six'}><h6>Subheading 6</h6></MenuItem>
+        {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
+        <MenuItem value={'image'}>(Image)</MenuItem>
+        <MenuItem value={'multiple'}>(Multiple)</MenuItem>
+        <MenuItem value={'n/a'}>(n/a)</MenuItem>
+      </Select>
+    </>);
   }
 
   return (<Box style={{height: "100%"}} display="flex" flexDirection="column" alignItems="stretch" bgcolor="background.paper">
@@ -208,7 +340,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <IconButton className="narrowLayoutOnly" edge="start" onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
           </IconButton>
-          {Boolean(noteDate) && ! noteErr ? <Input type="date" value={dateStr} onChange={handleDateChange} /> : null}
+          {Boolean(noteDate) && ! noteErr ? noteControls : null}
         </Toolbar>
       </AppBar>
       <Box style={{overflowY: "auto", flexGrow: 1, flexShrink: 1, backgroundColor: "#fff"}}>
