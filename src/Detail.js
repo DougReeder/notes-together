@@ -11,7 +11,7 @@ import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
 import CodeIcon from '@material-ui/icons/Code';
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement} from 'slate'
+import {createEditor, Editor, Element as SlateElement, Transforms} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -45,6 +45,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     type: 'paragraph',
     children: [{ text: 'Initial editor value' }],
   }]);
+  const [editableKey, setEditableKey] = useState(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
   const editor = useMemo(
       () => withHtml(withReact(withHistory(createEditor()))),
       []
@@ -103,6 +104,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         slateNodes = [{type: 'paragraph', children: slateNodes}];
         console.log("slateNodes encased in paragraph:", slateNodes);
       }
+      setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
       setEditorValue(slateNodes);
       // Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
@@ -241,6 +243,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     content = (
       <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
         <Editable
+            key={editableKey}   // change the key to restart editor w/ new editorValue
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             placeholder="Type or paste some text or an image."
