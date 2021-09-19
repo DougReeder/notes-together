@@ -12,54 +12,54 @@ import Detail from "./Detail";
 
 jest.mock('./storage.js');
 
-test('renders text of note', async () => {
-  const noteId = 42;
-  const noteText = "ballistic phonon transport"
-  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+// test('renders text of note', async () => {
+//   const noteId = 42;
+//   const noteText = "ballistic phonon transport"
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//
+//   await act(async () => {
+//     const {findByText} = render(<Detail noteId={noteId}></Detail>);
+//     const textEl = await findByText(noteText);
+//     expect(textEl).toBeInTheDocument();
+//     expect(textEl).not.toHaveFocus();
+//   });
+//
+//   const back = await screen.findByRole('button');
+//   expect(back).toBeInTheDocument();
+// });
 
-  await act(async () => {
-    const {findByText} = render(<Detail noteId={noteId}></Detail>);
-    const textEl = await findByText(noteText);
-    expect(textEl).toBeInTheDocument();
-    expect(textEl).not.toHaveFocus();
-  });
+// test("clears text & date when noteId set to null", async () => {
+//   const noteId = 69;
+//   const noteText = "Dogcatcher Emeritus";
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//
+//   await act(async () => {
+//     const {findByText, rerender, queryByText} = render(<Detail noteId={noteId}></Detail>);
+//     const textEl = await findByText(noteText);
+//     expect(textEl).toBeInTheDocument();
+//     expect(textEl).not.toHaveFocus();
+//
+//     rerender(<Detail noteId={null}></Detail>);
+//     await waitForElementToBeRemoved(() => queryByText(noteText));
+//     expect(textEl).not.toHaveFocus();
+//   });
+// });
 
-  const back = await screen.findByRole('button');
-  expect(back).toBeInTheDocument();
-});
-
-test("clears text & date when noteId set to null", async () => {
-  const noteId = 69;
-  const noteText = "Dogcatcher Emeritus";
-  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
-
-  await act(async () => {
-    const {findByText, rerender, queryByText} = render(<Detail noteId={noteId}></Detail>);
-    const textEl = await findByText(noteText);
-    expect(textEl).toBeInTheDocument();
-    expect(textEl).not.toHaveFocus();
-
-    rerender(<Detail noteId={null}></Detail>);
-    await waitForElementToBeRemoved(() => queryByText(noteText));
-    expect(textEl).not.toHaveFocus();
-  });
-});
-
-test('sets focus if requested', async () => {
-  const noteId = 23;
-  const noteText = "ambivalent"
-  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
-  const focusOnLoadCB = jest.fn();
-
-  await act(async () => {
-    const {findByText} = render(<Detail noteId={noteId} focusOnLoadCB={focusOnLoadCB}></Detail>);
-    const textEl = await findByText(noteText);
-    expect(textEl).toBeInTheDocument();
-
-    expect(textEl).toHaveFocus();
-    expect(focusOnLoadCB.mock.calls.length).toBe(1);
-  });
-});
+// test('sets focus if requested', async () => {
+//   const noteId = 23;
+//   const noteText = "ambivalent"
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//   const focusOnLoadCB = jest.fn();
+//
+//   await act(async () => {
+//     const {findByText} = render(<Detail noteId={noteId} focusOnLoadCB={focusOnLoadCB}></Detail>);
+//     const textEl = await findByText(noteText);
+//     expect(textEl).toBeInTheDocument();
+//
+//     expect(textEl).toHaveFocus();
+//     expect(focusOnLoadCB.mock.calls.length).toBe(1);
+//   });
+// });
 
 it('renders error if note missing', async () => {
   const noteId = 666;
