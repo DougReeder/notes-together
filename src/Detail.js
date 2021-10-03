@@ -337,7 +337,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     </>);
   }
 
-  return (<Box style={{height: "100%"}} display="flex" flexDirection="column" alignItems="stretch" bgcolor="background.paper">
+  return (<>
       <AppBar position="sticky" style={{flexGrow: 0, backgroundColor: "#ccc"}}>
         <Toolbar display="flex" style={{justifyContent: "space-between"}}>
           <IconButton className="narrowLayoutOnly" edge="start" onClick={setMustShowPanel?.bind(this, 'LIST')} >
@@ -349,7 +349,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       <Box style={{overflowY: "auto", flexGrow: 1, flexShrink: 1, backgroundColor: "#fff"}}>
         {content}
       </Box>
-  </Box>);
+  </>);
 }
 
 Detail.propTypes = {

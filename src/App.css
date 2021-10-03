@@ -26,11 +26,7 @@ body {
   align-items: stretch;
 }
 
-.panelMain {
-  height: 100vh;
-}
-
-.panelDetail {
+.panel {
   height: 100vh;
 }
 
@@ -42,11 +38,7 @@ body {
     overflow: hidden;
   }
 
-  .panelMain {
-    height: -webkit-fill-available;
-  }
-
-  .panelDetail {
+  .panel {
     height: -webkit-fill-available;
   }
 }
@@ -81,14 +73,7 @@ body {
     transform: translateX(-100vw);
   }
 
-  .panelMain {
-    width: 100vw;
-    display: inline-block;
-    vertical-align: top;
-    white-space: normal;
-  }
-
-  .panelDetail {
+  .panel {
     width: 100vw;
     display: inline-block;
     vertical-align: top;
@@ -96,18 +81,15 @@ body {
   }
 }
 
-.panelMain {
+.panel {
   position: relative;
 
   display: flex;
   flex-direction: column;
+  alignItems: stretch
 }
 
 .panelDetail {
-  box-sizing: border-box;
-
-  position: relative;
-
   background-color: #eeeeee;
   overflow-x: hidden;
 }

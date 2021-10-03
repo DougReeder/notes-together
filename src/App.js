@@ -164,7 +164,7 @@ function App() {
 
   return (
       <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
-        <div className="panelMain" id="panelMain">
+        <div className="panel panelMain" id="panelMain">
           <header className="App-header">
             <input type="search" placeholder="Enter search word(s)"
                    title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} role="search" />
@@ -190,7 +190,7 @@ function App() {
             </Alert>
           </Snackbar>
         </div>
-        <div className="panelDetail">
+        <div className="panel panelDetail">
           <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
         </div>
       </div>
