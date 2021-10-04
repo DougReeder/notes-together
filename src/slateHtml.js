@@ -92,9 +92,6 @@ const ELEMENT_TAGS = {
   H1: () => ({ type: 'heading-one' }),
   H2: () => ({ type: 'heading-two' }),
   H3: () => ({ type: 'heading-three' }),
-  H4: () => ({ type: 'heading-four' }),
-  H5: () => ({ type: 'heading-five' }),
-  H6: () => ({ type: 'heading-six' }),
   HR: () => ({ type: 'thematic-break'}),
   IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), alt: el.getAttribute('alt'), title: el.getAttribute('title') }),
   LI: () => ({ type: 'list-item' }),
@@ -243,12 +240,6 @@ const RenderingElement = props => {
       return <h2 {...attributes}>{children}</h2>
     case 'heading-three':
       return <h3 {...attributes}>{children}</h3>
-    case 'heading-four':
-      return <h4 {...attributes}>{children}</h4>
-    case 'heading-five':
-      return <h5 {...attributes}>{children}</h5>
-    case 'heading-six':
-      return <h6 {...attributes}>{children}</h6>
     case 'list-item':
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
@@ -352,12 +343,6 @@ function serializeHtml(slateNodes) {
           return `<h2>${children}</h2>`;
         case 'heading-three':
           return `<h3>${children}</h3>`;
-        case 'heading-four':
-          return `<h4>${children}</h4>`;
-        case 'heading-five':
-          return `<h5>${children}</h5>`;
-        case 'heading-six':
-          return `<h6>${children}</h6>`;
         case 'quote':
           return `<blockquote>${children}</blockquote>`;
         case 'code':

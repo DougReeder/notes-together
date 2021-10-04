@@ -61,6 +61,9 @@ const semanticOnly = {
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
   transformTags: {
+    'h4': 'h3',
+    'h5': 'h3',
+    'h6': 'h3',
     'article': 'div',
     'textarea': 'div',
     'em': 'i',

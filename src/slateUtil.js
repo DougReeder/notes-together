@@ -22,9 +22,9 @@ function getRelevantBlockType(editor) {
     const [node] = nodeEntry.value;
     if ('n/a' === blockType) {
       blockType = node.type || 'n/a';
-      console.log(`relevant block type ${node.type}`)
+      // console.log(`relevant block type ${node.type}`)
     } else if (blockType !== node.type) {
-      console.log(`multiple block types ${node.type}`)
+      // console.log(`multiple block types ${node.type}`)
       return "multiple";
     }
 

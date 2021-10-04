@@ -24,22 +24,12 @@ h2 {
     margin-block-end: 1ex;
     margin-inline-start: 0;
     margin-inline-end: 0;
-    font-size: 1.3em;
+    font-size: 1.25em;
     text-align: center;
     text-transform: capitalize;
 }
 
 h3 {
-    margin-block-start: 0;
-    margin-block-end: 1ex;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
-    font-size: 1.1em;
-    text-align: center;
-    text-transform: capitalize;
-}
-
-h4, h5, h6 {
     margin-block-start: 0;
     margin-block-end: 1ex;
     margin-inline-start: 0;

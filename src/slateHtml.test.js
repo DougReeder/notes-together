@@ -288,14 +288,9 @@ describe("serializeHtml and deserializeHtml", () => {
       {type: 'heading-three', children: [
           {text: "Subsidiary considerations"},
         ]},
-      {type: 'heading-four', children: [
-          {text: "Subsidiary considerations"},
-        ]},
-      {type: 'heading-five', children: [
-          {text: "Subsidiary considerations"},
-        ]},
-      {type: 'heading-six', children: [
-          {text: "Subsidiary considerations"},
+        // not a true heading
+      {type: 'paragraph', children: [
+          {text: "Subsidiary considerations", bold: true},
         ]},
     ];
 
