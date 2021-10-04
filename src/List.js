@@ -162,7 +162,7 @@ function List(props) {
         <h2>Write or sync some notes!</h2>
         <p>To create a new note, tap the <button className="actionBtn" style={{position:"static", transform: "scale(0.7)", verticalAlign: "middle"}}><span>+</span></button> button.
           You can paste text and images into it.</p>
-        <p>Connect to Storage to sync your notes to a remote server.</p>
+        <p>Connect to Storage to sync your notes with a remote server.</p>
       </div>
       // TODO: and insert pictures
       // TODO: To import text, Markdown or HTML notes, tap the menu button, then <b>Import file as multiple notes</b>.

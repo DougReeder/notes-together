@@ -1,4 +1,4 @@
-import {isLikelyMarkdown} from "./util";
+import {isLikelyMarkdown, visualViewportMatters} from "./util";
 
 describe("isLikelyMarkdown", () => {
   test("should not flag plain text starting or ending in newline", () => {
@@ -100,5 +100,11 @@ describe("isLikelyMarkdown", () => {
 
   test("should not flag letter-caret-1", () => {
     expect(isLikelyMarkdown("...as asserted by Fong^1")).toBeFalsy();
+  });
+});
+
+describe("visualViewportMatters", () => {
+  it("should not throw an exception", () => {
+    expect(typeof visualViewportMatters()).toEqual('boolean');
   });
 });

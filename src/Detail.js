@@ -2,6 +2,7 @@ import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
 import React, {useEffect, useState, useMemo, useCallback, useReducer} from 'react';
 import PropTypes from 'prop-types';
+import {useViewportScrollCoords} from 'web-api-hooks';
 import {getNote, upsertNote} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
@@ -17,11 +18,13 @@ import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
 import {getRelevantBlockType, changeBlockType} from "./slateUtil";
+import {visualViewportMatters} from "./util";
 
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
 function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
+  const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   // useEffect(() => {
   //   try {
@@ -109,7 +112,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       // Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
     } catch (err) {
-      console.error("while replacing note:", err);
+      console.error(`while replacing note ${theNote.id}:`, err);
       setNoteErr(err);
     }
   }
@@ -337,8 +340,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     </>);
   }
 
+  const toolbarStyle = {flexGrow: 0, backgroundColor: "#ccc"};
+  if (visualViewportMatters()) {
+    toolbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
+  }
+
   return (<>
-      <AppBar position="sticky" style={{flexGrow: 0, backgroundColor: "#ccc"}}>
+      <AppBar position="sticky" style={toolbarStyle}>
         <Toolbar display="flex" style={{justifyContent: "space-between"}}>
           <IconButton className="narrowLayoutOnly" edge="start" onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
