@@ -25,7 +25,11 @@ function getRelevantBlockType(editor) {
       // console.log(`relevant block type ${node.type}`)
     } else if (blockType !== node.type) {
       // console.log(`multiple block types ${node.type}`)
-      return "multiple";
+      if (node.type === 'image') {
+        return 'image';   // here meaning 'multiple including image'
+      } else {
+        return "multiple";
+      }
     }
 
     nodeEntry = topLevelBlockNodesInSelection.next();

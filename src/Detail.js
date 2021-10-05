@@ -12,7 +12,7 @@ import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
 import CodeIcon from '@material-ui/icons/Code';
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement} from 'slate'
+import {createEditor, Editor, Element as SlateElement, Transforms} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -90,6 +90,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }, [noteId, searchStr, focusOnLoadCB, editor]);
 
+  const [previousSelection, setPreviousSelection] = useState(null);
+  const [previousBlockType, setPreviousBlockType] = useState('n/a');
+
   function replaceNote(theNote) {
     try {
       const html = sanitizeHtml(theNote.text, semanticOnly);
@@ -107,6 +110,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         slateNodes = [{type: 'paragraph', children: slateNodes}];
         console.log("slateNodes encased in paragraph:", slateNodes);
       }
+      Transforms.deselect(editor);
+      setPreviousSelection(null);
+      setPreviousBlockType('n/a');
       setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
       setEditorValue(slateNodes);
       // Editor.normalize(editor, {force: true});
@@ -132,9 +138,21 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         forceUpdate();   // updates the mark indicators
         console.log("selection change:", editor.operations.map(op => op.type));
       }
+
+      if (editor.selection) {
+        // For a Slate Range (or null), JSON is good enough (and deep clones).
+        const copiedSelection = JSON.parse(JSON.stringify(editor.selection));
+        setPreviousSelection(copiedSelection);
+        setPreviousBlockType(getRelevantBlockType(editor));
+        // console.log("copiedSelection:", JSON.stringify(copiedSelection));
+      } else {
+        console.log("not copying selection:", editor.selection);
+      }
     } catch (err) {
       console.error("handleSlateChange:", err);
       setNoteErr(err);
+      setPreviousSelection(null);
+      setPreviousBlockType('n/a');
     }
   }
 
@@ -204,22 +222,31 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     forceUpdate();   // so buttons can change colors
   }
 
-  const selectedBlockType = getRelevantBlockType(editor);
-  console.log(`selectedBlockType: "${selectedBlockType}"`);
-
   function handleSelectedBlockTypeChange(evt) {
-    const targetType = evt.target.value;
-    console.log(`${selectedBlockType} -> ${targetType}`);
-    switch (targetType) {
-      default:
-        changeBlockType(editor, targetType);
+    // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
+    if (previousSelection) {
+      Transforms.select(editor, previousSelection);
+      ReactEditor.focus(editor);
+      if (['image', 'link'].indexOf(previousBlockType) > -1) {
+        window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Only text blocks can be changed."}, window?.location?.origin);
         return;
-      case 'multiple':
-      case 'list-item':
-      case 'image':
-      case 'n/a':
-      case '':
-        return;
+      }
+      const targetType = evt.target.value;
+      // console.log(`${previousBlockType} -> ${targetType}`);
+      switch (targetType) {
+        default:
+          changeBlockType(editor, targetType);
+          return;
+        case 'multiple':
+        case 'list-item':
+        case 'image':
+        case 'n/a':
+        case '':
+          window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "That wouldn't make sense."}, window?.location?.origin);
+          return;
+      }
+    } else {
+      window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "nothing selected"}, window?.location?.origin);
     }
   }
 
@@ -317,7 +344,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       <Select
           labelId="type-select-label"
           id="type-select"
-          value={selectedBlockType}
+          value={previousBlockType}
           onChange={handleSelectedBlockTypeChange}
           style={{minWidth: '15ch'}}
       >
