@@ -11,6 +11,8 @@ import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
 import CodeIcon from '@material-ui/icons/Code';
+import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
+import {StrikethroughS} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {createEditor, Editor, Element as SlateElement, Transforms} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
@@ -360,6 +362,22 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                     // ReactEditor.focus(editor);
                   }}>
         <CodeIcon/>
+      </IconButton>
+      <IconButton aria-label="Format underline"
+                  color={isMarkActive(editor, 'underline') ? 'primary' : 'default'}
+                  onMouseDown={evt => {
+                    evt.preventDefault();
+                    toggleMark(editor, 'underline');
+                  }}>
+        <FormatUnderlinedIcon/>
+      </IconButton>
+      <IconButton aria-label="Format strikethrough"
+                  color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'default'}
+                  onMouseDown={evt => {
+                    evt.preventDefault();
+                    toggleMark(editor, 'strikethrough');
+                  }}>
+        <StrikethroughS/>
       </IconButton>
     </>);
   }
