@@ -1,4 +1,26 @@
 
+.MuiToolbar-gutters {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.MuiToolbar-root {
+    justify-content: space-around;
+    min-height: 52px !important;
+    flex-wrap: wrap;
+}
+/* on smaller phones, hides second row of tools */
+@media (hover: none) and (pointer: coarse) and (max-height: 700px) {
+    .MuiToolbar-root {
+        height: 52px;
+        overflow: hidden;
+    }
+}
+
+.MuiButtonBase-root, .MuiInputBase-root {
+    height: 52px;
+}
+
 .MuiSelect-root h1, .MuiSelect-root h2, .MuiSelect-root h3,
 .MuiMenuItem-root h1, .MuiMenuItem-root h2, .MuiMenuItem-root h3 {
     margin-block-start: 0;

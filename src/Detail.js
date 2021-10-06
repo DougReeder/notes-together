@@ -314,6 +314,26 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     );
     noteControls = (<>
       <Input type="date" value={dateStr} onChange={handleDateChange}/>
+      <Select
+          labelId="type-select-label"
+          id="type-select"
+          value={previousBlockType}
+          onChange={handleSelectedBlockTypeChange}
+          style={{minWidth: '15ch'}}
+      >
+        <MenuItem value={'paragraph'}>Body</MenuItem>
+        <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
+        <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
+        <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
+        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
+        <MenuItem value={'numbered-list'}>Numbered List</MenuItem>
+        <MenuItem value={'quote'}>Block Quote</MenuItem>
+        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
+        {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
+        <MenuItem value={'image'}>(Image)</MenuItem>
+        <MenuItem value={'multiple'}>(Multiple)</MenuItem>
+        <MenuItem value={'n/a'}>(n/a)</MenuItem>
+      </Select>
       <IconButton aria-label="Format italic"
                   color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
                   onMouseDown={evt => {
@@ -341,38 +361,18 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                   }}>
         <CodeIcon/>
       </IconButton>
-      <Select
-          labelId="type-select-label"
-          id="type-select"
-          value={previousBlockType}
-          onChange={handleSelectedBlockTypeChange}
-          style={{minWidth: '15ch'}}
-      >
-        <MenuItem value={'paragraph'}>Body</MenuItem>
-        <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
-        <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
-        <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
-        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
-        <MenuItem value={'numbered-list'}>1. Numbered List</MenuItem>
-        <MenuItem value={'quote'}>Block Quote</MenuItem>
-        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
-        {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
-        <MenuItem value={'image'}>(Image)</MenuItem>
-        <MenuItem value={'multiple'}>(Multiple)</MenuItem>
-        <MenuItem value={'n/a'}>(n/a)</MenuItem>
-      </Select>
     </>);
   }
 
-  const toolbarStyle = {flexGrow: 0, backgroundColor: "#ccc"};
+  const appbarStyle = {flexGrow: 0, backgroundColor: "#ccc"};
   if (visualViewportMatters()) {
-    toolbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
+    appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
   }
 
   return (<>
-      <AppBar position="sticky" style={toolbarStyle}>
-        <Toolbar display="flex" style={{justifyContent: "space-between"}}>
-          <IconButton className="narrowLayoutOnly" edge="start" onClick={setMustShowPanel?.bind(this, 'LIST')} >
+      <AppBar position="sticky" style={appbarStyle}>
+        <Toolbar>
+          <IconButton className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
           </IconButton>
           {Boolean(noteDate) && ! noteErr ? noteControls : null}
