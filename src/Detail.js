@@ -349,13 +349,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           style={{minWidth: '15ch'}}
       >
         <MenuItem value={'paragraph'}>Body</MenuItem>
-        <MenuItem value={'quote'}>Block Quote</MenuItem>
-        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
-        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
-        <MenuItem value={'numbered-list'}>1. Numbered List</MenuItem>
         <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
         <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
         <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
+        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
+        <MenuItem value={'numbered-list'}>1. Numbered List</MenuItem>
+        <MenuItem value={'quote'}>Block Quote</MenuItem>
+        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
         {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
         <MenuItem value={'image'}>(Image)</MenuItem>
         <MenuItem value={'multiple'}>(Multiple)</MenuItem>
