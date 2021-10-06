@@ -101,6 +101,8 @@ const ELEMENT_TAGS = {
   PRE: () => ({ type: 'code' }),
 
   // DIV: () => ({ }),
+  FIGURE: () => ({ type: 'paragraph' }),
+  DETAILS: () => ({ type: 'paragraph' }),
   DT: () => ({ type: 'paragraph' }),   // TODO: implement natively
   DD: () => ({ type: 'paragraph' }),   // TODO: implement natively
 }

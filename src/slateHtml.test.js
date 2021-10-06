@@ -151,6 +151,49 @@ describe("deserializeHtml", () => {
     expect(slateNodes.length).toEqual(7);
   });
 
+  it("should parse <p> <figure> <details> <dt> and <dd> tags as paragraphs", () => {
+    const html = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+<figure>
+  <img src="favicon-192x192.png">
+  <figcaption>MDN Logo</figcaption>
+</figure>
+<details>
+    <summary>Sorry</summary>
+    Syntax error in line 42
+</details>
+<dl>
+  <dt>Firefox</dt>
+  <dt>Mozilla Firefox</dt>
+  <dd>
+    A free, open source, cross-platform, graphical web browser. 
+  </dd>
+</dl>
+`;
+
+    const cleanHtml = sanitizeHtml(html, semanticOnly);
+    const slateNodes = deserializeHtml(cleanHtml, editor);
+
+    expect(slateNodes[0]).toEqual({type: 'paragraph', children: [{text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]});
+
+    expect(slateNodes[1].type).toEqual('paragraph');
+    expect(slateNodes[1].children.length).toEqual(2);
+    expect(slateNodes[1].children[0].type).toEqual('image');
+    expect(slateNodes[1].children.length).toEqual(2);
+
+    expect(slateNodes[2].type).toEqual('paragraph');
+    expect(slateNodes[2].children[0].text).toMatch(/Sorry/);
+    expect(slateNodes[2].children[0].text).toMatch(/Syntax error in line 42/);
+
+    expect(slateNodes[3].type).toEqual('paragraph');
+    expect(slateNodes[3].children[0]).toEqual({text: "Firefox"});
+    expect(slateNodes[4].type).toEqual('paragraph');
+    expect(slateNodes[4].children[0]).toEqual({text: "Mozilla Firefox"});
+    expect(slateNodes[5].type).toEqual('paragraph');
+    expect(slateNodes[5].children[0].text).toMatch(/A free, open source, cross-platform, graphical web browser./);
+
+    expect(slateNodes.length).toEqual(6);
+  });
+
   it("should retain blank Leaves between inline Elements", () => {
     const html = `leading text <a href="http://example.com"> anchor text </a> trailing text`;
 
