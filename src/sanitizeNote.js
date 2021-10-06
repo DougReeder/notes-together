@@ -7,9 +7,9 @@ import sanitizeHtml from "sanitize-html";
 const semanticOnly = {
   allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'ul', 'ol',
     'header', 'footer', 'main', 'section', 'aside',
-    'li', 'dl', 'dt', 'dd', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
+    'li', 'dl', 'dt', 'dd', 'b', 'i', 'strong', 'em', 'u', 's', 'strike', 'code', 'hr', 'br', 'div',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre',
-    'a', 'img', 'del', 'ins', 'kbd', 'q', 'samp', 'sub', 'sup', 'var',
+    'a', 'img', 'del', 'ins', 'kbd', 'q', 'samp', 'tt', 'sub', 'sup', 'cite', 'var', 'dfn', 'abbr',
     'ruby', 'rp', 'rt',
     'circle', 'clipPath', 'defs', 'desc', 'ellipse',
     'feBlend', 'feColorMatrix', 'feComponentTransfer', 'feConvolveMatrix', 'feDropShadow',
@@ -57,7 +57,7 @@ const semanticOnly = {
     view: ['viewBox', 'preserveAspectRatio', 'zoomAndPan', 'viewTarget'],
     '*': ['id', 'tabindex', 'clip*', 'color*', 'cursor', 'display', 'fill*', 'height', 'mask', 'opacity', 'overflow', 'stroke*', 'transform', 'vector-effect', 'visibility', 'width', 'xlink*']
   },
-  allowedSchemes: [ 'http', 'https', 'data' ],
+  allowedSchemes: [ 'http', 'https', 'data', 'mailto', 'tel' ],
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
   transformTags: {

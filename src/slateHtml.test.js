@@ -97,6 +97,60 @@ describe("serializeHtml", () => {
 
 
 describe("deserializeHtml", () => {
+  it("should parse <code> <kbd> and <samp> tags as code marks", () => {
+    const html = `The <code>push()</code> method <kbd>help mycommand</kbd> look for <samp>0 files</samp> foo`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "The "});
+    expect(slateNodes[1]).toEqual({text: "push()", code: true});
+    expect(slateNodes[2]).toEqual({text: " method "});
+    expect(slateNodes[3]).toEqual({text: "help mycommand", code: true});
+    expect(slateNodes[4]).toEqual({text: " look for "});
+    expect(slateNodes[5]).toEqual({text: "0 files", code: true});
+    expect(slateNodes[6]).toEqual({text: " foo"});
+    expect(slateNodes.length).toEqual(7);
+  });
+
+  it("should parse <em> <i> <q> <dfn> <cite> <var> and <abbr> tags as italic marks", () => {
+    const html = `The <em>upper</em> thing <i>everyone</i> needs <q>supposedly</q> a <dfn>validator</dfn> like <cite>Nineteen Eighty-Four</cite> foo <var>x<sub>1</sub></var> bar <abbr title="Laugh Out Loud">LOL</abbr> spam`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "The "});
+    expect(slateNodes[1]).toEqual({text: "upper", italic: true});
+    expect(slateNodes[2]).toEqual({text: " thing "});
+    expect(slateNodes[3]).toEqual({text: "everyone", italic: true});
+    expect(slateNodes[4]).toEqual({text: " needs "});
+    expect(slateNodes[5]).toEqual({text: "supposedly", italic: true});
+    expect(slateNodes[6]).toEqual({text: " a "});
+    expect(slateNodes[7]).toEqual({text: "validator", italic: true});
+    expect(slateNodes[8]).toEqual({text: " like "});
+    expect(slateNodes[9]).toEqual({text: "Nineteen Eighty-Four", italic: true});
+    expect(slateNodes[10]).toEqual({text: " foo "});
+    expect(slateNodes[11]).toEqual({text: "x", italic: true});
+    expect(slateNodes[12]).toEqual({text: "1", italic: true});
+    expect(slateNodes[13]).toEqual({text: " bar "});
+    expect(slateNodes[14]).toEqual({text: "LOL", italic: true});
+    expect(slateNodes[15]).toEqual({text: " spam"});
+    expect(slateNodes.length).toEqual(16);
+  });
+
+  it("should parse <s> <strike> and <del> tags as strikethrough marks", () => {
+    const html = `leading text <s>struck text</s> interquel1 <strike>more struck text</strike> interquel2 <del>deleted text</del> trailing text`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "leading text "});
+    expect(slateNodes[1]).toEqual({text: "struck text", strikethrough: true});
+    expect(slateNodes[2]).toEqual({text: " interquel1 "});
+    expect(slateNodes[3]).toEqual({text: "more struck text", strikethrough: true});
+    expect(slateNodes[4]).toEqual({text: " interquel2 "});
+    expect(slateNodes[5]).toEqual({text: "deleted text", strikethrough: true});
+    expect(slateNodes[6]).toEqual({text: " trailing text"});
+    expect(slateNodes.length).toEqual(7);
+  });
+
   it("should retain blank Leaves between inline Elements", () => {
     const html = `leading text <a href="http://example.com"> anchor text </a> trailing text`;
 
@@ -233,6 +287,34 @@ describe("serializeHtml and deserializeHtml", () => {
       {text: "assign using "},
       {text: "const a = b + c;", code: true},
       {text: " as needed"},
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip underline", () => {
+    const original = [
+      {text: "The "},
+      {text: "thing", underline: true},
+      {text: " itself"},
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip strikethrough", () => {
+    const original = [
+      {text: "Use "},
+      {text: "caution", strikethrough: true},
+      {text: "prudence"},
     ];
 
     let html = serializeHtml(original);

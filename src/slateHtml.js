@@ -109,10 +109,17 @@ const TEXT_TAGS = {
   CODE: () => ({ code: true }),
   KBD: () => ({ code: true }),
   SAMP: () => ({ code: true }),
+  TT: () => ({ code: true }),
   DEL: () => ({ strikethrough: true }),
   EM: () => ({ italic: true }),
   I: () => ({ italic: true }),
+  Q: () => ({ italic: true }),
+  DFN: () => ({ italic: true }),
+  CITE: () => ({ italic: true }),
+  VAR: () => ({ italic: true }),
+  ABBR: () => ({ italic: true }),
   S: () => ({ strikethrough: true }),
+  STRIKE: () => ({ strikethrough: true }),
   B: () => ({ bold: true }),
   STRONG: () => ({ bold: true }),
   U: () => ({ underline: true }),
@@ -295,7 +302,7 @@ const Leaf = ({ attributes, children, leaf }) => {
   }
 
   if (leaf.strikethrough) {
-    children = <del>{children}</del>
+    children = <s>{children}</s>
   }
 
   return <span {...attributes}>{children}</span>
@@ -320,6 +327,12 @@ function serializeHtml(slateNodes) {
           }
           if (slateNode.italic) {
             html = `<em>${html}</em>`;
+          }
+          if (slateNode.underline) {
+            html = `<u>${html}</u>`;
+          }
+          if (slateNode.strikethrough) {
+            html = `<s>${html}</s>`;
           }
           // newline -> hard break
           html = html.replace(/\n/g, "<br />");
