@@ -43,14 +43,12 @@ function withHtml(editor) {   // defines Slate plugin
         console.log("sanitized HTML", html);
         const slateNodes = deserializeHtml(html, editor);
         console.log("HTML -> slateNodes:", slateNodes);
-        prependDummyBlock(slateNodes)
         Transforms.insertFragment(editor, slateNodes);
       } else if (dataTransfer.types.indexOf('text/plain') > -1) {
         const text = dataTransfer.getData('text/plain');
         if (isLikelyMarkdown(text)) {
           const slateNodes = deserializeMarkdown(text);
           console.log("MD -> slateNodes:", slateNodes);
-          prependDummyBlock(slateNodes)
           Transforms.insertFragment(editor, slateNodes);
         } else {   // plain text
           console.log("plain text", dataTransfer.items);
@@ -66,19 +64,6 @@ function withHtml(editor) {   // defines Slate plugin
     } catch (err) {
       console.error("while pasting:", err);
       window.postMessage({kind: 'TRANSIENT_MSG', message: "Can you type in the info?"}, window?.location?.origin);
-    }
-  }
-
-  /** hacky workaround for Slate bug */
-  function prependDummyBlock(slateNodes) {
-    if (Element.isElement(slateNodes[0])) {
-      switch (slateNodes[0].type) {
-        case undefined:
-        case 'paragraph':
-          break;
-        default:
-          slateNodes.unshift({type: 'paragraph', children: [{text: ""}]});
-      }
     }
   }
 
