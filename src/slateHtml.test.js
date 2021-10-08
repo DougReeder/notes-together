@@ -97,6 +97,32 @@ describe("serializeHtml", () => {
 
 
 describe("deserializeHtml", () => {
+  it("should return an array of Slate nodes, even for empty string", () => {
+    const html = ``;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes.length).toEqual(0);
+  });
+
+  it("should return an array of Slate nodes, even for plain text", () => {
+    const html = `foo`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "foo"});
+    expect(slateNodes.length).toEqual(1);
+  });
+
+  it("should merge the text of ignored tags", () => {
+    const html = `a<sub>1</sub> + b<sub>x</sub> = c<sup>2</sup>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "a1 + bx = c2"});
+    expect(slateNodes.length).toEqual(1);
+  });
+
   it("should parse <code> <kbd> and <samp> tags as code marks", () => {
     const html = `The <code>push()</code> method <kbd>help mycommand</kbd> look for <samp>0 files</samp> foo`;
 
@@ -134,6 +160,18 @@ describe("deserializeHtml", () => {
     expect(slateNodes[14]).toEqual({text: "LOL", italic: true});
     expect(slateNodes[15]).toEqual({text: " spam"});
     expect(slateNodes.length).toEqual(16);
+  });
+
+  it("should correctly parse italic marks inside italic marks", () => {
+    const html = `<em>outer <em>inner</em> again outer</em> plain`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "outer ", italic: true});
+    expect(slateNodes[1]).toEqual({text: "inner", italic: true});
+    expect(slateNodes[2]).toEqual({text: " again outer", italic: true});
+    expect(slateNodes[3]).toEqual({text: " plain"});
+    expect(slateNodes.length).toEqual(4);
   });
 
   it("should parse <s> <strike> and <del> tags as strikethrough marks", () => {
@@ -205,6 +243,28 @@ describe("deserializeHtml", () => {
     expect(slateNodes[2]?.text).toEqual(" trailing text");
   });
 
+  it("should parse a link inside bold as bold inside a link", () => {
+    const html = `<b><a href=“https://developer.mozilla.org/en-US/docs/Glossary/Style_origin”>style origin</a></b>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]?.type).toEqual('link');
+    expect(slateNodes[0].children[0]).toEqual({text: "style origin", bold: true});
+    expect(slateNodes.length).toEqual(1);
+  });
+
+  it("should parse an image inside emphasis as emphasis inside image", () => {
+    const html = `<em><img class="fit-picture"
+     src="/media/cc0-images/grapefruit-slice-332-332.jpg" /></em>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]?.type).toEqual('image');
+    expect(slateNodes[0].children.length).toEqual(1);
+    expect(slateNodes[0].children[0]).toEqual({text: "", italic: true});
+    expect(slateNodes.length).toEqual(1);
+  });
+
   it("should drop blank Leaves between block Elements, so all the children of an Element are the same", () => {
     const html = `<p>first paragraph</p>
 <p>second paragraph</p>`;
@@ -216,9 +276,9 @@ describe("deserializeHtml", () => {
     expect(slateNodes[1].type).toEqual("paragraph");
   });
 
-  it("should coerce bare text to Elements, so all the children of an Element are the same", () => {
+  it("should coerce leaf text to Elements, so all the children of an Element are the same", () => {
     const html = `<h2>Book Title</h2>
-bare text`;
+leaf text`;
 
     const slateNodes = deserializeHtml(html, editor);
 
@@ -226,7 +286,19 @@ bare text`;
     expect(slateNodes[0].type).toEqual("heading-two");
     expect(slateNodes[1]).toBeInstanceOf(Object);
     expect(slateNodes[1].children?.length).toEqual(1);
-    expect(slateNodes[1].children[0]).toEqual({text: "\nbare text"});
+    expect(slateNodes[1].children[0]).toEqual({text: "\nleaf text"});
+  });
+
+  it("should coerce marked leaf text to Elements, so all the children of an Element are the same", () => {
+    const html = `<strong>marked leaf text<p>paragraph text</p></strong>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0].children[0]).toEqual({text: "marked leaf text", bold: true});
+    expect(slateNodes[0].children.length).toEqual(1);
+    expect(slateNodes[1].type).toEqual('paragraph');
+    expect(slateNodes[1].children[0]).toEqual({text: "paragraph text", bold: true});
+    expect(slateNodes.length).toEqual(2);
   });
 
   it("should coerce leaf tags to Elements, so all the children of an Element are the same", () => {

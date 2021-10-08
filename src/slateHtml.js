@@ -114,17 +114,24 @@ const TEXT_TAGS = {
 
 function deserializeHtml(html, editor) {
   const parsed = new DOMParser().parseFromString(html, 'text/html');
+  let activeMarkStack = [{}];
   const slateNodes = domNodeToSlateNodes(parsed.body);
+  if (activeMarkStack.length !== 1){
+    console.error("activeMarkStack corrupt:", activeMarkStack);
+  }
   return slateNodes;
 
   function domNodeToSlateNodes(el) {
     try {
-      if (el.nodeType === 3) {   // TEXT_NODE
-        return el.textContent;
+      const marks = activeMarkStack[activeMarkStack.length-1];
+      if (el.nodeType === 3 || el.nodeType === 4) {   // TEXT_NODE or CDATA_SECTION_NODE
+        if (Object.keys(marks).length > 0) {
+          return {text: el.textContent, ...marks}
+        } else {
+          return el.textContent;
+        }
         // TODO: don't do this for preformatted text
         // return el.textContent?.replace(/^\s+/, " ")?.replace(/\s+$/, " ")?.replace(/\s+/g, " ");
-      } else if (el.nodeType === 4) {   // CDATA_SECTION_NODE
-        return el.textContent;
       } else if (el.nodeType !== 1) {   // not ELEMENT_NODE
         return null
       } else if (el.nodeName === 'BR') {
@@ -132,6 +139,12 @@ function deserializeHtml(html, editor) {
       }
 
       const {nodeName} = el
+
+      if (TEXT_TAGS[nodeName]) {
+        const tagMarks = TEXT_TAGS[nodeName](el);
+        activeMarkStack.push({...activeMarkStack[activeMarkStack.length-1], ...tagMarks});
+      }
+
       let parent = el
 
       if (
@@ -187,7 +200,11 @@ function deserializeHtml(html, editor) {
       // Slate requires non-void elements to have a child.
       // Keep this in sync with isVoid()
       if (children.length === 0 && !(['HR'].includes(nodeName))) {
-        children = [{text: ''}];
+        if (Object.keys(marks).length > 0) {
+          children = [{text: '', ...marks}];
+        } else {
+          children = [{text: ''}];
+        }
       }
 
       if (ELEMENT_TAGS[nodeName]) {
@@ -197,15 +214,13 @@ function deserializeHtml(html, editor) {
       }
 
       if (TEXT_TAGS[nodeName]) {
-        const attrs = TEXT_TAGS[nodeName](el)
-        const slateNodes = children.map(child => jsx('text', attrs, child));
-        return slateNodes;
+        activeMarkStack.pop();
       }
 
       return children;
     } catch (err) {
       console.error("while deserializing HTML:", err);
-      return jsx('element', {}, [{text: '\ufffd'}])
+      return [{text: el.innerText || ""}];
     }
   }
 }
