@@ -286,7 +286,7 @@ leaf text`;
     expect(slateNodes[0].type).toEqual("heading-two");
     expect(slateNodes[1]).toBeInstanceOf(Object);
     expect(slateNodes[1].children?.length).toEqual(1);
-    expect(slateNodes[1].children[0]).toEqual({text: "\nleaf text"});
+    expect(slateNodes[1].children[0]).toEqual({text: " leaf text"});
   });
 
   it("should coerce marked leaf text to Elements, so all the children of an Element are the same", () => {
@@ -365,7 +365,7 @@ ipso facto`;
     expect(slateNodes[0].type).toEqual('link');
     expect(slateNodes[0].url).toEqual("http://example.com");
     expect(Text.isText(slateNodes[1])).toBeTruthy();
-    expect(slateNodes[1].text).toEqual("\nipso facto");
+    expect(slateNodes[1].text).toEqual(" ipso facto");
   });
 });
 
@@ -400,7 +400,7 @@ describe("serializeHtml and deserializeHtml", () => {
   it("should round-trip inline code", () => {
     const original = [
       {text: "assign using "},
-      {text: "const a = b + c;", code: true},
+      {text: "const a = b + c;", code: true, bold: true},
       {text: " as needed"},
     ];
 
@@ -441,7 +441,7 @@ describe("serializeHtml and deserializeHtml", () => {
 
   it("should round-trip hard line breaks", () => {
     const original = [
-      {text: "first line \n  indented second line"},
+      {text: "first line \n indented second line"},
       {text: "book title", italic: true},
     ];
 
@@ -488,6 +488,24 @@ describe("serializeHtml and deserializeHtml", () => {
         // not a true heading
       {type: 'paragraph', children: [
           {text: "Subsidiary considerations", bold: true},
+        ]},
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip code blocks", () => {
+    const original = [
+      {type: 'code', children: [
+          {text: `first line
+    indented 4 spaces   
+        indented 8 spaces   `},
+          {text: `   emphasized
+          followon`, italic: true},
         ]},
     ];
 

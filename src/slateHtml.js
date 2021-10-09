@@ -114,39 +114,51 @@ const TEXT_TAGS = {
 
 function deserializeHtml(html, editor) {
   const parsed = new DOMParser().parseFromString(html, 'text/html');
+
   let activeMarkStack = [{}];
+  let activeCodeBlockStack = [false];
   const slateNodes = domNodeToSlateNodes(parsed.body);
   if (activeMarkStack.length !== 1){
     console.error("activeMarkStack corrupt:", activeMarkStack);
   }
+  if (activeCodeBlockStack.length !== 1) {
+    console.error("activeCodeBlockStack corrupt", activeCodeBlockStack);
+  }
+
   return slateNodes;
 
   function domNodeToSlateNodes(el) {
+    let nodeName;
     try {
       const marks = activeMarkStack[activeMarkStack.length-1];
       if (el.nodeType === 3 || el.nodeType === 4) {   // TEXT_NODE or CDATA_SECTION_NODE
-        if (Object.keys(marks).length > 0) {
-          return {text: el.textContent, ...marks}
-        } else {
-          return el.textContent;
+        let text = el.textContent;
+        if (! activeCodeBlockStack[activeCodeBlockStack.length-1]) {
+          text = text?.replace(/\s+/g, " ");
         }
-        // TODO: don't do this for preformatted text
-        // return el.textContent?.replace(/^\s+/, " ")?.replace(/\s+$/, " ")?.replace(/\s+/g, " ");
+        if (Object.keys(marks).length > 0) {
+          return {text, ...marks}
+        } else {
+          return text;
+        }
       } else if (el.nodeType !== 1) {   // not ELEMENT_NODE
         return null
       } else if (el.nodeName === 'BR') {
         return '\n'
       }
 
-      const {nodeName} = el
+      nodeName = el.nodeName;
 
       if (TEXT_TAGS[nodeName]) {
         const tagMarks = TEXT_TAGS[nodeName](el);
         activeMarkStack.push({...activeMarkStack[activeMarkStack.length-1], ...tagMarks});
       }
 
-      let parent = el
+      if ('PRE' === nodeName) {
+        activeCodeBlockStack.push(true);
+      }
 
+      let parent = el;
       if (
           nodeName === 'PRE' &&
           el.childNodes[0] &&
@@ -193,8 +205,7 @@ function deserializeHtml(html, editor) {
       }
 
       if (nodeName === 'BODY') {
-        const slateNodes = jsx('fragment', {}, children);
-        return slateNodes;
+        return jsx('fragment', {}, children);
       }
 
       // Slate requires non-void elements to have a child.
@@ -209,18 +220,21 @@ function deserializeHtml(html, editor) {
 
       if (ELEMENT_TAGS[nodeName]) {
         const attrs = ELEMENT_TAGS[nodeName](el)
-        const slateNodes = jsx('element', attrs, children);
-        return slateNodes;
-      }
-
-      if (TEXT_TAGS[nodeName]) {
-        activeMarkStack.pop();
+        return jsx('element', attrs, children);
       }
 
       return children;
     } catch (err) {
       console.error("while deserializing HTML:", err);
       return [{text: el.innerText || ""}];
+    } finally {
+      if ('PRE' === nodeName) {
+        activeCodeBlockStack.pop();
+      }
+
+      if (TEXT_TAGS[nodeName]) {
+        activeMarkStack.pop();
+      }
     }
   }
 }
@@ -319,24 +333,25 @@ function serializeHtml(slateNodes) {
     try {
       if (Text.isText(slateNode)) {
         let html = escapeHtml(slateNode.text);
+        if (slateNode.code) {
+          html = `<code>${html}</code>`;
+        }
+        if (slateNode.bold) {
+          html = `<strong>${html}</strong>`;
+        }
+        if (slateNode.italic) {
+          html = `<em>${html}</em>`;
+        }
+        if (slateNode.underline) {
+          html = `<u>${html}</u>`;
+        }
+        if (slateNode.strikethrough) {
+          html = `<s>${html}</s>`;
+        }
         if (inCodeBlock) {
           return html;
-        } else if (slateNode.code) {
-          return `<code>${html}</code>`;
         } else {
-          if (slateNode.bold) {
-            html = `<strong>${html}</strong>`;
-          }
-          if (slateNode.italic) {
-            html = `<em>${html}</em>`;
-          }
-          if (slateNode.underline) {
-            html = `<u>${html}</u>`;
-          }
-          if (slateNode.strikethrough) {
-            html = `<s>${html}</s>`;
-          }
-          // newline -> hard break
+           // newline -> hard break
           html = html.replace(/\n/g, "<br />");
           return html;
         }
