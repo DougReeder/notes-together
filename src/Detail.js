@@ -2,11 +2,12 @@ import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
 import React, {useEffect, useState, useMemo, useCallback, useReducer} from 'react';
 import PropTypes from 'prop-types';
+import {ErrorBoundary} from 'react-error-boundary'
 import {useViewportScrollCoords} from 'web-api-hooks';
 import {getNote, upsertNote} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
-import {AppBar, Box, IconButton, Input, MenuItem, Select, Toolbar} from "@material-ui/core";
+import {AppBar, Box, Button, IconButton, Input, MenuItem, Select, Toolbar} from "@material-ui/core";
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
@@ -397,15 +398,44 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         </Toolbar>
       </AppBar>
       <Box style={{overflowY: "auto", flexGrow: 1, flexShrink: 1, backgroundColor: "#fff"}}>
-        {content}
+        <ErrorBoundary
+            FallbackComponent={ErrorFallback}
+            onReset={() => {
+              console.warn("resetting from error boundary");
+              setEditorValue([{type: 'paragraph', children: [{text: ""}]}]);
+              setNoteDate(null);
+              setMustShowPanel('LIST');
+            }}
+            resetKeys={[editorValue]}
+            onResetKeysChange={(prevResetKeys, resetKeys) => {
+              console.warn("error boundary reset key changed:", prevResetKeys, resetKeys);
+            }}
+        >
+          {content}
+        </ErrorBoundary>
       </Box>
   </>);
+}
+
+function ErrorFallback({error, resetErrorBoundary}) {
+  return (
+      <div role="alert">
+        <details>
+          <summary><strong>Sorry, this note can't be displayed.</strong>
+            <p>If you get this error repeatedly, this note is corrupt and should be deleted.</p>
+            <Button variant="outlined" onClick={resetErrorBoundary}>Clear</Button>
+          </summary>
+          <p>{error.message}</p>
+        </details>
+      </div>
+  )
 }
 
 Detail.propTypes = {
   noteId: PropTypes.number,
   searchStr: PropTypes.string,
   focusOnLoadCB: PropTypes.func,
+  setMustShowPanel: PropTypes.func,
 };
 
 export default Detail;

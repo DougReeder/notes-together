@@ -36,6 +36,11 @@
     margin-top: 0;
 }
 
+details {
+    padding: 1rem;
+    background-color: pink;
+}
+
 
 h1 {
     margin-block-start: 0;
