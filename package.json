@@ -78,7 +78,6 @@
     "terser-webpack-plugin": "4.2.3",
     "ts-pnp": "1.2.0",
     "url-loader": "4.1.1",
-    "web-api-hooks": "^3.0.2",
     "web-vitals": "^1.0.1",
     "webpack": "4.44.2",
     "webpack-dev-server": "3.11.1",

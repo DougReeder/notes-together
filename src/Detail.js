@@ -3,7 +3,7 @@ import {semanticOnly} from './sanitizeNote';
 import React, {useEffect, useState, useMemo, useCallback, useReducer} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
-import {useViewportScrollCoords} from 'web-api-hooks';
+import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
 import {getNote, upsertNote} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
