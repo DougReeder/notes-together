@@ -71,3 +71,7 @@ h3 {
     text-align: center;
     text-transform: capitalize;
 }
+
+[role=textbox] pre {
+    white-space: break-spaces;
+}

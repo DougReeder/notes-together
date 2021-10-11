@@ -1,25 +1,44 @@
 {
   "short_name": "Notes Together",
   "name": "Notes Together",
+  "description": "Take notes (or copy text and pictures). Sync them to all your devices. Recall them by context: any words in them or the date. Runs offline.",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "icons/NotesTogether-Icon-36x36.png",
+      "type": "image/png",
+      "sizes": "36x36"
     },
     {
-      "src": "logo192.png",
+      "src": "icons/NotesTogether-Icon-48x48.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "48x48"
     },
     {
-      "src": "logo512.png",
+      "src": "icons/NotesTogether-Icon-72x72.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "72x72"
+    },
+    {
+      "src": "icons/NotesTogether-Icon-96x96.png",
+      "type": "image/png",
+      "sizes": "96x96"
+    },
+    {
+      "src": "icons/NotesTogether-Icon-1024x1024.png",
+      "type": "image/png",
+      "sizes": "1024x1024"
+    },
+    {
+      "src": "icons/NotesTogether-Icon-maskable.svg",
+      "type": "image/png",
+      "sizes": "940x940",
+      "purpose": "maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#d1e8f1",
+  "background_color": "#d1e8f1",
+  "categories": ["business", "education", "productivity"],
+  "lang": "en-US"
 }

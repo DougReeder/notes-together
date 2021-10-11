@@ -46,16 +46,20 @@ body {
 @media all and (min-width: 640px) {
   .panelContainer {
     width: 100vw;
+    justify-content: center;
+    background: #ddd;
   }
 
   .panelMain {
     width: 320px;
+    max-width: 49em;
     flex: 1 1 auto;
   }
 
   .panelDetail {
     width: 320px;
-    flex: 2 1 auto;
+    max-width: 37em;
+    flex: 3 1 auto;
   }
 
   .narrowLayoutOnly {
@@ -82,25 +86,30 @@ body {
 }
 
 .panel {
+  background: #eee;
   position: relative;
 
   display: flex;
   flex-direction: column;
-  alignItems: stretch
+}
+
+.panelMain {
+  align-items: stretch;
 }
 
 .panelDetail {
-  background-color: #eeeeee;
+  /*background-color: #eeeeee;*/
   overflow-x: hidden;
+  align-items: center;
 }
 
 
 .App-header {
-  min-height: 3em;
+  min-height: 52px;
   flex: 0 0 auto;
 
   text-align: center;
-  background-color: #282c34;
+  background-color: #155477;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -110,7 +119,7 @@ body {
 .App-header input {
   margin-left: 1ex;
   flex: 1 1 auto;
-  font-size: 16px;
+  font-size: 18px;
 }
 .count {
   margin-left: 1.5ch;

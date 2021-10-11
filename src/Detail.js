@@ -261,17 +261,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       {noteErr?.message || noteErr?.name || noteErr?.toString()}
     </Alert>);
   } else if (!noteDate) {
-    content = (<svg fill="none" strokeLinecap="square" strokeMiterlimit="10" viewBox="0 0 226.77 226.77" xmlns="http://www.w3.org/2000/svg">
-          <g transform="translate(8.964 4.2527)" fillRule="evenodd" stroke="#000" strokeLinecap="butt" strokeLinejoin="round" strokeWidth="4">
-            <path d="m63.02 200.61-43.213-174.94 173.23 49.874z"></path>
-            <path d="m106.39 50.612 21.591 87.496-86.567-24.945z"></path>
-            <path d="m84.91 125.03-10.724-43.465 43.008 12.346z"></path>
-            <path d="m63.458 38.153 10.724 43.465-43.008-12.346z"></path>
-            <path d="m149.47 62.93 10.724 43.465-43.008-12.346z"></path>
-            <path d="m84.915 125.06 10.724 43.465-43.008-12.346z"></path>
-          </g>
-        </svg>
-    );
+    content = (<>
+      <div style={{width: '100%', height: '100%', backgroundImage: 'url(' + process.env.PUBLIC_URL + '/icons/NotesTogether-icon-gray.svg)',
+        backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
+      <div style={{position: 'absolute', bottom: '2em', left: '0', right: '0', textAlign: 'center', color: '#616161' }}>Select a note on the left to display it in full.</div>
+    </>);
   } else {
     content = (
       <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
@@ -397,7 +391,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           {Boolean(noteDate) && ! noteErr ? noteControls : null}
         </Toolbar>
       </AppBar>
-      <Box style={{overflowY: "auto", flexGrow: 1, flexShrink: 1, backgroundColor: "#fff"}}>
+      <Box style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
         <ErrorBoundary
             FallbackComponent={ErrorFallback}
             onReset={() => {
