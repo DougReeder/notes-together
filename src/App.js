@@ -1,7 +1,7 @@
 import {createMemoryNote} from './Note';
 import {init, upsertNote, parseWords, deleteNote} from './storage';
 import {findFillerNoteIds} from './idbNotes';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import List from './List';
 import Detail from './Detail'
 import './App.css';
@@ -45,23 +45,23 @@ function App() {
     setMustShowPanel('DETAIL');
   }
 
-  const [focusOnLoad, setFocusOnLoad] = useState(false);
+  const focusOnLoad = useRef(false);   // no re-render when changed
   async function addNote() {
     try {
       const initialText = searchStr.trim() ? `<p></p><p>${searchStr.trim()}&nbsp;</p>` : "";
       const newNote = createMemoryNote(null, initialText);
       // console.log("adding note:", newNote);
       await upsertNote(newNote);
-      setFocusOnLoad(true);
-      setSelectedNoteId(newNote.id);
       setMustShowPanel('DETAIL');
+      focusOnLoad.current = true;
+      setSelectedNoteId(newNote.id);
     } catch (err) {
       setTransientErr(err);
     }
   }
-  function clearFocusOnLoad() {
-    setFocusOnLoad(false);
-  }
+  const clearFocusOnLoad = useCallback(() => {
+    focusOnLoad.current = false;   // reference, so doesn't cause re-render
+  }, []);
 
   // LIST or DETAIL
   const [mustShowPanel, setMustShowPanel] = useState('LIST');
@@ -191,7 +191,7 @@ function App() {
           </Snackbar>
         </div>
         <div className="panel panelDetail">
-          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
+          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
         </div>
       </div>
   );

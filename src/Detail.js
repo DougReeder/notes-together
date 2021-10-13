@@ -1,6 +1,6 @@
 import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
-import React, {useEffect, useState, useMemo, useCallback, useReducer} from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
 import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
@@ -47,6 +47,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   //   }
   // }, [searchStr]);
 
+  const loadingIdRef = useRef(NaN);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
     children: [{ text: 'Initial editor value' }],
@@ -61,15 +62,19 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   useEffect(() => {
     setNoteErr(null);
     if (Number.isFinite(noteId)) {
+      if (noteId === loadingIdRef.current) {
+        return;
+      }
+      loadingIdRef.current = noteId;
       getNote(noteId).then(theNote => {
+        loadingIdRef.current = NaN;
         if ('object' === typeof theNote) {
           replaceNote(theNote);
 
           if ('function' === typeof focusOnLoadCB) {
-            setTimeout(() => {
-              focusOnLoadCB();
-              ReactEditor.focus(editor);
-            }, 4);
+            focusOnLoadCB();
+            ReactEditor.focus(editor);
+            Transforms.select(editor, Editor.start(editor, []));
           }
         } else {
           const err = new Error("no note with id=" + noteId);
@@ -377,7 +382,20 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     </>);
   }
 
-  const appbarStyle = {flexGrow: 0, backgroundColor: "#ccc"};
+  function toggleFocus(evt) {
+    if (noteErr || !noteDate) { return; }
+    if (evt.target.classList.contains('MuiBox-root')) {
+      if (editor.selection) {
+        ReactEditor.deselect(editor);
+        ReactEditor.blur(editor);
+      } else {
+        ReactEditor.focus(editor);
+        Transforms.select(editor, Editor.end(editor, []));
+      }
+    }
+  }
+
+  const appbarStyle = {flexGrow: 0, backgroundColor: "lightblue"};
   if (visualViewportMatters()) {
     appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
   }
@@ -391,7 +409,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           {Boolean(noteDate) && ! noteErr ? noteControls : null}
         </Toolbar>
       </AppBar>
-      <Box style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
+      <Box onClick={toggleFocus} style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
         <ErrorBoundary
             FallbackComponent={ErrorFallback}
             onReset={() => {
