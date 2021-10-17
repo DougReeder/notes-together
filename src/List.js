@@ -9,10 +9,11 @@ import React, {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
+import humanDate from "./util/humanDate";
 
 
 function List(props) {
-  const {searchWords, changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
+  const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -71,7 +72,7 @@ function List(props) {
     try {
       evt.preventDefault();
       evt.stopPropagation();
-      const noteEl = evt.target.closest("li.note");
+      const noteEl = evt.target.closest("li.summary");
       const id = Number(noteEl?.dataset?.id);
       if (Number.isFinite(id)) {
         lastSelectedNoteId.current.unshift(selectedNoteId);
@@ -88,7 +89,7 @@ function List(props) {
     try {
       evt.preventDefault();
       evt.stopPropagation();
-      const noteEl = evt.target.closest("li.note");
+      const noteEl = evt.target.closest("li.summary");
       const id = Number(noteEl?.dataset?.id);
       const newItemButtonIds = Object.assign({}, itemButtonsIds);
       for (let currentId in newItemButtonIds) {
@@ -118,7 +119,7 @@ function List(props) {
     try {
       evt.preventDefault();
       evt.stopPropagation();
-      const noteEl = evt.target.closest("li.note");
+      const noteEl = evt.target.closest("li.summary");
       const id = Number(noteEl?.dataset?.id);
       await deleteNote(id);
     } catch (err) {
@@ -130,8 +131,26 @@ function List(props) {
   if (listErr) {
     listItems = <div className="error"><h2>Restart your device</h2>{listErr.message}</div>
   } else if (notes.length > 0) {
-    listItems = notes.map(
-        (note) => {
+    listItems = [];
+    let prevDateStr = null;
+    for (const note of notes) {
+          const dateStr = humanDate(note.date);
+          if (dateStr !== prevDateStr) {
+            prevDateStr = dateStr;
+            let dateClassName = 'humanDate';
+            if (dateStr.startsWith("Today")) {
+              dateClassName += ' today';
+            }
+            listItems.push(<li className="divider" key={Math.random()}>
+              <svg className="leftLine" version="1.1" viewBox="0 0 40 20">
+                <line fill="none" stroke="#155477" x1="0" y1="10" x2="35" y2="10" strokeWidth="6" strokeLinecap="round" />
+              </svg>
+              <div className={dateClassName}>{dateStr}</div>
+              <svg className="rightLine" version="1.1" viewBox="0 0 1000 20" preserveAspectRatio="xMinYMid slice">
+                <line fill="none" stroke="#155477" x1="5" y1="10" x2="1000" y2="10" strokeWidth="6" strokeLinecap="round" />
+              </svg>
+            </li>);
+          }
           const incipit = note.hasOwnProperty('incipit') ? note.incipit : note.text.slice(0, INCIPIT_LENGTH);
           const cleanHtml = sanitizeHtml(incipit, uniformList);
           let itemButtons;
@@ -144,13 +163,14 @@ function List(props) {
                   </div>
                 </CSSTransition>);
           }
-          return <li data-id={note.id} key={note.id.toString()}
-                     className={'note ' + (note.id === selectedNoteId ? 'selected' : '')}>
-            <div className="incipit" dangerouslySetInnerHTML={{__html: cleanHtml}}></div>
-            {itemButtons}
-          </li>
-        }
-    );
+          listItems.push(
+            <li data-id={note.id} key={note.id.toString()}
+                className={'summary' + (note.id === selectedNoteId ? ' selected' : '')}>
+              <div className="incipit" dangerouslySetInnerHTML={{__html: cleanHtml}}></div>
+              {itemButtons}
+            </li>
+          );
+    }
   } else {
     if (searchWords.size > 0) {
       listItems = <div className="advice">
@@ -177,10 +197,10 @@ function List(props) {
 
 List.propTypes = {
   searchWords: PropTypes.instanceOf(Set),
-  changeCount: PropTypes.func,
+  changeCount: PropTypes.func.isRequired,
   selectedNoteId: PropTypes.number,
-  handleSelect: PropTypes.func,
-  setTransientErr: PropTypes.func,
+  handleSelect: PropTypes.func.isRequired,
+  setTransientErr: PropTypes.func.isRequired,
 }
 
 export default List;

@@ -73,5 +73,5 @@ h3 {
 }
 
 [role=textbox] pre {
-    white-space: break-spaces;
+    white-space: pre-wrap;
 }

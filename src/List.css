@@ -11,11 +11,10 @@ ol.list {
     margin-block-end: 0;
     margin-inline-start: 0;
     margin-inline-end: 0;
-
 }
 
-ol.list > li {
-    height: 9ex;
+li.summary {
+    height: 7.5ex;
     overflow: hidden;
 
     line-height: 2.5ex;
@@ -23,17 +22,37 @@ ol.list > li {
     font-weight: 400 !important;
     color: #000 !important;
 
+    background-color: white;
     border-width: 0;
     position: relative;
 }
+li.summary + li.summary {
+    border-top: 1px solid #b0b0b0;
+}
 
-ol.list > li:nth-child(odd) {
+li.divider {
+    height: 2.5ex;
+    position: relative;
     background-color: white;
+    display: flex;
+    align-items: stretch;
+}
+li.divider > .leftLine {
+    height: 2.5ex;
+}
+li.divider > .humanDate {
+    height: 2.5ex;
+    margin: 0 1em;
+    font-weight: bold;
+}
+li.divider > .humanDate.today {
+    color: #2281aa;
+}
+li.divider > .rightLine {
+    height: 2.5ex;
+    flex: 1 1;
 }
 
-ol.list > li:nth-child(even) {
-    background-color: #eee;
-}
 
 ol.list > li.selected {
     background-color: lightblue;
@@ -41,14 +60,14 @@ ol.list > li.selected {
 
 .incipit {
     box-sizing: border-box;
-    height: 9ex;
+    height: 7.5ex;
     overflow: hidden;
-    padding: 2ex 2ex 0 2ex;
-    border-bottom: 2ex solid white;
+    padding: 1.25ex 2ex 0 2ex;
+    border-bottom: 1.25ex solid white;
 }
-ol.list > li:nth-child(even) > .incipit {
-    border-color: #eee;
-}
+/*ol.list > li:nth-child(even) > .incipit {*/
+/*    border-color: #eee;*/
+/*}*/
 ol.list > li.selected > .incipit {
     border-color: lightblue;
 }
@@ -56,6 +75,9 @@ ol.list > li.selected > .incipit {
 .incipit > * {
     margin-top: 0;
     margin-bottom: 0;
+}
+.incipit pre {
+    white-space: pre-wrap;
 }
 
 .itemButtons {
