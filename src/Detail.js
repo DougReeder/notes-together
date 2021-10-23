@@ -59,6 +59,36 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   );
   const [noteDate, setNoteDate] = useState();
 
+  const replaceNote = useCallback(theNote => {
+    try {
+      const html = sanitizeHtml(theNote.text, semanticOnly);
+      console.log("sanitized HTML:", html);
+      let slateNodes = deserializeHtml(html, editor);
+      console.log("slateNodes:", slateNodes);
+
+      // Editor can't be empty (though pasted content can be).
+      if (0 === slateNodes.length) {
+        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+      }
+      // Children of editor must be Elements.
+      const containsElement = slateNodes.some(slateNode => SlateElement.isElement(slateNode));
+      if (!containsElement) {
+        slateNodes = [{type: 'paragraph', children: slateNodes}];
+        console.log("slateNodes encased in paragraph:", slateNodes);
+      }
+      Transforms.deselect(editor);
+      setPreviousSelection(null);
+      setPreviousBlockType('n/a');
+      setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
+      setEditorValue(slateNodes);
+      // Editor.normalize(editor, {force: true});
+      setNoteDate(theNote.date);
+    } catch (err) {
+      console.error(`while replacing note ${theNote.id}:`, err);
+      setNoteErr(err);
+    }
+  }, [editor]);
+
   useEffect(() => {
     setNoteErr(null);
     if (Number.isFinite(noteId)) {
@@ -96,40 +126,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       setEditorValue([{type: 'paragraph', children: [{text: ""}]}]);
       setNoteDate(null);
     }
-  }, [noteId, searchStr, focusOnLoadCB, editor]);
+  }, [noteId, replaceNote, focusOnLoadCB, editor]);
 
   const [previousSelection, setPreviousSelection] = useState(null);
   const [previousBlockType, setPreviousBlockType] = useState('n/a');
 
-  function replaceNote(theNote) {
-    try {
-      const html = sanitizeHtml(theNote.text, semanticOnly);
-      console.log("sanitized HTML:", html);
-      let slateNodes = deserializeHtml(html, editor);
-      console.log("slateNodes:", slateNodes);
-
-      // Editor can't be empty (though pasted content can be).
-      if (0 === slateNodes.length) {
-        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-      }
-      // Children of editor must be Elements.
-      const containsElement = slateNodes.some(slateNode => SlateElement.isElement(slateNode));
-      if (!containsElement) {
-        slateNodes = [{type: 'paragraph', children: slateNodes}];
-        console.log("slateNodes encased in paragraph:", slateNodes);
-      }
-      Transforms.deselect(editor);
-      setPreviousSelection(null);
-      setPreviousBlockType('n/a');
-      setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
-      setEditorValue(slateNodes);
-      // Editor.normalize(editor, {force: true});
-      setNoteDate(theNote.date);
-    } catch (err) {
-      console.error(`while replacing note ${theNote.id}:`, err);
-      setNoteErr(err);
-    }
-  }
 
   async function handleSlateChange(newValue) {
     try {
