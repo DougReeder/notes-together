@@ -135,8 +135,11 @@ describe("deleteNoteDb", () => {
 
 describe("findStubs", () => {
   const text1 = "<h2>The world</h2> set free";
+  const text1title = "The world";
   const text2 = "Math <th>is not</th> my favorite";
+  const text2title = "is not";
   const text3 = "I don't <pre>like thin crust</pre>";
+  const text3title = "like thin crust";
 
   const date = new Date(2001, 0, 1);
 
@@ -203,20 +206,20 @@ describe("findStubs", () => {
         });
         expect(testNotes.length).toEqual(36);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text1 ? 1 : 0) + acc;
+          return (item.title === text1title ? 1 : 0) + acc;
         }, 0)).toEqual(11);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text2 ? 1 : 0) + acc;
+          return (item.title === text2title ? 1 : 0) + acc;
         }, 0)).toEqual(12);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text3 ? 1 : 0) + acc;
+          return (item.title === text3title ? 1 : 0) + acc;
         }, 0)).toEqual(13);
-        expect(testNotes[0].incipit).toEqual(text3);
-        expect(testNotes[1].incipit).toEqual(text3);
-        expect(testNotes[2].incipit).toEqual(text2);
-        expect(testNotes[3].incipit).toEqual(text3);
-        expect(testNotes[4].incipit).toEqual(text2);
-        expect(testNotes[5].incipit).toEqual(text1);
+        expect(testNotes[0].title).toEqual(text3title);
+        expect(testNotes[1].title).toEqual(text3title);
+        expect(testNotes[2].title).toEqual(text2title);
+        expect(testNotes[3].title).toEqual(text3title);
+        expect(testNotes[4].title).toEqual(text2title);
+        expect(testNotes[5].title).toEqual(text1title);
 
         expect(isPartial).toBeFalsy();
         expect(isSearch).toBeFalsy();
@@ -254,13 +257,13 @@ describe("findStubs", () => {
         expect(testNotes.length).toEqual(13);
         expect(testNoteIds.size).toEqual(13);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text1 ? 1 : 0) + acc;
+          return (item.title === text1title ? 1 : 0) + acc;
         }, 0)).toEqual(0);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text2 ? 1 : 0) + acc;
+          return (item.title === text2title ? 1 : 0) + acc;
         }, 0)).toEqual(0);
         expect(testNotes.reduce((acc, item) => {
-          return (item.incipit === text3 ? 1 : 0) + acc;
+          return (item.title === text3title ? 1 : 0) + acc;
         }, 0)).toEqual(13);
 
         expect(isPartial).toBeFalsy();

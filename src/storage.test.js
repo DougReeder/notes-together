@@ -387,8 +387,11 @@ describe("storage", () => {
 
   describe("findStubs", () => {
     const note1 = createMemoryNote(generateTestId(), "<h2>The world</h2> set free", new Date(2011, 0, 1));
+    const note1title = "The world";
     const note2 = createMemoryNote(generateTestId(), "Math <th>is not</th> my favorite", new Date(2012, 1, 2));
+    const note2title = "is not";
     const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>", new Date(2013, 2, 3));
+    const note3title = "like thin crust";
 
     function createTestNote(text) {
       const startDate = new Date(2015, 0, 1);
@@ -439,13 +442,13 @@ describe("storage", () => {
           });
           expect(testStubs.length).toEqual(36);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note1.text ? 1 : 0) + acc;
+            return (item.title === note1title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note2.text ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(12);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note3.text ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -487,13 +490,13 @@ describe("storage", () => {
           });
           expect(testStubs.length).toEqual(24);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note1.text ? 1 : 0) + acc;
+            return (item.title === note1title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note2.text ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note3.text ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -538,13 +541,13 @@ describe("storage", () => {
           expect(testStubs.length).toEqual(13);
           expect(testStubIds.size).toEqual(13);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note1.text ? 1 : 0) + acc;
+            return (item.title === note1title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note2.text ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.incipit === note3.text ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -603,7 +606,7 @@ describe("storage", () => {
           expect(testStubs.length).toEqual(500);
           let lastDate = Date.now();
           for (const stub of testStubs) {
-            expect(stub.incipit).toMatch(/^something rather short/);
+            expect(stub.title).toMatch(/^something rather short/);
             expect(stub.date.getTime()).toBeLessThanOrEqual(lastDate);
             lastDate = stub.date.getTime();
           }
@@ -644,7 +647,7 @@ describe("storage", () => {
           expect(testStubs.length).toEqual(500);
           let lastDate = Date.now();
           for (const stub of testStubs) {
-            expect(stub.incipit).toMatch(/^something rather short/);
+            expect(stub.title).toMatch(/^something rather short/);
             expect(stub.date.getTime()).toBeLessThanOrEqual(lastDate);
             lastDate = stub.date.getTime();
           }
@@ -714,7 +717,7 @@ describe("storage", () => {
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {
-            expect(stub.incipit).toMatch(/^<h1>In Congress, July 4, 1776<\/h1>\s+<p><b>The unanimous Declaration of the thirteen united States of America<\/b>, When in the Course of human events/);
+            expect(stub.title).toMatch(/^In Congress, July 4, 1776\nThe unanimous Declaration of the thirteen united States of America, When in the Course of human events/);
           }
 
           expect(isPartial).toBeTruthy();
@@ -753,7 +756,7 @@ describe("storage", () => {
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {
-            expect(stub.incipit).toMatch(/^<h1>In Congress, July 4, 1776<\/h1>\s+<p><b>The unanimous Declaration of the thirteen united States of America<\/b>, When in the Course of human events/);
+            expect(stub.title).toMatch(/^In Congress, July 4, 1776\nThe unanimous Declaration of the thirteen united States of America, When in the Course of human events/);
           }
 
           expect(isPartial).toBeTruthy();

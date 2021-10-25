@@ -2,8 +2,6 @@
 // Should only be called by storage abstraction, not from front end.
 // Copyright © 2021 Doug Reeder
 
-import {INCIPIT_LENGTH} from "./Note";
-
 const FIRST_RESULTS_MS = 84;
 const MAX_NOTES_FOUND = 500;
 const dbNameDefault = "noteDb";
@@ -67,7 +65,7 @@ function initDb(dbName = dbNameDefault) {
 let findStubsTransaction;
 /**
  * Searches for notes which match (as a prefix) each word in searchStr.
- * Returns *stubs*: notes with incipit instead of the full text.
+ * Returns *stubs*: notes with title but not the full text.
  * @param searchWords Set of keywords
  * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than MAX_NOTES_FOUND matching notes
  */
@@ -127,7 +125,7 @@ function sortedStubs(callback, itemStore) {
 
         foundStubs.push({
           id: cursor.value.id,
-          incipit: cursor.value.text.slice(0, INCIPIT_LENGTH),
+          title: cursor.value.title,
           date: cursor.value.date,
         });
         if ((isFirstResults && Date.now() - lastCallback > FIRST_RESULTS_MS) || (Date.now() - lastCallback > 1000)) {
@@ -185,7 +183,7 @@ function searchStubs(callback, itemStore, searchWords) {
 
         foundStubs.push({
           id: cursor.value.id,
-          incipit: cursor.value.text.slice(0, INCIPIT_LENGTH),
+          title: cursor.value.title,
           date: cursor.value.date,
         });
         foundIds.add(cursor.value.id);

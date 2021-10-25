@@ -22,12 +22,17 @@ const RemoteNotes = {
           "default": "",
           "maxLength": 600000   // allows for one small raster image in a data URL
         },
+        "title": {
+          "type": "string",
+          "default": "☹",
+          "maxLength": 400
+        },
         "date": {   // RFC 3339, section 5.6 (a subset of ISO 8601)
           "type": "string",
           "format": "date-time"
         }
       },
-      "required": ["id", "text", "date" ]
+      "required": ["id", "text", "title", "date" ]
     });
 
     privateClient.on('change', evt => {
@@ -105,7 +110,7 @@ const RemoteNotes = {
           // console.debug("notes.upsert", memoryNote);
           const cleanNote = sanitizeNote(memoryNote, textFilter);
 
-          const remoteNote = {id: cleanNote.id, text: cleanNote.text, date: cleanNote.date.toISOString()};
+          const remoteNote = {id: cleanNote.id, text: cleanNote.text, title: cleanNote.title, date: cleanNote.date.toISOString()};
           await enqueueStoreObject(remoteNote);
           return cleanNote;
         },
@@ -167,6 +172,7 @@ function toMemoryNote(remoteNote) {
   return {
     id: remoteNote.id,
     text: remoteNote.text,
+    title: 'string' === typeof remoteNote.title ? remoteNote.title : "⁂",
     date: date,
   };
 }

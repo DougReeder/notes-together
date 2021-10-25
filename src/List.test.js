@@ -32,7 +32,7 @@ describe("List", () => {
     expect(items[1].className).toEqual("summary");
     expect(items[1].textContent).toEqual("I would find her society much more believable if it was set far in the future on some other planet, and did not require the reader to swallow a total reversal of current trends.");
     expect(items[2].className).toEqual("summary");
-    expect(items[2].textContent).toEqual("Uncommon Women (1983)The only problem I had with the movie was that it fails to develop its material.  ");
+    expect(items[2].textContent).toEqual("Uncommon Women (1983)The only problem I had with the movie was that it fails to develop its material.");
 
     expect(items[4].className).toEqual("divider");
     expect(items[4].textContent).toEqual("August 2021");

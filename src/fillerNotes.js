@@ -281,7 +281,7 @@ const sentences = [
   "Has difficulties standing on its own; it relies heavily on knowledge of the previous movie.",
   "The funniest of all the films due to the fact that it is played totally tongue in cheek.",
   "A TV plot is stretched to movie length.",
-  "Several of the books are almagated into this movie.",
+  "Several of the books are amalgamated into this movie.",
   "One song (however good) is not enough to base a movie on.",
   "A film that tries hard but ultimately fails due to poor plotting, sub-par special effects and poor character development.",
   "As the series so often does, the events depicted mirror the glasnost of the late 1980s.",

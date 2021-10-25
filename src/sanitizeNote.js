@@ -2,6 +2,8 @@
 // Copyright © 2021 Doug Reeder under the MIT license
 
 import sanitizeHtml from "sanitize-html";
+import {TITLE_MAX} from "./Note";
+import decodeEntities from "./util/decodeEntities";
 
 // eslint-disable-next-line
 const semanticOnly = {
@@ -24,6 +26,7 @@ const semanticOnly = {
   allowedAttributes: {
     a: [ 'href', 'title', 'download'],
     img: [ 'src', 'alt', 'srcset', 'sizes', 'title'],
+    th: ['colspan'],
     circle: ['cx', 'cy', 'r', 'pathLength', 'style'],
     clipPath: ['id', 'clipPathUnits', 'style'],
     ellipse: ['cx', 'cy', 'rx', 'ry', 'pathLength', 'style'],
@@ -111,8 +114,18 @@ function sanitizeNote(memoryNote, textFilter) {
   if ('string' !== typeof memoryNote.text) {
     throw new Error("text field must be string");
   }
+
   semanticExtractKeywords.textFilter = textFilter;
-  const sanitizedText = sanitizeHtml(memoryNote.text, semanticExtractKeywords);
+
+  let sanitizedText, title;
+  if ('string' === typeof memoryNote.title) {
+    sanitizedText = sanitizeHtml(memoryNote.text, semanticExtractKeywords);
+    title = memoryNote.title;   // plain text doesn't need to be sanitized
+  } else {
+    const result = sanitizeAndExtractTitle(memoryNote.text, semanticExtractKeywords);
+    sanitizedText = result.sanitizedText;
+    title = result.title;
+  }
 
   let date;
   if (memoryNote.date instanceof Date) {
@@ -126,8 +139,75 @@ function sanitizeNote(memoryNote, textFilter) {
   return {
     id: id,
     text: sanitizedText,
+    title: title,
     date: date,
   };
+}
+
+function sanitizeAndExtractTitle(memoryText, semanticExtractKeywords) {
+  const titles = {
+    h1: [],
+    h2: [],
+    h3: [],
+    h4: [],
+    h5: [],
+    h6: [],
+    highValue: [],
+    ordinary: [],
+    lowValue: [],
+  }
+  function extractTitles(frame) {
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(frame.tag)) {
+      const title = frame.text?.trim();
+      if (title) {
+        titles[frame.tag].push(decodeEntities(title));
+      }
+    } else if (['p','blockquote', 'main', 'section', 'div', 'li', 'caption'].includes(frame.tag)) {
+      if (titles.highValue.length < 2) {
+        const txt = frame.text?.trim();
+        if (txt) {
+          if ('li' === frame.tag) {
+            titles.highValue.push("• " + decodeEntities(txt));
+          } else {
+            titles.highValue.push(decodeEntities(txt));
+          }
+        }
+      }
+    } else if (['i', 'em', 'b', 'strong', 'u', 'code', 'span', 'a', 'aside', 'del', 's', 'strike', 'sub', 'sup', 'cite', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'colgroup', 'ruby', 'rp', 'rt'].includes(frame.tag)) {
+      if (titles.lowValue.length < 2) {
+        const txt = frame.text?.trim();
+        if (txt) {
+          titles.lowValue.push(decodeEntities(txt));
+        }
+      }
+    } else if (titles.ordinary.length < 2) {   // includes <pre>
+      if ('img' === frame.tag) {
+        const alt = frame.attribs?.alt?.trim() || frame.attribs?.title?.trim();
+        if (alt) {
+          titles.ordinary.push(decodeEntities(alt));
+        }
+      } else {
+        const txt = frame.text?.trim();
+        if (txt) {
+          titles.ordinary.push(decodeEntities(txt));
+        }
+      }
+    }
+    return false;   // don't filter out any tags
+  }
+
+  semanticExtractKeywords.exclusiveFilter = extractTitles;
+  const sanitizedText = sanitizeHtml(memoryText, semanticExtractKeywords);
+
+  let title = [...titles.h1, ...titles.h2, ...titles.h3, ...titles.h4, ...titles.h5, ...titles.h6, ...titles.highValue, ...titles.ordinary].slice(0, 2).join("\n").slice(0, TITLE_MAX);
+  if (!title) {
+    title = titles.lowValue.join("\n").slice(0, TITLE_MAX);
+  }
+  if (!title && !/<\/?[a-zA-Z][^<>]*>/.test(sanitizedText)) {
+    title = sanitizedText.trim().slice(0, TITLE_MAX);
+  }
+
+  return {sanitizedText, title};
 }
 
 export {semanticOnly, sanitizeNote};

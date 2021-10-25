@@ -50,12 +50,24 @@ function initRemote() {
               } else {
                 console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
                 requestIdleCallback(async () => {
-                  const {mergedMarkup, incipit} = mergeConflicts(evt.oldValue.text, evt.newValue.text);
-                  const message = `Conflict in "${incipit}..."`;
-                  window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
-                  const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
-                  // initiator is **not** 'REMOTE' for this purpose
-                  await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate));
+                  let cleanNote;
+                  try {
+                    const mergedMarkup = mergeConflicts(evt.oldValue.text, evt.newValue.text);
+                    const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+                    // initiator is **not** 'REMOTE' for this purpose
+                    cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate));
+                  } catch (err) {
+                    console.error("while handling conflict:", err);
+                  } finally {
+                    const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+                    const message = `Conflict in “${title?.split('\n')[0]}”`;
+                    window.postMessage({
+                      kind: 'TRANSIENT_MSG',
+                      severity: 'warning',
+                      message: message,
+                      key: evt.oldValue?.id || evt.newValue?.id
+                    }, window?.location?.origin);
+                  }
                 });
               }
               break;

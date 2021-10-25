@@ -3,8 +3,6 @@
 
 import htmlparser from "htmlparser2";
 
-const INCIPIT_MAX = 40;
-
 const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr', 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect', 'stop', 'use'];
 
 function tokenize(markup) {
@@ -106,16 +104,8 @@ function mergeConflicts(markup1, markup2) {
     checkPreviousAndPush(tokens2[i]);
   }
 
-  let incipit = "";
   const mergedMarkup = mergedTokens.map(token => {
     if ('string' === typeof token) {
-      if (incipit.length < INCIPIT_MAX) {
-        if (incipit.length > 0 && token.length > 0) {
-          incipit = incipit.trim() + " ";
-        }
-        incipit += token.trim();
-      }
-
       return token;
     } else if ('attributes' in token) {
       return '<' +
@@ -131,8 +121,7 @@ function mergeConflicts(markup1, markup2) {
     }
   }).join('');
 
-  incipit = incipit.slice(0, INCIPIT_MAX);
-  return {mergedMarkup, incipit};
+  return mergedMarkup;
 
   function checkPreviousAndPush(token) {
     if ('string' === typeof token &&

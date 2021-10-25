@@ -1,7 +1,7 @@
 // Note.js - in-memory Note model for Notes Together
 // Copyright © 2021 Doug Reeder
 
-const INCIPIT_LENGTH = 300;
+const TITLE_MAX = 400;
 
 function createMemoryNote(id, text, date) {
   if (!Number.isFinite(id)) {
@@ -16,4 +16,4 @@ function createMemoryNote(id, text, date) {
 }
 
 
-export {INCIPIT_LENGTH, createMemoryNote};
+export {TITLE_MAX, createMemoryNote};

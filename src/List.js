@@ -1,9 +1,7 @@
 // List.js - List component for Notes Together
 // Copyright © 2021 Doug Reeder
 
-import {INCIPIT_LENGTH} from "./Note";
-import {uniformList, updateListWithChanges} from "./listUtil";
-import sanitizeHtml from 'sanitize-html';
+import {updateListWithChanges} from "./listUtil";
 import {findStubs, deleteNote} from "./storage";
 import React, {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
@@ -151,8 +149,7 @@ function List(props) {
               </svg>
             </li>);
           }
-          const incipit = note.hasOwnProperty('incipit') ? note.incipit : note.text.slice(0, INCIPIT_LENGTH);
-          const cleanHtml = sanitizeHtml(incipit, uniformList);
+          const titleLines = ('string' === typeof note.title ? note.title : "⸮").split('\n');
           let itemButtons;
           if (note.id in itemButtonsIds) {
             itemButtons = (
@@ -166,7 +163,7 @@ function List(props) {
           listItems.push(
             <li data-id={note.id} key={note.id.toString()}
                 className={'summary' + (note.id === selectedNoteId ? ' selected' : '')}>
-              <div className="incipit" dangerouslySetInnerHTML={{__html: cleanHtml}}></div>
+              <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
               {itemButtons}
             </li>
           );

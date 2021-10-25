@@ -54,30 +54,19 @@ li.divider > .rightLine {
 }
 
 
-ol.list > li.selected {
+li.selected {
     background-color: lightblue;
 }
 
-.incipit {
+.title {
     box-sizing: border-box;
     height: 7.5ex;
     overflow: hidden;
     padding: 1.25ex 2ex 0 2ex;
     border-bottom: 1.25ex solid white;
 }
-/*ol.list > li:nth-child(even) > .incipit {*/
-/*    border-color: #eee;*/
-/*}*/
-ol.list > li.selected > .incipit {
+li.selected > .title {
     border-color: lightblue;
-}
-
-.incipit > * {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-.incipit pre {
-    white-space: pre-wrap;
 }
 
 .itemButtons {

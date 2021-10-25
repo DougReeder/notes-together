@@ -75,7 +75,7 @@ describe("tokenize", () => {
 
 describe("mergeConflicts", () => {
   it("should normalize markup when both versions are equal", () => {
-    const {mergedMarkup, incipit} = mergeConflicts(markup1, markup1);
+    const mergedMarkup = mergeConflicts(markup1, markup1);
     expect(mergedMarkup).toEqual(`
 <body bgcolor="#FFFFFF">
 <table border="0" cellpadding="3" cellspacing="0"><tr><td id="smez">
@@ -94,65 +94,54 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
   });
 
   it("should handle different beginnings", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('foo<b>bold</b>end', 'bar<i>italic</i>end');
+    const mergedMarkup = mergeConflicts('foo<b>bold</b>end', 'bar<i>italic</i>end');
     expect(mergedMarkup).toEqual('foo<b>bold</b>bar<i>italic</i>end');
-    expect(incipit).toEqual('foo bold bar italic end');
   });
 
   it("should handle delete at beginning of markup 1", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('end', '<h1>title</h1>end');
+    const mergedMarkup = mergeConflicts('end', '<h1>title</h1>end');
     expect(mergedMarkup).toEqual('<h1>title</h1>end');
-    expect(incipit).toEqual('title end');
   });
 
   it("should handle delete at beginning of markup 2", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('<h1>title</h1>end', 'end');
+    const mergedMarkup = mergeConflicts('<h1>title</h1>end', 'end');
     expect(mergedMarkup).toEqual('<h1>title</h1>end');
-    expect(incipit).toEqual('title end');
   });
 
   it("should handle delete at end of markup 1", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('start<p>something</p>', 'start');
+    const mergedMarkup = mergeConflicts('start<p>something</p>', 'start');
     expect(mergedMarkup).toEqual('start<p>something</p>');
-    expect(incipit).toEqual('start something');
   });
 
   it("should handle delete at end of markup 2", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('start', 'start<p>something</p>');
+    const mergedMarkup = mergeConflicts('start', 'start<p>something</p>');
     expect(mergedMarkup).toEqual('start<p>something</p>');
-    expect(incipit).toEqual('start something');
   });
 
   it("should handle different ends", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('start<b>bold</b>foo', 'start<i>italic</i>bar');
+    const mergedMarkup = mergeConflicts('start<b>bold</b>foo', 'start<i>italic</i>bar');
     expect(mergedMarkup).toEqual('start<b>bold</b>foo<i>italic</i>bar');
-    expect(incipit).toEqual('start bold foo italic bar');
 
-    const {mergedMarkup: mergedMarkup2, incipit: incipit2} = mergeConflicts('<hr>alpha', '<hr>beta');
+    const mergedMarkup2 = mergeConflicts('<hr>alpha', '<hr>beta');
     expect(mergedMarkup2).toEqual('<hr />alpha beta');
-    expect(incipit2).toEqual('alpha beta');
   });
 
   it("should include all of totally different markups", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('<h2>title</h2><blockquote>first</blockquote>', '<p>first paragraph</p><p>second paragraph</p>');
+    const mergedMarkup = mergeConflicts('<h2>title</h2><blockquote>first</blockquote>', '<p>first paragraph</p><p>second paragraph</p>');
     expect(mergedMarkup).toEqual('<h2>title</h2><blockquote>first</blockquote><p>first paragraph</p><p>second paragraph</p>');
-    expect(incipit).toEqual('title first first paragraph second parag');
 
-    const {mergedMarkup: mergedMarkup2, incipit: incipit2} = mergeConflicts('first', 'second');
+    const mergedMarkup2 = mergeConflicts('first', 'second');
     expect(mergedMarkup2).toEqual('first second');
-    expect(incipit2).toEqual('first second');
   });
 
   it("should insert a space between alternate text (to avoid joining words)", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('<h3>one way</h3>', '<h3>point forward</h3>');
+    const mergedMarkup = mergeConflicts('<h3>one way</h3>', '<h3>point forward</h3>');
     expect(mergedMarkup).toEqual('<h3>one way point forward</h3>');
-    expect(incipit).toEqual('one way point forward');
   });
 
   it("should handle text replaced by tag", () => {
-    const {mergedMarkup, incipit} = mergeConflicts('Figure 1: (image goes here)', 'Figure 1: <img src="fig1.jpg">');
+    const mergedMarkup = mergeConflicts('Figure 1: (image goes here)', 'Figure 1: <img src="fig1.jpg">');
     expect(mergedMarkup).toEqual('Figure 1: (image goes here) Figure 1: <img src="fig1.jpg" />');
-    expect(incipit).toEqual('Figure 1: (image goes here) Figure 1:');
   });
 
   it("should include both versions of differing markup", () => {
@@ -170,7 +159,7 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
 </UL>
 <hr />
 `;
-    const {mergedMarkup, incipit} = mergeConflicts(markup1, markup2);
+    const mergedMarkup = mergeConflicts(markup1, markup2);
     expect(mergedMarkup).toEqual(`
 <body bgcolor="#FFFFFF">
 <table border="0" cellpadding="3" cellspacing="0"><tr><td id="smez">
@@ -214,7 +203,7 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
 
 </svg>`;
 
-    const {mergedMarkup, incipit} = mergeConflicts(markupSvg, markupSvg2);
+    const mergedMarkup = mergeConflicts(markupSvg, markupSvg2);
 
     expect(mergedMarkup).toEqual(`<svg width="120" height="240" version="1.1" xmlns="http://www.w3.org/2000/svg">
   <defs>

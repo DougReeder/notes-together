@@ -75,6 +75,7 @@ describe("RemoteNotes", () => {
 
       expect(savedNote.id).toEqual(memNote.id);
       expect(savedNote.text).toEqual(memNote.text);
+      expect(savedNote.title).toEqual(memNote.text);
       expect(new Date(savedNote.date)).toEqual(memNote.date);
     });
 
@@ -90,6 +91,7 @@ describe("RemoteNotes", () => {
       const retrieved = await remoteStorage.notes.get(originalId);
 
       expect(retrieved.text).toEqual(updatedText);
+      expect(retrieved.title).toEqual("In Joy Still Felt");
       expect(retrieved.date).toEqual(original.date);
     });
 
@@ -150,7 +152,7 @@ describe("RemoteNotes", () => {
       await remoteStorage.notes.upsert(original);
       const retrieved = await remoteStorage.notes.get(id);
 
-      expect(retrieved).toEqual(original);
+      expect(retrieved).toEqual({id: original.id, text: original.text, title: "filbert nut", date: original.date});
     });
   });
 
