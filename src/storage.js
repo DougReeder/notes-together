@@ -47,6 +47,42 @@ function initRemote() {
               if (!evt.oldValue && !evt.newValue) {
                 console.log("remoteStorage deleted on both", evt.relativePath);
                 // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
+              } else if (evt.oldValue && !evt.newValue) {
+                console.warn("remoteStorage local change, remote delete:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+                requestIdleCallback(async () => {
+                  try {
+                    const title = evt.oldValue?.title || evt.lastCommonValue?.title || "⛏";
+                    const message = `Restoring “${title?.split('\n')[0]}”, which was deleted on another device`;
+                    window.postMessage({
+                      kind: 'TRANSIENT_MSG',
+                      severity: 'warning',
+                      message: message,
+                      key: evt.oldValue.id
+                    }, window?.location?.origin);
+                    // initiator is **not** 'REMOTE' for this purpose
+                    await upsertNote(evt.oldValue);
+                  } catch (err) {
+                    console.error("while handling local change, remote delete:", err);
+                  }
+                });
+              } else if (!evt.oldValue && evt.newValue) {
+                console.warn("remoteStorage local delete, remote change:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+                requestIdleCallback(async () => {
+                  try {
+                    const title = evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+                    const message = `Restoring “${title?.split('\n')[0]}”, which was edited on another device`;
+                    window.postMessage({
+                      kind: 'TRANSIENT_MSG',
+                      severity: 'warning',
+                      message: message,
+                      key: evt.newValue.id
+                    }, window?.location?.origin);
+                    // initiator is **not** 'REMOTE' for this purpose
+                    await upsertNote(evt.newValue);
+                  } catch (err) {
+                    console.error("while handling local delete, remote change:", err);
+                  }
+                });
               } else {
                 console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
                 requestIdleCallback(async () => {
