@@ -36,6 +36,26 @@ describe("storage", () => {
       expect(wordArr.length).toEqual(2);
     });
 
+    it("should decode HTML entities", () => {
+      const wordArr = Array.from(parseWords("I&apos;ll fix &apos;John&#39;s &amp; F&apos;lar&apos;s&apos; boat. Jane&nbsp;Doe &quot;real&quot; &lt;tag&gt;"))
+
+      expect(wordArr).toContain("I'LL");
+      expect(wordArr).not.toContain("APOS")
+      expect(wordArr).toContain("FIX");
+      expect(wordArr).toContain("JOHN'S");
+      expect(wordArr).not.toContain("AMP")
+      expect(wordArr).toContain("F'LAR'S");
+      expect(wordArr).not.toContain("F'LAR’S")
+      expect(wordArr).toContain("BOAT");
+      expect(wordArr).toContain("JANEDOE");
+      expect(wordArr).toContain("REAL");
+      expect(wordArr).not.toContain("QUOT")
+      expect(wordArr).toContain("TAG");
+      expect(wordArr).not.toContain("LT")
+      expect(wordArr).not.toContain("GT")
+      expect(wordArr.length).toEqual(8);
+    });
+
     it("forms words using hyphens, incl. no-break & soft (but not dashes) then drops them", async () => {
       const wordArr = Array.from(parseWords("state‐of‑the­art \n614-555-1212 29–37"));
 
@@ -54,6 +74,14 @@ describe("storage", () => {
       expect(wordArr.length).toEqual(3);
     });
 
+    it("forms words using non-breaking space, then drops them", async () => {
+      const wordArr = Array.from(parseWords("USD 350 million 100 km § 3.2"));
+
+      expect(wordArr).toContain("USD350MILLION");
+      expect(wordArr).toContain("100KM");
+      expect(wordArr).toContain("3.2");
+      expect(wordArr.length).toEqual(3);
+    });
 
     it("forms words using carets, then drops them; coerces superscript characters to regular digits", async () => {
       const wordArr = Array.from(parseWords("^^^^ ^^^C^3I C³I R^2 R^17 ^pointer ³He"));
@@ -214,18 +242,17 @@ describe("storage", () => {
     });
 
     it('should parse "℥" symbol as OZ', () => {
-      const wordArr = Array.from(parseWords("23℥brimstone"));
+      const wordArr = Array.from(parseWords("23℥ brimstone"));
 
       expect(wordArr).toContain("23OZ");
       expect(wordArr).toContain("BRIMSTONE");
     });
 
     it('should parse "℻" symbol as FAX', () => {
-      const wordArr = Array.from(parseWords("order℻614-555-1212"));
+      const wordArr = Array.from(parseWords("order ℻614-555-1212"));
 
       expect(wordArr).toContain("ORDER");
-      expect(wordArr).toContain("FAX");
-      expect(wordArr).toContain("6145551212");
+      expect(wordArr).toContain("FAX6145551212");
     });
 
     it('should parse "℞" symbol as Rx', () => {

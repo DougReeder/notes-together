@@ -8,6 +8,7 @@ import RemoteNotes from "./RemoteNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {mergeConflicts} from "./mergeConflicts";
 import {createMemoryNote} from "./Note";
+import decodeEntities from "./util/decodeEntities";
 
 let initPrms;
 
@@ -195,13 +196,13 @@ function deleteNote(id) {
 
 
 function parseWords(text) {
-  text = removeDiacritics(text);
+  text = removeDiacritics(decodeEntities(text));
 
   const wordSet = new Set();
   // initializes regexp and its lastIndex property outside the loop
   // ASCII, Unicode, no-break & soft hyphens
   // ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
-  const wordRE = /[-‐‑­'’ʼ.^\wÑñ]+/g;
+  const wordRE = /[-‐‑­'’ʼ. ^\wÑñ]+/g;
   let result, normalizedWord;
 
   while ((result = wordRE.exec(text)) !== null) {
@@ -214,7 +215,7 @@ function parseWords(text) {
 
 function normalizeWord(word) {
   // ASCII, Unicode, no-break & soft hyphens
-  word = word.toUpperCase().replace(/-|‐|‑|­|_|^'+|'+$|^\.+|\.+$|\^/g, "");
+  word = word.toUpperCase().replace(/-|‐|‑|­|_| |^'+|'+$|^\.+|\.+$|\^/g, "");
   // not a word containing only digits and decimal points
   if (! /^[\d.]+$/.test(word)) {
     word = word.replace(/\./g, "");
