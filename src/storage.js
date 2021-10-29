@@ -89,7 +89,7 @@ function initRemote() {
                 requestIdleCallback(async () => {
                   let cleanNote;
                   try {
-                    const mergedMarkup = mergeConflicts(evt.oldValue.text, evt.newValue.text);
+                    const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content);
                     const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
                     // initiator is **not** 'REMOTE' for this purpose
                     cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate));
@@ -155,7 +155,7 @@ function initRemote() {
  * Inserts or updates a note in IDB and RemoteStorage, when needed.
  * @param memoryNote
  * @param initiator: 'REMOTE', 'DETAIL' or undefined
- * @return {Promise<{date: Date, id: number, text: string}>}
+ * @return {Promise<{date: Date, id: number, content: string, title: string}>}
  */
 async function upsertNote(memoryNote, initiator) {
   const wordSet = new Set();

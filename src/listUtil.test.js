@@ -11,11 +11,11 @@ function generateTestId() {
 }
 
 const startDate = Date.parse('2016-01-01');
-function createIndexedNote(text, date) {
+function createIndexedNote(content, date) {
   if (!date) {
     date = new Date(startDate + Math.random() * 31 * 24 * 60 * 60 * 1000);
   }
-  const memNote = createMemoryNote(generateTestId(), text, date);
+  const memNote = createMemoryNote(generateTestId(), content, date);
 
   const wordSet = new Set();
   const textFilter = function (text) {

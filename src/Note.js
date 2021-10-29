@@ -3,14 +3,14 @@
 
 const TITLE_MAX = 400;
 
-function createMemoryNote(id, text, date) {
+function createMemoryNote(id, content, date) {
   if (!Number.isFinite(id)) {
     id = Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER);
   }
 
   return {
     id,
-    text: text || "",
+    content: content || "",
     date: date || new Date(),
   }
 }

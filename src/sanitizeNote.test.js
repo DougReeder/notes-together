@@ -10,8 +10,8 @@ function generateTestId() {
 }
 
 describe("sanitizeNote", () => {
-  it("should fail when passed a note without text", () => {
-    expect(() => {sanitizeNote({id:Number.MIN_SAFE_INTEGER-2})}).toThrow('text');
+  it("should fail when passed a note without content", () => {
+    expect(() => {sanitizeNote({id:Number.MIN_SAFE_INTEGER-2})}).toThrow('content');
   });
 
   it("should remove forbidden tags and attributes", () => {
@@ -29,7 +29,7 @@ unstyled text <font color="red" size="-2">small red text</font> unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.text).toEqual(
+    expect(cleanNote.content).toEqual(
         `Our <a href="/menu">menu</a> is extensive!
 <img srcset="https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=480 480w, https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=1080 1080w" src="https://mdg.imgix.net/book-cover.jpg" alt="Markdown Guide book cover" sizes="100vw" />
 
@@ -49,7 +49,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.text).toEqual("<header>A mind is a <strike>terrible thing to waste</strike></header>");
+    expect(cleanNote.content).toEqual("<header>A mind is a <strike>terrible thing to waste</strike></header>");
   });
 
   it("should pass through a date of type Date", () => {
@@ -105,7 +105,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original, textFilter);
 
-    expect(cleanNote.text).toEqual("editor-in-chief\n================<br />foo_bar Foo.bar _underlined_\n");
+    expect(cleanNote.content).toEqual("editor-in-chief\n================<br />foo_bar Foo.bar _underlined_\n");
     const wordArr = Array.from(wordSet);
     expect(wordArr).toContain("EDITORINCHIEF");
     expect(wordArr).toContain("FOOBAR");
@@ -125,7 +125,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("Subheading\nminor heading");
-    expect(cleanNote.text).toEqual(`  <hr /><h3>trivial heading</h3>
+    expect(cleanNote.content).toEqual(`  <hr /><h3>trivial heading</h3>
   <h3>minor heading</h3>
 <h3>Subheading</h3>`);
   });
@@ -143,7 +143,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("minor heading\nfirst real paragraph");
-    expect(cleanNote.text).toEqual(`  <p> </p><a href="https://www.npr.org/programs/" title="null">click me</a>
+    expect(cleanNote.content).toEqual(`  <p> </p><a href="https://www.npr.org/programs/" title="null">click me</a>
   <del>some old stuff</del>
   <sup>12</sup><sub>6</sub>C
   <p>first real paragraph</p>
@@ -159,7 +159,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toMatch(/^The long, strong thing/);
-    expect(cleanNote.text).toEqual(` <p>The <i>long</i>, <b>strong</b> thing</p> `);
+    expect(cleanNote.content).toEqual(` <p>The <i>long</i>, <b>strong</b> thing</p> `);
   });
 
   it("should extract a title from ordinary tags if necessary", () => {
@@ -170,7 +170,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("something\nanother thing");
-    expect(cleanNote.text).toEqual(`  <div>something</div>  <div>another thing</div>`);
+    expect(cleanNote.content).toEqual(`  <div>something</div>  <div>another thing</div>`);
   });
 
   it("should extract a title from list items if necessary", () => {
@@ -184,7 +184,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("• erste\n• zwitte");
-    expect(cleanNote.text).toEqual(`  <ul>
+    expect(cleanNote.content).toEqual(`  <ul>
   <li>erste</li>
   <li>zwitte</li>
 </ul>`);
@@ -200,7 +200,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("Grapefruit are healthy.\nGrapefruit slice atop a pile of other slices");
-    expect(cleanNote.text).toEqual(`  <img src="/media/cc0-images/grapefruit-slice-332-332.jpg" alt="Grapefruit slice atop a pile of other slices" /> <p> Grapefruit are healthy. </p>  `);
+    expect(cleanNote.content).toEqual(`  <img src="/media/cc0-images/grapefruit-slice-332-332.jpg" alt="Grapefruit slice atop a pile of other slices" /> <p> Grapefruit are healthy. </p>  `);
   });
 
   it("should not extract title string twice from emphasis in paragraph", () => {
@@ -211,7 +211,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("Barrier Mage short talk");
-    expect(cleanNote.text).toEqual(` <p><i> Barrier Mage</i> short talk </p> `);
+    expect(cleanNote.content).toEqual(` <p><i> Barrier Mage</i> short talk </p> `);
   });
 
   it("should extract title once from code block", () => {
@@ -222,7 +222,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("a = b + c");
-    expect(cleanNote.text).toEqual(` <pre><code> a = b + c </code></pre> `);
+    expect(cleanNote.content).toEqual(` <pre><code> a = b + c </code></pre> `);
   });
 
   it("should extract title from tables", () => {
@@ -247,7 +247,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("Shortcuts — Anywhere\nfour carriage-returns");
-    expect(cleanNote.text).toEqual(` 
+    expect(cleanNote.content).toEqual(` 
  <table>
     <thead>
         <tr>
@@ -272,7 +272,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("pasted sidebar\nclick me");
-    expect(cleanNote.text).toEqual(`  <aside>pasted sidebar</aside>   <a href="http://example.com">click me</a> `);
+    expect(cleanNote.content).toEqual(`  <aside>pasted sidebar</aside>   <a href="http://example.com">click me</a> `);
   });
 
   it("should not extract a title from ruby tags", () => {
@@ -285,7 +285,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("明日 (Ashita)");
-    expect(cleanNote.text).toEqual(`<p><ruby>
+    expect(cleanNote.content).toEqual(`<p><ruby>
   明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp>
 </ruby></p>`);
   });
@@ -298,7 +298,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("");
-    expect(cleanNote.text).toEqual(`  <p>  </p>  <div>  </div>`);
+    expect(cleanNote.content).toEqual(`  <p>  </p>  <div>  </div>`);
   });
 
   it("should extract a title from raw text without tags if necessary", () => {
@@ -311,7 +311,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("plain text");
-    expect(cleanNote.text).toEqual(`  
+    expect(cleanNote.content).toEqual(`  
     
     plain text   `);
   });
@@ -325,7 +325,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("something \"quoted\" a>b c<d\nBob's Red Mill; Alice & Bob & Carol");
-    expect(cleanNote.text).toEqual(`   <p> something &quot;quoted&quot; a&gt;b c&lt;d </p>
+    expect(cleanNote.content).toEqual(`   <p> something &quot;quoted&quot; a&gt;b c&lt;d </p>
    <p> Bob&#39;s Red Mill; Alice &amp; Bob &amp; Carol </p> `);
   });
 
@@ -345,7 +345,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original, textFilter);
 
-    expect(cleanNote.text).toEqual(`leading junk
+    expect(cleanNote.content).toEqual(`leading junk
     <h2>Table of Contents</h2>
 <h1>The <b>Actual</b> Title</h1>
 <p>body text</p>`);
@@ -376,6 +376,6 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("title text");
-    expect(cleanNote.text).toEqual(`  <p> note body </p> `);
+    expect(cleanNote.content).toEqual(`  <p> note body </p> `);
   });
 });

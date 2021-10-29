@@ -111,18 +111,18 @@ function sanitizeNote(memoryNote, textFilter) {
     id = Math.ceil((Math.random() - 0.5) * 2 * Number.MAX_SAFE_INTEGER);
   }
 
-  if ('string' !== typeof memoryNote.text) {
-    throw new Error("text field must be string");
+  if ('string' !== typeof memoryNote.content) {
+    throw new Error("content field must be string");
   }
 
   semanticExtractKeywords.textFilter = textFilter;
 
   let sanitizedText, title;
   if ('string' === typeof memoryNote.title) {
-    sanitizedText = sanitizeHtml(memoryNote.text, semanticExtractKeywords);
+    sanitizedText = sanitizeHtml(memoryNote.content, semanticExtractKeywords);
     title = memoryNote.title;   // plain text doesn't need to be sanitized
   } else {
-    const result = sanitizeAndExtractTitle(memoryNote.text, semanticExtractKeywords);
+    const result = sanitizeAndExtractTitle(memoryNote.content, semanticExtractKeywords);
     sanitizedText = result.sanitizedText;
     title = result.title;
   }
@@ -138,7 +138,7 @@ function sanitizeNote(memoryNote, textFilter) {
 
   return {
     id: id,
-    text: sanitizedText,
+    content: sanitizedText,
     title: title,
     date: date,
   };

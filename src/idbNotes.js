@@ -65,7 +65,7 @@ function initDb(dbName = dbNameDefault) {
 let findStubsTransaction;
 /**
  * Searches for notes which match (as a prefix) each word in searchStr.
- * Returns *stubs*: notes with title but not the full text.
+ * Returns *stubs*: notes with title but not the full content.
  * @param searchWords Set of keywords
  * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than MAX_NOTES_FOUND matching notes
  */
@@ -244,7 +244,7 @@ function upsertNoteDb(cleanNote, initiator) {
         if (evt.target.result === cleanNote.id) {   // TODO: remove this backstop
           const notesChanged = {};
           notesChanged[cleanNote.id] = cleanNote;   // postMessage will clone
-          // console.log("IDB: upsertNoteDb", note.id, note.text?.slice(0, 50));
+          // console.log("IDB: upsertNoteDb", note.id, note.content?.slice(0, 50));
           window.postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}}, window?.location?.origin);
           resolve(cleanNote);
         } else {

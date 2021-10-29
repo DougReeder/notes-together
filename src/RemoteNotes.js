@@ -17,7 +17,7 @@ const RemoteNotes = {
           "type": "integer",
           "maximum": Number.MAX_SAFE_INTEGER
         },
-        "text": {   // may contain semantic HTML tags
+        "content": {   // may contain semantic HTML tags
           "type": "string",
           "default": "",
           "maxLength": 600000   // allows for one small raster image in a data URL
@@ -32,7 +32,7 @@ const RemoteNotes = {
           "format": "date-time"
         }
       },
-      "required": ["id", "text", "title", "date" ]
+      "required": ["id", "content", "title", "date" ]
     });
 
     privateClient.on('change', evt => {
@@ -110,7 +110,7 @@ const RemoteNotes = {
           // console.debug("notes.upsert", memoryNote);
           const cleanNote = sanitizeNote(memoryNote, textFilter);
 
-          const remoteNote = {id: cleanNote.id, text: cleanNote.text, title: cleanNote.title, date: cleanNote.date.toISOString()};
+          const remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString()};
           await enqueueStoreObject(remoteNote);
           return cleanNote;
         },
@@ -158,8 +158,8 @@ function toMemoryNote(remoteNote) {
     throw new Error("remote note has bad id=" + remoteNote.id);
   }
 
-  if ('string' !== typeof remoteNote.text) {
-    throw new Error("remote note lacks text property");
+  if ('string' !== typeof remoteNote.content) {
+    throw new Error("remote note lacks content property");
   }
 
   let date;
@@ -171,7 +171,7 @@ function toMemoryNote(remoteNote) {
   }
   return {
     id: remoteNote.id,
-    text: remoteNote.text,
+    content: remoteNote.content,
     title: 'string' === typeof remoteNote.title ? remoteNote.title : "⁂",
     date: date,
   };

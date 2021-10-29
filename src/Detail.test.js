@@ -12,10 +12,10 @@ import Detail from "./Detail";
 
 jest.mock('./storage.js');
 
-test('renders text of note', async () => {
+test('renders content of note', async () => {
   const noteId = 42;
   const noteText = "ballistic phonon transport"
-  getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+  getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 
   await act(async () => {
     const {findByText} = render(<Detail noteId={noteId}></Detail>);
@@ -31,7 +31,7 @@ test('renders text of note', async () => {
 // test("clears text & date when noteId set to null", async () => {
 //   const noteId = 69;
 //   const noteText = "Dogcatcher Emeritus";
-//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 //
 //   await act(async () => {
 //     const {findByText, rerender, queryByText} = render(<Detail noteId={noteId}></Detail>);
@@ -48,7 +48,7 @@ test('renders text of note', async () => {
 // test('sets focus if requested', async () => {
 //   const noteId = 23;
 //   const noteText = "ambivalent"
-//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 //   const focusOnLoadCB = jest.fn();
 //
 //   await act(async () => {
@@ -78,7 +78,7 @@ it('renders error if note missing', async () => {
 // test('renders updated text on window message', async () => {
 //   const noteId = 19;
 //   const noteText = "The plot was okay."
-//   getNote.mockResolvedValue(Promise.resolve({id: noteId, text: noteText}));
+//   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 //
 //   await act(async () => {
 //     const {findByText} = render(<Detail noteId={noteId}></Detail>);
@@ -102,12 +102,12 @@ xtest("saves on edit", async () => {
   await act(async () => {
     await upsertNote(createMemoryNote(noteId, initialText));
   });
-  // getNote.mockResolvedValue(Promise.resolve({id: noteId, text: initialText}));
+  // getNote.mockResolvedValue(Promise.resolve({id: noteId, content: initialText}));
 
   await act(async () => {
     // getNote.mockImplementation(() => new Promise((resolve) => {
     //   setTimeout( () => {
-    //     resolve({id: noteId, text: initialText});
+    //     resolve({id: noteId, content: initialText});
     //   }, 100);
     // }));
 
@@ -119,7 +119,7 @@ xtest("saves on edit", async () => {
   userEvent.type(textEl, typedText)
 
   const finalNote = await getNote(noteId);
-  expect(finalNote.text).toEqual(initialText+typedText);
+  expect(finalNote.content).toEqual(initialText+typedText);
   // expect(upsertNote).toHaveBeenCalledTimes(typedText.length);
   // expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText+typedText));
 });

@@ -61,7 +61,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   const replaceNote = useCallback(theNote => {
     try {
-      const html = sanitizeHtml(theNote.text, semanticOnly);
+      const html = sanitizeHtml(theNote.content, semanticOnly);
       console.log("sanitized HTML:", html);
       let slateNodes = deserializeHtml(html, editor);
       console.log("slateNodes:", slateNodes);

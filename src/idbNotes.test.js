@@ -74,11 +74,11 @@ describe("upsertNoteDb", () => {
 
     const savedNote = await upsertNoteDb(original);
     expect(savedNote.id).toEqual(originalId);
-    expect(savedNote.text).toEqual(originalText);
+    expect(savedNote.content).toEqual(originalText);
     expect(savedNote.date).toEqual(originalDate);
 
     const retrieved = await getNoteDb(originalId);
-    expect(retrieved.text).toEqual(originalText);
+    expect(retrieved.content).toEqual(originalText);
     expect(retrieved.date).toEqual(originalDate);
     expect(retrieved.wordArr).toEqual(original.wordArr);
   });
@@ -98,7 +98,7 @@ describe("upsertNoteDb", () => {
     await upsertNoteDb(updated);
     const retrieved = await getNoteDb(originalId);
 
-    expect(retrieved.text).toEqual(updatedText);
+    expect(retrieved.content).toEqual(updatedText);
     expect(retrieved.date).toEqual(updatedDate);
     expect(retrieved.wordArr).not.toContain("MEMORY");
     expect(retrieved.wordArr).not.toContain("YET");
@@ -143,9 +143,9 @@ describe("findStubs", () => {
 
   const date = new Date(2001, 0, 1);
 
-  function createIndexedNote(text) {
+  function createIndexedNote(content) {
     date.setTime(date.getTime() + 24*60*60*1000);
-    const memNote = createMemoryNote(generateTestId(), text, date);
+    const memNote = createMemoryNote(generateTestId(), content, date);
 
     const wordSet = new Set();
     const textFilter = function (text) {

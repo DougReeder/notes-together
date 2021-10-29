@@ -37,8 +37,8 @@ describe("RemoteNotes", () => {
     //   await expect(remoteStorage.notes.upsert(memNote)).rejects.toThrow('id');
     // });
 
-    it("should fail storing when passed a note without text", async () => {
-      await expect(remoteStorage.notes.upsert({id: generateTestId()})).rejects.toThrow('text');
+    it("should fail storing when passed a note without content", async () => {
+      await expect(remoteStorage.notes.upsert({id: generateTestId()})).rejects.toThrow('content');
     });
 
     it("should reject storing notes with bad string dates", async () => {
@@ -49,7 +49,7 @@ describe("RemoteNotes", () => {
     });
 
     it("should add an id, if needed, when storing", async () => {
-      const savedNote = await remoteStorage.notes.upsert({text: "rubber"});
+      const savedNote = await remoteStorage.notes.upsert({content: "rubber"});
 
       expect(savedNote.id).toBeGreaterThanOrEqual(Number.MIN_SAFE_INTEGER);
       expect(savedNote.id).toBeLessThanOrEqual((Number.MAX_SAFE_INTEGER));
@@ -74,8 +74,8 @@ describe("RemoteNotes", () => {
       const savedNote = await remoteStorage.notes.upsert(memNote);
 
       expect(savedNote.id).toEqual(memNote.id);
-      expect(savedNote.text).toEqual(memNote.text);
-      expect(savedNote.title).toEqual(memNote.text);
+      expect(savedNote.content).toEqual(memNote.content);
+      expect(savedNote.title).toEqual(memNote.content);
       expect(new Date(savedNote.date)).toEqual(memNote.date);
     });
 
@@ -90,7 +90,7 @@ describe("RemoteNotes", () => {
       await remoteStorage.notes.upsert(updated);
       const retrieved = await remoteStorage.notes.get(originalId);
 
-      expect(retrieved.text).toEqual(updatedText);
+      expect(retrieved.content).toEqual(updatedText);
       expect(retrieved.title).toEqual("In Joy Still Felt");
       expect(retrieved.date).toEqual(original.date);
     });
@@ -124,9 +124,9 @@ describe("RemoteNotes", () => {
               clearInterval(timer);
 
               const cleanNotes = await Promise.all([pr1, pr2, pr3]);
-              expect(cleanNotes[0]?.text).toEqual(text1);
-              expect(cleanNotes[1]?.text).toEqual(text2);
-              expect(cleanNotes[2]?.text).toEqual(text3);
+              expect(cleanNotes[0]?.content).toEqual(text1);
+              expect(cleanNotes[1]?.content).toEqual(text2);
+              expect(cleanNotes[2]?.content).toEqual(text3);
               resolve();
             }
             /* eslint-enable jest/no-conditional-expect */
@@ -152,7 +152,7 @@ describe("RemoteNotes", () => {
       await remoteStorage.notes.upsert(original);
       const retrieved = await remoteStorage.notes.get(id);
 
-      expect(retrieved).toEqual({id: original.id, text: original.text, title: "filbert nut", date: original.date});
+      expect(retrieved).toEqual({id: original.id, content: original.content, title: "filbert nut", date: original.date});
     });
   });
 

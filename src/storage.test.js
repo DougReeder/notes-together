@@ -267,8 +267,8 @@ describe("storage", () => {
       await expect(upsertNote()).rejects.toThrow();
     });
 
-    it("should fail storing when passed a note without text", async () => {
-      await expect(upsertNote({id:generateTestId()})).rejects.toThrow('text');
+    it("should fail storing when passed a note without content", async () => {
+      await expect(upsertNote({id:generateTestId()})).rejects.toThrow('content');
     });
 
     it("should reject storing notes with bad string dates", async () => {
@@ -283,7 +283,7 @@ describe("storage", () => {
       const original = createMemoryNote(generateTestId(), originalText);
 
       const note = await upsertNote(original);
-      expect(note.text).toEqual("food foolish <b>at</b> attention it's ...its");
+      expect(note.content).toEqual("food foolish <b>at</b> attention it's ...its");
       expect(note.wordArr).toContain("FOOD");
       expect(note.wordArr).toContain("FOOLISH");
       expect(note.wordArr).not.toContain("AT");
@@ -299,7 +299,7 @@ describe("storage", () => {
 
       const cleanNote = await upsertNote(original);
 
-      expect(cleanNote.text).toEqual(originalText);
+      expect(cleanNote.content).toEqual(originalText);
       expect(cleanNote.wordArr).toContain("TARPAULIN");
       expect(cleanNote.wordArr).not.toContain("TAR");
       expect(cleanNote.wordArr).not.toContain("TARP");
@@ -326,7 +326,7 @@ describe("storage", () => {
       expect(savedNote.wordArr.length).toEqual(2);
 
       const retrieved = await getNote(originalId);
-      expect(retrieved.text.slice(0, originalText.length)).toEqual(originalText);
+      expect(retrieved.content.slice(0, originalText.length)).toEqual(originalText);
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("SIMPLY");
       expect(retrieved.wordArr).toContain("UNBEARABLE");
@@ -346,7 +346,7 @@ describe("storage", () => {
       await upsertNote(updated, 'DETAIL');
 
       const retrieved = await getNote(originalId);
-      expect(retrieved.text).toEqual(updatedText);
+      expect(retrieved.content).toEqual(updatedText);
       expect(retrieved.date).toEqual(updatedDate);
       expect(retrieved.wordArr).not.toContain("I");
       expect(retrieved.wordArr).not.toContain("ASIMOV");
@@ -371,7 +371,7 @@ describe("storage", () => {
       expect(savedNote.wordArr.length).toEqual(1);
 
       const retrieved = await getNoteDb(originalId);
-      expect(retrieved.text.slice(0, originalText.length)).toEqual(originalText);
+      expect(retrieved.content.slice(0, originalText.length)).toEqual(originalText);
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("OFFERTORY");
       expect(retrieved.wordArr.length).toEqual(1);
@@ -420,10 +420,10 @@ describe("storage", () => {
     const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>", new Date(2013, 2, 3));
     const note3title = "like thin crust";
 
-    function createTestNote(text) {
+    function createTestNote(content) {
       const startDate = new Date(2015, 0, 1);
       const date = new Date(startDate.getTime() + Math.random() * 7*24*60*60*1000);
-      return createMemoryNote(generateTestId(), text, date);
+      return createMemoryNote(generateTestId(), content, date);
     }
 
     beforeAll(async () => {
@@ -436,13 +436,13 @@ describe("storage", () => {
       await upsertNote(note3);
 
       for (let i = 0; i < 10; ++i) {
-        await upsertNote(createTestNote(note1.text));
-        await upsertNote(createTestNote(note2.text));
-        await upsertNote(createTestNote(note3.text));
+        await upsertNote(createTestNote(note1.content));
+        await upsertNote(createTestNote(note2.content));
+        await upsertNote(createTestNote(note3.content));
       }
-      await upsertNote(createTestNote(note2.text));
-      await upsertNote(createTestNote(note3.text));
-      await upsertNote(createTestNote(note3.text));
+      await upsertNote(createTestNote(note2.content));
+      await upsertNote(createTestNote(note3.content));
+      await upsertNote(createTestNote(note3.content));
     });
 
     it("should return all notes when no words in search string", done => {
@@ -594,7 +594,7 @@ describe("storage", () => {
   });
 
   describe("findStubs (max)", () => {
-    const text = "something rather short";
+    const content = "something rather short";
 
     beforeAll(async () => {
       for (const noteId of await findFillerNoteIds()) {
@@ -602,7 +602,7 @@ describe("storage", () => {
       }
 
       for (let i = 0; i < 500; ++i) {
-        await upsertNote(createMemoryNote(generateTestId(), text));
+        await upsertNote(createMemoryNote(generateTestId(), content));
       }
     });
 
@@ -692,7 +692,7 @@ describe("storage", () => {
   xdescribe("findStubs (stress)", () => {
     jest.setTimeout(30000);
 
-    const text = `<h1>In Congress, July 4, 1776</h1>
+    const content = `<h1>In Congress, July 4, 1776</h1>
 <p><b>The unanimous Declaration of the thirteen united States of America</b>, When in the Course of human events, it becomes necessary for one people to dissolve the political bands which have connected them with another, and to assume among the powers of the earth, the separate and equal station to which the Laws of Nature and of Nature's God entitle them, a decent respect to the opinions of mankind requires that they should declare the causes which impel them to the separation.</p>
 <p>We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.—That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed, —That whenever any Form of Government becomes destructive of these ends, it is the Right of the People to alter or to abolish it, and to institute new Government, laying its foundation on such principles and organizing its powers in such form, as to them shall seem most likely to effect their Safety and Happiness. Prudence, indeed, will dictate that Governments long established should not be changed for light and transient causes; and accordingly all experience hath shewn, that mankind are more disposed to suffer, while evils are sufferable, than to right themselves by abolishing the forms to which they are accustomed. But when a long train of abuses and usurpations, pursuing invariably the same Object evinces a design to reduce them under absolute Despotism, it is their right, it is their duty, to throw off such Government, and to provide new Guards for their future security.—Such has been the patient sufferance of these Colonies; and such is now the necessity which constrains them to alter their former Systems of Government. The history of the present King of Great Britain is a history of repeated injuries and usurpations, all having in direct object the establishment of an absolute Tyranny over these States. To prove this, let Facts be submitted to a candid world.</p>
 <p>He has refused his Assent to Laws, the most wholesome and necessary for the public good.
@@ -714,7 +714,7 @@ describe("storage", () => {
       }
 
       for (let i = 0; i < 600; ++i) {
-        await upsertNote(createMemoryNote(generateTestId(), text));
+        await upsertNote(createMemoryNote(generateTestId(), content));
       }
     });
 

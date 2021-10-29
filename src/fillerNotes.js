@@ -7,31 +7,31 @@ import {upsertNote} from './storage';
 
 async function seedNotes() {
   console.log("IDB seeding notes");
-  await upsertNote({id: Number.MIN_SAFE_INTEGER - 2, text: "<h1>The rain in Spain</h1> stays mainly in the plain <i>foo"});
+  await upsertNote({id: Number.MIN_SAFE_INTEGER - 2, content: "<h1>The rain in Spain</h1><p>stays mainly in the plain</p>"});
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 3,
-    text: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>2º libro, la Calle 3ª</li><li>grüßen"
+    content: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>2º libro, la Calle 3ª</li><li>grüßen"
   });
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 4, text: `Lincoln's Gettysburg Address<blockquote>
+    id: Number.MIN_SAFE_INTEGER - 4, content: `<p>Lincoln's Gettysburg Address</p><blockquote>
+    <s>Eighty-seven years ago</s>
     <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
     <p>Now we are engaged in a great civil war, testing whether that nation or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.
 
-    <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.
- <strike>foo`
+    <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.`
   });
-  await upsertNote({id: Number.MIN_SAFE_INTEGER - 7, text: "<dl><dt>Here we go</dt><dd>gathering nuts in May <code>foo"});
+  await upsertNote({id: Number.MIN_SAFE_INTEGER - 7, content: "<dl><dt>Here we go</dt><dd>gathering nuts in May"});
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 8,
-    text: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner"
+    content: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner"
   });
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 11,
-    text: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman. <sub>foo"
+    content: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman."
   });
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 12, text: `tensile structures
+    id: Number.MIN_SAFE_INTEGER - 12, content: `<p>tensile structures
 <svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 226.77 226.77" xmlns="http://www.w3.org/2000/svg">
  <g transform="translate(8.964 4.2527)" fill-rule="evenodd" stroke="#000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="4">
   <path d="m63.02 200.61-43.213-174.94 173.23 49.874z"/>
@@ -42,41 +42,37 @@ async function seedNotes() {
   <path d="m84.915 125.06 10.724 43.465-43.008-12.346z"/>
  </g>
 </svg>
+</p>
 `
   });
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 15,
-    text: "<h1>Star Trek II: The Wrath of Khan</h1>the best of everything that was best about Star Trek TOS<br>adventure, science-fiction"
+    content: "<h1>Star Trek II: The Wrath of Khan</h1><p>the best of everything that was best about Star Trek TOS</p><p>adventure, science-fiction</p>"
   });
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 16, text: `The <ruby>
-  漢 <rp>(</rp><rt>Kan</rt><rp>)</rp>
-  字 <rp>(</rp><rt>ji</rt><rp>)</rp>
-</ruby> for tomorrow is <ruby>
-  明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp>
-</ruby>`
+    id: Number.MIN_SAFE_INTEGER - 16, content: `<p> The <ruby> 漢 <rp>(</rp><rt>Kan</rt><rp>)</rp> 字 <rp>(</rp><rt>ji</rt><rp>)</rp></ruby> for tomorrow is <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby> </p>`
   });
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 19,
-    text: "<h2>Star Trek III: The Search for Spock</h2>has difficulties standing on its own; it relies heavily on knowledge of <em>Khan</em>.<br>adventure, science-fiction"
+    content: "<h2>Star Trek III: The Search for Spock</h2><p>has difficulties standing on its own; it relies heavily on knowledge of <em>Khan</em>.</p><p>adventure, science-fiction</p>"
   });
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 20,
-    text: "<h3>Star Trek IV: The Voyage Home</h3>the funniest of all the star trek films due to the fact that it is played totally tongue in cheek<br>adventure, science-fiction"
+    content: "<h3>Star Trek IV: The Voyage Home</h3><p>the funniest of all the star trek films due to the fact that it is played totally tongue in cheek</p><p>adventure, science-fiction</p>"
   });
   await upsertNote({
     id: Number.MIN_SAFE_INTEGER - 23,
-    text: "<h4>Star Wars: Episode IV - A New Hope</h4>the characters I liked most in this one are old Obi-Wan Kenobi, wonderfully portrayed by Alec Guinness, and Han Solo<br>adventure, science-fiction"
+    content: "<h4>Star Wars: Episode IV - A New Hope</h4><p>the characters I liked most in this one are old Obi-Wan Kenobi, wonderfully portrayed by Alec Guinness, and Han Solo</p><p>adventure, science-fiction</p>"
   });
 }
 
 
 function randomNote() {
   const id = Number.MIN_SAFE_INTEGER - 30 + Math.floor(Math.random() * Number.MIN_SAFE_INTEGER);
-  const text = Math.random() < 0.666 ? movieText() : listText();
+  const content = Math.random() < 0.666 ? movieText() : listText();
   const date = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
 
-  return upsertNote(createMemoryNote(id, text, date));
+  return upsertNote(createMemoryNote(id, content, date));
 }
 
 function movieText() {
@@ -132,7 +128,7 @@ function emphasizeTitle(titleText, suffix) {
   if (r < 0.1) {
     return "<p><b>" + titleText + "</b>" + suffix + "</p>\n";
   } else if (r < 0.2) {
-    return '<i>' + titleText + '</i>' + suffix + '\n';
+    return '<p><i>' + titleText + '</i>' + suffix + '</p>\n';
   } else if (r < 0.4) {
     return '<h1>' + titleText + '<i>' + suffix + '</i></h1>\n';
   } else if (r < 0.6) {
@@ -140,7 +136,7 @@ function emphasizeTitle(titleText, suffix) {
   } else if (r < 0.8) {
     return '<h3>' + titleText + suffix + '</h3>\n';
   } else {
-    return titleText + suffix + '\n';
+    return '<p>' + titleText + suffix + '</p>\n';
   }
 }
 
