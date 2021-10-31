@@ -1,15 +1,14 @@
 // idbNotes.test.js - automated tests for storage for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import generateTestId from "./util/generateTestId";
+import { v4 as uuidv4 } from 'uuid';
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
 import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb} from "./idbNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
 
-function generateTestId() {
-  return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
-}
 
 let db;
 
@@ -25,7 +24,8 @@ function deleteTestNotes() {
   return new Promise(resolve => {
     const clearTrnsactn = db.transaction('note', 'readwrite');
     const noteStore = clearTrnsactn.objectStore("note");
-    noteStore.delete(IDBKeyRange.upperBound(Number.MIN_SAFE_INTEGER, true)).onsuccess = function (evt) {
+    const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255];
+    noteStore.delete(IDBKeyRange.upperBound(uuidv4({random}), false)).onsuccess = function (evt) {
       resolve(evt.target.result);
     }
   });
@@ -200,9 +200,7 @@ describe("findStubs", () => {
 
         const testNotes = [];
         matched.forEach(note => {
-          if (note.id < Number.MIN_SAFE_INTEGER) {
-            testNotes.push(note);
-          }
+          testNotes.push(note);
         });
         expect(testNotes.length).toEqual(36);
         expect(testNotes.reduce((acc, item) => {
@@ -249,10 +247,8 @@ describe("findStubs", () => {
         const testNotes = [];
         const testNoteIds = new Set();
         matched.forEach(note => {
-          if (note.id < Number.MIN_SAFE_INTEGER) {
-            testNotes.push(note);
-            testNoteIds.add(note.id);
-          }
+          testNotes.push(note);
+          testNoteIds.add(note.id);
         });
         expect(testNotes.length).toEqual(13);
         expect(testNoteIds.size).toEqual(13);

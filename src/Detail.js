@@ -1,3 +1,4 @@
+import {validate as uuidValidate} from 'uuid';
 import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
 import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
@@ -91,7 +92,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   useEffect(() => {
     setNoteErr(null);
-    if (Number.isFinite(noteId)) {
+    if (uuidValidate(noteId)) {
       if (noteId === loadingIdRef.current) {
         return;
       }
@@ -445,7 +446,7 @@ function ErrorFallback({error, resetErrorBoundary}) {
 }
 
 Detail.propTypes = {
-  noteId: PropTypes.number,
+  noteId: PropTypes.string,
   searchStr: PropTypes.string,
   focusOnLoadCB: PropTypes.func,
   setMustShowPanel: PropTypes.func,

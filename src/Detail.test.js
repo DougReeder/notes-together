@@ -1,3 +1,4 @@
+import {v4 as uuidv4} from "uuid";
 import {createMemoryNote} from './Note';
 import {
   render,
@@ -13,7 +14,7 @@ import Detail from "./Detail";
 jest.mock('./storage.js');
 
 test('renders content of note', async () => {
-  const noteId = 42;
+  const noteId = uuidv4();
   const noteText = "ballistic phonon transport"
   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 
@@ -29,7 +30,7 @@ test('renders content of note', async () => {
 });
 
 // test("clears text & date when noteId set to null", async () => {
-//   const noteId = 69;
+//   const noteId = uuidv4();
 //   const noteText = "Dogcatcher Emeritus";
 //   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 //
@@ -46,7 +47,7 @@ test('renders content of note', async () => {
 // });
 
 // test('sets focus if requested', async () => {
-//   const noteId = 23;
+//   const noteId = uuidv4();
 //   const noteText = "ambivalent"
 //   getNote.mockResolvedValue(Promise.resolve({id: noteId, content: noteText}));
 //   const focusOnLoadCB = jest.fn();
@@ -62,14 +63,14 @@ test('renders content of note', async () => {
 // });
 
 it('renders error if note missing', async () => {
-  const noteId = 666;
+  const noteId = uuidv4();
   getNote.mockResolvedValue(Promise.resolve(undefined));
 
   await act(async () => {
     render(<Detail noteId={noteId}></Detail>);
   });
 
-  const textEl = await screen.findByText("no note with id=666");
+  const textEl = await screen.findByText(/no note with id=/);
   expect(textEl).toBeInTheDocument();
   expect(textEl).not.toHaveFocus();
 });
@@ -96,7 +97,7 @@ it('renders error if note missing', async () => {
 // });
 
 xtest("saves on edit", async () => {
-  const noteId = 43;
+  const noteId = uuidv4();
   const initialText = "Hello";
   const typedText = " world";
   await act(async () => {

@@ -1,17 +1,16 @@
 // sanitizeNote.test.js - automated tests for subroutine for Notes module for RemoteStorage
 // Copyright © 2021 Doug Reeder under the MIT license
 
+import generateTestId from "./util/generateTestId";
 import {sanitizeNote} from "./sanitizeNote";
 import {createMemoryNote} from "./Note";
 import {parseWords} from "./storage";
+import {v4 as uuidv4} from "uuid";
 
-function generateTestId() {
-  return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
-}
 
 describe("sanitizeNote", () => {
   it("should fail when passed a note without content", () => {
-    expect(() => {sanitizeNote({id:Number.MIN_SAFE_INTEGER-2})}).toThrow('content');
+    expect(() => {sanitizeNote({id: generateTestId()})}).toThrow('content');
   });
 
   it("should remove forbidden tags and attributes", () => {

@@ -1,6 +1,7 @@
 // sanitizeNote.js - subroutine for Notes module for RemoteStorage
 // Copyright © 2021 Doug Reeder under the MIT license
 
+import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 import sanitizeHtml from "sanitize-html";
 import {TITLE_MAX} from "./Note";
 import decodeEntities from "./util/decodeEntities";
@@ -105,10 +106,10 @@ const semanticExtractKeywords = JSON.parse(JSON.stringify(semanticOnly));
 
 function sanitizeNote(memoryNote, textFilter) {
   let id;
-  if (Number.isFinite(memoryNote.id)) {
+  if (uuidValidate(memoryNote.id)) {
     id = memoryNote.id;
   } else {
-    id = Math.ceil((Math.random() - 0.5) * 2 * Number.MAX_SAFE_INTEGER);
+    id = uuidv4();
   }
 
   if ('string' !== typeof memoryNote.content) {

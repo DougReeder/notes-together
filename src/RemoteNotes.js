@@ -1,6 +1,7 @@
 // RemoteNotes.js - RemoteStorage module for notes containing semantic HTML
 // Copyright © 2021 Doug Reeder under the MIT License
 
+import {validate as uuidValidate} from 'uuid';
 import {sanitizeNote} from "./sanitizeNote";
 
 const subscriptions = new Set();
@@ -14,8 +15,8 @@ const RemoteNotes = {
       "type": "object",
       "properties": {
         "id": {
-          "type": "integer",
-          "maximum": Number.MAX_SAFE_INTEGER
+          "type": "string",
+          "format": "uuid"
         },
         "content": {   // may contain semantic HTML tags
           "type": "string",
@@ -85,7 +86,7 @@ const RemoteNotes = {
         working = true;
         const {remoteNote, resolve} = item;
         recent.add(remoteNote.id);
-        const path = remoteNote.id.toFixed();
+        const path = remoteNote.id;
         const value = await privateClient.storeObject("note", path, remoteNote);
         resolve(value);
       } catch (err) {
@@ -127,11 +128,11 @@ const RemoteNotes = {
 
         get: async function (id) {
           // console.debug("remoteStorage notes get", id);
-          return privateClient.getObject(id.toFixed()).then(toMemoryNote);
+          return privateClient.getObject(id).then(toMemoryNote);
         },
 
         delete: async function (id) {
-          return privateClient.remove(id.toFixed());
+          return privateClient.remove(id);
         },
 
         subscribe: function (callback) {
@@ -154,7 +155,7 @@ function toMemoryNote(remoteNote) {
   // console.log("remoteNote:", remoteNote);
   if (!(remoteNote instanceof Object)) return remoteNote;
 
-  if (! Number.isFinite(remoteNote.id)) {
+  if (! uuidValidate(remoteNote.id)) {
     throw new Error("remote note has bad id=" + remoteNote.id);
   }
 

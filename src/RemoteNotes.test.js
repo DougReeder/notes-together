@@ -1,14 +1,13 @@
 // RemoteNotes.test.js - automated tests for Notes module for RemoteStorage
 // Copyright © 2021 Doug Reeder
 
+import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
 import RemoteStorage from "remotestoragejs";
 import RemoteNotes from "./RemoteNotes";
+import {NIL, validate as uuidValidate} from "uuid";
 
-function generateTestId() {
-  return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
-}
 
 describe("RemoteNotes", () => {
   let remoteStorage;
@@ -32,11 +31,6 @@ describe("RemoteNotes", () => {
       await expect(remoteStorage.notes.upsert()).rejects.toThrow();
     });
 
-    // it("should fail when passed a note with id greater than range", async () => {
-    //   const memNote = createMemoryNote(Number.MAX_SAFE_INTEGER+10,"foo");
-    //   await expect(remoteStorage.notes.upsert(memNote)).rejects.toThrow('id');
-    // });
-
     it("should fail storing when passed a note without content", async () => {
       await expect(remoteStorage.notes.upsert({id: generateTestId()})).rejects.toThrow('content');
     });
@@ -51,8 +45,7 @@ describe("RemoteNotes", () => {
     it("should add an id, if needed, when storing", async () => {
       const savedNote = await remoteStorage.notes.upsert({content: "rubber"});
 
-      expect(savedNote.id).toBeGreaterThanOrEqual(Number.MIN_SAFE_INTEGER);
-      expect(savedNote.id).toBeLessThanOrEqual((Number.MAX_SAFE_INTEGER));
+      expect(uuidValidate(savedNote.id)).toBeTruthy();
     });
 
     it("should use current date when passed a non-date, non-string in date field", async () => {
@@ -141,7 +134,7 @@ describe("RemoteNotes", () => {
 
   describe("get", () => {
     it("should return falsy for nonexistent notes", async () => {
-      const savedNote = await remoteStorage.notes.get(Number.MAX_SAFE_INTEGER + 2);
+      const savedNote = await remoteStorage.notes.get(NIL);
       expect(savedNote).toBeFalsy();
     });
 
@@ -157,10 +150,6 @@ describe("RemoteNotes", () => {
   });
 
   describe("delete", () => {
-    it("should fail when passed a non-number", async () => {
-      await expect(remoteStorage.notes.delete(undefined)).rejects.toThrow("undefined");
-    });
-
     it("should remove note from storage", async () => {
       const id = generateTestId();
       await remoteStorage.notes.upsert(createMemoryNote(id, "Thridi"));
@@ -172,7 +161,7 @@ describe("RemoteNotes", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      await expect(remoteStorage.notes.delete(0)).resolves.toBeTruthy();
+      await expect(remoteStorage.notes.delete(NIL)).resolves.toBeTruthy();
     });
   });
 

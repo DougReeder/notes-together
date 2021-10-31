@@ -1,14 +1,13 @@
 // listUtil.test.js - tests for utilities for lists of notes
 // Copyright © 2021 Doug Reeder
 
+import generateTestId from "./util/generateTestId";
 import {updateListWithChanges} from "./listUtil";
 import {createMemoryNote} from "./Note";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
+import {v4 as uuidv4} from "uuid";
 
-function generateTestId() {
-  return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
-}
 
 const startDate = Date.parse('2016-01-01');
 function createIndexedNote(content, date) {

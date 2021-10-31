@@ -1,6 +1,7 @@
 // List.js - List component for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
 import {findStubs, deleteNote} from "./storage";
 import React, {useState, useEffect, useRef} from 'react';
@@ -71,8 +72,8 @@ function List(props) {
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
-      const id = Number(noteEl?.dataset?.id);
-      if (Number.isFinite(id)) {
+      const id = noteEl?.dataset?.id;
+      if (uuidValidate(id)) {
         lastSelectedNoteId.current.unshift(selectedNoteId);
         lastSelectedNoteId.current.length = 2;
         handleSelect(id);
@@ -88,12 +89,12 @@ function List(props) {
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
-      const id = Number(noteEl?.dataset?.id);
+      const id = noteEl?.dataset?.id;
       const newItemButtonIds = Object.assign({}, itemButtonsIds);
       for (let currentId in newItemButtonIds) {
         newItemButtonIds[currentId] = false;
       }
-      if (Number.isFinite(id) && !(id in newItemButtonIds)) {
+      if (uuidValidate(id) && !(id in newItemButtonIds)) {
         handleSelect(lastSelectedNoteId.current[1]);
         newItemButtonIds[id] = true;
       }
@@ -118,7 +119,7 @@ function List(props) {
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
-      const id = Number(noteEl?.dataset?.id);
+      const id = noteEl?.dataset?.id;
       await deleteNote(id);
     } catch (err) {
       setTransientErr(err);
@@ -161,7 +162,7 @@ function List(props) {
                 </CSSTransition>);
           }
           listItems.push(
-            <li data-id={note.id} key={note.id.toString()}
+            <li data-id={note.id} key={note.id}
                 className={'summary' + (note.id === selectedNoteId ? ' selected' : '')}>
               <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
               {itemButtons}
@@ -195,7 +196,7 @@ function List(props) {
 List.propTypes = {
   searchWords: PropTypes.instanceOf(Set),
   changeCount: PropTypes.func.isRequired,
-  selectedNoteId: PropTypes.number,
+  selectedNoteId: PropTypes.string,
   handleSelect: PropTypes.func.isRequired,
   setTransientErr: PropTypes.func.isRequired,
 }

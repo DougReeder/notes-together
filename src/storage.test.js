@@ -1,15 +1,14 @@
 // storage.test.js - automated tests for storage abstraction for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
 import {init, parseWords, upsertNote, getNote, deleteNote, findStubs} from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
+import {NIL, v4 as uuidv4} from "uuid";
 
-function generateTestId() {
-  return Number.MIN_SAFE_INTEGER - 10 + Math.ceil(Math.random() * Number.MIN_SAFE_INTEGER);
-}
 
 describe("storage", () => {
   beforeAll(() => {
@@ -386,15 +385,11 @@ describe("storage", () => {
     });
 
     it("should resolve with undefined when note doesn't exist", async () => {
-      await expect(getNote(0)).resolves.toBeUndefined();
+      await expect(getNote(NIL)).resolves.toBeUndefined();
     });
   });
 
   describe("deleteNote", () => {
-    it("should fail when passed a non-number", async () => {
-      await expect(deleteNote(undefined)).rejects.toThrow("undefined");
-    });
-
     it("should remove note from storage", async () => {
       const id = generateTestId();
       const note = createMemoryNote(id, "Aroint, thee, knave!")
@@ -406,8 +401,8 @@ describe("storage", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      const deleteResult = await deleteNote(0);
-      expect(deleteResult).toContain(0);
+      const deleteResult = await deleteNote(NIL);
+      expect(deleteResult).toContain(NIL);
     });
   });
 
@@ -463,9 +458,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(36);
           expect(testStubs.reduce((acc, item) => {
@@ -511,9 +504,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(24);
           expect(testStubs.reduce((acc, item) => {
@@ -560,10 +551,8 @@ describe("storage", () => {
           const testStubs = [];
           const testStubIds = new Set();
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-              testStubIds.add(stub.id);
-            }
+            testStubs.push(stub);
+            testStubIds.add(stub.id);
           });
           expect(testStubs.length).toEqual(13);
           expect(testStubIds.size).toEqual(13);
@@ -626,9 +615,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(500);
           let lastDate = Date.now();
@@ -667,9 +654,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(500);
           let lastDate = Date.now();
@@ -738,9 +723,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {
@@ -777,9 +760,7 @@ describe("storage", () => {
 
           const testStubs = [];
           matched.forEach(stub => {
-            if (stub.id < Number.MIN_SAFE_INTEGER) {
-              testStubs.push(stub);
-            }
+            testStubs.push(stub);
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {

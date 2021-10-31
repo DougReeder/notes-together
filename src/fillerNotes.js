@@ -1,19 +1,24 @@
 // fillerNotes.js - filler note creation for Notes Together
 // Copyright © 2021 Doug Reeder
 
+import {v4 as uuidv4} from "uuid";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from './storage';
 
 
 async function seedNotes() {
   console.log("IDB seeding notes");
-  await upsertNote({id: Number.MIN_SAFE_INTEGER - 2, content: "<h1>The rain in Spain</h1><p>stays mainly in the plain</p>"});
+  const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  random[15] = 2;
+  await upsertNote({id: uuidv4({random}), content: "<h1>The rain in Spain</h1><p>stays mainly in the plain</p>"});
+  random[15] = 3;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 3,
+    id: uuidv4({random}),
     content: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>2º libro, la Calle 3ª</li><li>grüßen"
   });
+  random[15] = 4;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 4, content: `<p>Lincoln's Gettysburg Address</p><blockquote>
+    id: uuidv4({random}), content: `<p>Lincoln's Gettysburg Address</p><blockquote>
     <s>Eighty-seven years ago</s>
     <p>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
@@ -21,17 +26,21 @@ async function seedNotes() {
 
     <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.`
   });
-  await upsertNote({id: Number.MIN_SAFE_INTEGER - 7, content: "<dl><dt>Here we go</dt><dd>gathering nuts in May"});
+  random[15] = 7;
+  await upsertNote({id: uuidv4({random}), content: "<dl><dt>Here we go</dt><dd>gathering nuts in May"});
+  random[15] = 8;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 8,
+    id: uuidv4({random}),
     content: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner"
   });
+  random[15] = 11;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 11,
+    id: uuidv4({random}),
     content: "<textarea>These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman."
   });
+  random[15] = 12;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 12, content: `<p>tensile structures
+    id: uuidv4({random}), content: `<p>tensile structures
 <svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 226.77 226.77" xmlns="http://www.w3.org/2000/svg">
  <g transform="translate(8.964 4.2527)" fill-rule="evenodd" stroke="#000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="4">
   <path d="m63.02 200.61-43.213-174.94 173.23 49.874z"/>
@@ -45,30 +54,36 @@ async function seedNotes() {
 </p>
 `
   });
+  random[15] = 15;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 15,
+    id: uuidv4({random}),
     content: "<h1>Star Trek II: The Wrath of Khan</h1><p>the best of everything that was best about Star Trek TOS</p><p>adventure, science-fiction</p>"
   });
+  random[15] = 16;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 16, content: `<p> The <ruby> 漢 <rp>(</rp><rt>Kan</rt><rp>)</rp> 字 <rp>(</rp><rt>ji</rt><rp>)</rp></ruby> for tomorrow is <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby> </p>`
+    id: uuidv4({random}), content: `<p> The <ruby> 漢 <rp>(</rp><rt>Kan</rt><rp>)</rp> 字 <rp>(</rp><rt>ji</rt><rp>)</rp></ruby> for tomorrow is <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby> </p>`
   });
+  random[15] = 19;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 19,
+    id: uuidv4({random}),
     content: "<h2>Star Trek III: The Search for Spock</h2><p>has difficulties standing on its own; it relies heavily on knowledge of <em>Khan</em>.</p><p>adventure, science-fiction</p>"
   });
+  random[15] = 20;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 20,
+    id: uuidv4({random}),
     content: "<h3>Star Trek IV: The Voyage Home</h3><p>the funniest of all the star trek films due to the fact that it is played totally tongue in cheek</p><p>adventure, science-fiction</p>"
   });
+  random[15] = 23;
   await upsertNote({
-    id: Number.MIN_SAFE_INTEGER - 23,
+    id: uuidv4({random}),
     content: "<h4>Star Wars: Episode IV - A New Hope</h4><p>the characters I liked most in this one are old Obi-Wan Kenobi, wonderfully portrayed by Alec Guinness, and Han Solo</p><p>adventure, science-fiction</p>"
   });
 }
 
 
 function randomNote() {
-  const id = Number.MIN_SAFE_INTEGER - 30 + Math.floor(Math.random() * Number.MIN_SAFE_INTEGER);
+  const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256)];
+  const id = uuidv4({random});
   const content = Math.random() < 0.666 ? movieText() : listText();
   const date = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
 
@@ -467,7 +482,8 @@ const sentences = [
 
 
 function hammerStorage() {
-  const id = 2 * Number.MIN_SAFE_INTEGER;
+  const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255];
+  const id = uuidv4({random});
   const fullText = `To be, or not to be, that is the question:
 Whether 'tis nobler in the mind to suffer
 The slings and arrows of outrageous fortune,

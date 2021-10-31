@@ -2,6 +2,8 @@
 // Should only be called by storage abstraction, not from front end.
 // Copyright © 2021 Doug Reeder
 
+import {v4 as uuidv4} from "uuid";
+
 const FIRST_RESULTS_MS = 84;
 const MAX_NOTES_FOUND = 500;
 const dbNameDefault = "noteDb";
@@ -276,7 +278,7 @@ function deleteNoteDb(id) {
             kind: 'NOTE_CHANGE',
             notesChanged: {},
             notesDeleted
-          }, window.location.origin);
+          }, window.location?.origin);
 
           // evt.target.result is always undefined
           resolve(id);
@@ -305,7 +307,8 @@ function findFillerNoteIds() {
       }
       const noteStore = transaction.objectStore("note");
       const noteIds = new Set();
-      noteStore.openCursor(IDBKeyRange.upperBound(Number.MIN_SAFE_INTEGER, true)).onsuccess = function (evt) {
+      const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255];
+      noteStore.openCursor(IDBKeyRange.upperBound(uuidv4({random}), false)).onsuccess = function (evt) {
         try {
           const cursor = evt.target.result;
           if (cursor) {
