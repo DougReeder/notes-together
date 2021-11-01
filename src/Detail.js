@@ -405,7 +405,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   return (<>
       <AppBar position="sticky" style={appbarStyle}>
         <Toolbar>
-          <IconButton className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
+          <IconButton title="back" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
           </IconButton>
           {Boolean(noteDate) && ! noteErr ? noteControls : null}
