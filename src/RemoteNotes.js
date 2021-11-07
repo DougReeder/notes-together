@@ -6,8 +6,6 @@ import {sanitizeNote} from "./sanitizeNote";
 
 const subscriptions = new Set();
 
-// Ids for normal notes should be >= -9007199254740991 and <= 9007199254740991.
-// Finite ids outside that range are reserved for testing.
 const RemoteNotes = {
   name: 'notes',
   builder: function (privateClient, publicClient) {
@@ -31,7 +29,12 @@ const RemoteNotes = {
         "date": {   // RFC 3339, section 5.6 (a subset of ISO 8601)
           "type": "string",
           "format": "date-time"
-        }
+        },
+        mimeType: {   // example: text/markdown;hint=COMMONMARK
+          type: "string",
+          pattern: "^[a-z]{1,50}/[-+.a-zA-Z0-9]{1,100}(;[a-z]{1,35}=[-+.a-zA-Z0-9]{1,100})*$",
+          default: "text/plain"
+        },
       },
       "required": ["id", "content", "title", "date" ]
     });
@@ -111,7 +114,14 @@ const RemoteNotes = {
           // console.debug("notes.upsert", memoryNote);
           const cleanNote = sanitizeNote(memoryNote, textFilter);
 
-          const remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString()};
+          let remoteNote;
+          if (cleanNote.mimeType) {
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType};
+
+          } else {
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString()};
+
+          }
           await enqueueStoreObject(remoteNote);
           return cleanNote;
         },
@@ -175,6 +185,7 @@ function toMemoryNote(remoteNote) {
     content: remoteNote.content,
     title: 'string' === typeof remoteNote.title ? remoteNote.title : "⁂",
     date: date,
+    mimeType: remoteNote.mimeType,
   };
 }
 

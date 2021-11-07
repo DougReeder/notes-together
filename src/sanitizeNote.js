@@ -5,6 +5,7 @@ import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 import sanitizeHtml from "sanitize-html";
 import {TITLE_MAX} from "./Note";
 import decodeEntities from "./util/decodeEntities";
+import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 
 // eslint-disable-next-line
 const semanticOnly = {
@@ -71,8 +72,8 @@ const semanticOnly = {
     'h6': 'h3',
     'article': 'div',
     'textarea': 'div',
-    'em': 'i',
-    'strong': 'b',
+    'i': 'em',
+    'b': 'strong',
     'svg': function(tagName, attribs) {
       if (! attribs.hasOwnProperty('viewBox')) {
         if (! attribs.hasOwnProperty('width') ) {
@@ -118,14 +119,26 @@ function sanitizeNote(memoryNote, textFilter) {
 
   semanticExtractKeywords.textFilter = textFilter;
 
-  let sanitizedText, title;
-  if ('string' === typeof memoryNote.title) {
-    sanitizedText = sanitizeHtml(memoryNote.content, semanticExtractKeywords);
-    title = memoryNote.title;   // plain text doesn't need to be sanitized
+  let sanitizedContent, title;
+  if (hasTagsLikeHtml(memoryNote.mimeType)) {
+    if ('string' === typeof memoryNote.title) {
+      sanitizedContent = sanitizeHtml(memoryNote.content, semanticExtractKeywords);
+      title = memoryNote.title;   // plain text doesn't need to be sanitized
+    } else {
+      const result = sanitizeAndExtractTitle(memoryNote.content, semanticExtractKeywords);
+      sanitizedContent = result.sanitizedText;
+      title = result.title;
+    }
   } else {
-    const result = sanitizeAndExtractTitle(memoryNote.content, semanticExtractKeywords);
-    sanitizedText = result.sanitizedText;
-    title = result.title;
+    sanitizedContent = memoryNote.content;   // plain text doesn't need to be sanitized
+    if ('function' === typeof textFilter) {
+      textFilter(memoryNote.content);
+    }
+    if ('string' === typeof memoryNote.title) {
+      title = memoryNote.title;
+    } else {
+      title = memoryNote.content.slice(0, TITLE_MAX).trim();
+    }
   }
 
   let date;
@@ -139,9 +152,10 @@ function sanitizeNote(memoryNote, textFilter) {
 
   return {
     id: id,
-    content: sanitizedText,
+    content: sanitizedContent,
     title: title,
     date: date,
+    mimeType: memoryNote.mimeType,
   };
 }
 

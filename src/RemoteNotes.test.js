@@ -61,8 +61,8 @@ describe("RemoteNotes", () => {
       expect(savedNote.date.getDate()).toEqual(now.getDate());
     });
 
-    it("should store unchanged when all fields good", async () => {
-      const memNote = createMemoryNote(generateTestId(), "elfin", new Date('2000-01-01'));
+    it("should store text note unchanged when all fields good", async () => {
+      const memNote = createMemoryNote(generateTestId(), "elfin", new Date('2000-01-01'), 'text/plain');
 
       const savedNote = await remoteStorage.notes.upsert(memNote);
 
@@ -70,22 +70,36 @@ describe("RemoteNotes", () => {
       expect(savedNote.content).toEqual(memNote.content);
       expect(savedNote.title).toEqual(memNote.content);
       expect(new Date(savedNote.date)).toEqual(memNote.date);
+      expect(savedNote.mimeType).toEqual(memNote.mimeType);
+    });
+
+    it("should store HTML note unchanged when all fields good", async () => {
+      const memNote = createMemoryNote(generateTestId(), "<pre><code> let a = b + c; ", new Date('1996-09-31'), 'text/html;hint=SEMANTIC');
+
+      const savedNote = await remoteStorage.notes.upsert(memNote);
+
+      expect(savedNote.id).toEqual(memNote.id);
+      expect(savedNote.content).toEqual(memNote.content + '</code></pre>');
+      expect(savedNote.title).toEqual('let a = b + c;');
+      expect(new Date(savedNote.date)).toEqual(memNote.date);
+      expect(savedNote.mimeType).toEqual(memNote.mimeType);
     });
 
     it("should update a note", async () => {
       const originalId = generateTestId();
-      const originalText = "<h1>In Memory Yet Green</h1>";
-      const original = createMemoryNote(originalId, originalText, new Date(2002, 0, 1));
+      const originalText = "In Memory Yet Green";
+      const original = createMemoryNote(originalId, originalText, new Date(2002, 0, 1), 'text/plain');
 
       await remoteStorage.notes.upsert(original);
       const updatedText = "<h2>In Joy Still Felt</h2>";
-      const updated = createMemoryNote(originalId, updatedText, original.date);
+      const updated = createMemoryNote(originalId, updatedText, original.date, 'text/html;hint=SEMANTIC');
       await remoteStorage.notes.upsert(updated);
       const retrieved = await remoteStorage.notes.get(originalId);
 
       expect(retrieved.content).toEqual(updatedText);
       expect(retrieved.title).toEqual("In Joy Still Felt");
-      expect(retrieved.date).toEqual(original.date);
+      expect(retrieved.date).toEqual(updated.date);
+      expect(retrieved.mimeType).toEqual(updated.mimeType);
     });
 
     it("should update multiple notes", () => {
@@ -138,14 +152,32 @@ describe("RemoteNotes", () => {
       expect(savedNote).toBeFalsy();
     });
 
-    it("should store and retrieve notes", async () => {
+    it("should store and retrieve text notes", async () => {
       const id = generateTestId();
-      const original = createMemoryNote(id, "filbert nut", new Date(2001, 0, 1));
+      const original = createMemoryNote(id, "filbert nut", new Date(2001, 0, 1), 'text/plain');
 
       await remoteStorage.notes.upsert(original);
       const retrieved = await remoteStorage.notes.get(id);
 
-      expect(retrieved).toEqual({id: original.id, content: original.content, title: "filbert nut", date: original.date});
+      expect(retrieved.id).toEqual(original.id);
+      expect(retrieved.content).toEqual(original.content);
+      expect(retrieved.title).toEqual(original.content);   // text w/o padding
+      expect(retrieved.date).toEqual(original.date);
+      expect(retrieved.mimeType).toEqual(original.mimeType);
+    });
+
+    it("should store and retrieve HTML notes", async () => {
+      const id = generateTestId();
+      const original = createMemoryNote(id, "<li> wheat bread ", new Date(2005, 2, 31), 'text/html;hint=SEMANTIC');
+
+      await remoteStorage.notes.upsert(original);
+      const retrieved = await remoteStorage.notes.get(id);
+
+      expect(retrieved.id).toEqual(original.id);
+      expect(retrieved.content).toEqual(`<li> wheat bread </li>`);
+      expect(retrieved.title).toEqual("• wheat bread");
+      expect(retrieved.date).toEqual(original.date);
+      expect(retrieved.mimeType).toEqual(original.mimeType);
     });
   });
 

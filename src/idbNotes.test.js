@@ -69,7 +69,7 @@ describe("upsertNoteDb", () => {
     const originalId = generateTestId();
     const originalText = "Beggars <div>in Spain</div>";
     const originalDate = new Date(1997, 5, 16, 9);
-    const original = sanitizeNote(createMemoryNote(originalId, originalText, originalDate));
+    const original = sanitizeNote(createMemoryNote(originalId, originalText, originalDate, 'text/html;hint=SEMANTIC'));
     original.wordArr = ["BEGGARS", "IN", "SPAIN"];
 
     const savedNote = await upsertNoteDb(original);
@@ -81,23 +81,24 @@ describe("upsertNoteDb", () => {
     expect(retrieved.content).toEqual(originalText);
     expect(retrieved.date).toEqual(originalDate);
     expect(retrieved.wordArr).toEqual(original.wordArr);
+    expect(retrieved.mimeType).toEqual('text/html;hint=SEMANTIC');
   });
 
   it("should update a note",async () => {
     const originalId = generateTestId();
-    const originalText = "<h1>In Memory Yet Green</h1>";
+    const originalText = "In Memory Yet Green";
     const originalDate = new Date(2003, 2, 15);
     const original = sanitizeNote(createMemoryNote(originalId, originalText, originalDate));
-    original.wordArr = ["IN", "JOY", "STILL", "FELT"];
-
+    original.wordArr = ["IN", "MEMORY", "YET", "GREEN"];
     await upsertNoteDb(original);
+
     const updatedText = "<h2>In Joy Still Felt</h2>";
     const updatedDate = new Date(2010, 3, 16);
-    const updated = sanitizeNote(createMemoryNote(originalId, updatedText, updatedDate));
+    const updated = sanitizeNote(createMemoryNote(originalId, updatedText, updatedDate, 'text/html;hint=SEMANTIC'));
     updated.wordArr = ["IN", "JOY", "STILL", "FELT"];
     await upsertNoteDb(updated);
-    const retrieved = await getNoteDb(originalId);
 
+    const retrieved = await getNoteDb(originalId);
     expect(retrieved.content).toEqual(updatedText);
     expect(retrieved.date).toEqual(updatedDate);
     expect(retrieved.wordArr).not.toContain("MEMORY");
@@ -108,6 +109,7 @@ describe("upsertNoteDb", () => {
     expect(retrieved.wordArr).toContain("STILL");
     expect(retrieved.wordArr).toContain("FELT");
     expect(retrieved.wordArr.length).toEqual(4);
+    expect(retrieved.mimeType).toEqual(updated.mimeType);
   });
 });
 
@@ -145,7 +147,7 @@ describe("findStubs", () => {
 
   function createIndexedNote(content) {
     date.setTime(date.getTime() + 24*60*60*1000);
-    const memNote = createMemoryNote(generateTestId(), content, date);
+    const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
 
     const wordSet = new Set();
     const textFilter = function (text) {

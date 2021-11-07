@@ -73,9 +73,19 @@ describe("isLikelyMarkdown", () => {
   test("should flag ordered lists using dot", () => {
     expect(isLikelyMarkdown("   9. erste\n  6. zwitte")).toBeTruthy();
   });
+  test("should not flag multiple digits and dot", () => {   // probably section label
+    expect(isLikelyMarkdown("   10. erste\n  11. zwitte")).toBeFalsy();
+  });
 
-  test("should flag ordered lists using paren", () => {
+  test("should flag ordered lists using parenthesis", () => {
     expect(isLikelyMarkdown("  8) erste\n   5) zwitte")).toBeTruthy();
+  });
+  test("should not flag multiple digits and parenthesis", () => {   // probably section label
+    expect(isLikelyMarkdown("   12) erste\n  13) zwitte")).toBeFalsy();
+  });
+
+  test("should not flag mixed ordered list indicators", () => {
+    expect(isLikelyMarkdown("  2. erste\n   3) zwitte")).toBeFalsy();
   });
 
   test("should flag unordered lists using asterisk", () => {
@@ -88,6 +98,10 @@ describe("isLikelyMarkdown", () => {
 
   test("should flag unordered lists using plus", () => {
     expect(isLikelyMarkdown(" + erste\n  + zwitte")).toBeTruthy();
+  });
+
+  test("should not flag mixed unordered list indicators", () => {
+    expect(isLikelyMarkdown(" * erste\n  - zwitte\n  + dritte")).toBeFalsy();
   });
 
   test("should flag link", () => {

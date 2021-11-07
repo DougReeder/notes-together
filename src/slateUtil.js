@@ -1,7 +1,11 @@
 // slateUtil.js - utility functions for Slate editor
 // © 2021 Doug Reeder under the MIT License
 
-import {Editor, Element as SlateElement, Transforms} from 'slate';
+import {Editor, Element as SlateElement, Node as SlateNode, Transforms} from 'slate';
+import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
+import {createMemoryNote} from "./Note";
+import {upsertNote} from "./storage";
+import {HtmlRenderer, Parser} from "commonmark";
 
 
 function getRelevantBlockType(editor) {
@@ -72,4 +76,55 @@ function changeBlockType(editor, type) {
   }
 }
 
-export {getRelevantBlockType, isBlockActive, changeBlockType};
+async function changeContentType(editor, oldSubtype, newSubtype, noteId, noteDate) {
+  let content;
+  if (!newSubtype || newSubtype.startsWith('plain')) {
+    if (oldSubtype?.startsWith('markdown')) {   // convert to rich text in editor
+      const text = editor.children.map(node => SlateNode.string(node)).join('\n');
+      const slateNodes = deserializeMarkdown(text);
+      Transforms.select(editor, []);
+      Editor.insertFragment(editor, slateNodes);
+    }
+
+    const imageElmnts = Editor.nodes(editor, {
+      at: [],
+      match: (node, path) => 'image' === node.type,
+    });
+    for (const nodeEntry of imageElmnts) {
+      const altText = nodeEntry[0].alt || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
+      Transforms.select(editor, nodeEntry[1]);
+      Editor.insertFragment(editor, [{text: altText}]);
+    }
+
+    Transforms.unwrapNodes(editor,
+        {
+          at: [],
+          match: node => !Editor.isEditor(node) && node.children?.every(child => Editor.isBlock(editor, child)),
+          mode: "all",
+        }
+    );
+    content = editor.children.map(node => SlateNode.string(node)).join('\n');
+  } else if (newSubtype.startsWith('markdown')) {
+    if (oldSubtype?.startsWith('html')) {
+      content = serializeMarkdown(editor.children);
+    } else {   // includes Markdown-in-plain -> Markdown
+      content = editor.children.map(node => SlateNode.string(node)).join('\n');
+    }
+  } else if (newSubtype.startsWith('html')) {
+    const text = editor.children.map(node => SlateNode.string(node)).join('\n');
+    if (oldSubtype?.startsWith('markdown')) {
+      const reader = new Parser();
+      const writer = new HtmlRenderer();
+      const mdDoc = reader.parse(text); // mdDoc is a 'Node' tree
+      content = writer.render(mdDoc); // result is a String
+    } else {   // plain text lines -> HTML paragraphs
+      content = text.split("\n").map(line => `<p>${line}</p>`).join("");
+    }
+  }
+  console.log(`${noteId} ${oldSubtype} -> ${newSubtype}\n${content}`)
+  const newNote = createMemoryNote(noteId, content, noteDate, 'text/' + newSubtype);
+  await upsertNote(newNote);
+  // no initiator, as Details doesn't have this yet.
+}
+
+export {getRelevantBlockType, isBlockActive, changeBlockType, changeContentType};

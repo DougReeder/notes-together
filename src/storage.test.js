@@ -4,10 +4,30 @@
 import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
-import {init, parseWords, upsertNote, getNote, deleteNote, findStubs} from "./storage";
+import {init, parseWords, upsertNote, getNote, deleteNote, findStubs, changeHandler} from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL, v4 as uuidv4} from "uuid";
+
+
+if (!global.requestIdleCallback) {
+  global.requestIdleCallback = function (callback, options) {
+    options = options || {};
+    const relaxation = 1;
+    const timeout = options.timeout || relaxation;
+    const start = performance.now();
+    return setTimeout(function () {
+      callback({
+        get didTimeout() {
+          return options.timeout ? false : (performance.now() - start) - relaxation > timeout;
+        },
+        timeRemaining: function () {
+          return Math.max(0, relaxation + (performance.now() - start));
+        },
+      });
+    }, relaxation);
+  };
+}
 
 
 describe("storage", () => {
@@ -279,10 +299,10 @@ describe("storage", () => {
 
     it("should extract normalized, minimal set of keywords from note", async () => {
       const originalText = "food foolish <b>at</b> attention it's ...its";
-      const original = createMemoryNote(generateTestId(), originalText);
+      const original = createMemoryNote(generateTestId(), originalText, null,'text/html;hint=SEMANTIC');
 
       const note = await upsertNote(original);
-      expect(note.content).toEqual("food foolish <b>at</b> attention it's ...its");
+      expect(note.content).toEqual("food foolish <strong>at</strong> attention it's ...its");
       expect(note.wordArr).toContain("FOOD");
       expect(note.wordArr).toContain("FOOLISH");
       expect(note.wordArr).not.toContain("AT");
@@ -290,11 +310,12 @@ describe("storage", () => {
       expect(note.wordArr).toContain("IT'S");
       expect(note.wordArr).toContain("ITS");
       expect(note.wordArr.length).toEqual(5);
+      expect(note.mimeType).toEqual(original.mimeType);
     });
 
     it('should drop keywords that match the start of another keyword', async () => {
       const originalText = "tar tarp tarpaulin workgroup workflow doorknob 2.10 2.10.3.8 door";
-      const original = createMemoryNote(generateTestId(), originalText);
+      const original = createMemoryNote(generateTestId(), originalText, null, 'text/plain');
 
       const cleanNote = await upsertNote(original);
 
@@ -310,13 +331,14 @@ describe("storage", () => {
       expect(cleanNote.wordArr).toContain("2.10.3.8");
       expect(cleanNote.wordArr).not.toContain("2.10");
       expect(cleanNote.wordArr.length).toEqual(5);
+      expect(cleanNote.mimeType).toEqual(original.mimeType);
     });
 
     it("should insert a note",async () => {
       const originalId = generateTestId();
       const originalText = "Simply <strike>unbearable";
       const originalDate = new Date(1997, 5, 16, 9);
-      const original = createMemoryNote(originalId, originalText, originalDate);
+      const original = createMemoryNote(originalId, originalText, originalDate, 'text/html;hint=SEMANTIC');
 
       const savedNote = await upsertNote(original);
       expect(savedNote.id).toEqual(originalId);
@@ -330,18 +352,19 @@ describe("storage", () => {
       expect(retrieved.wordArr).toContain("SIMPLY");
       expect(retrieved.wordArr).toContain("UNBEARABLE");
       expect(retrieved.wordArr.length).toEqual(2);
+      expect(retrieved.mimeType).toEqual(original.mimeType);
     });
 
     it("should update a note",async () => {
       const originalId = generateTestId();
-      const originalText = "<h1>I. Asimov: A Memoir</h1>";
+      const originalText = "I. Asimov: A Memoir";
       const originalDate = new Date(2003, 2, 15);
-      const original = createMemoryNote(originalId, originalText, originalDate);
+      const original = createMemoryNote(originalId, originalText, originalDate, 'text/plain');
 
       await upsertNote(original);
       const updatedText = "<h2>Eleven Years of Trying</h2>";
       const updatedDate = new Date(2010, 3, 16);
-      const updated = createMemoryNote(originalId, updatedText, updatedDate);
+      const updated = createMemoryNote(originalId, updatedText, updatedDate, 'text/html;hint=SEMANTIC');
       await upsertNote(updated, 'DETAIL');
 
       const retrieved = await getNote(originalId);
@@ -356,6 +379,7 @@ describe("storage", () => {
       expect(retrieved.wordArr).toContain("OF");
       expect(retrieved.wordArr).toContain("TRYING");
       expect(retrieved.wordArr.length).toEqual(4);
+      expect(retrieved.mimeType).toEqual(updated.mimeType);
     });
 
     it("should insert an indexed note only in IndexedDb, when initiator is REMOTE", async () => {
@@ -374,6 +398,8 @@ describe("storage", () => {
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("OFFERTORY");
       expect(retrieved.wordArr.length).toEqual(1);
+      expect(retrieved.mimeType).toEqual(original.mimeType);
+
       const remoteStorage = await init();
       await expect(remoteStorage.notes.get(originalId)).resolves.toBeUndefined();
     });
@@ -406,19 +432,189 @@ describe("storage", () => {
     });
   });
 
+  describe("changeHandler", () => {
+    it("should retain a modified note which was deleted on another device", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `<p> Lorem ipsum dolor sit amet </p>`,
+        title: `Lorem ipsum dolor sit amet`,
+        date: new Date(1500, 0, 1),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: false});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(localNote.content);
+      expect(retrieved.title).toEqual(localNote.title);
+      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+    });
+
+    it("should restore a deleted note which was edited on another device", async () => {
+      const id = generateTestId();
+      const remoteNote = {
+        id: id,
+        content: ` Ut enim ad minim veniam `,
+        title: `Ut enim ad minim veniam`,
+      };
+      await changeHandler({origin: 'conflict', oldValue: false, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(remoteNote.content);
+      expect(retrieved.title).toEqual(remoteNote.title);
+      // expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+    });
+
+    it("should merge a conflicted HTML note", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `<p><em>My Day</em></p><p>It was dull.</p>`,
+        title: `My Day\nIt was dull.`,
+        date: new Date(2021, 8, 1),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      const remoteNote = {
+        id: id,
+        content: `<p><i>My Day</i></p><p>It was great!</p>`,
+        title: `My Day\nIt was great!`,
+        date: new Date(2021, 9, 1),
+        mimeType: 'text/html'
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(`<p><em><em>My Day</em></em></p><p>It was dull. It was great!</p>`);
+      expect(retrieved.title).toEqual("My Day\nIt was dull. It was great!");
+      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+    });
+
+    it("should merge a conflicted text note", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `The movie was well-acted.`,
+        title: `The movie was well-acted.`,
+        date: new Date(2020, 3, 1),
+        mimeType: 'text/markdown;hint=COMMONMARK'
+      };
+      const remoteNote = {
+        id: id,
+        content: `The movie has good costuming.`,
+        title: `The movie has good costuming.`,
+        date: new Date(2020, 0, 1),
+        mimeType: 'text/plain;charset=UTF-8'
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(`The movie was well-acted. The movie has good costuming.`);
+      expect(retrieved.title).toEqual("The movie was well-acted. The movie has good costuming.");
+      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+    });
+
+    it("should merge a conflicted local HTML / remote text note as HTML", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>`,
+        title: `Staff Meeting\nMary: let's do it!`,
+        date: new Date(2021, 8, 2),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      const remoteNote = {
+        id: id,
+        content: `Staff Meeting
+John: let's be cautious
+Finance: we can't afford it.`,
+        title: `Staff Meeting\nJohn: let's be cautious`,
+        date: new Date(2021, 8, 1),
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      // TODO: parse text notes into paragraphs
+      expect(retrieved.content).toEqual(`<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>Staff Meeting
+John: let's be cautious
+Finance: we can't afford it.`);
+      expect(retrieved.title).toEqual("Staff Meeting\nMary: let's do it!");
+      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+    });
+
+    it("should merge a conflicted local text / remote HTML note as HTML", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: ` my notes on\n# Therapods `,
+        title: `my notes on\n# Therapods`,
+        date: new Date(2010, 1, 14),
+        mimeType: 'text/markdown;hint=COMMONMARK'
+      };
+      const remoteNote = {
+        id: id,
+        content: `<p>my notes on</p><h2>Therapods</h2>`,
+        title: `Therapods\nmy notes on`,
+        date: new Date(2010, 0, 1),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      // TODO: parse text notes into paragraphs
+      expect(retrieved.content).toEqual(` my notes on\n# Therapods <p>my notes on</p><h2>Therapods</h2>`);
+      expect(retrieved.title).toEqual(`Therapods\nmy notes on`);
+      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+    });
+  });
 
   describe("findStubs", () => {
-    const note1 = createMemoryNote(generateTestId(), "<h2>The world</h2> set free", new Date(2011, 0, 1));
+    const note1 = createMemoryNote(generateTestId(), "<h2>The world</h2> set free", new Date(2011, 0, 1), 'text/html;hint=SEMANTIC');
     const note1title = "The world";
-    const note2 = createMemoryNote(generateTestId(), "Math <th>is not</th> my favorite", new Date(2012, 1, 2));
+    const note2 = createMemoryNote(generateTestId(), "Math <th>is not</th> my favorite", new Date(2012, 1, 2), 'text/html;hint=SEMANTIC');
     const note2title = "is not";
-    const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>", new Date(2013, 2, 3));
+    const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>", new Date(2013, 2, 3), 'text/html;hint=SEMANTIC');
     const note3title = "like thin crust";
 
     function createTestNote(content) {
       const startDate = new Date(2015, 0, 1);
       const date = new Date(startDate.getTime() + Math.random() * 7*24*60*60*1000);
-      return createMemoryNote(generateTestId(), content, date);
+      return createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
     }
 
     beforeAll(async () => {
@@ -699,7 +895,7 @@ describe("storage", () => {
       }
 
       for (let i = 0; i < 600; ++i) {
-        await upsertNote(createMemoryNote(generateTestId(), content));
+        await upsertNote(createMemoryNote(generateTestId(), content, null, 'text/html;hint=SEMANTIC'));
       }
     });
 

@@ -8,7 +8,19 @@ import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
 import {getNote, upsertNote} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
-import {AppBar, Box, Button, IconButton, Input, MenuItem, Select, Toolbar} from "@material-ui/core";
+import {
+  AppBar,
+  Box,
+  Button,
+  Dialog, DialogActions, DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  IconButton,
+  Input,
+  MenuItem,
+  Select,
+  Toolbar, Checkbox
+} from "@material-ui/core";
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
@@ -16,13 +28,14 @@ import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
 import {StrikethroughS} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement, Transforms} from 'slate'
+import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
-import {getRelevantBlockType, changeBlockType} from "./slateUtil";
-import {visualViewportMatters} from "./util";
+import {getRelevantBlockType, changeBlockType, changeContentType} from "./slateUtil";
+import {isLikelyMarkdown, visualViewportMatters} from "./util";
+import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
@@ -49,6 +62,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   // }, [searchStr]);
 
   const loadingIdRef = useRef(NaN);
+  const ignoreChangesUntilReloadRef = useRef(false);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
     children: [{ text: 'Initial editor value' }],
@@ -59,13 +73,25 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       []
   );
   const [noteDate, setNoteDate] = useState();
+  const [noteSubtype, setNoteSubtype] = useState();
+  const [effectiveSubtype, setEffectiveSubtype] = useState();
 
   const replaceNote = useCallback(theNote => {
     try {
-      const html = sanitizeHtml(theNote.content, semanticOnly);
-      console.log("sanitized HTML:", html);
-      let slateNodes = deserializeHtml(html, editor);
-      console.log("slateNodes:", slateNodes);
+      ignoreChangesUntilReloadRef.current = false;
+      let slateNodes;
+      if (hasTagsLikeHtml(theNote.mimeType)) {
+        setNoteSubtype('html;hint=SEMANTIC')
+        const html = sanitizeHtml(theNote.content, semanticOnly);
+        console.log("sanitized HTML:", html);
+        slateNodes = deserializeHtml(html, editor);
+      } else if (!theNote.mimeType || /^text\//.test(theNote.mimeType)) {
+        setNoteSubtype(/\/(.+)/.exec(theNote.mimeType)?.[1]);
+        slateNodes = theNote.content.split("\n").map(line => {return {type: 'paragraph', children: [{text: line}]}});
+      } else {
+        throw new Error("Can't display this type of note");
+      }
+      console.log("replacing slateNodes:", slateNodes);
 
       // Editor can't be empty (though pasted content can be).
       if (0 === slateNodes.length) {
@@ -135,15 +161,15 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   async function handleSlateChange(newValue) {
     try {
+      if (ignoreChangesUntilReloadRef.current) {return;}
+
       setNoteErr(null);
       setEditorValue(newValue);
 
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
       if (isAstChange) {
         console.log(`AST change ${noteId}:`, editor.operations.map(op => op.type), newValue);
-        const html = serializeHtml(newValue);
-        console.log(`HTML ${noteId}:`, html);
-        await upsertNote(createMemoryNote(noteId, html, noteDate), 'DETAIL');
+        await save(noteDate);
       } else {
         forceUpdate();   // updates the mark indicators
         console.log("selection change:", editor.operations.map(op => op.type));
@@ -173,13 +199,24 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       const day = parseInt(evt.target.value.slice(8, 10), 10);
       const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
       setNoteDate(newDate);
-      const html = serializeHtml(editor.children);
-      console.log('handleDateChange:', newDate, editor.children, html);
-      await upsertNote(createMemoryNote(noteId, html, newDate), 'DETAIL');
+      console.log('handleDateChange:', newDate);
+      await save(newDate);
     } catch (err) {
       console.error("Detail handleDateChange:", err);
       window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
     }
+  }
+
+  async function save(date) {
+    let content;
+    if (noteSubtype?.startsWith('html')) {
+      content = serializeHtml(editor.children);
+      console.log('save HTML:', noteId, editor.children, content, date);
+    } else {
+      content = editor.children.map(node => SlateNode.string(node)).join('\n')
+      console.log('save text:', noteId, editor.children, content, date);
+    }
+    await upsertNote(createMemoryNote(noteId, content, date, noteSubtype ? 'text/'+noteSubtype : undefined), 'DETAIL');
   }
 
   const [noteErr, setNoteErr] = useState();
@@ -234,6 +271,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   function handleSelectedBlockTypeChange(evt) {
     // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
+    const targetType = evt.target.value;
+    if ('change-note-type' === targetType) {
+      setEffectiveSubtype('html');
+      setIsContentTypeDialogOpen(true);
+      return;
+    }
+
     if (previousSelection) {
       Transforms.select(editor, previousSelection);
       ReactEditor.focus(editor);
@@ -241,7 +285,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Only text blocks can be changed."}, window?.location?.origin);
         return;
       }
-      const targetType = evt.target.value;
       // console.log(`${previousBlockType} -> ${targetType}`);
       switch (targetType) {
         default:
@@ -260,6 +303,18 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }
 
+  const [isContentTypeDialogOpen, setIsContentTypeDialogOpen] = useState(false);
+
+  function handleEffectiveCheckbox(evt, isMarkdown) {
+    setEffectiveSubtype(isMarkdown ? 'markdown' : 'plain');
+  }
+
+  async function handleChangeContentType(newSubtype) {
+    ignoreChangesUntilReloadRef.current = true;
+    await changeContentType(editor, effectiveSubtype, newSubtype, noteId, noteDate);
+    setIsContentTypeDialogOpen(false);
+  }
+
   let content;
   let noteControls = null;
   if (noteErr) {
@@ -274,7 +329,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       <div style={{position: 'absolute', bottom: '2em', left: '0', right: '0', textAlign: 'center', color: '#616161' }}>Select a note on the left to display it in full.</div>
     </>);
   } else {
-    content = (
+    content = (<>
       <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
         <Editable
             key={editableKey}   // change the key to restart editor w/ new editorValue
@@ -315,73 +370,132 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             }}
         />
       </Slate>
-    );
+      <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">
+        <DialogTitle id="content-type-dialog-title">Change type of note?</DialogTitle>
+        { !noteSubtype || noteSubtype.startsWith('plain') ? (
+          <DialogContent>
+            <FormControlLabel
+                label="Note already contains Markdown notation"
+                control={<Checkbox checked={'markdown' === effectiveSubtype} onChange={handleEffectiveCheckbox} name="writtenAsMarkdown" />}
+            />
+          </DialogContent>
+        ) : null }
+        <DialogActions>
+          <Button disabled={!noteSubtype || noteSubtype?.startsWith('plain')} onClick={handleChangeContentType.bind(this, 'plain')}>
+            Plain Text
+          </Button>
+          <Button disabled={noteSubtype?.startsWith('markdown')} onClick={handleChangeContentType.bind(this, 'markdown')}>
+            Mark­down
+          </Button>
+          <Button disabled={noteSubtype?.startsWith('html')} onClick={handleChangeContentType.bind(this, 'html;hint=SEMANTIC')}>
+            Rich Text
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+    </>);
+    let formatControls;
+    if (noteSubtype?.startsWith('html')) {
+      formatControls = (<>
+        <Select
+            title="Block type"
+            id="type-select"
+            value={previousBlockType}
+            onChange={handleSelectedBlockTypeChange}
+            style={{minWidth: '15ch'}}
+        >
+          <MenuItem value={'paragraph'}>Body</MenuItem>
+          <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
+          <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
+          <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
+          <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
+          <MenuItem value={'numbered-list'}>Numbered List</MenuItem>
+          <MenuItem value={'quote'}>Block Quote</MenuItem>
+          <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
+          {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
+          <MenuItem value={'image'}>(Image)</MenuItem>
+          <MenuItem value={'multiple'}>(Multiple)</MenuItem>
+          <MenuItem value={'n/a'}>(n/a)</MenuItem>
+          <MenuItem value={'change-note-type'}><strong>Change note type</strong></MenuItem>
+        </Select>
+        <IconButton aria-label="Format italic"
+                    color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
+                    onMouseDown={evt => {
+                      evt.preventDefault();
+                      toggleMark(editor, 'italic');
+                      // ReactEditor.focus(editor);
+                    }}>
+          <FormatItalicIcon/>
+        </IconButton>
+        <IconButton aria-label="Format bold"
+                    color={isMarkActive(editor, 'bold') ? 'primary' : 'default'}
+                    onMouseDown={evt => {
+                      evt.preventDefault();
+                      toggleMark(editor, 'bold');
+                      // ReactEditor.focus(editor);
+                    }}>
+          <FormatBoldIcon/>
+        </IconButton>
+        <IconButton aria-label="Format monospaced"
+                    color={isMarkActive(editor, 'code') ? 'primary' : 'default'}
+                    onMouseDown={evt => {
+                      evt.preventDefault();
+                      toggleMark(editor, 'code');
+                      // ReactEditor.focus(editor);
+                    }}>
+          <CodeIcon/>
+        </IconButton>
+        <IconButton aria-label="Format underline"
+                    color={isMarkActive(editor, 'underline') ? 'primary' : 'default'}
+                    onMouseDown={evt => {
+                      evt.preventDefault();
+                      toggleMark(editor, 'underline');
+                    }}>
+          <FormatUnderlinedIcon/>
+        </IconButton>
+        <IconButton aria-label="Format strikethrough"
+                    color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'default'}
+                    onMouseDown={evt => {
+                      evt.preventDefault();
+                      toggleMark(editor, 'strikethrough');
+                    }}>
+          <StrikethroughS/>
+        </IconButton>
+      </>);
+    } else {
+      let typeLabel;
+      if (!noteSubtype) {
+        typeLabel = "plain text";
+      } else if (noteSubtype.startsWith('markdown')) {
+        typeLabel = "markdown";
+      } else {
+        typeLabel = noteSubtype + " text";
+      }
+      formatControls = (<>
+        <Button variant="outlined" onClick={prepareContentTypeDialog}>{typeLabel}</Button>
+      </>);
+    }
     noteControls = (<>
       <Input type="date" value={dateStr} onChange={handleDateChange}/>
-      <Select
-          labelId="type-select-label"
-          id="type-select"
-          value={previousBlockType}
-          onChange={handleSelectedBlockTypeChange}
-          style={{minWidth: '15ch'}}
-      >
-        <MenuItem value={'paragraph'}>Body</MenuItem>
-        <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
-        <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
-        <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
-        <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
-        <MenuItem value={'numbered-list'}>Numbered List</MenuItem>
-        <MenuItem value={'quote'}>Block Quote</MenuItem>
-        <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
-        {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
-        <MenuItem value={'image'}>(Image)</MenuItem>
-        <MenuItem value={'multiple'}>(Multiple)</MenuItem>
-        <MenuItem value={'n/a'}>(n/a)</MenuItem>
-      </Select>
-      <IconButton aria-label="Format italic"
-                  color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
-                  onMouseDown={evt => {
-                    evt.preventDefault();
-                    toggleMark(editor, 'italic');
-                    // ReactEditor.focus(editor);
-                  }}>
-        <FormatItalicIcon/>
-      </IconButton>
-      <IconButton aria-label="Format bold"
-                  color={isMarkActive(editor, 'bold') ? 'primary' : 'default'}
-                  onMouseDown={evt => {
-                    evt.preventDefault();
-                    toggleMark(editor, 'bold');
-                    // ReactEditor.focus(editor);
-                  }}>
-        <FormatBoldIcon/>
-      </IconButton>
-      <IconButton aria-label="Format monospaced"
-                  color={isMarkActive(editor, 'code') ? 'primary' : 'default'}
-                  onMouseDown={evt => {
-                    evt.preventDefault();
-                    toggleMark(editor, 'code');
-                    // ReactEditor.focus(editor);
-                  }}>
-        <CodeIcon/>
-      </IconButton>
-      <IconButton aria-label="Format underline"
-                  color={isMarkActive(editor, 'underline') ? 'primary' : 'default'}
-                  onMouseDown={evt => {
-                    evt.preventDefault();
-                    toggleMark(editor, 'underline');
-                  }}>
-        <FormatUnderlinedIcon/>
-      </IconButton>
-      <IconButton aria-label="Format strikethrough"
-                  color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'default'}
-                  onMouseDown={evt => {
-                    evt.preventDefault();
-                    toggleMark(editor, 'strikethrough');
-                  }}>
-        <StrikethroughS/>
-      </IconButton>
+      {formatControls}
+      <Button aria-label="Save" style={{position: 'absolute', left: -1000}} onPointerDown={evt => {
+        save(noteDate);
+      }}>
+        Save
+      </Button>
     </>);
+  }
+
+  function prepareContentTypeDialog() {
+    let apparentSubtype = noteSubtype?.split(';')[0] || 'plain';
+    if (apparentSubtype.startsWith('plain')) {
+      if (isLikelyMarkdown(editor.children.map(node => SlateNode.string(node)).join('\n'))) {
+        apparentSubtype = 'markdown';
+      }
+    }
+    setEffectiveSubtype(apparentSubtype);
+
+    setIsContentTypeDialogOpen(!isContentTypeDialogOpen)
   }
 
   function toggleFocus(evt) {

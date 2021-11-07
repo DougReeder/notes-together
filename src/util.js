@@ -19,12 +19,32 @@ function isLikelyMarkdown(text) {
   if (/(^|\n)\s{0,3}>/.test(text)) {
     return true;   // block quote
   }
-  if (/(^|\n)\s{0,3}\d[.)]\s.*\s+\d[.)]\s/.test(text)) {
-    return true;   // ordered list
-  }
-  if (/(^|\n)\s{0,3}[*+-]\s.*\s+[*+-]\s/.test(text)) {
-    return true;   // unordered list
-  }
+
+  const numberDotPatt = /^\s{0,3}\d\.[ \t ]+\S/gm;
+  let numListItems = 0;
+  while(numListItems < 2 && numberDotPatt.test(text)) { ++numListItems; }
+  if (numListItems >= 2) { return true; }
+
+  const numberParenPatt = /^\s{0,3}\d\)[ \t ]+\S/gm;
+  numListItems = 0;
+  while(numListItems < 2 && numberParenPatt.test(text)) { ++numListItems; }
+  if (numListItems >= 2) { return true; }
+
+  const starItemPatt = /^\s{0,3}\*[ \t ]+\S/gm;
+  numListItems = 0;
+  while(numListItems < 2 && starItemPatt.test(text)) { ++numListItems; }
+  if (numListItems >= 2) { return true; }
+
+  const plusItemPatt = /^\s{0,3}\+[ \t ]+\S/gm;
+  numListItems = 0;
+  while(numListItems < 2 && plusItemPatt.test(text)) { ++numListItems; }
+  if (numListItems >= 2) { return true; }
+
+  const dashItemPatt = /^\s{0,3}-[ \t ]+\S/gm;
+  numListItems = 0;
+  while(numListItems < 2 && dashItemPatt.test(text)) { ++numListItems; }
+  if (numListItems >= 2) { return true; }
+
   if (/\[[^\]]+]\([^)]+\)/.test(text)) {
     return true;   // link (images also match this)
   }

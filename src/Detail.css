@@ -17,9 +17,9 @@
     }
 }
 
-.MuiButtonBase-root, .MuiInputBase-root {
-    height: 52px;
-}
+/*.MuiButtonBase-root, .MuiInputBase-root {*/
+/*    height: 52px;*/
+/*}*/
 
 .MuiSelect-root h1, .MuiSelect-root h2, .MuiSelect-root h3,
 .MuiMenuItem-root h1, .MuiMenuItem-root h2, .MuiMenuItem-root h3 {

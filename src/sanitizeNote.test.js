@@ -24,7 +24,7 @@ describe("sanitizeNote", () => {
 <canvas width="300" height="300">graph of sine function</canvas>
 <div style="position: absolute; bottom: 0; left: 0">This is absolutely positioned bottom left</div>
 <video controls width="250"><source src="/media/cc0-videos/flower.webm" type="video/webm">Sorry, your browser doesn't support embedded videos.</video>
-unstyled text <font color="red" size="-2">small red text</font> unstyled text`);
+unstyled text <font color="red" size="-2">small red text</font> unstyled text`, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -39,12 +39,13 @@ graph of sine function
 <div>This is absolutely positioned bottom left</div>
 Sorry, your browser doesn't support embedded videos.
 unstyled text small red text unstyled text`);
+    expect(cleanNote.mimeType).toEqual('text/html;hint=SEMANTIC');
   });
 
   it("should normalize markup", () => {
     const originalId = generateTestId();
     const originalText = "<header>A mind is a <strike>terrible thing</blockquote> to waste";
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -52,25 +53,27 @@ unstyled text small red text unstyled text`);
   });
 
   it("should pass through a date of type Date", () => {
-    const memNote = createMemoryNote(generateTestId(), "excellent", new Date('2021-02-01T09:00:00.000Z'));
+    const memNote = createMemoryNote(generateTestId(), "excellent", new Date('2021-02-01T09:00:00.000Z'), 'text/plain');
 
     const cleanNote = sanitizeNote(memNote);
 
     expect(cleanNote.date).toBeInstanceOf(Date);
     expect(cleanNote.date).toEqual(memNote.date);
+    expect(cleanNote.mimeType).toEqual('text/plain');
   });
 
   it("should parse a string date into a Date", () => {
-    const memNote = createMemoryNote(generateTestId(), "archangel");
+    const memNote = createMemoryNote(generateTestId(), "archangel", null, 'text/plain');
     memNote.date = '2021-03-01T06:00:00.000Z';
 
     const cleanNote = sanitizeNote(memNote);
 
     expect(cleanNote.date).toBeInstanceOf(Date);
+    expect(cleanNote.mimeType).toEqual('text/plain');
   });
 
   it("should parse a number date into a Date", () => {
-    const memNote = createMemoryNote(generateTestId(), "redecorate");
+    const memNote = createMemoryNote(generateTestId(), "redecorate", null, 'text/plain');
     memNote.date = 1624176186133;
 
     const cleanNote = sanitizeNote(memNote);
@@ -79,7 +82,7 @@ unstyled text small red text unstyled text`);
   });
 
   it("should use current date when passed a non-date, non-string in date field", () => {
-    const note = createMemoryNote(generateTestId(), "something");
+    const note = createMemoryNote(generateTestId(), "something", null, 'text/plain');
     note.date = document.documentElement;
 
     const cleanNote = sanitizeNote(note);
@@ -91,9 +94,9 @@ unstyled text small red text unstyled text`);
     expect(cleanNote.date.getDate()).toEqual(today.getDate());
   });
 
-  it("should allow extraction of normalized keywords via textFilter",  () => {
+  it("should allow extraction of normalized keywords from HTML via textFilter",  () => {
     const originalText = "editor-in-chief\n================<br>foo_bar Foo.bar </strong>_underlined_\n";
-    const original = createMemoryNote(generateTestId(), originalText);
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/html;hint=SEMANTIC');
     const wordSet = new Set();
     const textFilter = function (text) {
       for (const word of parseWords(text)) {
@@ -114,12 +117,33 @@ unstyled text small red text unstyled text`);
     expect(wordArr.length).toEqual(3);
   });
 
+  it("should allow extraction of normalized keywords from text via textFilter",  () => {
+    const originalText = "editor-in-chief\n================foo_bar Foo.bar _underlined_\n";
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/plain');
+    const wordSet = new Set();
+    const textFilter = function (text) {
+      for (const word of parseWords(text)) {
+        wordSet.add(word);
+      }
+      return text;
+    }
+
+    const cleanNote = sanitizeNote(original, textFilter);
+
+    expect(cleanNote.content).toEqual(originalText);
+    const wordArr = Array.from(wordSet);
+    expect(wordArr).toContain("EDITORINCHIEF");
+    expect(wordArr).toContain("FOOBAR");
+    expect(wordArr).toContain("UNDERLINED");
+    expect(wordArr.length).toEqual(3);
+  });
+
   it("should extract a title from h tags, prioritizing higher", () => {
     const originalId = generateTestId();
     const originalText = `  <hr/><h6>trivial heading</h6>
   <h5>minor heading</h5>
 <h3>Subheading</h3>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -137,7 +161,7 @@ unstyled text small red text unstyled text`);
   <p>first real paragraph</p>
   <p>second real paragraph</p>
   <h6>minor heading</h6>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -153,18 +177,18 @@ unstyled text small red text unstyled text`);
   it("should extract a title from paragraphs rather than emphasis", () => {
     const originalId = generateTestId();
     const originalText = ` <p>The <em>long</em>, <b>strong</b> thing</p> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toMatch(/^The long, strong thing/);
-    expect(cleanNote.content).toEqual(` <p>The <i>long</i>, <b>strong</b> thing</p> `);
+    expect(cleanNote.content).toEqual(` <p>The <em>long</em>, <strong>strong</strong> thing</p> `);
   });
 
   it("should extract a title from ordinary tags if necessary", () => {
     const originalId = generateTestId();
     const originalText = `  <div>something</div>  <div>another thing</div>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -178,7 +202,7 @@ unstyled text small red text unstyled text`);
   <li>erste</li>
   <li>zwitte</li>
 </ul>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -194,7 +218,7 @@ unstyled text small red text unstyled text`);
     const originalText = `  <img class="fit-picture"
        src="/media/cc0-images/grapefruit-slice-332-332.jpg"
        alt="Grapefruit slice atop a pile of other slices"> <p> Grapefruit are healthy. </p>  `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -205,18 +229,18 @@ unstyled text small red text unstyled text`);
   it("should not extract title string twice from emphasis in paragraph", () => {
     const originalId = generateTestId();
     const originalText = ` <p><i> Barrier Mage</i> short talk </p> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.title).toEqual("Barrier Mage short talk");
-    expect(cleanNote.content).toEqual(` <p><i> Barrier Mage</i> short talk </p> `);
+    expect(cleanNote.content).toEqual(` <p><em> Barrier Mage</em> short talk </p> `);
   });
 
   it("should extract title once from code block", () => {
     const originalId = generateTestId();
     const originalText = ` <pre><code> a = b + c </code></pre> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -241,7 +265,7 @@ unstyled text small red text unstyled text`);
     </tbody>
 </table>
     `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -266,7 +290,7 @@ unstyled text small red text unstyled text`);
   it("should extract a title from low-value tags if necessary", () => {
     const originalId = generateTestId();
     const originalText = `  <aside>pasted sidebar</aside>   <a href="http://example.com">click me</a> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -279,7 +303,7 @@ unstyled text small red text unstyled text`);
     const originalText = `<p><ruby>
   明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp>
 </ruby></p>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -292,7 +316,7 @@ unstyled text small red text unstyled text`);
   it("should extract a blank title from blank paragraphs", () => {
     const originalId = generateTestId();
     const originalText = `  <p>  </p>  <div>  </div>`;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -305,7 +329,7 @@ unstyled text small red text unstyled text`);
     const originalText = `  
     
     plain text   `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/plain');
 
     const cleanNote = sanitizeNote(original);
 
@@ -313,13 +337,14 @@ unstyled text small red text unstyled text`);
     expect(cleanNote.content).toEqual(`  
     
     plain text   `);
+    expect(cleanNote.mimeType).toEqual('text/plain');
   });
 
   it("should extract a title without HTML entities", () => {
     const originalId = generateTestId();
     const originalText = `   <p> something &quot;quoted&quot; a&gt;b c&lt;d </p>
    <p> Bob&#39;s Red Mill; Alice &amp; Bob &amp; Carol </p> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
 
     const cleanNote = sanitizeNote(original);
 
@@ -333,7 +358,7 @@ unstyled text small red text unstyled text`);
     <h2>Table of Contents</h2>
 <h1>The <b>Actual</b> Title</h1>
 <p>body text</p>`;
-    const original = createMemoryNote(generateTestId(), originalText);
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/html;hint=SEMANTIC');
     const wordSet = new Set();
     const textFilter = function (text) {
       for (const word of parseWords(text)) {
@@ -346,7 +371,7 @@ unstyled text small red text unstyled text`);
 
     expect(cleanNote.content).toEqual(`leading junk
     <h2>Table of Contents</h2>
-<h1>The <b>Actual</b> Title</h1>
+<h1>The <strong>Actual</strong> Title</h1>
 <p>body text</p>`);
     const wordArr = Array.from(wordSet);
     expect(wordArr).toContain("LEADING");
@@ -366,10 +391,23 @@ unstyled text small red text unstyled text`);
     expect(cleanNote.title).toMatch(/^The Actual Title\nTable of Contents/);
   });
 
+  it("should not parse tags nor entities in plain text", () => {
+    const originalText = ` The <p> tag denotes a paragraph. 
+      The &nbsp; entity denotes a non-breaking space `;
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/plain');
+
+    const cleanNote = sanitizeNote(original);
+
+    expect(cleanNote.title).toEqual("The <p> tag denotes a paragraph. \n      The &nbsp; entity denotes a non-breaking space");
+    expect(cleanNote.content).toEqual(` The <p> tag denotes a paragraph. 
+      The &nbsp; entity denotes a non-breaking space `);
+    expect(cleanNote.mimeType).toEqual('text/plain');
+  });
+
   it("should retain existing title", () => {
     const originalId = generateTestId();
     const originalText = `  <p> note body </p> `;
-    const original = createMemoryNote(originalId, originalText);
+    const original = createMemoryNote(originalId, originalText, null, 'text/html;hint=SEMANTIC');
     original.title = "title text";
 
     const cleanNote = sanitizeNote(original);

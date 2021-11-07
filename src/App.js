@@ -49,7 +49,7 @@ function App() {
   async function addNote() {
     try {
       const initialText = searchStr.trim() ? `<p></p><p>${searchStr.trim()} </p>` : "";
-      const newNote = createMemoryNote(null, initialText);
+      const newNote = createMemoryNote(null, initialText, null, 'text/html;hint=SEMANTIC');
       // console.log("adding note:", newNote);
       await upsertNote(newNote);
       setMustShowPanel('DETAIL');
