@@ -401,7 +401,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(original.mimeType);
 
       const remoteStorage = await init();
-      await expect(remoteStorage.notes.get(originalId)).resolves.toBeUndefined();
+      await expect(remoteStorage.documents.get(originalId)).resolves.toBeUndefined();
     });
   });
 

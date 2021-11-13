@@ -72,13 +72,13 @@ function withHtml(editor) {   // defines Slate plugin
 
 
 const ELEMENT_TAGS = {
-  A: el => ({ type: 'link', url: decodeURI(el.getAttribute('href')), title: el.getAttribute('title') }),
+  A: el => ({ type: 'link', url: decodeURI(el.getAttribute('href')), title: el.getAttribute('title') || undefined }),
   BLOCKQUOTE: () => ({ type: 'quote' }),
   H1: () => ({ type: 'heading-one' }),
   H2: () => ({ type: 'heading-two' }),
   H3: () => ({ type: 'heading-three' }),
   HR: () => ({ type: 'thematic-break'}),
-  IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), alt: el.getAttribute('alt'), title: el.getAttribute('title') }),
+  IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), alt: el.getAttribute('alt') || undefined, title: el.getAttribute('title') || "" }),
   LI: () => ({ type: 'list-item' }),
   OL: () => ({ type: 'numbered-list' }),
   UL: () => ({ type: 'bulleted-list' }),

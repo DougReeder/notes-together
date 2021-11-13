@@ -110,7 +110,7 @@ async function changeHandler(evt) {
         //   break;
     }
   } catch (err) {
-    console.error("remoteStorage notes subscribe:", err);
+    console.error("remoteStorage documents subscribe:", err);
     window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
   }
 }
@@ -120,15 +120,15 @@ let remotePrms;
 function initRemote() {
   remotePrms = new Promise((resolve) => {
     const remoteStorage = new RemoteStorage({modules: [RemoteNotes], cache: true});
-    remoteStorage.access.claim('notes', 'rw');
+    remoteStorage.access.claim('documents', 'rw');
 
-    remoteStorage.caching.enable('/notes/');
+    remoteStorage.caching.enable('/documents/notes/');
 
     remoteStorage.on('ready', function () {
       console.log("remoteStorage ready");
       resolve(remoteStorage);
 
-      remoteStorage.notes.subscribe(changeHandler);
+      remoteStorage.documents.subscribe(changeHandler);
     });
 
     remoteStorage.on('connected', async () => {
@@ -183,7 +183,7 @@ async function upsertNote(memoryNote, initiator) {
     cleanNote = sanitizeNote(memoryNote, textFilter);
   } else {
     const remoteStorage = await remotePrms;
-    cleanNote = await remoteStorage.notes.upsert(memoryNote, textFilter);
+    cleanNote = await remoteStorage.documents.upsert(memoryNote, textFilter);
   }
 
   for (let candidateWord of wordSet) {
@@ -202,7 +202,7 @@ async function upsertNote(memoryNote, initiator) {
 
 function deleteNote(id) {
   return remotePrms.then(remoteStorage => {
-    return Promise.all([remoteStorage.notes.delete(id), deleteNoteDb(id)]);
+    return Promise.all([remoteStorage.documents.delete(id), deleteNoteDb(id)]);
   });
 }
 

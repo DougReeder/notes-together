@@ -7,7 +7,7 @@ import {sanitizeNote} from "./sanitizeNote";
 const subscriptions = new Set();
 
 const RemoteNotes = {
-  name: 'notes',
+  name: 'documents',
   builder: function (privateClient, publicClient) {
     privateClient.declareType('note', {
       "type": "object",
@@ -50,7 +50,7 @@ const RemoteNotes = {
         try {
           callback(evt);
         } catch (err) {
-          console.error("notes change subscriber:", err);
+          console.error("documents change subscriber:", err);
           window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
         }
       }
@@ -89,7 +89,7 @@ const RemoteNotes = {
         working = true;
         const {remoteNote, resolve} = item;
         recent.add(remoteNote.id);
-        const path = remoteNote.id;
+        const path = 'notes/' + remoteNote.id;
         const value = await privateClient.storeObject("note", path, remoteNote);
         resolve(value);
       } catch (err) {
@@ -109,9 +109,9 @@ const RemoteNotes = {
 
     return {
       exports: {
-        // available as remoteStorage.notes.upsert();
+        // available as remoteStorage.documents.upsert();
         upsert: async function (memoryNote, textFilter) {
-          // console.debug("notes.upsert", memoryNote);
+          // console.debug("documents.upsert", memoryNote);
           const cleanNote = sanitizeNote(memoryNote, textFilter);
 
           let remoteNote;
@@ -127,22 +127,22 @@ const RemoteNotes = {
         },
 
         // list: async function () {
-        //   console.log("remotestorage notes list");
+        //   console.log("remotestorage documents list");
         //   return privateClient.getListing('/');
         // },
         //
         // getAll: async function () {
-        //   console.log("remotestorage notes getAll");
+        //   console.log("remotestorage documents getAll");
         //   return privateClient.getAll('/');
         // },
 
         get: async function (id) {
-          // console.debug("remoteStorage notes get", id);
-          return privateClient.getObject(id).then(toMemoryNote);
+          // console.debug("remoteStorage documents get", id);
+          return privateClient.getObject('notes/' + id).then(toMemoryNote);
         },
 
         delete: async function (id) {
-          return privateClient.remove(id);
+          return privateClient.remove('notes/' + id);
         },
 
         subscribe: function (callback) {

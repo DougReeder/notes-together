@@ -15,9 +15,9 @@ describe("RemoteNotes", () => {
   beforeAll(() => {
     return new Promise((resolve) => {
       const rs = new RemoteStorage({modules: [RemoteNotes], cache: true});
-      rs.access.claim('notes', 'rw');
+      rs.access.claim('documents', 'rw');
 
-      rs.caching.enable('/notes/');
+      rs.caching.enable('/documents/notes/');
 
       rs.on('ready', function () {
         remoteStorage = rs;
@@ -28,22 +28,22 @@ describe("RemoteNotes", () => {
 
   describe("upsert", () => {
     it("should fail storing when passed a non-object", async () => {
-      await expect(remoteStorage.notes.upsert()).rejects.toThrow();
+      await expect(remoteStorage.documents.upsert()).rejects.toThrow();
     });
 
     it("should fail storing when passed a note without content", async () => {
-      await expect(remoteStorage.notes.upsert({id: generateTestId()})).rejects.toThrow('content');
+      await expect(remoteStorage.documents.upsert({id: generateTestId()})).rejects.toThrow('content');
     });
 
     it("should reject storing notes with bad string dates", async () => {
       const memNote = createMemoryNote(generateTestId(), "elbow");
       memNote.date = "Tuesday";
 
-      await expect(remoteStorage.notes.upsert(memNote)).rejects.toThrow("Invalid");
+      await expect(remoteStorage.documents.upsert(memNote)).rejects.toThrow("Invalid");
     });
 
     it("should add an id, if needed, when storing", async () => {
-      const savedNote = await remoteStorage.notes.upsert({content: "rubber"});
+      const savedNote = await remoteStorage.documents.upsert({content: "rubber"});
 
       expect(uuidValidate(savedNote.id)).toBeTruthy();
     });
@@ -53,7 +53,7 @@ describe("RemoteNotes", () => {
       note.date = undefined;
 
       const now = new Date();
-      const savedNote = await remoteStorage.notes.upsert(note);
+      const savedNote = await remoteStorage.documents.upsert(note);
 
       expect(savedNote.date).toBeInstanceOf(Date)
       expect(savedNote.date.getFullYear()).toEqual(now.getFullYear());
@@ -64,7 +64,7 @@ describe("RemoteNotes", () => {
     it("should store text note unchanged when all fields good", async () => {
       const memNote = createMemoryNote(generateTestId(), "elfin", new Date('2000-01-01'), 'text/plain');
 
-      const savedNote = await remoteStorage.notes.upsert(memNote);
+      const savedNote = await remoteStorage.documents.upsert(memNote);
 
       expect(savedNote.id).toEqual(memNote.id);
       expect(savedNote.content).toEqual(memNote.content);
@@ -76,7 +76,7 @@ describe("RemoteNotes", () => {
     it("should store HTML note unchanged when all fields good", async () => {
       const memNote = createMemoryNote(generateTestId(), "<pre><code> let a = b + c; ", new Date('1996-09-31'), 'text/html;hint=SEMANTIC');
 
-      const savedNote = await remoteStorage.notes.upsert(memNote);
+      const savedNote = await remoteStorage.documents.upsert(memNote);
 
       expect(savedNote.id).toEqual(memNote.id);
       expect(savedNote.content).toEqual(memNote.content + '</code></pre>');
@@ -90,11 +90,11 @@ describe("RemoteNotes", () => {
       const originalText = "In Memory Yet Green";
       const original = createMemoryNote(originalId, originalText, new Date(2002, 0, 1), 'text/plain');
 
-      await remoteStorage.notes.upsert(original);
+      await remoteStorage.documents.upsert(original);
       const updatedText = "<h2>In Joy Still Felt</h2>";
       const updated = createMemoryNote(originalId, updatedText, original.date, 'text/html;hint=SEMANTIC');
-      await remoteStorage.notes.upsert(updated);
-      const retrieved = await remoteStorage.notes.get(originalId);
+      await remoteStorage.documents.upsert(updated);
+      const retrieved = await remoteStorage.documents.get(originalId);
 
       expect(retrieved.content).toEqual(updatedText);
       expect(retrieved.title).toEqual("In Joy Still Felt");
@@ -119,9 +119,9 @@ describe("RemoteNotes", () => {
         const timer = setInterval(async () => {
           try {
             ++i;
-            const pr1 = remoteStorage.notes.upsert(createMemoryNote(id1, text1.slice(0, i), date1));
-            const pr2 = remoteStorage.notes.upsert(createMemoryNote(id2, text2.slice(0, i), date2));
-            const pr3 = remoteStorage.notes.upsert(createMemoryNote(id3, text3.slice(0, i), date3));
+            const pr1 = remoteStorage.documents.upsert(createMemoryNote(id1, text1.slice(0, i), date1));
+            const pr2 = remoteStorage.documents.upsert(createMemoryNote(id2, text2.slice(0, i), date2));
+            const pr3 = remoteStorage.documents.upsert(createMemoryNote(id3, text3.slice(0, i), date3));
             /* eslint-disable jest/no-conditional-expect */
             if (i < maxLength) {
               await expect(pr1).resolves.toBeTruthy();
@@ -148,7 +148,7 @@ describe("RemoteNotes", () => {
 
   describe("get", () => {
     it("should return falsy for nonexistent notes", async () => {
-      const savedNote = await remoteStorage.notes.get(NIL);
+      const savedNote = await remoteStorage.documents.get(NIL);
       expect(savedNote).toBeFalsy();
     });
 
@@ -156,8 +156,8 @@ describe("RemoteNotes", () => {
       const id = generateTestId();
       const original = createMemoryNote(id, "filbert nut", new Date(2001, 0, 1), 'text/plain');
 
-      await remoteStorage.notes.upsert(original);
-      const retrieved = await remoteStorage.notes.get(id);
+      await remoteStorage.documents.upsert(original);
+      const retrieved = await remoteStorage.documents.get(id);
 
       expect(retrieved.id).toEqual(original.id);
       expect(retrieved.content).toEqual(original.content);
@@ -170,8 +170,8 @@ describe("RemoteNotes", () => {
       const id = generateTestId();
       const original = createMemoryNote(id, "<li> wheat bread ", new Date(2005, 2, 31), 'text/html;hint=SEMANTIC');
 
-      await remoteStorage.notes.upsert(original);
-      const retrieved = await remoteStorage.notes.get(id);
+      await remoteStorage.documents.upsert(original);
+      const retrieved = await remoteStorage.documents.get(id);
 
       expect(retrieved.id).toEqual(original.id);
       expect(retrieved.content).toEqual(`<li> wheat bread </li>`);
@@ -184,22 +184,22 @@ describe("RemoteNotes", () => {
   describe("delete", () => {
     it("should remove note from storage", async () => {
       const id = generateTestId();
-      await remoteStorage.notes.upsert(createMemoryNote(id, "Thridi"));
-      await expect(remoteStorage.notes.get(id)).resolves.toBeTruthy();
+      await remoteStorage.documents.upsert(createMemoryNote(id, "Thridi"));
+      await expect(remoteStorage.documents.get(id)).resolves.toBeTruthy();
 
-      await remoteStorage.notes.delete(id);
+      await remoteStorage.documents.delete(id);
 
-      await expect(remoteStorage.notes.get(id)).resolves.toBeUndefined();
+      await expect(remoteStorage.documents.get(id)).resolves.toBeUndefined();
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      await expect(remoteStorage.notes.delete(NIL)).resolves.toBeTruthy();
+      await expect(remoteStorage.documents.delete(NIL)).resolves.toBeTruthy();
     });
   });
 
   describe("subscribe", () => {
     it("should reject non-functions", () => {
-      expect(() => {remoteStorage.notes.subscribe(undefined)}).toThrow("undefined");
+      expect(() => {remoteStorage.documents.subscribe(undefined)}).toThrow("undefined");
     });
   });
 });
