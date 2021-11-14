@@ -4,6 +4,8 @@
 import {validate as uuidValidate} from 'uuid';
 import {sanitizeNote} from "./sanitizeNote";
 
+const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
+
 const subscriptions = new Set();
 
 const RemoteNotes = {
@@ -116,10 +118,10 @@ const RemoteNotes = {
 
           let remoteNote;
           if (cleanNote.mimeType) {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType};
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType, lastEdited: Date.now()};
 
           } else {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString()};
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), lastEdited: Date.now()};
 
           }
           await enqueueStoreObject(remoteNote);
@@ -177,8 +179,10 @@ function toMemoryNote(remoteNote) {
   if ('string' === typeof remoteNote.date || 'number' === typeof remoteNote.date) {
     // ms since epoch, string RFC 2822, or string ISO 8601
     date = new Date(remoteNote.date);
+  } else if ('number' === typeof remoteNote.lastEdited || 'string' === typeof remoteNote.lastEdited) {
+    date = new Date(remoteNote.lastEdited);
   } else {
-    date = new Date();
+    date = new Date(DATE_DEFAULT_REMOTE);
   }
   return {
     id: remoteNote.id,
