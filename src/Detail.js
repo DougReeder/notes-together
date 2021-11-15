@@ -73,7 +73,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       []
   );
   const [noteDate, setNoteDate] = useState();
-  const [noteSubtype, setNoteSubtype] = useState();
   const [effectiveSubtype, setEffectiveSubtype] = useState();
 
   const replaceNote = useCallback(theNote => {
@@ -81,12 +80,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       ignoreChangesUntilReloadRef.current = false;
       let slateNodes;
       if (hasTagsLikeHtml(theNote.mimeType)) {
-        setNoteSubtype('html;hint=SEMANTIC')
+        editor.subtype = 'html;hint=SEMANTIC';
         const html = sanitizeHtml(theNote.content, semanticOnly);
         console.log("sanitized HTML:", html);
         slateNodes = deserializeHtml(html, editor);
       } else if (!theNote.mimeType || /^text\//.test(theNote.mimeType)) {
-        setNoteSubtype(/\/(.+)/.exec(theNote.mimeType)?.[1]);
+        editor.subtype = /\/(.+)/.exec(theNote.mimeType)?.[1];
         slateNodes = theNote.content.split("\n").map(line => {return {type: 'paragraph', children: [{text: line}]}});
       } else {
         throw new Error("Can't display this type of note");
@@ -209,14 +208,14 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   async function save(date) {
     let content;
-    if (noteSubtype?.startsWith('html')) {
+    if (editor.subtype?.startsWith('html')) {
       content = serializeHtml(editor.children);
       console.log('save HTML:', noteId, editor.children, content, date);
     } else {
       content = editor.children.map(node => SlateNode.string(node)).join('\n')
       console.log('save text:', noteId, editor.children, content, date);
     }
-    await upsertNote(createMemoryNote(noteId, content, date, noteSubtype ? 'text/'+noteSubtype : undefined), 'DETAIL');
+    await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined), 'DETAIL');
   }
 
   const [noteErr, setNoteErr] = useState();
@@ -372,7 +371,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       </Slate>
       <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">
         <DialogTitle id="content-type-dialog-title">Change type of note?</DialogTitle>
-        { !noteSubtype || noteSubtype.startsWith('plain') ? (
+        { !editor.subtype || editor.subtype.startsWith('plain') ? (
           <DialogContent>
             <FormControlLabel
                 label="Note already contains Markdown notation"
@@ -381,13 +380,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           </DialogContent>
         ) : null }
         <DialogActions>
-          <Button disabled={!noteSubtype || noteSubtype?.startsWith('plain')} onClick={handleChangeContentType.bind(this, 'plain')}>
+          <Button disabled={!editor.subtype || editor.subtype?.startsWith('plain')} onClick={handleChangeContentType.bind(this, 'plain')}>
             Plain Text
           </Button>
-          <Button disabled={noteSubtype?.startsWith('markdown')} onClick={handleChangeContentType.bind(this, 'markdown')}>
+          <Button disabled={editor.subtype?.startsWith('markdown')} onClick={handleChangeContentType.bind(this, 'markdown')}>
             Mark­down
           </Button>
-          <Button disabled={noteSubtype?.startsWith('html')} onClick={handleChangeContentType.bind(this, 'html;hint=SEMANTIC')}>
+          <Button disabled={editor.subtype?.startsWith('html')} onClick={handleChangeContentType.bind(this, 'html;hint=SEMANTIC')}>
             Rich Text
           </Button>
         </DialogActions>
@@ -395,7 +394,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
     </>);
     let formatControls;
-    if (noteSubtype?.startsWith('html')) {
+    if (editor.subtype?.startsWith('html')) {
       formatControls = (<>
         <Select
             title="Block type"
@@ -464,12 +463,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       </>);
     } else {
       let typeLabel;
-      if (!noteSubtype) {
+      if (!editor.subtype) {
         typeLabel = "plain text";
-      } else if (noteSubtype.startsWith('markdown')) {
+      } else if (editor.subtype.startsWith('markdown')) {
         typeLabel = "markdown";
       } else {
-        typeLabel = noteSubtype + " text";
+        typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
         <Button variant="outlined" onClick={prepareContentTypeDialog}>{typeLabel}</Button>
@@ -487,7 +486,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }
 
   function prepareContentTypeDialog() {
-    let apparentSubtype = noteSubtype?.split(';')[0] || 'plain';
+    let apparentSubtype = editor.subtype?.split(';')[0] || 'plain';
     if (apparentSubtype.startsWith('plain')) {
       if (isLikelyMarkdown(editor.children.map(node => SlateNode.string(node)).join('\n'))) {
         apparentSubtype = 'markdown';

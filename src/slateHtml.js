@@ -7,7 +7,7 @@ import escapeHtml from 'escape-html'
 import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
-import {deserializeMarkdown} from "./slateMark";
+import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 import {Text, Element, Transforms} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
@@ -36,29 +36,49 @@ function withHtml(editor) {   // defines Slate plugin
   // paste or drag & drop
   editor.insertData = dataTransfer => {
     try {
-      if (dataTransfer.types.indexOf('text/html') > -1) {
-        let html = dataTransfer.getData('text/html');
-        // console.log("raw HTML", html);
-        html = sanitizeHtml(html, semanticOnly);
-        console.log("sanitized HTML", html);
-        const slateNodes = deserializeHtml(html, editor);
-        console.log("HTML -> slateNodes:", slateNodes);
-        Transforms.insertFragment(editor, slateNodes);
-      } else if (dataTransfer.types.indexOf('text/plain') > -1) {
-        const text = dataTransfer.getData('text/plain');
-        if (isLikelyMarkdown(text)) {
-          const slateNodes = deserializeMarkdown(text);
-          console.log("MD -> slateNodes:", slateNodes);
+      if (editor.subtype?.startsWith('html')) {
+        if (dataTransfer.types.indexOf('text/html') > -1) {
+          let html = dataTransfer.getData('text/html');
+          // console.log("raw HTML", html);
+          html = sanitizeHtml(html, semanticOnly);
+          console.log("sanitized HTML", html);
+          const slateNodes = deserializeHtml(html, editor);
+          console.log("HTML -> slateNodes:", slateNodes);
           Transforms.insertFragment(editor, slateNodes);
-        } else {   // plain text
-          console.log("plain text", dataTransfer.items);
-          insertData(dataTransfer);   // default handling
+        } else if (dataTransfer.types.indexOf('text/plain') > -1) {
+          const text = dataTransfer.getData('text/plain');
+          if (isLikelyMarkdown(text)) {
+            const slateNodes = deserializeMarkdown(text);
+            console.log("MD -> slateNodes:", slateNodes);
+            Transforms.insertFragment(editor, slateNodes);
+          } else {   // plain text
+            console.log("plain text", dataTransfer.items);
+            insertData(dataTransfer);   // default handling
+          }
+        } else {   // use default handling for images, etc.
+          console.log("default handling", ...dataTransfer.items);
+          insertData(dataTransfer)
+          // // TODO: convert text/rtf to HTML
+          // // TODO: extract image metadata and append
         }
-      } else {   // use default handling for images, etc.
-        console.log("default handling", ...dataTransfer.items);
+      } else if (editor.subtype?.startsWith('markdown') && dataTransfer.types.includes('text/html')) {
+        console.log("reserializing HTML as Markdown");
+        const html = dataTransfer.getData('text/html');
+        const syntaxTree = deserializeHtml(html, editor);
+        const markdown = serializeMarkdown(syntaxTree);
+        const lines = markdown.split('\n');
+        let slateNodes;
+        if (1 === lines.length) {
+          slateNodes = [{text: lines[0]}]
+        } else {
+          slateNodes = lines.map(line => {
+            return {type: 'paragraph', children: [{text: line}]};
+          });
+        }
+        Transforms.insertFragment(editor, slateNodes);
+      } else {   // not rich text
+        console.log("plain text; using default handling", ...dataTransfer.items);
         insertData(dataTransfer)
-        // // TODO: convert text/rtf to HTML
-        // // TODO: extract image metadata and append
       }
       // Editor.normalize(editor, {force: true});
     } catch (err) {

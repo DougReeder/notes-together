@@ -3,12 +3,181 @@
 import {withHtml, deserializeHtml, serializeHtml} from "./slateHtml";
 import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
-import {Element, Text} from "slate";
+import {createEditor, Element, Text} from "slate";
+import {withReact} from "slate-react";
 
-const editor = withHtml({
-  isInline: () => false,
-  isVoid: () => false
-})
+class DataTransfer {
+  constructor() {
+    this._items = new Map();
+  }
+
+  get types() {
+    return Array.from(this._items.keys());
+  }
+
+  get items() {
+    return Array.from(this._items).map(([type, data]) => {return {kind: 'string', type}});
+  }
+
+  setData(type, data) {
+    this._items.set(type, data);
+  }
+
+  getData(type) {
+    return this._items.get(type) || "";
+  }
+}
+
+describe("HTML plugin", () => {
+  it("should prefer pasting HTML into rich text, & paste as rich text", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-one",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "To be, or not to be, that is the question."}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 20 },
+      focus:  { path: [1, 0], offset: 20 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', "E pluribus unum");
+    dataTransfer.setData('text/html', "<code>let a = b + c;</code>");
+    editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-one",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "To be, or not to be,"},
+          {text: "let a = b + c;", code: true},
+          {text: " that is the question."},
+        ]},
+    ]);
+  });
+
+  it("should paste plain text into rich text and match style", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-one",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "To be, or not to be, that is the question.", italic: true}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 20 },
+      focus:  { path: [1, 0], offset: 20 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', "E pluribus unum");
+    editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-one",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "To be, or not to be,E pluribus unum that is the question.", italic: true},
+        ]},
+    ]);
+  });
+
+  it("should prefer pasting plain text into plain text", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = undefined;
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "To be, or not to be, that is the question."}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 20 },
+      focus:  { path: [1, 0], offset: 20 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', "E pluribus unum");
+    dataTransfer.setData('text/html', "<code>let a = b + c;</code>");
+    editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "A Suitable Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "To be, or not to be,E pluribus unum that is the question."},
+        ]},
+    ]);
+  });
+
+  it("should prefer pasting HTML into Markdown", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "# Some Provocative Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "* First list item"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "* Second list item"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 7 },
+      focus:  { path: [1, 0], offset: 7 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', "`foo => 2 * foo`");
+    dataTransfer.setData('text/html', "<code>let a = b + c;</code>");
+    editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "# Some Provocative Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "* First`let a = b + c;` list item"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "* Second list item"}
+        ]},
+    ]);
+  });
+});
 
 describe("serializeHtml", () => {
   it("should encode HTML reserved characters", () => {
@@ -97,6 +266,11 @@ describe("serializeHtml", () => {
 
 
 describe("deserializeHtml", () => {
+  const editor = withHtml({
+    isInline: () => false,
+    isVoid: () => false
+  });
+
   it("should return an array of Slate nodes, even for empty string", () => {
     const html = ``;
 
@@ -371,6 +545,11 @@ ipso facto`;
 
 
 describe("serializeHtml and deserializeHtml", () => {
+  const editor = withHtml({
+    isInline: () => false,
+    isVoid: () => false
+  });
+
   it("should round-trip HTML reserved characters", () => {
     const original = [
       {text: `this & that a<b, c>d "Give me liberty, or give me death!" Bob's bargains`},
@@ -507,6 +686,19 @@ describe("serializeHtml and deserializeHtml", () => {
           {text: `   emphasized
           followon`, italic: true},
         ]},
+      {type: 'code', children: [
+          {text: `h1 {
+    margin-block-start: 0;
+    margin-block-end: 1ex;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    font-size: 1.5em;
+    text-align: center;
+    text-transform: capitalize;
+}
+`},
+        ]
+      },
     ];
 
     let html = serializeHtml(original);
@@ -550,31 +742,6 @@ describe("serializeHtml and deserializeHtml", () => {
         type: 'quote', children: [
           {text: "something old "},
           {text: " something new", italic: true},
-        ]
-      },
-    ];
-
-    let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
-
-    expect(reloaded).toEqual(original);
-  });
-
-  it("should round-trip code blocks", () => {
-    const original = [
-      {
-        type: 'code', children: [
-          {text: `h1 {
-    margin-block-start: 0;
-    margin-block-end: 1ex;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
-    font-size: 1.5em;
-    text-align: center;
-    text-transform: capitalize;
-}
-`},
         ]
       },
     ];

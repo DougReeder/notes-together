@@ -284,7 +284,7 @@ function serializeMarkdown(slateNodes) {
       if (i > 0) {
         str += "\n";
         if ('list-item' !== slateNode.type) {
-          for (let i = 0; i < lists.length; ++i) {
+          for (let j = 0; j < lists.length; ++j) {
             str += '    ';
           }
         }
@@ -330,7 +330,7 @@ function serializeMarkdown(slateNodes) {
           str += `${childrenText}`
           break;
         case 'list-item':
-          for (let i=1; i<lists.length; ++i) {
+          for (let j=1; j<lists.length; ++j) {
             str += '    ';
           }
           if ('numbered-list' === lists[lists.length-1].type) {
