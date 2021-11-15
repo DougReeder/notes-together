@@ -122,7 +122,6 @@ let a = b**c, x = y**z;
     const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`* erste
-
 * zwitte`);
   });
 });
@@ -165,6 +164,47 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
           {text: " and "},
           {text: "__LINE__", "code": true},
           {text: "."}
+        ]},
+      {type: 'paragraph', children: [
+          {text: "Able was I ere I saw Elba."},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a heading followed by a paragraph", () => {
+    const original = [
+      {type: 'heading-one', children: [
+          {text: "Some Dull Report"},
+        ]},
+      {type: 'paragraph', children: [
+          {text: "The proposal was "},
+          {text: "completely", italic: true},
+          {text: " ineffective."},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip links", () => {
+    const original = [
+      {type: 'paragraph', children: [
+          {text: "The "},
+          {type: "link",
+            url: "https://developer.mozilla.org/en-US/docs/Web/HTML",
+            title: "Hypertext Markup Language",
+            children: [
+              {text: "HTML"}
+            ]},
+          {text: " specification"},
         ]}
     ];
 
@@ -174,12 +214,29 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip bulleted lists", () => {
-    const original = [{type: "bulleted-list", children: [
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "un gato"}]}]},
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "dos perros"}]}]},
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "tres ratones ciegos"}]}]},
-      ]}];
+  it("should round-trip a bulleted list", () => {
+    const original = [
+      {type: "bulleted-list", children: [
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "un gato"}]}]},
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "dos perros"}]}]},
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "tres ratones ciegos"}]}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a numbered list", () => {
+    const original = [
+      {type: "numbered-list", "listStart": 1, children: [
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "erste"}]}]},
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "zwitte"}]}]},
+          {type: 'list-item', children: [{type: "paragraph", children: [{text: "dritte"}]}]},
+        ]},
+    ];
 
     const mdText = serializeMarkdown(original);
     const reloaded = deserializeMarkdown(mdText);
@@ -200,6 +257,22 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
             {type: "paragraph", children: [{text: "vide quomodo currunt"}]}
           ]},
       ]}];
+
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a code block followed by a paragraph", () => {
+    const original = [
+      {type: "code", children: [
+          {text: "let a = b - c;\nfoo(a);"},
+        ]},
+      {type: "paragraph", children: [
+          {text: "using the usual algorithm"}
+        ]},
+    ];
 
     const mdText = serializeMarkdown(original);
     const reloaded = deserializeMarkdown(mdText);

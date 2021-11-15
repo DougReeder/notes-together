@@ -42,7 +42,7 @@ function deserializeMarkdown(markdown) {
                 type: slateType(mdNode),
                 children,
               };
-              if (mdNode.listStart) {
+              if ('list' === mdNode.type && mdNode.listStart) {
                 slateNode.listStart = mdNode.listStart;
               }
               slateNodeStack[slateNodeStack.length-1].push(slateNode);
@@ -121,10 +121,11 @@ function deserializeMarkdown(markdown) {
             break;
 
           case 'code_block':
-            // console.log(mdNode.type, mdNode.literal);
+            const blockContent = mdNode.literal?.trimRight();
+            // console.log(mdNode.type, blockContent);
             slateNodeStack[slateNodeStack.length-1].push({
               type: 'code',
-              children: [{text: mdNode.literal}],
+              children: [{text: blockContent}],
             });
             // mdNode.info
             break;
@@ -345,7 +346,7 @@ function serializeMarkdown(slateNodes) {
         case 'image':
           return `![${childrenText}](${escapeMarkdown(slateNode.url)} "${escapeMarkdown(slateNode.title)}")`;
       }
-      if (i < slateNodes.length-1) {
+      if (['paragraph', 'bulleted-list', 'numbered-list'].includes(slateNode.type) && i < slateNodes.length-1) {
         str += "\n";
       }
       return str;
