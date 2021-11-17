@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Element, Transforms} from "slate";
+import {Text, Node as SlateNode, Element, Transforms} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
 function withHtml(editor) {   // defines Slate plugin
@@ -98,7 +98,7 @@ const ELEMENT_TAGS = {
   H2: () => ({ type: 'heading-two' }),
   H3: () => ({ type: 'heading-three' }),
   HR: () => ({ type: 'thematic-break'}),
-  IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), alt: el.getAttribute('alt') || undefined, title: el.getAttribute('title') || "" }),
+  IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), title: el.getAttribute('title') || "" , children: [{text: el.getAttribute('alt') || ""}]}),
   LI: () => ({ type: 'list-item' }),
   OL: () => ({ type: 'numbered-list' }),
   UL: () => ({ type: 'bulleted-list' }),
@@ -240,7 +240,14 @@ function deserializeHtml(html, editor) {
 
       if (ELEMENT_TAGS[nodeName]) {
         const attrs = ELEMENT_TAGS[nodeName](el)
-        return jsx('element', attrs, children);
+        if (attrs.children instanceof Array) {
+          for (const child of attrs.children) {
+            Object.assign(child, marks);
+          }
+          return jsx('element', attrs, attrs.children);
+        } else {
+          return jsx('element', attrs, children);
+        }
       }
 
       return children;
@@ -313,7 +320,7 @@ const ImageElement = ({ attributes, children, element }) => {
         <img
             src={element.url}
             title={element.title}
-            alt={element.alt}
+            alt=""
             style={{display: 'block', maxWidth: '100%', maxHeight: '75vh', boxShadow: selected && focused ? '0 0 0 2px blue' : 'none'}}
         />
       </div>
@@ -409,7 +416,7 @@ function serializeHtml(slateNodes) {
         case 'link':
           return `<a href="${encodeURI(slateNode.url)}" title="${slateNode.title}">${children}</a>`
         case 'image':
-          return `<img src="${encodeURI(slateNode.url)}" alt="${slateNode.alt}" title="${slateNode.title}">`;
+          return `<img src="${encodeURI(slateNode.url)}" alt="${SlateNode.string(slateNode)}" title="${slateNode.title}">`;
         default:
           return children
       }

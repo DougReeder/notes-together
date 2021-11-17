@@ -214,6 +214,26 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     expect(reloaded).toEqual(original);
   });
 
+  it("should round-trip images", () => {
+    const original = [
+      {type: 'paragraph', children: [
+          {text: "My "},
+          {type: "image",
+            url: "https://example.com/pic",
+            title: "Rover",
+            children: [
+              {text: "dog"}
+            ]},
+          {text: " is a spaniel"},
+        ]}
+    ];
+
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
+
+    expect(reloaded).toEqual(original);
+  });
+
   it("should round-trip a bulleted list", () => {
     const original = [
       {type: "bulleted-list", children: [

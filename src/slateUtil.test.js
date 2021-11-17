@@ -306,15 +306,15 @@ General Electric Big Blow`)
             ]},
         ]},
       {type: 'image', url: "https://example.com/picture",
-        alt: "A landscape of Mt. Hood", title: "Mt. Hood",
-        children: [{text: "child text"}]},
+        title: "Mt. Hood",
+        children: [{text: "A landscape of Mt. Hood"}]},
       {type: 'image', url: "https://example.com/pic",
         title: "Misato",
-        children: [{text: "child text"}]},
+        children: [{text: ""}]},
       {type: 'image', url: "https://example.com/portrait",
-        children: [{text: "child text"}]},
+        children: [{text: ""}]},
       {type: 'image', url: "https://example.com/directory/",
-        children: [{text: "child text"}]},
+        children: [{text: ""}]},
     ];
 
     const newSubtype = 'plain';

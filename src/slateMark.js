@@ -82,8 +82,7 @@ function deserializeMarkdown(markdown) {
                 type: 'image',
                 url: mdNode.destination,
                 title: mdNode.title,
-                alt: altText,
-                children: [textNode("", italic, bold)],
+                children: [textNode(altText)],
               });
             }
             break;

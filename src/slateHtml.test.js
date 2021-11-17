@@ -256,11 +256,19 @@ describe("serializeHtml", () => {
   });
 
   it("should encode images", () => {
-    const html = serializeHtml([{type: 'image', url: 'https://mozilla.org/?x=шеллы', alt: "Grapefruit slice atop a pile of other slices", title: "Grapefruit slice", children: []}]);
-    expect(html).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Grapefruit slice">');
+    const html = serializeHtml([{
+      type: 'image',
+      url: 'https://mozilla.org/?x=шеллы',
+      title: "Slice of grapefruit",
+      children: [
+        {text: "Grapefruit slice "},
+        {text: "atop", italic: true},
+        {text: " a pile of other slices"}]
+    }]);
+    expect(html).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit">');
 
     const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Grapefruit slice" />');
+    expect(cleanHtml).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit" />');
   });
 });
 
@@ -429,13 +437,13 @@ describe("deserializeHtml", () => {
 
   it("should parse an image inside emphasis as emphasis inside image", () => {
     const html = `<em><img class="fit-picture"
-     src="/media/cc0-images/grapefruit-slice-332-332.jpg" /></em>`;
+     src="/media/cc0-images/grapefruit-slice-332-332.jpg" alt="a slice of grapefruit"/></em>`;
 
     const slateNodes = deserializeHtml(html, editor);
 
     expect(slateNodes[0]?.type).toEqual('image');
     expect(slateNodes[0].children.length).toEqual(1);
-    expect(slateNodes[0].children[0]).toEqual({text: "", italic: true});
+    expect(slateNodes[0].children[0]).toEqual({text: "a slice of grapefruit", italic: true});
     expect(slateNodes.length).toEqual(1);
   });
 
@@ -886,9 +894,9 @@ describe("serializeHtml and deserializeHtml", () => {
 
   it("should round-trip images", () => {
     const original = [
-      {type: 'image', url: 'http://example.org', alt: "a mini-lop", title: "tooltip?", children: [{text: ""}]},
+      {type: 'image', url: 'http://example.org', title: "tooltip?", children: [{text: "a mini-lop"}]},
       {type: 'paragraph', children: [
-          {type: 'image', url: 'https://mozilla.org/?x=шеллы', alt: "graph", title: "Bell curve", children: [{text: ""}]}
+          {type: 'image', url: 'https://mozilla.org/?x=шеллы', title: "Bell curve", children: [{text: "graph"}]}
         ]},
     ];
 

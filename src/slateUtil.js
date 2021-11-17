@@ -91,7 +91,7 @@ async function changeContentType(editor, oldSubtype, newSubtype, noteId, noteDat
       match: (node, path) => 'image' === node.type,
     });
     for (const nodeEntry of imageElmnts) {
-      const altText = nodeEntry[0].alt || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
+      const altText = SlateNode.string(nodeEntry[0]) || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
       Transforms.select(editor, nodeEntry[1]);
       Editor.insertFragment(editor, [{text: altText}]);
     }
