@@ -36,6 +36,12 @@
     margin-top: 0;
 }
 
+/** blocks of a plain content note have similar spacing to line breaks within a block */
+[role=textbox].unformatted > * {
+    margin-block-start: 0.25ex;
+    margin-block-end: 0.25ex;
+}
+
 details {
     padding: 1rem;
     background-color: pink;

@@ -335,6 +335,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             placeholder="Type or paste some text or an image."
+            className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               switch (evt.key) {   // eslint-disable-line default-case
                 case 'Enter':
