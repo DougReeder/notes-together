@@ -21,6 +21,10 @@
 /*    height: 52px;*/
 /*}*/
 
+.MuiInputBase-root {
+    max-width: 16ch;
+}
+
 .MuiSelect-root h1, .MuiSelect-root h2, .MuiSelect-root h3,
 .MuiMenuItem-root h1, .MuiMenuItem-root h2, .MuiMenuItem-root h3 {
     margin-block-start: 0;
