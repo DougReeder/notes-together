@@ -219,4 +219,24 @@ it('renders error if note missing', async () => {
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK'), 'DETAIL');
   });
+
+  // it('allows typing enter in blank item to end list', async () => {
+  //   const noteId = uuidv4();
+  //   const noteText = "<ol><li>first</li><li>second</li></ol>";
+  //   const noteDate = new Date(2021, 7, 2);
+  //   getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+  //
+  //   render(<Detail noteId={noteId}></Detail>);
+  //   const textbox = await screen.findByRole('textbox');
+  //   expect(textbox).toBeVisible();
+  //   expect(textbox.textContent).toEqual("firstsecond");
+  //   expect(textbox).not.toHaveFocus();
+  //   expect(screen.queryAllByRole('listitem').length).toEqual(2);
+  //
+  //   userEvent.click(screen.getByRole('list'));
+  //   expect(textbox).toHaveFocus();
+  //   userEvent.type(screen.getByRole('list'), "foo\n");
+  //   expect(textbox.textContent).toEqual("firstsecondfoo");
+  //   expect(screen.queryAllByRole('listitem').length).toEqual(3);
+  // });
 });

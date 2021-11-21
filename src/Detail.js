@@ -28,7 +28,7 @@ import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
 import {StrikethroughS} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms} from 'slate'
+import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -339,9 +339,28 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             onKeyDown={evt => {
               switch (evt.key) {   // eslint-disable-line default-case
                 case 'Enter':
-                  if (evt.shiftKey || isHotkey('mod+Enter', { byKey: true }, evt)) {
+                  if (isHotkey('mod+Enter', { byKey: true }, evt)) {
                     evt.preventDefault();
                     editor.insertText('\n');
+                  } else if (SlateRange.isCollapsed(editor.selection)) {
+                    const textNode = SlateNode.get(editor, editor.selection?.anchor?.path);
+                    const parentPath = editor.selection?.anchor?.path?.slice(0, -1);
+                    const parentElmnt = SlateNode.get(editor, parentPath);
+                    if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
+                      evt.preventDefault();
+                      const listPath = parentPath.slice(0, -1);
+                      const listElmnt = SlateNode.get(editor, listPath);
+                      let newPath;
+                      if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
+                        Transforms.removeNodes(editor, {at: listPath});
+                        newPath = listPath;
+                      } else {
+                        Transforms.removeNodes(editor, {at: parentPath});
+                        newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length-2]+1];
+                      }
+                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+                    }
                   }
                   break;
                 case 'i':
