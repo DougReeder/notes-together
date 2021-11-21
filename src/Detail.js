@@ -346,7 +346,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                     const textNode = SlateNode.get(editor, editor.selection?.anchor?.path);
                     const parentPath = editor.selection?.anchor?.path?.slice(0, -1);
                     const parentElmnt = SlateNode.get(editor, parentPath);
-                    if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
+                    if (['heading-one', 'heading-two', 'heading-three'].includes(parentElmnt.type)) {
+                      evt.preventDefault();
+                      const newPath = [...parentPath.slice(0, -1), parentPath[parentPath.length-1]+1];
+                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+                    } else if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
                       evt.preventDefault();
                       const listPath = parentPath.slice(0, -1);
                       const listElmnt = SlateNode.get(editor, listPath);
