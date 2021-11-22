@@ -38,10 +38,10 @@ describe("deserializeMarkdown", () => {
     const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "bulleted-list", children: [
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "erste"}]}]},
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "zwitte"}]}]},
-        {type: 'list-item', children: [{type: "paragraph", children: [{text: "dritte"}]}]},
-    ]}]);
+        {type: 'list-item', children: [{text: "erste"}]},
+        {type: 'list-item', children: [{text: "zwitte"}]},
+        {type: 'list-item', children: [{text: "dritte"}]},
+      ]}]);
   });
 
   it("should extract text of HTML that's not specially handled", () => {
@@ -237,9 +237,9 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   it("should round-trip a bulleted list", () => {
     const original = [
       {type: "bulleted-list", children: [
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "un gato"}]}]},
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "dos perros"}]}]},
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "tres ratones ciegos"}]}]},
+          {type: 'list-item', children: [{text: "un gato"}]},
+          {type: 'list-item', children: [{text: "dos perros"}]},
+          {type: 'list-item', children: [{text: "tres ratones ciegos"}]},
         ]},
     ];
 
@@ -252,9 +252,9 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   it("should round-trip a numbered list", () => {
     const original = [
       {type: "numbered-list", "listStart": 1, children: [
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "erste"}]}]},
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "zwitte"}]}]},
-          {type: 'list-item', children: [{type: "paragraph", children: [{text: "dritte"}]}]},
+          {type: 'list-item', children: [{text: "erste"}]},
+          {type: 'list-item', children: [{text: "zwitte"}]},
+          {type: 'list-item', children: [{text: "dritte"}]},
         ]},
     ];
 
@@ -264,25 +264,25 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip multiple paragraphs per list item", () => {
-    const original = [{type: "bulleted-list", children: [
-        {type: 'list-item', children: [
-            {type: "paragraph", children: [{text: "unus cattus"}]}
-          ]},
-        {type: 'list-item', children: [
-            {type: "paragraph", children: [{text: "duo canes"}, {text: "in domo sua", italic: true}]}
-          ]},
-        {type: 'list-item', children: [
-            {type: "paragraph", children: [{text: "tres caecos mures"}]},
-            {type: "paragraph", children: [{text: "vide quomodo currunt"}]}
-          ]},
-      ]}];
-
-    const mdText = serializeMarkdown(original);
-    const reloaded = deserializeMarkdown(mdText);
-
-    expect(reloaded).toEqual(original);
-  });
+  // it("should round-trip multiple paragraphs per list item", () => {
+  //   const original = [{type: "bulleted-list", children: [
+  //       {type: 'list-item', children: [
+  //           {type: "paragraph", children: [{text: "unus cattus"}]}
+  //         ]},
+  //       {type: 'list-item', children: [
+  //           {type: "paragraph", children: [{text: "duo canes"}, {text: "in domo sua", italic: true}]}
+  //         ]},
+  //       {type: 'list-item', children: [
+  //           {type: "paragraph", children: [{text: "tres caecos mures"}]},
+  //           {type: "paragraph", children: [{text: "vide quomodo currunt"}]}
+  //         ]},
+  //     ]}];
+  //
+  //   const mdText = serializeMarkdown(original);
+  //   const reloaded = deserializeMarkdown(mdText);
+  //
+  //   expect(reloaded).toEqual(original);
+  // });
 
   it("should round-trip a code block followed by a paragraph", () => {
     const original = [

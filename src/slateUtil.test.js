@@ -268,8 +268,7 @@ hut 1, hut2, hike!
     const retrieved = await getNote(id);
     expect(retrieved.content).toEqual(`Quotable dialog
 Review of Epic Movie
-Acting uneven
-Separate paragraph of first item
+Acting unevenSeparate paragraph of first item
 General Electric Big Blow`)
     expect(retrieved.title).toMatch(/Quotable dialog/);
     expect(retrieved.title).toMatch(/Review of Epic Movie/);

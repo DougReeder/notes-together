@@ -12,6 +12,7 @@ function deserializeMarkdown(markdown) {
 
   const slateNodeStack = [[]];
   let italic = false, bold = false;
+  let listDepth = 0;
   const walker = mdDoc.walker();
   let event;
   while ((event = walker.next())) {
@@ -25,15 +26,25 @@ function deserializeMarkdown(markdown) {
           default:
             console.error(event.entering ? '>' : '<', mdNode.type, mdNode.literal);
             // falls through
+          case 'paragraph':   // TODO: normalize such paragraphs away, rather than this
+            if (listDepth > 0) {
+              break;
+            }
+            // falls through
           case 'heading':
-          case 'paragraph':
           case 'list':
           case 'item':
           case 'block_quote':
             // console.log(event.entering ? '>' : '<', mdNode.type, mdNode.level, mdNode.listType);
             if (event.entering) {
               slateNodeStack.push([])
+              if ('list' === mdNode.type) {
+                ++listDepth
+              }
             } else {
+              if ('list' === mdNode.type) {
+                --listDepth
+              }
               const children = slateNodeStack.pop();
               if (0 === children.length) {
                 children.push(textNode("", italic, bold));
