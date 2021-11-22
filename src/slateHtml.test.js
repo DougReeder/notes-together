@@ -843,7 +843,7 @@ describe("serializeHtml and deserializeHtml", () => {
   it("should round-trip horizontal rules", () => {
     const original = [
       {type: 'paragraph', children: [{text: "first section"},]},
-      {type: 'thematic-break', children: []},
+      {type: 'thematic-break', children: [{text: ""}]},
       {type: 'code', children: [{text: `function deleteNote(id) {
   return remotePrms.then(remoteStorage => {
     return Promise.all([remoteStorage.notes.delete(id), deleteNoteDb(id)]);

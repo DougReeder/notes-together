@@ -228,9 +228,8 @@ function deserializeHtml(html, editor) {
         return jsx('fragment', {}, children);
       }
 
-      // Slate requires non-void elements to have a child.
-      // Keep this in sync with isVoid()
-      if (children.length === 0 && !(['HR'].includes(nodeName))) {
+      // Slate requires elements to have a child.
+      if (children.length === 0) {
         if (Object.keys(marks).length > 0) {
           children = [{text: '', ...marks}];
         } else {

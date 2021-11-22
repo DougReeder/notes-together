@@ -133,7 +133,7 @@ function deserializeMarkdown(markdown) {
             // console.log(mdNode.type);
             slateNodeStack[slateNodeStack.length-1].push({
               type: 'thematic-break',
-              children: [],
+              children: [{text: ""}],
             });
             break;
 
