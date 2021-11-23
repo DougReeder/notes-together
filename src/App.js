@@ -40,10 +40,12 @@ function App() {
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
 
   const [selectedNoteId, setSelectedNoteId] = useState(null);
-  function handleSelect(id) {
+  const handleSelect = useCallback((id, showDetail) => {
     setSelectedNoteId(id);
-    setMustShowPanel('DETAIL');
-  }
+    if (showDetail) {
+      setMustShowPanel('DETAIL');
+    }
+  }, []);
 
   const focusOnLoad = useRef(false);   // no re-render when changed
   async function addNote() {

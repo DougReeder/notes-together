@@ -4,7 +4,7 @@
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
 import {findStubs, deleteNote} from "./storage";
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
@@ -76,7 +76,7 @@ function List(props) {
       if (uuidValidate(id)) {
         lastSelectedNoteId.current.unshift(selectedNoteId);
         lastSelectedNoteId.current.length = 2;
-        handleSelect(id);
+        handleSelect(id, true);
       }
     } catch (err) {
       setTransientErr(err);
@@ -95,7 +95,7 @@ function List(props) {
         newItemButtonIds[currentId] = false;
       }
       if (uuidValidate(id) && !(id in newItemButtonIds)) {
-        handleSelect(lastSelectedNoteId.current[1]);
+        handleSelect(lastSelectedNoteId.current[1], true);
         newItemButtonIds[id] = true;
       }
       setItemButtonIds(newItemButtonIds);
@@ -103,6 +103,78 @@ function List(props) {
       setTransientErr(err);
     }
   }
+
+  const keyListener = useCallback(evt => {
+    if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
+      return;
+    }
+    switch (evt.code) {   // eslint-disable-line default-case
+      case 'ArrowDown':
+        if (evt.shiftKey) {
+          incrementSelectedNote(+5);
+        } else if (evt.altKey) {
+          incrementSelectedNote(+25);
+        } else if (evt.ctrlKey || evt.metaKey) {
+          incrementSelectedNote(-1000000);
+        } else {
+          incrementSelectedNote(+1);
+        }
+        break;
+      case 'PageDown':
+        incrementSelectedNote(+10);   // TODO: calc # notes on screen
+        break;
+      case 'End':
+        incrementSelectedNote(-1000000);
+        break;
+      case 'ArrowUp':
+        if (evt.shiftKey) {
+          incrementSelectedNote(-5);
+        } else if (evt.altKey) {
+          incrementSelectedNote(-25);
+        } else if (evt.ctrlKey || evt.metaKey) {
+          incrementSelectedNote(+1000000);
+        } else {
+          incrementSelectedNote(-1);
+        }
+        break;
+      case 'PageUp':
+        incrementSelectedNote(-10);   // TODO: calc # notes on screen
+        break;
+      case 'Home':
+        incrementSelectedNote(+1000000);
+        break;
+      // default:
+      //   console.log("List keyListener:", evt.code, evt)
+    }
+
+    function incrementSelectedNote(increment) {
+      let selectedInd = notes.findIndex(note => note.id === selectedNoteId) + increment;
+      // if not found, index is -1, which works with the following lines
+      if (selectedInd >= notes.length) {   // wraps around from end to beginning
+        selectedInd = 0
+      }
+      if (selectedInd < 0) {   // wraps around from beginning to end
+        selectedInd = notes.length-1;
+      }
+      const newId = notes[selectedInd]?.id;
+      if (uuidValidate(newId)) {
+        handleSelect(newId, false);
+      }
+    }
+  }, [handleSelect, notes, selectedNoteId]);
+  useEffect(() => {
+    document.addEventListener('keydown', keyListener);
+
+    return function removeKeyListener(){
+      document.removeEventListener('keydown', keyListener);
+    }
+  }, [keyListener]);
+
+  const selectedElmntRef = useRef(null);
+
+  useEffect(() => {
+    selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+  }, [selectedNoteId])
 
   function exitItemButtons(id) {
     try {
@@ -162,12 +234,19 @@ function List(props) {
                 </CSSTransition>);
           }
           listItems.push(
-            <li data-id={note.id} key={note.id}
-                className={'summary' + (note.id === selectedNoteId ? ' selected' : '')}>
-              <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
-              {itemButtons}
-            </li>
-          );
+            note.id === selectedNoteId ?
+              <li data-id={note.id} key={note.id} ref={selectedElmntRef}
+                  className="summary selected">
+                <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+                {itemButtons}
+              </li>
+              :
+              <li data-id={note.id} key={note.id}
+                  className="summary">
+                <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+                {itemButtons}
+              </li>
+      );
     }
   } else {
     if (searchWords.size > 0) {
