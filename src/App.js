@@ -107,6 +107,46 @@ function App() {
     });
    }, []);
 
+  const keyListener = useCallback(evt => {
+    if (evt.isComposing || evt.keyCode === 229) {
+      return;
+    }
+    if ('Escape' === evt.code) {
+      if (evt.target.dataset.slateEditor) {
+        evt.target.blur();
+      } else if (window.innerWidth < 640 && 'DETAIL' === mustShowPanel) {
+        setMustShowPanel('LIST');
+      } else {
+        setSearchStr("");
+        setSearchWords(new Set());
+      }
+    }
+    if (evt.target.dataset.slateEditor) {
+      return;
+    }
+    switch (evt.code) {   // eslint-disable-line default-case
+      case 'ArrowRight':
+        if ('LIST' === mustShowPanel) {
+          setMustShowPanel('DETAIL');
+        }
+        break;
+      case 'ArrowLeft':
+        if ('DETAIL' === mustShowPanel) {
+          setMustShowPanel('LIST');
+        }
+        break;
+      // default:
+      //   console.log("App keyListener:", evt.code, evt.target, mustShowPanel)
+    }
+  }, [mustShowPanel]);
+  useEffect(() => {
+    document.addEventListener('keydown', keyListener);
+
+    return function removeKeyListener(){
+      document.removeEventListener('keydown', keyListener);
+    }
+  }, [keyListener]);
+
   const [testMenuAnchorEl, setTestMenuAnchorEl] = React.useState(null);
 
   function openTestMenu(evt) {
