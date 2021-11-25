@@ -143,6 +143,18 @@ function List(props) {
       case 'Home':
         incrementSelectedNote(+1000000);
         break;
+      case 'ContextMenu':
+        if (selectedNoteId) {
+          const newItemButtonIds = {};
+          for (let currentId in itemButtonsIds) {
+            newItemButtonIds[currentId] = false;   // dismiss existing
+          }
+          if (!(selectedNoteId in newItemButtonIds)) {
+            newItemButtonIds[selectedNoteId] = true;
+          }
+          setItemButtonIds(newItemButtonIds);
+        }
+        break;
       // default:
       //   console.log("List keyListener:", evt.code, evt)
     }
@@ -161,7 +173,7 @@ function List(props) {
         handleSelect(newId, false);
       }
     }
-  }, [handleSelect, notes, selectedNoteId]);
+  }, [handleSelect, notes, selectedNoteId, itemButtonsIds]);
   useEffect(() => {
     document.addEventListener('keydown', keyListener);
 
