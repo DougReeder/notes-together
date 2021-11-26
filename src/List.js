@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
+import {Button} from "@material-ui/core";
 
 
 function List(props) {
@@ -18,7 +19,6 @@ function List(props) {
   const [notes, setNotes] = useState([]);
   // console.log("List props:", props, "   notes:", notes);
 
-  const lastSelectedNoteId = useRef([]);
   const [itemButtonsIds, setItemButtonIds] = useState({});
 
   useEffect(() => {
@@ -67,38 +67,48 @@ function List(props) {
     };
   });
 
-  function onClick(evt) {
+  const pointerRef = useRef({});
+
+  function handlePointerDown(evt) {
     try {
+      if (evt.target.closest("button")) {
+        return;
+      }
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
-      if (uuidValidate(id)) {
-        lastSelectedNoteId.current.unshift(selectedNoteId);
-        lastSelectedNoteId.current.length = 2;
-        handleSelect(id, true);
-      }
+      pointerRef.current = {downId: id, downStamp: Date.now()};
     } catch (err) {
       setTransientErr(err);
     }
   }
 
-  // TODO: mobile-friendly way to invoke this, such as swipe
-  function onDoubleClick(evt) {
+  function handlePointerUp(evt) {
     try {
+      if (evt.target.closest("button")) {
+        return;
+      }
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
-      const newItemButtonIds = Object.assign({}, itemButtonsIds);
-      for (let currentId in newItemButtonIds) {
-        newItemButtonIds[currentId] = false;
+      if (uuidValidate(id) && id === pointerRef.current.downId) {
+        if (Date.now() - pointerRef.current.downStamp < 500) {   // click
+          if (! evt.target.closest("div.itemButtons")) {
+            handleSelect(id, true);
+          }
+        } else {   // long-press
+          const newItemButtonIds = {};
+          for (let currentId in itemButtonsIds) {
+            newItemButtonIds[currentId] = false;   // dismiss existing
+          }
+          if (!(id in newItemButtonIds)) {
+            newItemButtonIds[id] = true;
+          }
+          setItemButtonIds(newItemButtonIds);
+        }
       }
-      if (uuidValidate(id) && !(id in newItemButtonIds)) {
-        handleSelect(lastSelectedNoteId.current[1], true);
-        newItemButtonIds[id] = true;
-      }
-      setItemButtonIds(newItemButtonIds);
     } catch (err) {
       setTransientErr(err);
     }
@@ -240,8 +250,8 @@ function List(props) {
             itemButtons = (
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
-                    <button type="button" onClick={deleteItem}>Delete</button>
-                    {/*<button type="button">Share</button>*/}
+                    <Button variant="contained" onClick={deleteItem}>Delete</Button>
+                    {/*<Button type="button">Share</Button>*/}
                   </div>
                 </CSSTransition>);
           }
@@ -278,7 +288,7 @@ function List(props) {
     }
   }
   return (
-      <ol className="list" onClick={onClick} onDoubleClick={onDoubleClick}>
+      <ol className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
         {listItems}
       </ol>
   );

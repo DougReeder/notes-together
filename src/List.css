@@ -11,6 +11,9 @@ ol.list {
     margin-block-end: 0;
     margin-inline-start: 0;
     margin-inline-end: 0;
+
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 li.summary {

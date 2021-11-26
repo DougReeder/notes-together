@@ -8,6 +8,9 @@
     justify-content: space-around;
     min-height: 52px !important;
     flex-wrap: wrap;
+
+    -webkit-user-select: none;
+    user-select: none;
 }
 /* on smaller phones, hides second row of tools */
 @media (hover: none) and (pointer: coarse) and (max-height: 700px) {

@@ -188,6 +188,9 @@ body {
 
 #remotestorage-widget .rs-widget {
   max-width: 95vw;
+
+  -webkit-user-select: none;
+  user-select: none;
 }
 #remotestorage-widget .rs-widget.rs-closed {
   max-width: 56px;
