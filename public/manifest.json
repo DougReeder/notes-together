@@ -37,8 +37,8 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#d1e8f1",
-  "background_color": "#d1e8f1",
+  "theme_color": "#94bbe6",
+  "background_color": "white",
   "categories": ["business", "education", "productivity"],
   "lang": "en-US"
 }

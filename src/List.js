@@ -280,7 +280,8 @@ function List(props) {
       listItems = <div className="advice">
         <h2>Write or sync some notes!</h2>
         <p>To create a new note, tap the <button className="actionBtn" style={{position:"static", transform: "scale(0.7)", verticalAlign: "middle"}}><span>+</span></button> button.
-          You can paste text and images into it.</p>
+          You can paste or drag text and images into it.</p>
+        <p>Drag files to this panel.</p>
         <p>Connect to Storage to sync your notes with a remote server.</p>
       </div>
       // TODO: and insert pictures

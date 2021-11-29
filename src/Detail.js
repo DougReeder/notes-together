@@ -535,7 +535,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }
 
-  const appbarStyle = {flexGrow: 0, backgroundColor: "lightblue"};
+  const appbarStyle = {flexGrow: 0, backgroundColor: "#94bbe6"};
   if (visualViewportMatters()) {
     appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
   }

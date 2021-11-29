@@ -92,13 +92,13 @@ const semanticOnly = {
       return {tagName, attribs};
     }
   },
-  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'button', 'select', 'nl' ],
+  nonTextTags: ['head', 'style', 'script', 'noscript', 'nav', 'button', 'select', 'nl'],
   allowProtocolRelative: false,
   enforceHtmlBoundary: true,
   parser: {
     decodeEntities: false,
-    lowerCaseTags: false,
-    lowerCaseAttributeNames: false,
+    lowerCaseTags: true,
+    lowerCaseAttributeNames: true,
   }
 };
 Object.freeze(semanticOnly);

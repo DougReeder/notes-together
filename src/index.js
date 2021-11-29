@@ -41,7 +41,7 @@ init().then(remoteStorage => {   // init is idempotent
 
 ReactDOM.render(
   <React.StrictMode>
-    <SnackbarProvider maxSnack={3} dense={true} preventDuplicate={true}>
+    <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
       <App />
     </SnackbarProvider>
   </React.StrictMode>,
