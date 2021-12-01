@@ -125,6 +125,7 @@ const TEXT_TAGS = {
   CITE: () => ({ italic: true }),
   VAR: () => ({ italic: true }),
   ABBR: () => ({ italic: true }),
+  ADDRESS: () => ({ italic: true }),
   S: () => ({ strikethrough: true }),
   STRIKE: () => ({ strikethrough: true }),
   B: () => ({ bold: true }),

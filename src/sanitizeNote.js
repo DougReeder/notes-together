@@ -13,7 +13,7 @@ const semanticOnly = {
     'header', 'footer', 'main', 'section', 'aside',
     'li', 'dl', 'dt', 'dd', 'b', 'i', 'strong', 'em', 'u', 's', 'strike', 'code', 'hr', 'br', 'div',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre',
-    'a', 'img', 'del', 'ins', 'kbd', 'q', 'samp', 'tt', 'sub', 'sup', 'cite', 'var', 'dfn', 'abbr',
+    'a', 'img', 'del', 'ins', 'kbd', 'q', 'samp', 'tt', 'sub', 'sup', 'cite', 'var', 'dfn', 'abbr', 'address',
     'figure', 'details',
     'ruby', 'rp', 'rt',
     'circle', 'clipPath', 'defs', 'desc', 'ellipse',

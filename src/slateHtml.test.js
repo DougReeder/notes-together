@@ -320,8 +320,8 @@ describe("deserializeHtml", () => {
     expect(slateNodes.length).toEqual(7);
   });
 
-  it("should parse <em> <i> <q> <dfn> <cite> <var> and <abbr> tags as italic marks", () => {
-    const html = `The <em>upper</em> thing <i>everyone</i> needs <q>supposedly</q> a <dfn>validator</dfn> like <cite>Nineteen Eighty-Four</cite> foo <var>x<sub>1</sub></var> bar <abbr title="Laugh Out Loud">LOL</abbr> spam`;
+  it("should parse <em> <i> <q> <dfn> <cite> <var> <abbr> and <address> tags as italic marks", () => {
+    const html = `The <em>upper</em> thing <i>everyone</i> needs <q>supposedly</q> a <dfn>validator</dfn> like <cite>Nineteen Eighty-Four</cite> foo <var>x<sub>1</sub></var> bar <abbr title="Laugh Out Loud">LOL</abbr> spam <address><a href="mailto:jdoe@google.com">jdoe@google.com</a></address>`;
 
     const slateNodes = deserializeHtml(html, editor);
 
@@ -340,8 +340,10 @@ describe("deserializeHtml", () => {
     expect(slateNodes[12]).toEqual({text: "1", italic: true});
     expect(slateNodes[13]).toEqual({text: " bar "});
     expect(slateNodes[14]).toEqual({text: "LOL", italic: true});
-    expect(slateNodes[15]).toEqual({text: " spam"});
-    expect(slateNodes.length).toEqual(16);
+    expect(slateNodes[15]).toEqual({text: " spam "});
+    expect(slateNodes[16]).toEqual({type: "link", url: "mailto:jdoe@google.com", title: undefined,
+      children: [{text: "jdoe@google.com", italic: true}]});
+    expect(slateNodes.length).toEqual(17);
   });
 
   it("should correctly parse italic marks inside italic marks", () => {
