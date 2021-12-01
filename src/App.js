@@ -230,7 +230,7 @@ function App() {
   }
 
   async function determineParseType(file) {
-    console.log(`file "${file.name}" ${file.type}`)
+    console.log(`file “${file.name}” "${file.type}"`)
     // TODO: Convert a JPEG to data URL
     if (!file.type.startsWith('text') && !allowedFileTypesNonText.includes(file.type)) {
       const err = new Error("Wrong type for import: " + file.type);

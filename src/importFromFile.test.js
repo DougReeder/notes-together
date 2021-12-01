@@ -5,6 +5,7 @@ import auto from "fake-indexeddb/auto.js";
 import {init, parseWords, upsertNote, getNote, deleteNote, findStubs, changeHandler} from "./storage";
 import {importMultipleNotes, checkForMarkdown} from "./importFromFile";
 import {validate as uuidValidate} from "uuid";
+import {TITLE_MAX} from "./Note";
 
 describe("checkForMarkdown", () => {
   it("should throw for non-file", async () => {
@@ -40,7 +41,7 @@ describe("importMultipleNotes", () => {
     return init("testStorageDb");
   });
 
-  it("should parse a single HTML fragment note", async () => {
+  it("should parse a file containing an HTML fragment as one note, with file name appended", async () => {
     const fileContent = `<h1>Some Topic</h1>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
 <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. </p>
@@ -66,7 +67,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
 
-  it("should parse a single HTML document note", async () => {
+  it("should parse a file containing an HTML document as one note, with file name appended", async () => {
     const fileContent = `<html><head><title>Buckaroo Banzai</title></head><body>
 <blockquote>No matter where you go, there you are.</blockquote>
 </body></html>`;
@@ -96,21 +97,159 @@ Buckaroo-Banzai.html`);
     const result = await importMultipleNotes(file, 'text/html');
     expect(result).toBeInstanceOf(Array);
     // Creating either zero or one note is fine.
+    expect(result.length).toBeLessThan(2);
   });
 
-  xit("should parse a single text note", async () => {
-    const file = new File([`Popular Novel
+  it("should parse an empty text file as 0 notes", async () => {
+    const fileDate = '2019-06-01T12:00:00Z';
+    const file = new File([], "empty-css.html", {type: 'text/css', lastModified: Date.parse(fileDate)});
+
+    const result = await importMultipleNotes(file, 'text/plain');
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toEqual(0);
+  });
+
+  it("should parse a text file with no separations nor dates as one note, with date equal to the file date", async () => {
+    const fileContent = `Popular Novel
 Review copyright 2021 by Doug Reeder
 
 There's three things to say about this:
 1. Something
 2. Another thing
-3. A sweeping generalization`], "review.t", {type: 'text/troff'});
+3. A sweeping generalization`;
+    const fileDate = '2021-10-01T13:00:00Z';
+    const file = new File([fileContent], "review.t", {type: 'text/troff', lastModified: Date.parse(fileDate)});
 
     const result = await importMultipleNotes(file, 'text/plain');
-
-    expect(result).toBeTruthy();
+    expect(result).toBeInstanceOf(Array);
     expect(result.length).toEqual(1);
     expect(uuidValidate(result[0])).toBeTruthy();
+
+    const retrievedNote = await getNote(result[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content);
+    expect(retrievedNote.content).toEqual(fileContent + `
+
+review.t`);
+    expect(retrievedNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should parse a text file with two separations as three text notes", async () => {
+    const content0 = '\nTadka Indian Cuisine  \nnice atmosphere  \nnever tried their curry, either\n\nW Dublin Granville Rd, Columbus, Franklin County, Ohio\n';
+    const date0 = '2014-05-22T07:34:34.085Z';
+    const content1 = 'The Matrix (1999)  \nwouldn\'t cows be a better heat source?\nWithout the ability to stage a revolt and all, you know  \naction, adventure, science-fiction\n';
+    const date1 = '2014-05-22T04:19:06.697Z';
+    const content2 = 'CbusJS d3  \n  \nNye County, Nevada';
+    const fileDate = '2021-11-01T14:00:00Z';
+    const file = new File([content0, date0, '\n\n\n\n', content1, date1, '\n\n\n\n', content2, '\n  '],
+        "melange.txt",
+        {type: 'text/plain', lastModified: Date.parse(fileDate)});
+
+    const result = await importMultipleNotes(file, 'text/plain');
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toEqual(3);
+    expect(uuidValidate(result[0])).toBeTruthy();
+    expect(uuidValidate(result[1])).toBeTruthy();
+    expect(uuidValidate(result[2])).toBeTruthy();
+
+    let retrievedNote = await getNote(result[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content0 + '\nmelange.txt');
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(result[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content1 + '\nmelange.txt');
+    expect(retrievedNote.date).toEqual(new Date(date1));
+
+    retrievedNote = await getNote(result[2]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content2 + '\n\nmelange.txt');
+    expect(Math.abs(retrievedNote.date - new Date(fileDate))).toBeLessThan(5);
+  });
+
+  it("should parse a text file containing Markdown with one separation as two Markdown notes", async () => {
+    const content0 = `## Subject Area
+
+# Actual Title
+
+1. Item 1
+2. A second item
+3. Number 3
+4. Ⅳ
+
+*Note: the fourth item uses the Unicode character for [Roman numeral four][2].*
+`;
+    const date0 = '2005-01-22T07:34:34.085Z';
+    const content1 = `| Item         | Price     | # In stock |
+|--------------|-----------|------------|
+| Juicy Apples | 1.99      | *7*        |
+| Bananas      | **1.89**  | 5234       |
+`;
+    const date1 = '2005-02-13T04:19:06.697Z';
+    const file = new File([content0, date0, '\n\n\n\n', content1, date1, '\n\n\n\n'],
+        "actually-markdown.txt",
+        {type: 'text/plain', lastModified: Date.parse('2021-12-01T14:00:00Z')});
+
+    const result = await importMultipleNotes(file, 'text/markdown');
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toEqual(2);
+    expect(uuidValidate(result[0])).toBeTruthy();
+    expect(uuidValidate(result[1])).toBeTruthy();
+
+    let retrievedNote = await getNote(result[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content0 + '\nactually-markdown.txt');
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(result[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content1 + '\nactually-markdown.txt');
+    expect(retrievedNote.date).toEqual(new Date(date1));
+  });
+
+  it("should refuse to create a note longer than 600,000 characters", async () => {
+    const content0 = 'before\n';
+    const date0 = '2006-02-14T07:00:00Z';
+    let logLines = `Feb 16 00:17:00 frodo Java Updater[24847]: Untrusted apps are not allowed to connect to Window Server before login.
+Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/Logs/DiagnosticReports/powerstats_2016-02-07-001552_frodo.diag
+`;
+    while (logLines.length < 600_000) {
+      logLines += logLines;
+    }
+    const content2 = 'after\n';
+    const date2 = '2006-02-16T08:00:00Z';
+    const file = new File([content0, date0, '\n\n\n\n', logLines, '\n\n\n', content2, date2, '\n\n\n\n'], "report-with.log", {type: ''});
+
+    const result = await importMultipleNotes(file, 'text/plain');
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toEqual(2);
+    expect(uuidValidate(result[0])).toBeTruthy();
+    expect(uuidValidate(result[1])).toBeTruthy();
+
+    let retrievedNote = await getNote(result[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content0 + '\nreport-with.log');
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(result[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content2 + '\nreport-with.log');
+    expect(retrievedNote.date).toEqual(new Date(date2));
   });
 });
