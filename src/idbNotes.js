@@ -3,6 +3,7 @@
 // Copyright © 2021 Doug Reeder
 
 import {v4 as uuidv4} from "uuid";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 const FIRST_RESULTS_MS = 84;
 const MAX_NOTES_FOUND = 500;
@@ -57,7 +58,7 @@ function initDb(dbName = dbNameDefault) {
   });
 
   dbPrms.catch(err => {
-    window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
+    window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
   });
 
   return dbPrms;

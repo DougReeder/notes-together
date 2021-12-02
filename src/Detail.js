@@ -36,6 +36,7 @@ import isHotkey from 'is-hotkey';
 import {getRelevantBlockType, changeBlockType, changeContentType} from "./slateUtil";
 import {isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
@@ -57,7 +58,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   //     }
   //   } catch (err) {
   //     console.error("Detail set textFilter:", err);
-  //     window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
+  //     window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
   //   }
   // }, [searchStr]);
 
@@ -202,7 +203,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       await save(newDate);
     } catch (err) {
       console.error("Detail handleDateChange:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
     }
   }
 

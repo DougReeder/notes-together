@@ -10,6 +10,7 @@ import {mergeConflicts} from "./mergeConflicts";
 import {createMemoryNote} from "./Note";
 import decodeEntities from "./util/decodeEntities";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 let initPrms;
 
@@ -111,7 +112,7 @@ async function changeHandler(evt) {
     }
   } catch (err) {
     console.error("remoteStorage documents subscribe:", err);
-    window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message, key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
+    window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
   }
 }
 

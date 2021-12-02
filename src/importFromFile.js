@@ -4,8 +4,9 @@
 import {isLikelyMarkdown} from "./util";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
+import {extractUserMessage} from "./util/extractUserMessage";
 
-const allowedFileTypesNonText = ['application/xhtml+xml','application/mathml+xml','application/javascript','application/x-yaml','application/json','image/svg+xml'];
+const allowedFileTypesNonText = ['application/xhtml+xml','application/mathml+xml','application/javascript','application/x-yaml','application/json', 'message/rfc822','image/svg+xml'];
 
 function checkForMarkdown(file) {
   return new Promise((resolve, reject) => {
@@ -111,7 +112,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
           if (err.name !== 'QuietError') {
             window.postMessage({
               kind: 'TRANSIENT_MSG',
-              message: err.userMsg || err.message,
+              message: extractUserMessage(err),
               key: coda
             }, window?.location?.origin);
           }
@@ -143,7 +144,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
       if (err.name !== 'QuietError') {
         window.postMessage({
           kind: 'TRANSIENT_MSG',
-          message: err.userMsg || err.message,
+          message: extractUserMessage(err),
           key: coda
         }, window?.location?.origin);
       }

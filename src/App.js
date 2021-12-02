@@ -27,6 +27,7 @@ import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -221,7 +222,7 @@ function App() {
         if (['NotFoundError', 'NotReadableError'].includes(err.name)) {   // Firefox, Safari
           message = `“${file.name}” is not readable`;
         } else {
-          message = err.userMsg || err.message;
+          message = extractUserMessage(err);
         }
         window.postMessage({kind: 'TRANSIENT_MSG', message: message, severity: 'warning', key: file.name}, window?.location?.origin);
       }
@@ -296,7 +297,7 @@ function App() {
           key: file.name
         }, window?.location?.origin);
       } catch (err) {
-        window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
+        window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
       } finally {
         if (isImportActive.current) {
           record.isImporting = false

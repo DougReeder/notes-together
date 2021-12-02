@@ -3,6 +3,7 @@
 
 import {validate as uuidValidate} from 'uuid';
 import {sanitizeNote} from "./sanitizeNote";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
 
@@ -53,7 +54,7 @@ const RemoteNotes = {
           callback(evt);
         } catch (err) {
           console.error("documents change subscriber:", err);
-          window.postMessage({kind: 'TRANSIENT_MSG', message: err.userMsg || err.message}, window?.location?.origin);
+          window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
         }
       }
     });
