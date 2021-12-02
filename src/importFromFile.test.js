@@ -252,4 +252,36 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote.content).toEqual(content2 + '\nreport-with.log');
     expect(retrievedNote.date).toEqual(new Date(date2));
   });
+
+  it("should parse a non-plain text file as one note, with file name appended", async () => {
+    const fileContent = `if ('chrome' in window && 'fileSystem' in chrome) {
+\thistory.pushState = function (newState) {
+\t\thistory.state = newState;
+\t};
+
+\thistory.replaceState = function (newState) {
+\t\thistory.state = newState;
+\t};
+
+\thistory.back = function () {
+\t\t// no-op
+\t};
+}
+`;
+    const fileDate = '2004-10-30T10:30:00Z';
+    const file = new File([fileContent], "historyStub.js", {type: 'application/javascript', lastModified: Date.parse(fileDate)});
+
+    const result = await importMultipleNotes(file, 'text/javascript');
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toEqual(1);
+    expect(uuidValidate(result[0])).toBeTruthy();
+
+    const retrievedNote = await getNote(result[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/javascript');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(fileContent + "\n\nhistoryStub.js");
+    expect(retrievedNote.date).toEqual(new Date(fileDate));
+  });
+
 });

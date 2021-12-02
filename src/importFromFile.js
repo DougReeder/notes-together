@@ -43,7 +43,8 @@ function importMultipleNotes(file, parseType) {
             noteIds = await splitIntoNotes(text, file.lastModified, coda, parseType);
             break;
           default:
-            throw new Error(parseType + " not yet implemented");
+            noteIds = await importText(text, file.lastModified, coda, parseType);
+            break;
         }
 
         console.log(`finished importing ${noteIds.length} notes from "${file.name}"`)
@@ -193,6 +194,16 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   return createMemoryNote(null, content, new Date(dateValue), parseType);
 }
 
+async function importText(text, fileDateValue, coda, parseType) {
+  if (coda) {
+    text += '\n\n' + coda;
+  }
+  const newNote = createMemoryNote(null, text, fileDateValue, parseType);
+
+  const cleanNote = await upsertNote(newNote);
+
+  return [cleanNote.id]
+}
 
 /** Throwable, but should not be reported to the user */
 function QuietError(message) {
