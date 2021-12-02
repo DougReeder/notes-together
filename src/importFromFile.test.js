@@ -53,12 +53,13 @@ describe("importMultipleNotes", () => {
     const fileDate = '2021-07-01T10:30:00Z';
     const file = new File([fileContent], "Lipsum.html", {type: 'application/xhtml+xml', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/html');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(1);
-    expect(uuidValidate(result[0])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
 
-    const retrievedNote = await getNote(result[0]);
+    const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
     expect(retrievedNote.title).toEqual(`Some Topic
@@ -74,12 +75,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
     const fileDate = '2021-08-01T11:00:00Z';
     const file = new File([fileContent], "Buckaroo-Banzai.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/html');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(1);
-    expect(uuidValidate(result[0])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
 
-    const retrievedNote = await getNote(result[0]);
+    const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
     expect(retrievedNote.title).toEqual(`No matter where you go, there you are.
@@ -93,20 +95,35 @@ Buckaroo-Banzai.html`);
   it("should parse an empty HTML file", async () => {
     const fileDate = '2021-09-01T12:00:00Z';
     const file = new File([], "empty.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
-
-    const result = await importMultipleNotes(file, 'text/html');
-    expect(result).toBeInstanceOf(Array);
+    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    expect(noteIds).toBeInstanceOf(Array);
     // Creating either zero or one note is fine.
-    expect(result.length).toBeLessThan(2);
+    expect(noteIds.length).toBeLessThan(2);
+    expect(message).toMatch(/\S/);
+  });
+
+  it("should reject an overly-long HTML file", async () => {
+    const fileDate = '2021-08-15T12:00:00Z';
+    let html = '<li>${Math.random()}</li>\n';
+    while (html.length < 600_000) {
+      html += html;
+    }
+    const file = new File(['<ol>', html,'</ol>'], "list.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
+
+    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("Too long. Copy the parts you need.");
   });
 
   it("should parse an empty text file as 0 notes", async () => {
     const fileDate = '2019-06-01T12:00:00Z';
     const file = new File([], "empty-css.html", {type: 'text/css', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/plain');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(0);
+    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("No notes");
   });
 
   it("should parse a text file with no separations nor dates as one note, with date equal to the file date", async () => {
@@ -120,12 +137,13 @@ There's three things to say about this:
     const fileDate = '2021-10-01T13:00:00Z';
     const file = new File([fileContent], "review.t", {type: 'text/troff', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/plain');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(1);
-    expect(uuidValidate(result[0])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
 
-    const retrievedNote = await getNote(result[0]);
+    const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content);
@@ -146,28 +164,29 @@ review.t`);
         "melange.txt",
         {type: 'text/plain', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/plain');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(3);
-    expect(uuidValidate(result[0])).toBeTruthy();
-    expect(uuidValidate(result[1])).toBeTruthy();
-    expect(uuidValidate(result[2])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(3);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(uuidValidate(noteIds[2])).toBeTruthy();
+    expect(message).toEqual("3 notes");
 
-    let retrievedNote = await getNote(result[0]);
+    let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
     expect(retrievedNote.content).toEqual(content0 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
-    retrievedNote = await getNote(result[1]);
+    retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
     expect(retrievedNote.content).toEqual(content1 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date1));
 
-    retrievedNote = await getNote(result[2]);
+    retrievedNote = await getNote(noteIds[2]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
@@ -198,20 +217,21 @@ review.t`);
         "actually-markdown.txt",
         {type: 'text/plain', lastModified: Date.parse('2021-12-01T14:00:00Z')});
 
-    const result = await importMultipleNotes(file, 'text/markdown');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(2);
-    expect(uuidValidate(result[0])).toBeTruthy();
-    expect(uuidValidate(result[1])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/markdown');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(2);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(message).toEqual("2 notes");
 
-    let retrievedNote = await getNote(result[0]);
+    let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
     expect(retrievedNote.content).toEqual(content0 + '\nactually-markdown.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
-    retrievedNote = await getNote(result[1]);
+    retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
@@ -219,7 +239,7 @@ review.t`);
     expect(retrievedNote.date).toEqual(new Date(date1));
   });
 
-  it("should refuse to create a note longer than 600,000 characters", async () => {
+  it("should continue after refusing to create a note longer than 600,000 characters", async () => {
     const content0 = 'before\n';
     const date0 = '2006-02-14T07:00:00Z';
     let logLines = `Feb 16 00:17:00 frodo Java Updater[24847]: Untrusted apps are not allowed to connect to Window Server before login.
@@ -232,20 +252,21 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const date2 = '2006-02-16T08:00:00Z';
     const file = new File([content0, date0, '\n\n\n\n', logLines, '\n\n\n', content2, date2, '\n\n\n\n'], "report-with.log", {type: ''});
 
-    const result = await importMultipleNotes(file, 'text/plain');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(2);
-    expect(uuidValidate(result[0])).toBeTruthy();
-    expect(uuidValidate(result[1])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(2);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(message).toEqual("2 notes; Divide manually before importing");
 
-    let retrievedNote = await getNote(result[0]);
+    let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
     expect(retrievedNote.content).toEqual(content0 + '\nreport-with.log');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
-    retrievedNote = await getNote(result[1]);
+    retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
@@ -271,17 +292,32 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const fileDate = '2004-10-30T10:30:00Z';
     const file = new File([fileContent], "historyStub.js", {type: 'application/javascript', lastModified: Date.parse(fileDate)});
 
-    const result = await importMultipleNotes(file, 'text/javascript');
-    expect(result).toBeInstanceOf(Array);
-    expect(result.length).toEqual(1);
-    expect(uuidValidate(result[0])).toBeTruthy();
+    const {noteIds, message} = await importMultipleNotes(file, 'text/javascript');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
 
-    const retrievedNote = await getNote(result[0]);
+    const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/javascript');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
     expect(retrievedNote.content).toEqual(fileContent + "\n\nhistoryStub.js");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should reject an overly-long non-plain text file", async () => {
+    const fileDate = '2021-05-11T12:00:00Z';
+    let lines = 'foo,42\n';
+    while (lines.length < 600_000) {
+      lines += lines;
+    }
+    const file = new File([lines], "too-long.csv", {type: 'text/csv', lastModified: Date.parse(fileDate)});
+
+    const {noteIds, message} = await importMultipleNotes(file, 'text/csv');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("Too long. Copy the parts you need.");
   });
 
 });

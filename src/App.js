@@ -6,21 +6,21 @@ import List from './List';
 import Detail from './Detail'
 import './App.css';
 import {
+  AppBar,
   Button,
   Checkbox, CircularProgress,
-  Dialog, DialogActions,
-  DialogContent,
-  DialogTitle,
+  Dialog, DialogContent,
   Fab,
   IconButton,
   Menu,
   MenuItem,
-  Snackbar, Table, TableBody, TableCell, TableHead, TableRow
+  Snackbar, Table, TableBody, TableCell, TableHead, TableRow, Toolbar, Typography
 } from "@material-ui/core";
 import {makeStyles} from '@material-ui/core/styles';
 import Slide from '@material-ui/core/Slide';
 import AddIcon from '@material-ui/icons/Add';
 import MenuIcon from '@material-ui/icons/Menu';
+import CloseIcon from '@material-ui/icons/Close';
 import {allowedFileTypesNonText, checkForMarkdown, importMultipleNotes} from "./importFromFile";
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {useSnackbar} from "notistack";
@@ -171,7 +171,7 @@ function App() {
 
   const fileInput = useRef(null)
   const [importFiles, setImportFiles] = useState([]);
-  const isImportActive = useRef(false);
+  const importState = useRef('');   // PREPARING, ACTIVE, or DONE
 
   function handleImportFile(evt) {
     fileInput.current.click();
@@ -227,11 +227,12 @@ function App() {
         window.postMessage({kind: 'TRANSIENT_MSG', message: message, severity: 'warning', key: file.name}, window?.location?.origin);
       }
     }
+    importState.current = 'PREPARING';
     setImportFiles(newImportFiles);
   }
 
   async function determineParseType(file) {
-    console.log(`file “${file.name}” "${file.type}"`)
+    // console.log(`selected file “${file.name}” "${file.type}"`)
     // TODO: Convert a JPEG to data URL
     if (!file.type.startsWith('text') && !allowedFileTypesNonText.includes(file.type)) {
       const err = new Error("Wrong type for import: " + file.type);
@@ -248,7 +249,7 @@ function App() {
           return {file, parseType: 'text/markdown'};
         case 'plain':
           const isMarkdown = await checkForMarkdown(file);
-          console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
+          // console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
           return {file, parseType: 'text/plain', isMarkdown};
         default:
           return {file, parseType: 'text/' + (result?.[1] || 'plain')};
@@ -261,58 +262,48 @@ function App() {
     setImportFiles(importFiles.slice(0));
   }
 
-  function cancelImport() {
-    console.info(`cancelled import of ${importFiles.length} files`);
-    isImportActive.current = false;
-    setImportFiles([]);
-  }
+  async function handleImportOrCancel() {
+    if ('ACTIVE' === importState.current) {
+      importState.current = 'DONE';   // cancel
+      return;
+    }
 
-  async function doImport() {
     let lastSuccessfulFileName = "";
-    isImportActive.current = true;
+    importState.current = 'ACTIVE';
     for (const record of importFiles) {
       try {
         let {file, parseType, isMarkdown} = record;
         record.isImporting = true
         setImportFiles([...importFiles]);
         if ('text/plain' === file.type && isMarkdown) {
-          console.log(`changing parseType of "${file.name}" to Markdown`)
+          // console.log(`changing parseType of "${file.name}" to Markdown`)
           parseType = 'text/markdown';
         }
-        const newNoteIds = await importMultipleNotes(file, parseType);
-        let message;
-        if (newNoteIds.length > 1) {
+        const {noteIds, message} = await importMultipleNotes(file, parseType);
+        record.message = message;
+        if (noteIds.length > 0) {
           lastSuccessfulFileName = file.name;
-          message = `Imported ${newNoteIds.length} notes from “${file.name}”`;
-        } else if (newNoteIds.length === 1) {
-          lastSuccessfulFileName = file.name;
-          message = `Imported 1 note from “${file.name}”`;
-        } else {
-          message = `“${file.name}” is empty. Are your notes in a different file?`;
         }
-        window.postMessage({
-          kind: 'TRANSIENT_MSG',
-          message,
-          severity: newNoteIds.length > 0 ? 'success' : 'warning',
-          key: file.name
-        }, window?.location?.origin);
       } catch (err) {
-        window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+        record.message = extractUserMessage(err);
       } finally {
-        if (isImportActive.current) {
-          record.isImporting = false
-          setImportFiles([...importFiles]);
-        } else {
+        record.isImporting = false
+        setImportFiles([...importFiles]);
+        if ('ACTIVE' !== importState.current) {
           break;
         }
       }
     }
-    isImportActive.current = false;
-    setImportFiles([]);
+    importState.current = 'DONE';
     if (lastSuccessfulFileName) {
       setSearchStr(lastSuccessfulFileName);
       setSearchWords(parseWords(lastSuccessfulFileName));
     }
+  }
+
+  function handleCloseImport() {
+    setImportFiles([]);
+    fileInput.current.value = "";
   }
 
   const [testMenuAnchorEl, setTestMenuAnchorEl] = React.useState(null);
@@ -398,7 +389,7 @@ function App() {
               <MenuItem onClick={handleImportFile}>Import multiple notes per text, Markdown or HTML file</MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                   accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/rtf,text/xml," + allowedFileTypesNonText.join(',') + ",txt,text,readme,me,1st,log,markdown,md,mkd,mkdn,mdown,markdown,adoc,textile,rst,textile,etx,tex,texi,org,apt,pod,html,htm,xhtml,json,yaml,yml,awk,vcs,ics,abc,js,ts,jsx,css,less,sass,java,properties,sql,c,h,cc,cxx,cpp,hpp,py,rb,pm,erl,hs,hbx,sh,bat"}/>
+                   accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/rtf,text/xml," + allowedFileTypesNonText.join(',') + ",.txt,.text,.readme,.me,.1st,.log,.markdown,.md,.mkd,.mkdn,.mdown,.markdown,.adoc,.textile,.rst,.textile,.etx,.tex,.texi,.org,.apt,.pod,.html,.htm,.xhtml,.json,.yaml,.yml,.awk,.vcs,.ics,.abc,.js,.ts,.jsx,.css,.less,.sass,.java,.properties,.sql,.c,.h,.cc,.cxx,.cpp,.hpp,.py,.rb,.pm,.erl,.hs,.hbx,.sh,.bat"}/>
           </header>
           <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
           <Fab onClick={addNote} className={classes.fab} color="primary" aria-label="add"><AddIcon /></Fab>
@@ -408,37 +399,39 @@ function App() {
               {transientErr?.message || transientErr?.name || transientErr?.toString()}
             </Alert>
           </Snackbar>
-          <Dialog open={importFiles.length > 0} aria-labelledby="import-markdown-dialog-title">
-            <DialogTitle id="import-markdown-dialog-title">Importing {importFiles.length} Files</DialogTitle>
-            <DialogContent>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>File Name</strong></TableCell>
-                    <TableCell><strong>Contains Markdown</strong></TableCell>
-                    <TableCell style={{width: '2ex'}}></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {importFiles.map(({file, parseType, isMarkdown, isImporting}, i) => (<TableRow key={i}>
-                    <TableCell>{file.name}</TableCell>
-                    <TableCell>{
-                      ('text/plain' === parseType && <Checkbox checked={isMarkdown} onChange={handleToggleMarkdown.bind(this, i)} />) ||
-                      ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
-                    }</TableCell>
-                    <TableCell>{isImporting ? <CircularProgress size="2ex" /> : "   "}</TableCell>
-                  </TableRow>))}
-                </TableBody>
-              </Table>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={cancelImport}>
-                Cancel
-              </Button>
-              <Button disabled={isImportActive.current} onClick={doImport}>
-                Import
-              </Button>
-            </DialogActions>
+          <Dialog fullScreen open={importFiles.length > 0} aria-labelledby="import-title">
+            <AppBar style={{position: 'static'}}>
+              <Toolbar>
+                <IconButton edge="start" color="inherit" onClick={handleCloseImport} aria-label="close" >
+                  <CloseIcon />
+                </IconButton>
+                <Typography id="import-title" sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                  Importing {importFiles.length} Files
+                </Typography>
+                <Button autoFocus disabled={'DONE' === importState.current} color="inherit" onClick={handleImportOrCancel}>
+                  {'PREPARING' === importState.current ? "Import" : "Cancel"}
+                </Button>
+              </Toolbar>
+            </AppBar>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>File Name</strong></TableCell>
+                  <TableCell><strong>Contains Markdown</strong></TableCell>
+                  <TableCell><strong>Result</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {importFiles.map(({file, parseType, isMarkdown, isImporting, message}, i) => (<TableRow key={i}>
+                  <TableCell>{file.name}</TableCell>
+                  <TableCell>{
+                    ('text/plain' === parseType && <Checkbox checked={isMarkdown} disabled={Boolean(message)} onChange={handleToggleMarkdown.bind(this, i)} />) ||
+                    ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
+                  }</TableCell>
+                  <TableCell>{message || (isImporting && <CircularProgress size="2ex" />)}</TableCell>
+                </TableRow>))}
+              </TableBody>
+            </Table>
           </Dialog>
         </div>
         <div className="panel panelDetail">

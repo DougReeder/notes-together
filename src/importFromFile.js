@@ -24,32 +24,40 @@ function checkForMarkdown(file) {
 }
 
 function importMultipleNotes(file, parseType) {
-  console.log(`importMultipleNotes "${file.name}" ${parseType}`);
+  // console.log(`importMultipleNotes "${file.name}" ${parseType}`);
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async evt => {
       try {
         const text = evt.target.result;
-        console.log('onload', '“' + text.slice(0, 100) + '...”');
+        // console.log('onload', '“' + text.slice(0, 100) + '...”');
         const coda = file.name;   // TODO: remove file extension
 
-        let noteIds
+        let response;
         switch (parseType) {
           case 'text/html':
-            noteIds = await importHtml(text, file.lastModified, coda);
+            response = await importHtml(text, file.lastModified, coda);
             break;
           case 'text/plain':
           case 'text/markdown':
-            noteIds = await splitIntoNotes(text, file.lastModified, coda, parseType);
+            response = await splitIntoNotes(text, file.lastModified, coda, parseType);
             break;
           default:
-            noteIds = await importText(text, file.lastModified, coda, parseType);
+            response = await importText(text, file.lastModified, coda, parseType);
             break;
         }
+        console.info(`finished importing ${response.noteIds.length} notes from "${file.name}"`, response.messages);
 
-        console.log(`finished importing ${noteIds.length} notes from "${file.name}"`)
-        resolve(noteIds);
+        const msgs = response.messages || [];
+        if (response.noteIds.length > 1) {
+          msgs.unshift(`${response.noteIds.length} notes`);
+        } else if (1 === response.noteIds.length) {
+          msgs.unshift("1 note");
+        } else if (0 === msgs.length) {   // 0 === response.noteIds.length
+          msgs.unshift("No notes");
+        }
+        resolve({noteIds: response.noteIds, message: msgs.join("; ")});
       } catch (err) {
         reject(err);
       }
@@ -62,30 +70,39 @@ function importMultipleNotes(file, parseType) {
 }
 
 async function importHtml(html, fileDateValue, coda) {
-  if (coda) {
-    let endPos = html.indexOf('</body>');
-    if (endPos < 0) {
-      endPos = html.indexOf('</BODY>');
-    }
-    if (endPos < 0) {
-      endPos = html.indexOf('</html>');
-    }
-    if (endPos < 0) {
-      endPos = html.indexOf('</HTML>');
+  try {
+    if (coda) {
+      let endPos = html.indexOf('</body>');
+      if (endPos < 0) {
+        endPos = html.indexOf('</BODY>');
+      }
+      if (endPos < 0) {
+        endPos = html.indexOf('</html>');
+      }
+      if (endPos < 0) {
+        endPos = html.indexOf('</HTML>');
+      }
+
+      if (endPos >= 0) {
+        html = html.slice(0, endPos) + '<p>' + coda + '</p>' + html.slice(endPos);
+      } else {
+        html += '<p>' + coda + '</p>';
+      }
     }
 
-    if (endPos >= 0) {
-      html = html.slice(0, endPos) + '<p>' + coda + '</p>' + html.slice(endPos);
+    const newNote = createMemoryNote(null, html, new Date(fileDateValue), 'text/html;hint=SEMANTIC');
+
+    const cleanNote = await upsertNote(newNote);
+    return {noteIds: [cleanNote.id], messages: []};
+  } catch (err) {
+    let messages = [];
+    if ('/properties/content/maxLength' === err?.error?.schemaPath) {
+      messages.push("Too long. Copy the parts you need.");
     } else {
-      html += '<p>' + coda + '</p>';
+      messages.push(extractUserMessage(err));
     }
+    return {noteIds: [], messages}
   }
-
-  const newNote = createMemoryNote(null, html, new Date(fileDateValue), 'text/html;hint=SEMANTIC');
-
-  const cleanNote = await upsertNote(newNote);
-
-  return [cleanNote.id]
 }
 
 async function splitIntoNotes(text, fileDateValue, coda, parseType) {
@@ -94,7 +111,8 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
   let lineMatch;
   const linePatt = /^(.*)(\r\n|\n|\r)/gm;
   const emptyLinePatt = /^\s*$/;
-  const ids = [];
+  const noteIds = [];
+  const messages = [];
   let lastLastIndex = 0;
 
   while ((lineMatch = linePatt.exec(text)) !== null) {
@@ -106,15 +124,11 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
         try {
           const note = linesToNote(buffer, fileDateValue--, coda, parseType);
           const cleanNote = await upsertNote(note);
-          ids.push(cleanNote.id);
+          noteIds.push(cleanNote.id);
         } catch (err) {
           console.error(err);
           if (err.name !== 'QuietError') {
-            window.postMessage({
-              kind: 'TRANSIENT_MSG',
-              message: extractUserMessage(err),
-              key: coda
-            }, window?.location?.origin);
+            messages.push(extractUserMessage(err));
           }
         } finally {
           buffer.length = 0;
@@ -138,20 +152,16 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
     try {
       const note = linesToNote(buffer, fileDateValue--, coda, parseType);
       const cleanNote = await upsertNote(note);
-      ids.push(cleanNote.id);
+      noteIds.push(cleanNote.id);
     } catch (err) {
       console.error(err);
       if (err.name !== 'QuietError') {
-        window.postMessage({
-          kind: 'TRANSIENT_MSG',
-          message: extractUserMessage(err),
-          key: coda
-        }, window?.location?.origin);
+        messages.push(extractUserMessage(err));
       }
     }
   }
 
-  return ids;
+  return {noteIds, messages};
 }
 
 /**
@@ -175,7 +185,7 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
     return previousValue + currentString.length;
   }, 0);
   if (noteChars > 600000) {
-    throw new Error(`Divide “${coda}” manually before importing.`);
+    throw new Error(`Divide manually before importing`);
   }
   // last line may or may not be date
   const lastLine = lines[lines.length - 1].trim();
@@ -196,14 +206,24 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
 }
 
 async function importText(text, fileDateValue, coda, parseType) {
-  if (coda) {
-    text += '\n\n' + coda;
+  try {
+    if (coda) {
+      text += '\n\n' + coda;
+    }
+    const newNote = createMemoryNote(null, text, fileDateValue, parseType);
+
+    const cleanNote = await upsertNote(newNote);
+
+    return {noteIds: [cleanNote.id], messages: []};
+  } catch (err) {
+    let messages = [];
+    if ('/properties/content/maxLength' === err?.error?.schemaPath) {
+      messages.push("Too long. Copy the parts you need.");
+    } else {
+      messages.push(extractUserMessage(err));
+    }
+    return {noteIds: [], messages}
   }
-  const newNote = createMemoryNote(null, text, fileDateValue, parseType);
-
-  const cleanNote = await upsertNote(newNote);
-
-  return [cleanNote.id]
 }
 
 /** Throwable, but should not be reported to the user */
