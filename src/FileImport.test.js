@@ -1,9 +1,14 @@
-// importFromFile.test.js
+// FileImport.test.js - automated tests for importing notes from files
 // Copyright © 2021 Doug Reeder
 
 import auto from "fake-indexeddb/auto.js";
-import {init, parseWords, upsertNote, getNote, deleteNote, findStubs, changeHandler} from "./storage";
-import {importMultipleNotes, checkForMarkdown} from "./importFromFile";
+import {init, getNote} from "./storage";
+import FileImport, {checkForMarkdown, importMultipleNotes} from "./FileImport";
+import {
+  render,
+  screen, waitFor
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {validate as uuidValidate} from "uuid";
 import {TITLE_MAX} from "./Note";
 
@@ -29,8 +34,8 @@ describe("checkForMarkdown", () => {
 
   it("should return true for text with numbered list", async () => {
     const file = new Blob([
-        "   2. Second\n",
-        "  3. Third\n",
+      "   2. Second\n",
+      "  3. Third\n",
     ], {type: 'text/plain'});
     await expect(checkForMarkdown(file)).resolves.toEqual(true);
   });
@@ -239,18 +244,18 @@ review.t`);
     expect(retrievedNote.date).toEqual(new Date(date1));
   });
 
-  it("should continue after refusing to create a note longer than 600,000 characters", async () => {
+  it("should continue after refusing to create a text note longer than 60,000 characters", async () => {
     const content0 = 'before\n';
     const date0 = '2006-02-14T07:00:00Z';
     let logLines = `Feb 16 00:17:00 frodo Java Updater[24847]: Untrusted apps are not allowed to connect to Window Server before login.
 Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/Logs/DiagnosticReports/powerstats_2016-02-07-001552_frodo.diag
 `;
-    while (logLines.length < 600_000) {
+    while (logLines.length < 60_000) {
       logLines += logLines;
     }
     const content2 = 'after\n';
     const date2 = '2006-02-16T08:00:00Z';
-    const file = new File([content0, date0, '\n\n\n\n', logLines, '\n\n\n', content2, date2, '\n\n\n\n'], "report-with.log", {type: ''});
+    const file = new File([content0, date0, '\n\n\n\n', logLines, '\n\n\n', content2, date2, '\n\n\n\n'], "report-with-log.txt", {type: 'text/plain'});
 
     const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
     expect(noteIds).toBeInstanceOf(Array);
@@ -263,14 +268,52 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
-    expect(retrievedNote.content).toEqual(content0 + '\nreport-with.log');
+    expect(retrievedNote.content).toEqual(content0 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
-    expect(retrievedNote.content).toEqual(content2 + '\nreport-with.log');
+    expect(retrievedNote.content).toEqual(content2 + '\nreport-with-log.txt');
+    expect(retrievedNote.date).toEqual(new Date(date2));
+  });
+
+  it("should continue after refusing to create a Markdown note longer than 600,000 characters", async () => {
+    const content0 = 'introduction\n';
+    const date0 = '2006-02-14T07:00:00Z';
+    let listLines = `1. A thing
+2. Some other thing
+`;
+    while (listLines.length < 600_000) {
+      listLines += listLines;
+    }
+    let lipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n';
+    while (lipsum.length < 60_000) {
+      lipsum += lipsum;
+    }
+    const date2 = '2006-02-16T08:00:00Z';
+    const file = new File([content0, date0, '\n\n\n\n', listLines, '\n\n\n', lipsum, date2, '\n\n\n\n'], "interminable.md", {type: 'text/markdown'});
+
+    const {noteIds, message} = await importMultipleNotes(file, 'text/markdown');
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(2);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(message).toEqual("2 notes; Divide manually before importing");
+
+    let retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(content0 + '\ninterminable.md');
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(noteIds[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(lipsum + '\ninterminable.md');
     expect(retrievedNote.date).toEqual(new Date(date2));
   });
 
@@ -319,5 +362,201 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(noteIds.length).toEqual(0);
     expect(message).toEqual("Too long. Copy the parts you need.");
   });
+});
 
+
+const fileDateHtml = '1889-01-01T12:00:00Z';
+const htmlFile = new File(['<p>Alis Volat Propiis</p>'], 'Oregon.html', {type: 'text/html', lastModified: Date.parse(fileDateHtml)});
+
+const binaryFile = new File([], 'binary', {type: 'application/octet-stream'});
+
+const fileDateMd = '1919-04-17T15:00:00Z';
+const markdownContent = "# Tarzan, Lord of the Jungle\n\n\n\n# A Princess of Mars";
+const markdownFile = new File([markdownContent], 'Burroughs.md', {type: 'text/markdown', lastModified: Date.parse(fileDateMd)});
+
+const fileDateMdInText = '1970-05-23T17:00:00Z';
+const markdownInTextContent = "## Ringworld\n\nreview ©1979\n\n\n\n## World of Ptavvs"
+const markDownInTextFile = new File([markdownInTextContent], 'Niven.txt', {type: 'text/plain', lastModified: Date.parse(fileDateMdInText)});
+
+const fileDateText = '1991-02-17T23:00:00Z';
+const textContent = 'London Bridge is falling down\n\n\n\nMary, Mary, quite contrary';
+const textFile = new File([textContent], 'nursery-rhymes.txt', {type: 'text/plain', lastModified: Date.parse(fileDateText)});
+
+const fiveFiles = [htmlFile, binaryFile, markdownFile, markDownInTextFile, textFile];
+
+describe("FileImport", () => {
+  beforeAll(() => {
+    return init("testStorageDb");
+  });
+
+  it("should not render dialog when no files supplied", async () => {
+    const mockCloseImport = jest.fn();
+
+    const {queryAllByRole} = render(<FileImport files={[]} doCloseImport={mockCloseImport}/>);
+
+    const dialogs = queryAllByRole('dialog');
+    expect(dialogs.length).toEqual(0);
+    expect(mockCloseImport).not.toHaveBeenCalled();
+  });
+
+  it("should render one row for each file supplied & allow closing", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    expect(screen.getByRole('button', {name: "Import"})).toBeEnabled();
+
+    const rows = screen.queryAllByRole('row');
+    expect(rows.length).toEqual(1+5);
+    const headers = screen.queryAllByRole('columnheader');
+    expect(headers[0].textContent).toEqual('File Name');
+    expect(headers[1].textContent).toEqual('Contains Markdown');
+    expect(headers[2].textContent).toEqual('Result');
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("");
+    expect(cells[3].textContent).toEqual("binary");
+    expect(cells[4].textContent).toEqual("");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[6].textContent).toEqual("Burroughs.md");
+    const mdCheckbox = cells[7].querySelector('input[type=checkbox]');
+    expect(mdCheckbox.checked).toEqual(true);
+    expect(mdCheckbox.disabled).toEqual(true);
+    expect(cells[8].textContent).toEqual("");
+    expect(cells[9].textContent).toEqual("Niven.txt");
+    const mdInTextCheckbox = cells[10].querySelector('input[type=checkbox]');
+    expect(mdInTextCheckbox.checked).toEqual(true);
+    expect(mdInTextCheckbox.disabled).toEqual(false);
+    expect(cells[11].textContent).toEqual("");
+    expect(cells[12].textContent).toEqual("nursery-rhymes.txt");
+    const textCheckbox = cells[13].querySelector('input[type=checkbox]');
+    expect(textCheckbox.checked).toEqual(false);
+    expect(textCheckbox.disabled).toEqual(false);
+    expect(cells[14].textContent).toEqual("");
+    expect(cells.length).toEqual(5*3);
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
+  });
+
+  it("should import & summarize results", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    const importBtn = screen.getByRole('button', {name: "Import"});
+    expect(importBtn).toBeEnabled();
+
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("");
+    expect(cells[3].textContent).toEqual("binary");
+    expect(cells[4].textContent).toEqual("");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[6].textContent).toEqual("Burroughs.md");
+    const mdCheckbox = cells[7].querySelector('input[type=checkbox]');
+    expect(mdCheckbox.checked).toEqual(true);
+    expect(mdCheckbox.disabled).toEqual(true);
+    expect(cells[8].textContent).toEqual("");
+    expect(cells[9].textContent).toEqual("Niven.txt");
+    const mdInTextCheckbox = cells[10].querySelector('input[type=checkbox]');
+    expect(mdInTextCheckbox.checked).toEqual(true);
+    expect(mdInTextCheckbox.disabled).toEqual(false);
+    expect(cells[11].textContent).toEqual("");
+    expect(cells[12].textContent).toEqual("nursery-rhymes.txt");
+    const textCheckbox = cells[13].querySelector('input[type=checkbox]');
+    expect(textCheckbox.checked).toEqual(false);
+    expect(textCheckbox.disabled).toEqual(false);
+    expect(cells[14].textContent).toEqual("");
+    expect(cells.length).toEqual(5*3);
+
+    userEvent.click(importBtn);
+    expect(mockCloseImport).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 7 Notes"})).toBeVisible())
+    expect(cells[2].textContent).toEqual("1 note");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[8].textContent).toEqual("2 notes");
+    expect(cells[11].textContent).toEqual("2 notes");
+    expect(cells[14].textContent).toEqual("2 notes");
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+  });
+
+  it("should allow changing Markdown flags before importing", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    const importBtn = screen.getByRole('button', {name: "Import"});
+    expect(importBtn).toBeEnabled();
+
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("");
+    expect(cells[3].textContent).toEqual("binary");
+    expect(cells[4].textContent).toEqual("");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[6].textContent).toEqual("Burroughs.md");
+    const mdCheckbox = cells[7].querySelector('input[type=checkbox]');
+    expect(mdCheckbox.checked).toEqual(true);
+    expect(mdCheckbox.disabled).toEqual(true);
+    expect(cells[8].textContent).toEqual("");
+    expect(cells[9].textContent).toEqual("Niven.txt");
+    const mdInTextCheckbox = cells[10].querySelector('input[type=checkbox]');
+    expect(mdInTextCheckbox.checked).toEqual(true);
+    expect(mdInTextCheckbox.disabled).toEqual(false);
+    expect(cells[11].textContent).toEqual("");
+    expect(cells[12].textContent).toEqual("nursery-rhymes.txt");
+    const textCheckbox = cells[13].querySelector('input[type=checkbox]');
+    expect(textCheckbox.checked).toEqual(false);
+    expect(textCheckbox.disabled).toEqual(false);
+    expect(cells[14].textContent).toEqual("");
+    expect(cells.length).toEqual(5*3);
+
+    userEvent.click(mdInTextCheckbox);
+    expect(mdInTextCheckbox.checked).toEqual(false);
+    userEvent.click(textCheckbox);
+    expect(textCheckbox.checked).toEqual(true);
+
+    userEvent.click(importBtn);
+    expect(mockCloseImport).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 7 Notes"})).toBeVisible())
+    expect(cells[2].textContent).toEqual("1 note");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[8].textContent).toEqual("2 notes");
+    expect(cells[11].textContent).toEqual("2 notes");
+    expect(cells[14].textContent).toEqual("2 notes");
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+  });
+
+
+  it("should use singular title for 1 file", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={[markDownInTextFile]} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Importing 1 File"})).toBeVisible())
+  });
 });

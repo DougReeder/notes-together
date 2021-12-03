@@ -1,10 +1,181 @@
-// importFromFile.js - import for Notes Together
+// FileImport.js - file import dialog & functions
 // Copyright © 2021 Doug Reeder
 
+import {extractUserMessage} from "./util/extractUserMessage";
+import {
+  AppBar,
+  Button, Checkbox, CircularProgress,
+  Dialog,
+  IconButton,
+  Table, TableBody, TableCell,
+  TableHead,
+  TableRow,
+  Toolbar,
+  Typography
+} from "@material-ui/core";
+import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
+import React, {useEffect, useRef, useState} from "react";
+import PropTypes from 'prop-types';
+import CloseIcon from '@material-ui/icons/Close';
 import {isLikelyMarkdown} from "./util";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
-import {extractUserMessage} from "./util/extractUserMessage";
+
+function FileImport({files, doCloseImport}) {
+  const [imports, setImports] = useState([]);
+  const importPhase = useRef('');   // PREPARING, ACTIVE, or DONE
+  const numNotesCreated = useRef(0);
+  const lastSuccessfulFileName = useRef("");
+
+  useEffect(() => {
+    async function determineParseTypes(files) {
+      const newImports = [];
+      for (const file of files) {
+        try {
+          newImports.push(await determineParseType(file));
+        } catch (err) {
+          let message;
+          if (['NotFoundError', 'NotReadableError'].includes(err.name)) {   // Firefox, Safari
+            message = "Ask your administrator for permission to read this.";
+          } else {
+            message = extractUserMessage(err);
+          }
+          newImports.push({file, message});
+        }
+      }
+      importPhase.current = 'PREPARING';
+      lastSuccessfulFileName.current = "";
+      setImports(newImports);
+      numNotesCreated.current = 0;
+    }
+    determineParseTypes(files)
+  }, [files]);
+
+  async function determineParseType(file) {
+    // console.log(`selected file “${file.name}” "${file.type}"`)
+    // TODO: Convert a JPEG to data URL
+    if (!file.type.startsWith('text') && !allowedFileTypesNonText.includes(file.type)) {
+      return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
+    }
+
+    if (hasTagsLikeHtml(file.type)) {
+      return {file, parseType: 'text/html'};
+    } else {
+      const result = /\/([^;]+)/.exec(file.type);
+      switch (result?.[1]) {
+        case 'markdown':
+          return {file, parseType: 'text/markdown'};
+        case 'plain':
+          const isMarkdown = await checkForMarkdown(file);
+          // console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
+          return {file, parseType: 'text/plain', isMarkdown};
+        default:
+          return {file, parseType: 'text/' + (result?.[1] || 'plain')};
+      }
+    }
+  }
+
+  function handleToggleMarkdown(i, evt, isMarkdown) {
+    imports[i].isMarkdown = isMarkdown;
+    setImports(imports.slice(0));
+  }
+
+  async function handleImportOrCancel() {
+    if ('ACTIVE' === importPhase.current) {
+      importPhase.current = 'DONE';   // cancel
+      setImports([...imports]);   // forces render
+      return;
+    }
+
+    importPhase.current = 'ACTIVE';
+    for (const record of imports) {
+      try {
+        if ('message' in record) {
+          continue;
+        }
+        let {file, parseType, isMarkdown} = record;
+        record.isImporting = true
+        setImports([...imports]);
+        if ('text/plain' === file.type && isMarkdown) {
+          // console.log(`changing parseType of "${file.name}" to Markdown`)
+          parseType = 'text/markdown';
+        }
+        const {noteIds, message} = await importMultipleNotes(file, parseType);
+        record.message = message;
+        numNotesCreated.current += noteIds.length
+        if (noteIds.length > 0) {
+          lastSuccessfulFileName.current = file.name;
+        }
+      } catch (err) {
+        record.message = extractUserMessage(err);
+      } finally {
+        record.isImporting = false
+        setImports([...imports]);
+        if ('ACTIVE' !== importPhase.current) {
+          break;
+        }
+      }
+    }
+    importPhase.current = 'DONE';
+    setImports([...imports]);   // forces render
+  }
+
+  let dialogTitle;
+  if ('DONE' === importPhase.current) {
+    dialogTitle = `Imported ${numNotesCreated.current} Notes`;
+  } else {
+    dialogTitle = 1 === imports.length ?
+        "Importing 1 File" :
+        `Importing ${imports.length} Files`;
+  }
+
+  return (
+      <Dialog fullScreen open={files.length > 0} aria-labelledby="import-title">
+        <AppBar style={{position: 'sticky'}}>
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)} aria-label="Close" >
+              <CloseIcon />
+            </IconButton>
+            <Typography id="import-title" sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+              {dialogTitle}
+            </Typography>
+            <Button autoFocus disabled={'DONE' === importPhase.current} color="inherit" onClick={handleImportOrCancel}>
+              {'PREPARING' === importPhase.current ? "Import" : "Cancel"}
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <Table size="small" style={{maxWidth: '80em', marginLeft: 'auto',
+          marginRight: 'auto'}}>
+          <TableHead>
+            <TableRow>
+              <TableCell><strong>File Name</strong></TableCell>
+              <TableCell><strong>Contains Markdown</strong></TableCell>
+              <TableCell><strong>Result</strong></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {imports.map(({file, parseType, isMarkdown, isImporting, message}, i) => (<TableRow key={i}>
+              <TableCell>{file.name}</TableCell>
+              <TableCell>{
+                ('text/plain' === parseType && <Checkbox checked={isMarkdown} disabled={Boolean(message)} onChange={handleToggleMarkdown.bind(this, i)} />) ||
+                ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
+              }</TableCell>
+              <TableCell>{message || (isImporting && <CircularProgress size="2ex" />)}</TableCell>
+            </TableRow>))}
+          </TableBody>
+        </Table>
+      </Dialog>
+  );
+}
+
+FileImport.propTypes = {
+  files: PropTypes.oneOfType([
+    PropTypes.array,   // testing
+    PropTypes.instanceOf(FileList)   // browser
+  ]).isRequired,
+  doCloseImport: PropTypes.func.isRequired,
+}
+
 
 const allowedFileTypesNonText = ['application/xhtml+xml','application/mathml+xml','application/javascript','application/x-yaml','application/json', 'message/rfc822','image/svg+xml'];
 
@@ -47,7 +218,7 @@ function importMultipleNotes(file, parseType) {
             response = await importText(text, file.lastModified, coda, parseType);
             break;
         }
-        console.info(`finished importing ${response.noteIds.length} notes from "${file.name}"`, response.messages);
+        console.info(`finished importing ${response.noteIds.length} ${parseType} notes from "${file.name}"`, response.messages);
 
         const msgs = response.messages || [];
         if (response.noteIds.length > 1) {
@@ -109,13 +280,13 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
   const buffer = [];
   let emptyLineCount = 0;
   let lineMatch;
-  const linePatt = /^(.*)(\r\n|\n|\r)/gm;
+  const linePatt = /^(.*)(\r\n|\n|\r|$)/gm;
   const emptyLinePatt = /^\s*$/;
   const noteIds = [];
   const messages = [];
   let lastLastIndex = 0;
 
-  while ((lineMatch = linePatt.exec(text)) !== null) {
+  while (linePatt.lastIndex < text.length && (lineMatch = linePatt.exec(text)) !== null) {
     if (emptyLinePatt.test(lineMatch[1])) {
       ++emptyLineCount;
     } else {
@@ -142,7 +313,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
     lastLastIndex = linePatt.lastIndex;
   }
 
-  let lastLine;
+  let lastLine;   // TODO: determine if this can be deleted
   if ((lastLine = text.slice(lastLastIndex))) {   // file doesn't end with newline
     if (!emptyLinePatt.test(lastLine)) {   // not blank
       buffer.push(lastLine);
@@ -184,7 +355,7 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   const noteChars = lines.reduce(function (previousValue, currentString) {
     return previousValue + currentString.length;
   }, 0);
-  if (noteChars > 600000) {
+  if (noteChars > ('text/plain' === parseType ? 60_000 : 600_000)) {
     throw new Error(`Divide manually before importing`);
   }
   // last line may or may not be date
@@ -235,4 +406,5 @@ QuietError.prototype = Object.create(Error.prototype);
 QuietError.prototype.name = "QuietError";
 
 
+export default FileImport;
 export {allowedFileTypesNonText, checkForMarkdown, importMultipleNotes};
