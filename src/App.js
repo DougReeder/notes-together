@@ -164,8 +164,16 @@ function App() {
 
   const fileInput = useRef(null);
   const [importFiles, setImportFiles] = useState([]);
+  const [isImportMultiple, setIsImportMultiple] = useState(false);
 
-  function handleImportFile(evt) {
+  function handleImportFileSingle(evt) {
+    setIsImportMultiple(false);
+    fileInput.current.click();
+    setAppMenuAnchorEl(null);
+  }
+
+  function handleImportFileMultiple(evt) {
+    setIsImportMultiple(true);
     fileInput.current.click();
     setAppMenuAnchorEl(null);
   }
@@ -195,6 +203,7 @@ function App() {
 
       if (evt.dataTransfer.files.length > 0) {
         setImportFiles(evt.dataTransfer.files);
+        setIsImportMultiple(false);
       } else {
         window.postMessage({kind: 'TRANSIENT_MSG', message: "Drag that to the editor panel", severity: 'warning'}, window?.location?.origin);
       }
@@ -295,7 +304,8 @@ function App() {
             </IconButton>
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)} onClose={setAppMenuAnchorEl.bind(this,null)} >
               {/*<MenuItem>Preferences & Help</MenuItem>*/}
-              <MenuItem onClick={handleImportFile}>Import multiple notes per text, Markdown or HTML file</MenuItem>
+              <MenuItem onClick={handleImportFileSingle}>Import one note per file</MenuItem>
+              <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file</MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                    accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/rtf,text/xml," + allowedFileTypesNonText.join(',') + ",.txt,.text,.readme,.me,.1st,.log,.markdown,.md,.mkd,.mkdn,.mdown,.markdown,.adoc,.textile,.rst,.textile,.etx,.tex,.texi,.org,.apt,.pod,.html,.htm,.xhtml,.json,.yaml,.yml,.awk,.vcs,.ics,.abc,.js,.ts,.jsx,.css,.less,.sass,.java,.properties,.sql,.c,.h,.cc,.cxx,.cpp,.hpp,.py,.rb,.pm,.erl,.hs,.hbx,.sh,.bat"}/>
@@ -308,7 +318,7 @@ function App() {
               {transientErr?.message || transientErr?.name || transientErr?.toString()}
             </Alert>
           </Snackbar>
-          <FileImport files={importFiles} doCloseImport={doCloseImport} />
+          <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
         </div>
         <div className="panel panelDetail">
           <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>

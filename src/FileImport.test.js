@@ -3,7 +3,7 @@
 
 import auto from "fake-indexeddb/auto.js";
 import {init, getNote} from "./storage";
-import FileImport, {checkForMarkdown, importMultipleNotes} from "./FileImport";
+import FileImport, {checkForMarkdown, importFromFile} from "./FileImport";
 import {
   render,
   screen, waitFor
@@ -41,7 +41,7 @@ describe("checkForMarkdown", () => {
   });
 });
 
-describe("importMultipleNotes", () => {
+describe("importFromFile", () => {
   beforeAll(() => {
     return init("testStorageDb");
   });
@@ -58,7 +58,7 @@ describe("importMultipleNotes", () => {
     const fileDate = '2021-07-01T10:30:00Z';
     const file = new File([fileContent], "Lipsum.html", {type: 'application/xhtml+xml', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    const {noteIds, message} = await importFromFile(file, 'text/html', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -80,7 +80,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
     const fileDate = '2021-08-01T11:00:00Z';
     const file = new File([fileContent], "Buckaroo-Banzai.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    const {noteIds, message} = await importFromFile(file, 'text/html', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -96,15 +96,16 @@ Buckaroo-Banzai.html`);
 <p>Buckaroo-Banzai.html</p>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
-
-  it("should parse an empty HTML file", async () => {
+  
+  it("should parse an empty HTML file as 0 notes", async () => {
     const fileDate = '2021-09-01T12:00:00Z';
     const file = new File([], "empty.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
-    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+
+    const {noteIds, message} = await importFromFile(file, 'text/html', false);
+
     expect(noteIds).toBeInstanceOf(Array);
-    // Creating either zero or one note is fine.
-    expect(noteIds.length).toBeLessThan(2);
-    expect(message).toMatch(/\S/);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("No notes");
   });
 
   it("should reject an overly-long HTML file", async () => {
@@ -115,17 +116,17 @@ Buckaroo-Banzai.html`);
     }
     const file = new File(['<ol>', html,'</ol>'], "list.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/html');
+    const {noteIds, message} = await importFromFile(file, 'text/html', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
     expect(message).toEqual("Too long. Copy the parts you need.");
   });
 
-  it("should parse an empty text file as 0 notes", async () => {
+  it("should parse an empty text file as 0 notes in multiple mode", async () => {
     const fileDate = '2019-06-01T12:00:00Z';
     const file = new File([], "empty-css.html", {type: 'text/css', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
     expect(message).toEqual("No notes");
@@ -142,7 +143,7 @@ There's three things to say about this:
     const fileDate = '2021-10-01T13:00:00Z';
     const file = new File([fileContent], "review.t", {type: 'text/troff', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -169,7 +170,7 @@ review.t`);
         "melange.txt",
         {type: 'text/plain', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(3);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -222,7 +223,7 @@ review.t`);
         "actually-markdown.txt",
         {type: 'text/plain', lastModified: Date.parse('2021-12-01T14:00:00Z')});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/markdown');
+    const {noteIds, message} = await importFromFile(file, 'text/markdown', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(2);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -257,7 +258,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const date2 = '2006-02-16T08:00:00Z';
     const file = new File([content0, date0, '\n\n\n\n', logLines, '\n\n\n', content2, date2, '\n\n\n\n'], "report-with-log.txt", {type: 'text/plain'});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/plain');
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(2);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -295,7 +296,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const date2 = '2006-02-16T08:00:00Z';
     const file = new File([content0, date0, '\n\n\n\n', listLines, '\n\n\n', lipsum, date2, '\n\n\n\n'], "interminable.md", {type: 'text/markdown'});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/markdown');
+    const {noteIds, message} = await importFromFile(file, 'text/markdown', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(2);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -335,7 +336,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const fileDate = '2004-10-30T10:30:00Z';
     const file = new File([fileContent], "historyStub.js", {type: 'application/javascript', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/javascript');
+    const {noteIds, message} = await importFromFile(file, 'text/javascript', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -357,10 +358,94 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     }
     const file = new File([lines], "too-long.csv", {type: 'text/csv', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importMultipleNotes(file, 'text/csv');
+    const {noteIds, message} = await importFromFile(file, 'text/csv', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
     expect(message).toEqual("Too long. Copy the parts you need.");
+  });
+
+  it("should parse a text file as one note when flagged single", async () => {
+    const fileContent = `Some Title
+
+Aenean magna orci, porta quis vestibulum ac, venenatis eu est. Nulla justo risus, elementum non efficitur id, congue in enim. Morbi ut pharetra tortor, non blandit neque. Sed elementum gravida fermentum. Vestibulum et lorem nibh. Etiam sollicitudin elementum sapien, sit amet euismod ipsum porttitor a. In tortor augue, elementum at scelerisque eu, mollis id turpis.
+
+
+
+
+Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet convallis leo. Cras commodo blandit nulla. Morbi tincidunt pellentesque est. Morbi porta id eros vulputate posuere. Ut semper, lorem at iaculis malesuada, arcu diam pretium diam, vitae rhoncus ligula nibh eu nibh. Pellentesque bibendum in felis ullamcorper tempus. Vivamus sodales, ipsum non lacinia ornare, velit eros volutpat nibh, nec scelerisque odio justo vitae tortor. Praesent vitae cursus velit. Etiam a augue ut sapien porttitor mollis. Mauris at neque dapibus dolor elementum vehicula eu a orci. Praesent quis risus ac lorem semper iaculis. Morbi pretium risus in pulvinar semper. Pellentesque lacus velit, fermentum a convallis sed, scelerisque sed ligula. Vestibulum luctus sem id purus posuere, ac pulvinar ante dictum. `;
+    const fileDate = '2021-12-01T11:30:00Z';
+    const file = new File([fileContent], "gap.txt", {
+      type: 'text/plain',
+      lastModified: Date.parse(fileDate)
+    });
+
+    const {noteIds, message} = await importFromFile(file, 'text/plain', false);
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
+
+    const retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(fileContent + "\n\ngap.txt");
+    expect(retrievedNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should parse a Markdown file as one note when flagged single", async () => {
+    const fileContent = `## Lorem Ipsum
+
+1. Aenean magna orci, porta quis vestibulum ac, venenatis eu est.
+2. Nulla justo risus, elementum non efficitur id, congue in enim.
+3. Morbi ut pharetra tortor, non blandit neque.
+4. Sed elementum gravida fermentum.
+
+
+
+
+* Morbi quis vulputate lectus, a interdum velit.
+* Cras quis aliquam magna, sit amet convallis leo.
+* Cras commodo blandit nulla.
+* Morbi tincidunt pellentesque est.`;
+    const fileDate = '2021-12-02T12:30:00Z';
+    const file = new File([fileContent], "divided.txt", {
+      type: 'text/markdown',
+      lastModified: Date.parse(fileDate)
+    });
+
+    const {noteIds, message} = await importFromFile(file, 'text/markdown', false);
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
+
+    const retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.content).toEqual(fileContent + "\n\ndivided.txt");
+    expect(retrievedNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should parse an empty text file as 0 notes, in single mode", async () => {
+    const fileDate = '2019-06-01T12:00:00Z';
+    const file = new File([], "empty.txt", {type: 'text/plain', lastModified: Date.parse(fileDate)});
+
+    const {noteIds, message} = await importFromFile(file, 'text/plain', false);
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("No notes");
+  });
+
+  it("should parse an empty Markdown file as 0 notes, in single mode", async () => {
+    const fileDate = '2019-06-01T12:00:00Z';
+    const file = new File([], "empty.md", {type: 'text/markdown', lastModified: Date.parse(fileDate)});
+
+    const {noteIds, message} = await importFromFile(file, 'text/markdown', false);
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(0);
+    expect(message).toEqual("No notes");
   });
 });
 
@@ -392,7 +477,7 @@ describe("FileImport", () => {
   it("should not render dialog when no files supplied", async () => {
     const mockCloseImport = jest.fn();
 
-    const {queryAllByRole} = render(<FileImport files={[]} doCloseImport={mockCloseImport}/>);
+    const {queryAllByRole} = render(<FileImport files={[]} isMultiple={true} doCloseImport={mockCloseImport}/>);
 
     const dialogs = queryAllByRole('dialog');
     expect(dialogs.length).toEqual(0);
@@ -402,7 +487,7 @@ describe("FileImport", () => {
   it("should render one row for each file supplied & allow closing", async () => {
     const mockCloseImport = jest.fn();
 
-    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+    render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
     await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
 
@@ -447,7 +532,7 @@ describe("FileImport", () => {
   it("should import & summarize results", async () => {
     const mockCloseImport = jest.fn();
 
-    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+    render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
     await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
 
@@ -484,12 +569,12 @@ describe("FileImport", () => {
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 7 Notes"})).toBeVisible())
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 4 Notes"})).toBeVisible())
     expect(cells[2].textContent).toEqual("1 note");
     expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
-    expect(cells[8].textContent).toEqual("2 notes");
-    expect(cells[11].textContent).toEqual("2 notes");
-    expect(cells[14].textContent).toEqual("2 notes");
+    expect(cells[8].textContent).toEqual("1 note");
+    expect(cells[11].textContent).toEqual("1 note");
+    expect(cells[14].textContent).toEqual("1 note");
 
     userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
@@ -498,10 +583,10 @@ describe("FileImport", () => {
   it("should allow changing Markdown flags before importing", async () => {
     const mockCloseImport = jest.fn();
 
-    render(<FileImport files={fiveFiles} doCloseImport={mockCloseImport}/>);
+    render(<FileImport files={fiveFiles} isMultiple={true} doCloseImport={mockCloseImport}/>);
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
-
+    await waitFor(() => expect(screen.queryAllByRole('row').length).toEqual(1+5));
+    expect(screen.getByRole('dialog', {name: "Importing Multiple Notes/File"})).toBeVisible()
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
     const importBtn = screen.getByRole('button', {name: "Import"});
@@ -555,8 +640,59 @@ describe("FileImport", () => {
   it("should use singular title for 1 file", async () => {
     const mockCloseImport = jest.fn();
 
-    render(<FileImport files={[markDownInTextFile]} doCloseImport={mockCloseImport}/>);
+    render(<FileImport files={[markDownInTextFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
     await waitFor(() => expect(screen.getByRole('dialog', {name: "Importing 1 File"})).toBeVisible())
+  });
+
+  it("should import single notes from text & Markdown files when flagged", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    const importBtn = screen.getByRole('button', {name: "Import"});
+    expect(importBtn).toBeEnabled();
+
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("");
+    expect(cells[3].textContent).toEqual("binary");
+    expect(cells[4].textContent).toEqual("");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[6].textContent).toEqual("Burroughs.md");
+    const mdCheckbox = cells[7].querySelector('input[type=checkbox]');
+    expect(mdCheckbox.checked).toEqual(true);
+    expect(mdCheckbox.disabled).toEqual(true);
+    expect(cells[8].textContent).toEqual("");
+    expect(cells[9].textContent).toEqual("Niven.txt");
+    const mdInTextCheckbox = cells[10].querySelector('input[type=checkbox]');
+    expect(mdInTextCheckbox.checked).toEqual(true);
+    expect(mdInTextCheckbox.disabled).toEqual(false);
+    expect(cells[11].textContent).toEqual("");
+    expect(cells[12].textContent).toEqual("nursery-rhymes.txt");
+    const textCheckbox = cells[13].querySelector('input[type=checkbox]');
+    expect(textCheckbox.checked).toEqual(false);
+    expect(textCheckbox.disabled).toEqual(false);
+    expect(cells[14].textContent).toEqual("");
+    expect(cells.length).toEqual(5*3);
+
+    userEvent.click(importBtn);
+    expect(mockCloseImport).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 4 Notes"})).toBeVisible())
+    expect(cells[2].textContent).toEqual("1 note");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[8].textContent).toEqual("1 note");
+    expect(cells[11].textContent).toEqual("1 note");
+    expect(cells[14].textContent).toEqual("1 note");
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
   });
 });

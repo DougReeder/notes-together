@@ -21,7 +21,7 @@ import {isLikelyMarkdown} from "./util";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
 
-function FileImport({files, doCloseImport}) {
+function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
   const importPhase = useRef('');   // PREPARING, ACTIVE, or DONE
   const numNotesCreated = useRef(0);
@@ -100,7 +100,7 @@ function FileImport({files, doCloseImport}) {
           // console.log(`changing parseType of "${file.name}" to Markdown`)
           parseType = 'text/markdown';
         }
-        const {noteIds, message} = await importMultipleNotes(file, parseType);
+        const {noteIds, message} = await importFromFile(file, parseType, isMultiple);
         record.message = message;
         numNotesCreated.current += noteIds.length
         if (noteIds.length > 0) {
@@ -122,11 +122,23 @@ function FileImport({files, doCloseImport}) {
 
   let dialogTitle;
   if ('DONE' === importPhase.current) {
-    dialogTitle = `Imported ${numNotesCreated.current} Notes`;
-  } else {
-    dialogTitle = 1 === imports.length ?
-        "Importing 1 File" :
-        `Importing ${imports.length} Files`;
+    dialogTitle = 1 === numNotesCreated.current ?
+        "Imported 1 Note" :
+        `Imported ${numNotesCreated.current} Notes`;
+  } else {   // PREPARING or ACTIVE
+    if (isMultiple) {
+      if (window.innerWidth >= 430) {
+        dialogTitle = "Importing Multiple Notes/File";
+      } else if (window.innerWidth >= 380) {
+        dialogTitle = "Import. Multiple Notes/File";
+      } else {
+        dialogTitle = "Imp. Mult. Notes/File";
+      }
+    } else {
+      dialogTitle = 1 === imports.length ?
+          "Importing 1 File" :
+          `Importing ${imports.length} Files`;
+    }
   }
 
   return (
@@ -173,6 +185,7 @@ FileImport.propTypes = {
     PropTypes.array,   // testing
     PropTypes.instanceOf(FileList)   // browser
   ]).isRequired,
+  isMultiple: PropTypes.bool,
   doCloseImport: PropTypes.func.isRequired,
 }
 
@@ -194,8 +207,8 @@ function checkForMarkdown(file) {
   });
 }
 
-function importMultipleNotes(file, parseType) {
-  // console.log(`importMultipleNotes "${file.name}" ${parseType}`);
+function importFromFile(file, parseType, isMultiple) {
+  // console.log(`importFromFile "${file.name}" ${parseType}`);
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -212,7 +225,11 @@ function importMultipleNotes(file, parseType) {
             break;
           case 'text/plain':
           case 'text/markdown':
-            response = await splitIntoNotes(text, file.lastModified, coda, parseType);
+            if (isMultiple) {
+              response = await splitIntoNotes(text, file.lastModified, coda, parseType);
+            } else {
+              response = await importText(text, file.lastModified, coda, parseType);
+            }
             break;
           default:
             response = await importText(text, file.lastModified, coda, parseType);
@@ -242,6 +259,9 @@ function importMultipleNotes(file, parseType) {
 
 async function importHtml(html, fileDateValue, coda) {
   try {
+    if (/^\s*$/.test(html)) {
+      return {noteIds: [], messages: []};
+    }
     if (coda) {
       let endPos = html.indexOf('</body>');
       if (endPos < 0) {
@@ -298,8 +318,9 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
           noteIds.push(cleanNote.id);
         } catch (err) {
           console.error(err);
-          if (err.name !== 'QuietError') {
-            messages.push(extractUserMessage(err));
+          const msg = extractUserMessage(err);
+          if (err.name !== 'QuietError' && ! messages.includes(msg)) {
+            messages.push(msg);
           }
         } finally {
           buffer.length = 0;
@@ -326,8 +347,9 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
       noteIds.push(cleanNote.id);
     } catch (err) {
       console.error(err);
-      if (err.name !== 'QuietError') {
-        messages.push(extractUserMessage(err));
+      const msg = extractUserMessage(err);
+      if (err.name !== 'QuietError' && ! messages.includes(msg)) {
+        messages.push(msg);
       }
     }
   }
@@ -378,6 +400,9 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
 
 async function importText(text, fileDateValue, coda, parseType) {
   try {
+    if (/^\s*$/.test(text)) {
+      return {noteIds: [], messages: []};
+    }
     if (coda) {
       text += '\n\n' + coda;
     }
@@ -407,4 +432,4 @@ QuietError.prototype.name = "QuietError";
 
 
 export default FileImport;
-export {allowedFileTypesNonText, checkForMarkdown, importMultipleNotes};
+export {allowedFileTypesNonText, checkForMarkdown, importFromFile};
