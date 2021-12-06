@@ -96,7 +96,7 @@ Buckaroo-Banzai.html`);
 <p>Buckaroo-Banzai.html</p>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
-  
+
   it("should parse an empty HTML file as 0 notes", async () => {
     const fileDate = '2021-09-01T12:00:00Z';
     const file = new File([], "empty.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
@@ -455,6 +455,16 @@ const htmlFile = new File(['<p>Alis Volat Propiis</p>'], 'Oregon.html', {type: '
 
 const binaryFile = new File([], 'binary', {type: 'application/octet-stream'});
 
+const rtfContent = `{\\rtf1\\ansi\\ansicpg1252\\cocoartf1038\\cocoasubrtf320
+{\\fonttbl\\f0\\fswiss\\fcharset0 Helvetica;}
+{\\colortbl;\\red255\\green255\\blue255;}
+\\margl1440\\margr1440\\vieww10680\\viewh17940\\viewkind0
+\\pard\\tx720\\tx1440\\tx2160\\tx2880\\tx3600\\tx4320\\tx5040\\tx5760\\tx6480\\tx7200\\tx7920\\tx8640\\ql\\qnatural\\pardirnatural
+
+\\f0\\fs24 \\cf0 Dev Day Keynote\\
+`;
+const rtfFile = new File([rtfContent], "typical.rtf", {type: 'text/rtf', lastModified: Date.parse('2019-07-30T12:00:00Z')});
+
 const fileDateMd = '1919-04-17T15:00:00Z';
 const markdownContent = "# Tarzan, Lord of the Jungle\n\n\n\n# A Princess of Mars";
 const markdownFile = new File([markdownContent], 'Burroughs.md', {type: 'text/markdown', lastModified: Date.parse(fileDateMd)});
@@ -487,16 +497,16 @@ describe("FileImport", () => {
   it("should render one row for each file supplied & allow closing", async () => {
     const mockCloseImport = jest.fn();
 
-    render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
+    render(<FileImport files={[htmlFile, binaryFile, rtfFile, markdownFile, markDownInTextFile, textFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 6 Files/})).toBeVisible())
 
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
     expect(screen.getByRole('button', {name: "Import"})).toBeEnabled();
 
     const rows = screen.queryAllByRole('row');
-    expect(rows.length).toEqual(1+5);
+    expect(rows.length).toEqual(1+6);
     const headers = screen.queryAllByRole('columnheader');
     expect(headers[0].textContent).toEqual('File Name');
     expect(headers[1].textContent).toEqual('Contains Markdown');
@@ -508,22 +518,25 @@ describe("FileImport", () => {
     expect(cells[3].textContent).toEqual("binary");
     expect(cells[4].textContent).toEqual("");
     expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
-    expect(cells[6].textContent).toEqual("Burroughs.md");
-    const mdCheckbox = cells[7].querySelector('input[type=checkbox]');
+    expect(cells[6].textContent).toEqual("typical.rtf");
+    expect(cells[7].textContent).toEqual("");
+    expect(cells[8].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[9].textContent).toEqual("Burroughs.md");
+    const mdCheckbox = cells[10].querySelector('input[type=checkbox]');
     expect(mdCheckbox.checked).toEqual(true);
     expect(mdCheckbox.disabled).toEqual(true);
-    expect(cells[8].textContent).toEqual("");
-    expect(cells[9].textContent).toEqual("Niven.txt");
-    const mdInTextCheckbox = cells[10].querySelector('input[type=checkbox]');
+    expect(cells[11].textContent).toEqual("");
+    expect(cells[12].textContent).toEqual("Niven.txt");
+    const mdInTextCheckbox = cells[13].querySelector('input[type=checkbox]');
     expect(mdInTextCheckbox.checked).toEqual(true);
     expect(mdInTextCheckbox.disabled).toEqual(false);
-    expect(cells[11].textContent).toEqual("");
-    expect(cells[12].textContent).toEqual("nursery-rhymes.txt");
-    const textCheckbox = cells[13].querySelector('input[type=checkbox]');
+    expect(cells[14].textContent).toEqual("");
+    expect(cells[15].textContent).toEqual("nursery-rhymes.txt");
+    const textCheckbox = cells[16].querySelector('input[type=checkbox]');
     expect(textCheckbox.checked).toEqual(false);
     expect(textCheckbox.disabled).toEqual(false);
-    expect(cells[14].textContent).toEqual("");
-    expect(cells.length).toEqual(5*3);
+    expect(cells[17].textContent).toEqual("");
+    expect(cells.length).toEqual(6*3);
 
     userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());

@@ -68,7 +68,7 @@ describe("Details component", () => {
     const noteId = uuidv4();
     const initialText = "";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'application/rtf')));
+    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'application/example')));
 
     render(<Detail noteId={noteId}></Detail>);
 
@@ -146,7 +146,7 @@ it('renders error if note missing', async () => {
 //   expect(againTextEl).not.toHaveFocus();
 // });
 
-  it("edits & saves HTML if retrieved as SVG", async () => {
+  xit("edits & saves HTML if retrieved as SVG", async () => {
     const noteId = uuidv4();
     const initialText = `<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="red" />
@@ -159,6 +159,56 @@ it('renders error if note missing', async () => {
     expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();
 
     // upsertNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, "Hello", noteDate)));
+
+    userEvent.click(screen.getByRole('button', {name: "Save"}));
+    expect(upsertNote).toHaveBeenCalledTimes(1);
+    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC'), 'DETAIL');
+  });
+
+  it("edits & saves HTML if retrieved as MathML", async () => {
+    const noteId = uuidv4();
+    const initialText = `  <math>
+    <mtable columnalign="right center left">
+      <mtr>
+        <mtd>
+          <msup>
+            <mrow>
+              <mo>( </mo>
+              <mi>a </mi>
+              <mo>+ </mo>
+              <mi>b </mi>
+              <mo>) </mo>
+            </mrow>
+            <mn>2 </mn>
+          </msup>
+        </mtd>
+        <mtd>
+          <mo>= </mo>
+        </mtd>
+        <mtd>
+          <msup>
+            <mi>c </mi>
+            <mn>2</mn>
+          </msup>
+          <mo>+ </mo>
+          <mn>4 </mn>
+          <mo>⋅ </mo>
+          <mo>(</mo>
+          <mfrac>
+            <mn>1 </mn>
+            <mn>2 </mn>
+          </mfrac>
+          <mi>a </mi>
+          <mi>b </mi>
+          <mo>)</mo>
+        </mtd>
+      </mtr>`;
+    const noteDate = new Date(2012, 2, 27);
+    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'application/mathml+xml')));
+    render(<Detail noteId={noteId}></Detail>);
+
+    expect(await screen.findByRole('textbox')).toBeVisible();
+    expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();
 
     userEvent.click(screen.getByRole('button', {name: "Save"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);

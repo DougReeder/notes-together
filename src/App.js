@@ -16,7 +16,7 @@ import {makeStyles} from '@material-ui/core/styles';
 import Slide from '@material-ui/core/Slide';
 import AddIcon from '@material-ui/icons/Add';
 import MenuIcon from '@material-ui/icons/Menu';
-import FileImport, {allowedFileTypesNonText} from './FileImport';
+import FileImport, {allowedExtensions, allowedFileTypesNonText} from './FileImport';
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
@@ -308,7 +308,7 @@ function App() {
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file</MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                   accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/rtf,text/xml," + allowedFileTypesNonText.join(',') + ",.txt,.text,.readme,.me,.1st,.log,.markdown,.md,.mkd,.mkdn,.mdown,.markdown,.adoc,.textile,.rst,.textile,.etx,.tex,.texi,.org,.apt,.pod,.html,.htm,.xhtml,.json,.yaml,.yml,.awk,.vcs,.ics,.abc,.js,.ts,.jsx,.css,.less,.sass,.java,.properties,.sql,.c,.h,.cc,.cxx,.cpp,.hpp,.py,.rb,.pm,.erl,.hs,.hbx,.sh,.bat"}/>
+                   accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/calendar" + allowedFileTypesNonText.join(',') + ',' + allowedExtensions.join(',')}/>
           </header>
           <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
           <Fab onClick={addNote} className={classes.fab} color="primary" aria-label="add"><AddIcon /></Fab>
