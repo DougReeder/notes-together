@@ -100,13 +100,16 @@ describe("changeContentType", () => {
       {children: [
           {text: "secundo linea textu"}
         ]},
+      {children: [
+          {text: `Non-semantic tag: <b>bold</b> "Mike's & mine"`}
+        ]},
     ];
 
     const newSubtype = 'html;hint=SEMANTIC';
     await changeContentType(editor, undefined, newSubtype, id, noteDate);
 
     const retrieved = await getNote(id);
-    expect(retrieved.content).toMatch(/<p>prima linea text<\/p>\s*<p>secundo linea textu<\/p>/);
+    expect(retrieved.content).toMatch(/<p>prima linea text<\/p>\s*<p>secundo linea textu<\/p>\s*<p>Non-semantic tag: &lt;b&gt;bold&lt;\/b&gt; &quot;Mike&apos;s &amp; mine&quot;<\/p>/);
     expect(retrieved.title).toEqual("prima linea text\nsecundo linea textu");
     expect(retrieved.date).toEqual(noteDate);
     expect(retrieved.mimeType).toEqual('text/' + newSubtype);

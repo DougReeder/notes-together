@@ -6,6 +6,7 @@ import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
 import {HtmlRenderer, Parser} from "commonmark";
+import encodeEntities from "./util/encodeEntities";
 
 
 function getRelevantBlockType(editor) {
@@ -111,14 +112,14 @@ async function changeContentType(editor, oldSubtype, newSubtype, noteId, noteDat
       content = editor.children.map(node => SlateNode.string(node)).join('\n');
     }
   } else if (newSubtype.startsWith('html')) {
-    const text = editor.children.map(node => SlateNode.string(node)).join('\n');
     if (oldSubtype?.startsWith('markdown')) {
+      const text = editor.children.map(node => SlateNode.string(node)).join('\n');
       const reader = new Parser();
       const writer = new HtmlRenderer();
       const mdDoc = reader.parse(text); // mdDoc is a 'Node' tree
       content = writer.render(mdDoc); // result is a String
     } else {   // plain text lines -> HTML paragraphs
-      content = text.split("\n").map(line => `<p>${line}</p>`).join("");
+      content = editor.children.map(node => `<p>${encodeEntities(SlateNode.string(node))}</p>`).join('');
     }
   }
   console.log(`${noteId} ${oldSubtype} -> ${newSubtype}\n${content}`)
