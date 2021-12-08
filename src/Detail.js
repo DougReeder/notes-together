@@ -289,6 +289,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       switch (targetType) {
         default:
           changeBlockType(editor, targetType);
+          queueMicrotask(() => {
+            ReactEditor.focus(editor);
+          });
           return;
         case 'multiple':
         case 'list-item':
