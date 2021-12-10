@@ -63,14 +63,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   // }, [searchStr]);
 
   const loadingIdRef = useRef(NaN);
-  const ignoreChangesUntilReloadRef = useRef(false);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
     children: [{ text: 'Initial editor value' }],
   }]);
   const [editableKey, setEditableKey] = useState(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
   const editor = useMemo(
-      () => withHtml(withReact(withHistory(createEditor()))),
+      () => withReact(withHtml(withHistory(createEditor()))),
       []
   );
   const [noteDate, setNoteDate] = useState();
@@ -78,7 +77,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   const replaceNote = useCallback(theNote => {
     try {
-      ignoreChangesUntilReloadRef.current = false;
       let slateNodes;
       if (hasTagsLikeHtml(theNote.mimeType)) {
         editor.subtype = 'html;hint=SEMANTIC';
@@ -103,6 +101,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         slateNodes = [{type: 'paragraph', children: slateNodes}];
         console.log("slateNodes encased in paragraph:", slateNodes);
       }
+      slateNodes[0].noteSubtype = editor.subtype;
       Transforms.deselect(editor);
       setPreviousSelection(null);
       setPreviousBlockType('n/a');
@@ -161,10 +160,19 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   async function handleSlateChange(newValue) {
     try {
-      if (ignoreChangesUntilReloadRef.current) {return;}
-
       setNoteErr(null);
       setEditorValue(newValue);
+
+      if (! ('noteSubtype' in editor.children[0]) && 'subtype' in editor) {
+        console.warn("preserve subtype 1:", editor.children[0].noteSubtype, '<-', editor.subtype)
+        queueMicrotask(() => {
+          console.warn("preserve subtype 2:", editor.children[0].noteSubtype, '<-', editor.subtype)
+          Transforms.setNodes(editor, {noteSubtype: editor.subtype}, {at: [0]})
+        });
+      } else {
+        console.log("preserve subtype:", editor.children[0].noteSubtype, '->', editor.subtype)
+        editor.subtype = editor.children[0].noteSubtype;
+      }
 
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
       if (isAstChange) {
@@ -313,8 +321,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }
 
   async function handleChangeContentType(newSubtype) {
-    ignoreChangesUntilReloadRef.current = true;
-    await changeContentType(editor, effectiveSubtype, newSubtype, noteId, noteDate);
+    await changeContentType(editor, effectiveSubtype, newSubtype);
     setIsContentTypeDialogOpen(false);
   }
 

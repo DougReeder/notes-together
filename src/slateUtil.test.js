@@ -5,7 +5,7 @@ import {createEditor} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
 import auto from "fake-indexeddb/auto.js";
-import {getNote, init} from "./storage";
+import {init} from "./storage";
 import generateTestId from "./util/generateTestId";
 
 describe("getTextBlockStyle", () => {
@@ -90,88 +90,85 @@ describe("changeContentType", () => {
   });
 
   it("should convert untyped to HTML paragraphs", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2001, 11, 31);
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {children: [
+      {noteSubtype: "", type: 'paragraph', children: [
           {text: "prima linea text"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: "secundo linea textu"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: `Non-semantic tag: <b>bold</b> "Mike's & mine"`}
         ]},
     ];
-
     const newSubtype = 'html;hint=SEMANTIC';
-    await changeContentType(editor, undefined, newSubtype, id, noteDate);
+    const expectedNodes = JSON.parse(JSON.stringify(editor.children));
+    expectedNodes[0].noteSubtype = newSubtype;
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toMatch(/<p>prima linea text<\/p>\s*<p>secundo linea textu<\/p>\s*<p>Non-semantic tag: &lt;b&gt;bold&lt;\/b&gt; &quot;Mike&apos;s &amp; mine&quot;<\/p>/);
-    expect(retrieved.title).toEqual("prima linea text\nsecundo linea textu");
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    await changeContentType(editor, undefined, newSubtype);
+
+    expect(editor.children).toEqual(expectedNodes);
+    expect(editor.subtype).toEqual(newSubtype);
   });
 
   it("should convert Markdown markup to HTML markup", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2002, 11, 31);
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {children: [
+      {noteSubtype: "markdown", type: 'paragraph', children: [
           {text: "> Quotable dialog"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: "# Review of *Epic Movie*"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: "1. Acting uneven"}
         ]},
     ];
 
     const newSubtype = 'html;hint=SEMANTIC';
-    await changeContentType(editor, 'markdown;hint=COMMONMARK', newSubtype, id, noteDate);
+    await changeContentType(editor, 'markdown;hint=COMMONMARK', newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toMatch(/<blockquote>\s*<p>Quotable dialog<\/p>\s*<\/blockquote>\s*<h1>Review of <em>Epic Movie<\/em><\/h1>\s*<ol>\s*<li>Acting uneven<\/li>\s*<\/ol>/);
-    expect(retrieved.title).toEqual("Review of Epic Movie\nQuotable dialog");
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children[0]).toEqual(
+      {noteSubtype: newSubtype, type: 'quote', children: [
+          {type: 'paragraph', children: [{text: "Quotable dialog"}]},
+        ]}
+    );
+    expect(editor.children[1]).toEqual({type: 'heading-one', children: [
+        {text: "Review of "}, {italic: true, text: "Epic Movie"}
+      ]});
+    expect(editor.children[2]).toEqual({type: 'numbered-list', listStart: 1, children: [
+        {type: 'list-item', children: [{text: "Acting uneven"}]}
+      ]});
+    expect(editor.subtype).toEqual(newSubtype);
   });
 
 
-  it("should convert untyped to Markdown", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2003, 11, 31);
+  it("should convert untyped to Markdown without altering content", async () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {children: [
+      {noteSubtype: "", children: [
           {text: "erste Textzeile"}
         ]},
       {children: [
           {text: "zweite Textzeile"}
         ]},
     ];
+    const expectedNodes = JSON.parse(JSON.stringify(editor.children));
+    expectedNodes[0].noteSubtype = "markdown";
 
-    const newSubtype = 'markdown;hint=COMMONMARK';
-    await changeContentType(editor, undefined, newSubtype, id, noteDate);
+    const newSubtype = 'markdown';
+    await changeContentType(editor, undefined, newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toEqual("erste Textzeile\nzweite Textzeile");
-    expect(retrieved.title).toEqual("erste Textzeile\nzweite Textzeile");
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children).toEqual(expectedNodes);
+    expect(editor.subtype).toEqual(newSubtype);
   });
 
   it("should convert HTML markup to Markdown markup", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2003, 11, 31);
     const oldSubtype = 'html;hint=SEMANTIC';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {type: 'quote', children: [
+      {noteSubtype: oldSubtype, type: 'quote', children: [
           {text: "Something to lure you in"}
         ]},
       {type: 'heading-two', children: [
@@ -191,27 +188,25 @@ describe("changeContentType", () => {
     ];
 
     const newSubtype = 'markdown;hint=COMMONMARK';
-    await changeContentType(editor, oldSubtype, newSubtype, id, noteDate);
+    await changeContentType(editor, oldSubtype, newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toMatch(/> Something to lure you in/);
-    expect(retrieved.content).toMatch(/## A \*Dramatic\* Article Title/);
-    expect(retrieved.content).toMatch(/1. First point/);
-    expect(retrieved.content).toMatch(/1. \*\*Second\*\* point/);
-    expect(retrieved.title).toMatch(/^> Something to lure you in/);
-    expect(retrieved.title).toMatch(/## A \*Dramatic\* Article Title/);
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children[0]).toEqual({noteSubtype: newSubtype, type: 'paragraph',
+      children: [{text: "> Something to lure you in"}]});
+    expect(editor.children[1]).toEqual({type: 'paragraph',
+      children: [{text: "## A *Dramatic* Article Title"}]});
+    expect(editor.children[2]).toEqual({type: 'paragraph',
+      children: [{text: "    1. First point"}]});
+    expect(editor.children[3]).toEqual({type: 'paragraph',
+      children: [{text: "1. **Second** point"}]});
+    expect(editor.subtype).toEqual(newSubtype);
   });
 
 
   it("should convert CSV to plain text without altering content", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2002, 11, 31);
     const oldSubtype = 'csv';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {children: [
+      {noteSubtype: "csv", children: [
           {text: "42,ABC,3.14159"}
         ]},
       {children: [
@@ -221,23 +216,17 @@ describe("changeContentType", () => {
           {text: ",,"}
         ]},
     ];
+    const expectedNodes = JSON.parse(JSON.stringify(editor.children));
+    expectedNodes[0].noteSubtype = "plain";
 
     const newSubtype = 'plain';
-    await changeContentType(editor, oldSubtype, newSubtype, id, noteDate);
+    await changeContentType(editor, oldSubtype, newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toEqual(`42,ABC,3.14159
-hut 1, hut2, hike!
-,,`);
-    expect(retrieved.title).toMatch(/^42,ABC,3.14159/);
-    expect(retrieved.title).toMatch(/hut 1, hut2, hike!/);
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children).toEqual(expectedNodes);
+    expect(editor.subtype).toEqual(newSubtype);
   });
 
   it("should convert Markdown to plain text & remove markup", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2002, 11, 31);
     const oldSubtype = 'markdown;hint=COMMONMARK';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -266,22 +255,19 @@ hut 1, hut2, hike!
 
 
     const newSubtype = 'plain';
-    await changeContentType(editor, oldSubtype, newSubtype, id, noteDate);
+    await changeContentType(editor, oldSubtype, newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toEqual(`Quotable dialog
-Review of Epic Movie
-Acting unevenSeparate paragraph of first item
-General Electric Big Blow`)
-    expect(retrieved.title).toMatch(/Quotable dialog/);
-    expect(retrieved.title).toMatch(/Review of Epic Movie/);
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children[0].children).toEqual([{text: "Quotable dialog"}]);
+    expect(editor.children[1].children).toEqual([{text: "Review of Epic Movie"}]);
+    expect(editor.children[2].children).toEqual([{text: "Acting unevenSeparate paragraph of first item"}]);
+    expect(editor.children[3].children).toEqual([{text: "General Electric Big Blow"}]);
+    expect(editor.children.length).toEqual(4);
+
+    expect(editor.subtype).toEqual(newSubtype);
+    expect(editor.children[0].noteSubtype).toEqual(newSubtype);
   });
 
   it("should convert HTML to plain text and remove markup", async () => {
-    const id = generateTestId();
-    const noteDate = new Date(2003, 11, 31);
     const oldSubtype = 'html;hint=SEMANTIC';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -320,21 +306,29 @@ General Electric Big Blow`)
     ];
 
     const newSubtype = 'plain';
-    await changeContentType(editor, oldSubtype, newSubtype, id, noteDate);
+    await changeContentType(editor, oldSubtype, newSubtype);
 
-    const retrieved = await getNote(id);
-    expect(retrieved.content).toEqual(`Something to lure you in
-A Dramatic Article Title
-First point
-Second point
-Another paragraph in second point
-A landscape of Mt. Hood
-Misato
-portrait
-☹︎`);
-    expect(retrieved.title).toMatch(/^Something to lure you in/);
-    expect(retrieved.title).toMatch(/A Dramatic Article Title/);
-    expect(retrieved.date).toEqual(noteDate);
-    expect(retrieved.mimeType).toEqual('text/' + newSubtype);
+    expect(editor.children[0].type).toEqual(undefined);
+    expect(editor.children[0].children).toEqual([{text: "Something to lure you in"}]);
+    expect(editor.children[1].type).toEqual(undefined);
+    expect(editor.children[1].children).toEqual([{text: "A Dramatic Article Title"}]);
+    expect(editor.children[2].type).toEqual(undefined);
+    expect(editor.children[2].children).toEqual([{text: "First point"}]);
+    expect(editor.children[3].type).toEqual(undefined);
+    expect(editor.children[3].children).toEqual([{text: "Second point"}]);
+    expect(editor.children[4].type).toEqual(undefined);
+    expect(editor.children[4].children).toEqual([{text: "Another paragraph in second point"}]);
+    expect(editor.children[5].type).toEqual(undefined);
+    expect(editor.children[5].children).toEqual([{text: "A landscape of Mt. Hood"}]);
+    expect(editor.children[6].type).toEqual(undefined);
+    expect(editor.children[6].children).toEqual([{text: "Misato"}]);
+    expect(editor.children[7].type).toEqual(undefined);
+    expect(editor.children[7].children).toEqual([{text: "portrait"}]);
+    expect(editor.children[8].type).toEqual(undefined);
+    expect(editor.children[8].children).toEqual([{text: "☹︎"}]);
+    expect(editor.children.length).toEqual(9);
+
+    expect(editor.subtype).toEqual(newSubtype);
+    expect(editor.children[0].noteSubtype).toEqual(newSubtype);
   });
 });
