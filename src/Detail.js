@@ -19,14 +19,14 @@ import {
   Input,
   MenuItem,
   Select,
-  Toolbar, Checkbox
+  Toolbar, Checkbox, Menu
 } from "@material-ui/core";
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
 import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
-import {StrikethroughS} from "@material-ui/icons";
+import {MoreVert, Redo, StrikethroughS, Undo} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
@@ -170,7 +170,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           Transforms.setNodes(editor, {noteSubtype: editor.subtype}, {at: [0]})
         });
       } else {
-        console.log("preserve subtype:", editor.children[0].noteSubtype, '->', editor.subtype)
+        // console.log("preserve subtype:", editor.children[0].noteSubtype, '->', editor.subtype)
         editor.subtype = editor.children[0].noteSubtype;
       }
 
@@ -258,6 +258,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   const renderElement = useCallback(props => <RenderingElement {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
 
+  const [detailsMenuAnchorEl, setDetailsMenuAnchorEl] = React.useState(null);
+  function handleDetailsMenuClick(evt) {
+    setDetailsMenuAnchorEl(evt.currentTarget);
+  }
+
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
   // Defines our own custom set of helpers.
@@ -279,12 +284,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   function handleSelectedBlockTypeChange(evt) {
     // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
-    const targetType = evt.target.value;
-    if ('change-note-type' === targetType) {
-      setEffectiveSubtype('html');
-      setIsContentTypeDialogOpen(true);
-      return;
-    }
 
     if (previousSelection) {
       Transforms.select(editor, previousSelection);
@@ -293,6 +292,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Only text blocks can be changed."}, window?.location?.origin);
         return;
       }
+      const targetType = evt.target.value;
       // console.log(`${previousBlockType} -> ${targetType}`);
       switch (targetType) {
         default:
@@ -451,7 +451,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem value={'image'}>(Image)</MenuItem>
           <MenuItem value={'multiple'}>(Multiple)</MenuItem>
           <MenuItem value={'n/a'}>(n/a)</MenuItem>
-          <MenuItem value={'change-note-type'}><strong>Change note type</strong></MenuItem>
         </Select>
         <IconButton aria-label="Format italic"
                     color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
@@ -512,6 +511,38 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
     noteControls = (<>
       <Input type="date" value={dateStr} onChange={handleDateChange}/>
+      <IconButton aria-controls="details-menu" aria-haspopup="true" aria-label="Details menu" onClick={handleDetailsMenuClick}>
+        <MoreVert/>
+      </IconButton>
+      <Menu
+          id="details-menu"
+          role="menu"
+          aria-label="Details menu"
+          anchorEl={detailsMenuAnchorEl}
+          keepMounted
+          open={Boolean(detailsMenuAnchorEl)}
+          onClose={evt => setDetailsMenuAnchorEl(null)}
+      >
+        <MenuItem onClick={evt => {
+          editor.undo();
+          setDetailsMenuAnchorEl(null);
+        }}>
+          Undo &nbsp;<Undo/>
+        </MenuItem>
+        <MenuItem onClick={evt => {
+          editor.redo();
+          setDetailsMenuAnchorEl(null);
+        }}>
+          Redo &nbsp;<Redo/>
+        </MenuItem>
+        <MenuItem onClick={evt => {
+          setDetailsMenuAnchorEl(null);
+          setEffectiveSubtype('html');
+          setIsContentTypeDialogOpen(true);
+        }}>
+          Change note type
+        </MenuItem>
+      </Menu>
       {formatControls}
       <Button aria-label="Save" style={{position: 'absolute', left: -1000}} onPointerDown={evt => {
         save(noteDate);

@@ -270,6 +270,51 @@ it('renders error if note missing', async () => {
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK'), 'DETAIL');
   });
 
+  it("shows formatting menu in rich text mode, but not plain text mode", async () => {
+    const noteId = uuidv4();
+    const initialText = "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium";
+    const noteDate = new Date(1980, 11, 20);
+    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'text/plain')));
+    render(<Detail noteId={noteId}></Detail>);
+
+    // waits for content type button to be visible
+    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
+    const detailsMenuBtn = screen.getByRole('button', {name: "Details menu"});
+    expect(detailsMenuBtn).toBeVisible();
+    // format controls are not present
+    expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();
+
+    userEvent.click(detailsMenuBtn);
+    // expect(screen.getByRole('menu', {name: "Details menu"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: /Undo/})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: /Redo/})).toBeVisible();
+    const changeNoteType = screen.getByRole('menuitem', {name: "Change note type"});
+    expect(changeNoteType).toBeVisible();
+
+    userEvent.click(changeNoteType);
+    expect(screen.getByRole('dialog', {name: "Change type of note?"})).toBeVisible();
+    // expect(screen.getByRole('checkbox', {name: "Note already contains Markdown notation"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Plain Text"})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /Mark.?down/})).toBeEnabled();
+    const richTextBtn = screen.getByRole('button', {name: "Rich Text"});
+    expect(richTextBtn).toBeEnabled();
+
+    userEvent.click(richTextBtn);
+    // now, format controls are present, and content type button is not present
+    await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
+    expect(screen.queryByRole('button', {name: "plain text"})).toBeFalsy();
+
+    userEvent.click(detailsMenuBtn);
+    userEvent.click(screen.getByRole('menuitem', {name: /Undo/}));
+    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
+    expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();
+
+    userEvent.click(detailsMenuBtn);
+    userEvent.click(screen.getByRole('menuitem', {name: /Redo/}));
+    await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
+    expect(screen.queryByRole('button', {name: "plain text"})).toBeFalsy();
+  });
+
   // it('allows typing enter in blank item to end list', async () => {
   //   const noteId = uuidv4();
   //   const noteText = "<ol><li>first</li><li>second</li></ol>";

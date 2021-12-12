@@ -5,7 +5,7 @@
 }
 
 .MuiToolbar-root {
-    justify-content: space-around;
+    justify-content: space-between;
     min-height: 52px !important;
     flex-wrap: wrap;
 
