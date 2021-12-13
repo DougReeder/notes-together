@@ -176,11 +176,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
       if (isAstChange) {
-        console.log(`AST change ${noteId}:`, editor.operations.map(op => op.type), newValue);
+        console.log(`AST change ${noteId}:`, editor.operations, newValue);
         await save(noteDate);
       } else {
         forceUpdate();   // updates the mark indicators
-        console.log("selection change:", editor.operations.map(op => op.type));
+        console.log("selection change:", editor.operations);
       }
 
       if (editor.selection) {
@@ -283,35 +283,70 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }
 
   function handleSelectedBlockTypeChange(evt) {
-    // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
-
-    if (previousSelection) {
-      Transforms.select(editor, previousSelection);
+    const targetType = evt.target.value;
+    queueMicrotask(() => {
       ReactEditor.focus(editor);
-      if (['image', 'link'].indexOf(previousBlockType) > -1) {
-        window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Only text blocks can be changed."}, window?.location?.origin);
-        return;
-      }
-      const targetType = evt.target.value;
-      // console.log(`${previousBlockType} -> ${targetType}`);
-      switch (targetType) {
-        default:
-          changeBlockType(editor, targetType);
-          queueMicrotask(() => {
-            ReactEditor.focus(editor);
-          });
+      if (previousSelection) {
+        // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
+        Transforms.select(editor, previousSelection);
+        if (['image', 'link'].indexOf(previousBlockType) > -1) {
+          window.postMessage({
+            kind: 'TRANSIENT_MSG',
+            severity: 'warning',
+            message: "Only text blocks can be changed."
+          }, window?.location?.origin);
           return;
-        case 'multiple':
-        case 'list-item':
-        case 'image':
-        case 'n/a':
-        case '':
-          window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "That wouldn't make sense."}, window?.location?.origin);
-          return;
+        }
+        // console.log(`${previousBlockType} -> ${targetType}`);
+        switch (targetType) {
+          default:
+            changeBlockType(editor, targetType);
+            return;
+          case 'multiple':
+          case 'list-item':
+          case 'image':
+          case 'n/a':
+          case '':
+            window.postMessage({
+              kind: 'TRANSIENT_MSG',
+              severity: 'warning',
+              message: "That wouldn't make sense."
+            }, window?.location?.origin);
+            return;
+        }
+      } else {
+        switch (targetType) {
+          default:
+            Transforms.insertNodes(editor,
+                {type: targetType, children: [{text: ""}]},
+                {at: [editor.children.length]}
+            );
+            Transforms.select(editor, Editor.end(editor, []));
+            return;
+          case 'bulleted-list':
+          case 'numbered-list':
+            Transforms.insertNodes(editor,
+                {type: targetType, children: [
+                    {type: 'list-item', children: [{text: ""}]}
+                  ]},
+                {at: [editor.children.length]}
+            );
+            Transforms.select(editor, Editor.end(editor, []));
+            return;
+          case 'multiple':
+          case 'list-item':   // shouldn't happen
+          case 'image':
+          case 'n/a':
+          case '':
+            window.postMessage({
+              kind: 'TRANSIENT_MSG',
+              severity: 'warning',
+              message: "Can't insert that!"
+            }, window?.location?.origin);
+            return;
+        }
       }
-    } else {
-      window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "nothing selected"}, window?.location?.origin);
-    }
+    });
   }
 
   const [isContentTypeDialogOpen, setIsContentTypeDialogOpen] = useState(false);
@@ -564,15 +599,28 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     setIsContentTypeDialogOpen(!isContentTypeDialogOpen)
   }
 
+  const boxRef = useRef(null);
+
   function toggleFocus(evt) {
     if (noteErr || !noteDate) { return; }
-    if (evt.target.classList.contains('MuiBox-root')) {
-      if (editor.selection) {
+    let edge;
+    if (evt.target.classList?.contains('MuiToolbar-root')) {
+      edge = 'start';
+    } else if (evt.target.classList?.contains('MuiBox-root')) {
+      edge = 'end';
+    }
+    if (edge) {
+      if (previousSelection) {
         ReactEditor.deselect(editor);
         ReactEditor.blur(editor);
+        setPreviousSelection(null);
+        setPreviousBlockType('n/a');
       } else {
         ReactEditor.focus(editor);
-        Transforms.select(editor, Editor.end(editor, []));
+        Transforms.select(editor, Editor.point(editor, [], {edge}));
+        if ('start' === edge) {
+          boxRef.current.scrollTop = 0;
+        }
       }
     }
   }
@@ -583,7 +631,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }
 
   return (<>
-      <AppBar position="sticky" style={appbarStyle}>
+      <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
         <Toolbar>
           <IconButton title="back" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
@@ -591,7 +639,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           {Boolean(noteDate) && ! noteErr ? noteControls : null}
         </Toolbar>
       </AppBar>
-      <Box onClick={toggleFocus} style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
+      <Box ref={boxRef} onClick={toggleFocus} style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
         <ErrorBoundary
             FallbackComponent={ErrorFallback}
             onReset={() => {
