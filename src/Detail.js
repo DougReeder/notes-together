@@ -28,7 +28,7 @@ import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
 import {MoreVert, Redo, StrikethroughS, Undo} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
+import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange, Point as SlatePoint} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -286,8 +286,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     const targetType = evt.target.value;
     queueMicrotask(() => {
       ReactEditor.focus(editor);
-      if (previousSelection) {
-        // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
+      // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
+      if (previousSelection && (!SlateRange.isCollapsed(previousSelection) || 0 === SlateNode.string(SlateNode.get(editor, previousSelection?.anchor?.path)).length)) {
+        // changes block type
         Transforms.select(editor, previousSelection);
         if (['image', 'link'].indexOf(previousBlockType) > -1) {
           window.postMessage({
@@ -315,13 +316,25 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             return;
         }
       } else {
+        // appends block
+        let path;
+        if (previousSelection) {
+          let point = Editor.after(editor, previousSelection?.anchor?.path?.slice(0, 1));
+          if (point) {
+            path = point.path.slice(0, 1);
+          } else {
+            path = [editor.children.length];
+          }
+        } else {
+          path = [editor.children.length];
+        }
         switch (targetType) {
           default:
             Transforms.insertNodes(editor,
                 {type: targetType, children: [{text: ""}]},
-                {at: [editor.children.length]}
+                {at: path}
             );
-            Transforms.select(editor, Editor.end(editor, []));
+            Transforms.select(editor, path);
             return;
           case 'bulleted-list':
           case 'numbered-list':
@@ -329,9 +342,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                 {type: targetType, children: [
                     {type: 'list-item', children: [{text: ""}]}
                   ]},
-                {at: [editor.children.length]}
+                {at: path}
             );
-            Transforms.select(editor, Editor.end(editor, []));
+            Transforms.select(editor, path);
             return;
           case 'multiple':
           case 'list-item':   // shouldn't happen
