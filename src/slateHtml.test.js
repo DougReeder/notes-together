@@ -3,7 +3,7 @@
 import {withHtml, deserializeHtml, serializeHtml} from "./slateHtml";
 import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
-import {createEditor, Element, Text} from "slate";
+import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
 
 class DataTransfer {
@@ -28,7 +28,129 @@ class DataTransfer {
   }
 }
 
-describe("HTML plugin", () => {
+describe("HTML plugin normalizer", () => {
+  it("should wrap top-level text nodes in Elements", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {text: "opening remarks"},
+      {type: "paragraph", children: [
+          {text: "To be, or not to be, that is the question."}
+      ]},
+      {text: "coda"},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children[0]).toEqual({type: 'paragraph', children: [{text: "opening remarks"}]});
+    expect(editor.children[2]).toEqual({type: 'paragraph', children: [{text: "coda"}]});
+  });
+
+  it("should wrap top-level links in paragraph elements", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {text: "Lorem ipsum"},
+      {type: "link", url: "https://example.com/",
+        children: [{text: "some link"}]
+      },
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [
+          {text: "Lorem ipsum"},
+        ]},
+      {type: 'paragraph', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/",
+            children: [{text: "some link"}]
+          },
+          {text: ""},
+        ]},
+    ]);
+  });
+
+  it("should assign type of 'paragraph' to top-level elements without a type", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {children: [{text: "opening remarks"}]},
+      {type: "paragraph", children: [
+          {text: "To be, or not to be, that is the question."}
+      ]},
+      {children: [{text: "coda"}]},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children[0]).toEqual({type: 'paragraph', children: [{text: "opening remarks"}]});
+    expect(editor.children[2]).toEqual({type: 'paragraph', children: [{text: "coda"}]});
+  });
+
+  it("should ensure a nonempty list-item is a direct child of bulleted-list or numbered-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'list-item', children: [{text: "foo"}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "bar"}]},
+        ]},
+      {type: 'quote', children: [
+          {type: 'list-item', children: [{text: "spam"}]},
+        ]},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "foo"}]},
+        ]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "bar"}]},
+        ]},
+      {type: 'quote', children: [
+          {type: 'bulleted-list', children: [
+              {type: 'list-item', children: [{text: "spam"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it("should remove a blank list-item that is not a direct child of bulleted-list or numbered-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "foo"}]},
+        ]},
+      {type: 'list-item', children: [{text: "\n"}]},
+      {type: 'quote', children: [
+          {type: 'list-item', children: [{text: "\t"}]},
+        ]},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "foo"}]},
+        ]},
+      {type: 'quote', children: [
+          {text: ""}
+        ]},
+    ]);
+  });
+});
+
+describe("HTML plugin insertData", () => {
   it("should prefer pasting HTML into rich text, & paste as rich text", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';

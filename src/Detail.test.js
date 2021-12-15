@@ -13,6 +13,10 @@ import Detail from "./Detail";
 
 jest.mock('./storage.js');
 
+global.queueMicrotask = function (f) {
+  setTimeout(f, 0);
+}
+
 describe("Details component", () => {
   it("always has back button", async () => {
     const setMustShowPanel = jest.fn();

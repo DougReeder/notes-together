@@ -8,11 +8,15 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element, Transforms} from "slate";
+import {Text, Node as SlateNode, Element, Path, Transforms} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
+function isBlank(node) {
+  return /^\s*$/.test(SlateNode.string(node));
+}
+
 function withHtml(editor) {   // defines Slate plugin
-  const { insertData, isInline, isVoid } = editor
+  const {isInline, isVoid, normalizeNode, insertData} = editor
 
   editor.isInline = element => {
     switch (element.type) {
@@ -31,6 +35,40 @@ function withHtml(editor) {   // defines Slate plugin
       default:
         return isVoid(element)
     }
+  }
+
+  editor.normalizeNode = entry => {
+    const [node, path] = entry;
+    // console.log("normalizeNode:", path, path.length > 0 ? node : 'editor')
+
+    if (1 === path.length) {
+      if (!Element.isElement(node) || editor.isInline(node)) {
+        const block = {type: 'paragraph', children: []}
+        Transforms.wrapNodes(editor, block, {at: path});
+        return;
+      } else if (!node.type) {
+        Transforms.setNodes(editor, {type: 'paragraph'}, {at: path, mode: "highest"});
+      }
+    }
+
+    if ('list-item' === node.type) {
+      let parent = undefined;
+      if (path.length > 1) {
+        parent = SlateNode.get(editor, Path.parent(path));
+      }
+      if (! ['bulleted-list', 'numbered-list'].includes(parent?.type)) {
+        if (isBlank(node)) {
+          Transforms.removeNodes(editor, {at: path});
+          return;
+        } else {
+          const list = {type: 'bulleted-list', children: []};
+          Transforms.wrapNodes(editor, list, {at: path});
+          return;
+        }
+      }
+    }
+
+    normalizeNode(entry);
   }
 
   // paste or drag & drop

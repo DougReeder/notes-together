@@ -1,14 +1,13 @@
 // Copyright © 2021 Doug Reeder under the MIT License
 
-import {changeContentType, getRelevantBlockType} from "./slateUtil";
-import {createEditor} from 'slate'
+import {changeBlockType, changeContentType, getRelevantBlockType} from "./slateUtil";
+import {createEditor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
 import auto from "fake-indexeddb/auto.js";
 import {init} from "./storage";
-import generateTestId from "./util/generateTestId";
 
-describe("getTextBlockStyle", () => {
+describe("getRelevantBlockType", () => {
   it("should return containing block for simple tree", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -84,6 +83,30 @@ describe("getTextBlockStyle", () => {
   // });
 });
 
+describe("changeBlockType", () => {
+  it("should convert bulleted-list to numbered-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "first"}]},
+          {type: 'list-item', children: [{text: "second"}]},
+          {type: 'list-item', children: [{text: "third"}]},
+        ]}
+    ];
+    Transforms.select(editor, []);
+
+    changeBlockType(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "first"}]},
+          {type: 'list-item', children: [{text: "second"}]},
+          {type: 'list-item', children: [{text: "third"}]},
+        ]}
+    ]);
+  });
+});
+
 describe("changeContentType", () => {
   beforeAll(() => {
     return init("testStorageDb");
@@ -147,10 +170,10 @@ describe("changeContentType", () => {
   it("should convert untyped to Markdown without altering content", async () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {noteSubtype: "", children: [
+      {noteSubtype: "", type: "paragraph", children: [
           {text: "erste Textzeile"}
         ]},
-      {children: [
+      {type: "paragraph", children: [
           {text: "zweite Textzeile"}
         ]},
     ];
@@ -206,13 +229,13 @@ describe("changeContentType", () => {
     const oldSubtype = 'csv';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
-      {noteSubtype: "csv", children: [
+      {noteSubtype: "csv", type: 'paragraph', children: [
           {text: "42,ABC,3.14159"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: "hut 1, hut2, hike!"}
         ]},
-      {children: [
+      {type: 'paragraph', children: [
           {text: ",,"}
         ]},
     ];
@@ -308,23 +331,23 @@ describe("changeContentType", () => {
     const newSubtype = 'plain';
     await changeContentType(editor, oldSubtype, newSubtype);
 
-    expect(editor.children[0].type).toEqual(undefined);
+    expect(editor.children[0].type).toEqual('paragraph');
     expect(editor.children[0].children).toEqual([{text: "Something to lure you in"}]);
-    expect(editor.children[1].type).toEqual(undefined);
+    expect(editor.children[1].type).toEqual('paragraph');
     expect(editor.children[1].children).toEqual([{text: "A Dramatic Article Title"}]);
-    expect(editor.children[2].type).toEqual(undefined);
+    expect(editor.children[2].type).toEqual('paragraph');
     expect(editor.children[2].children).toEqual([{text: "First point"}]);
-    expect(editor.children[3].type).toEqual(undefined);
+    expect(editor.children[3].type).toEqual('paragraph');
     expect(editor.children[3].children).toEqual([{text: "Second point"}]);
-    expect(editor.children[4].type).toEqual(undefined);
+    expect(editor.children[4].type).toEqual('paragraph');
     expect(editor.children[4].children).toEqual([{text: "Another paragraph in second point"}]);
-    expect(editor.children[5].type).toEqual(undefined);
+    expect(editor.children[5].type).toEqual('paragraph');
     expect(editor.children[5].children).toEqual([{text: "A landscape of Mt. Hood"}]);
-    expect(editor.children[6].type).toEqual(undefined);
+    expect(editor.children[6].type).toEqual('paragraph');
     expect(editor.children[6].children).toEqual([{text: "Misato"}]);
-    expect(editor.children[7].type).toEqual(undefined);
+    expect(editor.children[7].type).toEqual('paragraph');
     expect(editor.children[7].children).toEqual([{text: "portrait"}]);
-    expect(editor.children[8].type).toEqual(undefined);
+    expect(editor.children[8].type).toEqual('paragraph');
     expect(editor.children[8].children).toEqual([{text: "☹︎"}]);
     expect(editor.children.length).toEqual(9);
 

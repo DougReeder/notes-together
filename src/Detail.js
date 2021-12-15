@@ -28,7 +28,7 @@ import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
 import {MoreVert, Redo, StrikethroughS, Undo} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
-import {createEditor, Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange, Point as SlatePoint} from 'slate'
+import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -74,6 +74,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   );
   const [noteDate, setNoteDate] = useState();
   const [effectiveSubtype, setEffectiveSubtype] = useState();
+  const saveOnAstChangeRef = useRef(true);
 
   const replaceNote = useCallback(theNote => {
     try {
@@ -89,17 +90,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       } else {
         throw new Error("Can't display this type of note");
       }
-      console.log("replacing slateNodes:", slateNodes);
+      console.log("initializing slateNodes:", slateNodes);
 
       // Editor can't be empty (though pasted content can be).
+      // Does this here (rather than normalizeNode) so noteSubtype can be set.
       if (0 === slateNodes.length) {
         slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-      }
-      // Children of editor must be Elements.
-      const containsElement = slateNodes.some(slateNode => SlateElement.isElement(slateNode));
-      if (!containsElement) {
-        slateNodes = [{type: 'paragraph', children: slateNodes}];
-        console.log("slateNodes encased in paragraph:", slateNodes);
       }
       slateNodes[0].noteSubtype = editor.subtype;
       Transforms.deselect(editor);
@@ -107,11 +103,16 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       setPreviousBlockType('n/a');
       setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
       setEditorValue(slateNodes);
-      // Editor.normalize(editor, {force: true});
+      saveOnAstChangeRef.current = false;
+      Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
     } catch (err) {
       console.error(`while replacing note ${theNote.id}:`, err);
       setNoteErr(err);
+    } finally {
+      queueMicrotask(() => {
+        saveOnAstChangeRef.current = true;
+      });
     }
   }, [editor]);
 
@@ -167,7 +168,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         console.warn("preserve subtype 1:", editor.children[0].noteSubtype, '<-', editor.subtype)
         queueMicrotask(() => {
           console.warn("preserve subtype 2:", editor.children[0].noteSubtype, '<-', editor.subtype)
-          Transforms.setNodes(editor, {noteSubtype: editor.subtype}, {at: [0]})
+          saveOnAstChangeRef.current = false;
+              Transforms.setNodes(editor, {noteSubtype: editor.subtype}, {at: [0]})
+          queueMicrotask(() => {
+            saveOnAstChangeRef.current = true;
+          });
         });
       } else {
         // console.log("preserve subtype:", editor.children[0].noteSubtype, '->', editor.subtype)
@@ -177,7 +182,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
       if (isAstChange) {
         console.log(`AST change ${noteId}:`, editor.operations, newValue);
-        await save(noteDate);
+        if (saveOnAstChangeRef.current) {
+          await save(noteDate);
+        }
       } else {
         forceUpdate();   // updates the mark indicators
         console.log("selection change:", editor.operations);
