@@ -69,7 +69,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }]);
   const [editableKey, setEditableKey] = useState(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
   const editor = useMemo(
-      () => withReact(withHtml(withHistory(createEditor()))),
+      () => withHtml(withReact(withHistory(createEditor()))),
       []
   );
   const [noteDate, setNoteDate] = useState();
