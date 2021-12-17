@@ -419,18 +419,23 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                       Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
                     } else if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
                       evt.preventDefault();
-                      const listPath = parentPath.slice(0, -1);
-                      const listElmnt = SlateNode.get(editor, listPath);
-                      let newPath;
-                      if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
-                        Transforms.removeNodes(editor, {at: listPath});
-                        newPath = listPath;
-                      } else {
-                        Transforms.removeNodes(editor, {at: parentPath});
-                        newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length-2]+1];
-                      }
-                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+                      Editor.withoutNormalizing(editor, () => {
+                        const listPath = parentPath.slice(0, -1);
+                        const listElmnt = SlateNode.get(editor, listPath);
+                        let newPath;
+                        if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
+                          Transforms.removeNodes(editor, {at: listPath});
+                          newPath = listPath;
+                        } else {
+                          Transforms.removeNodes(editor, {at: parentPath});
+                          newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length - 2] + 1];
+                        }
+                        Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+                        Transforms.select(editor, {
+                          anchor: {path: [...newPath, 0], offset: 0},
+                          focus: {path: [...newPath, 0], offset: 0}
+                        });
+                      });
                     }
                   }
                   break;

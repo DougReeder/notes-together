@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element, Path, Transforms} from "slate";
+import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
 function isBlank(node) {
@@ -65,6 +65,28 @@ function withHtml(editor) {   // defines Slate plugin
           Transforms.wrapNodes(editor, list, {at: path});
           return;
         }
+      }
+    }
+
+    if (['bulleted-list', 'numbered-list'].includes(node.type)) {
+      let changed = false;
+      for (let i=node.children.length-1; i>=0; --i) {
+        const child = node.children[i];
+        const childPath = [...path, i];
+        if ('list-item' !== child.type) {
+          if (isBlank(child)) {
+            Transforms.removeNodes(editor, {at: childPath});
+            changed = true;
+          } else {
+            Transforms.unwrapNodes(editor, {at: childPath});
+            const item = {type: 'list-item', children: []};
+            Transforms.wrapNodes(editor, item, {at: childPath});
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        return;
       }
     }
 
