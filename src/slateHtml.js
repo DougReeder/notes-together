@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
+import {Text, Node as SlateNode, Element, Path, Transforms} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
 function isBlank(node) {
@@ -87,6 +87,16 @@ function withHtml(editor) {   // defines Slate plugin
       }
       if (changed) {
         return;
+      }
+    }
+
+    if ('link' === node.type && isBlank(node)) {
+      try {
+        const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
+        Transforms.insertText(editor, linkText, {at: path});
+        return;
+      } catch (err) {
+        console.error("while adding text to normalize link:", err);
       }
     }
 

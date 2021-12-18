@@ -98,6 +98,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         slateNodes.push({type: 'paragraph', children: [{text: ""}]});
       }
       slateNodes[0].noteSubtype = editor.subtype;
+
       Transforms.deselect(editor);
       setPreviousSelection(null);
       setPreviousBlockType('n/a');

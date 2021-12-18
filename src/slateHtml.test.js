@@ -179,6 +179,41 @@ describe("HTML plugin normalizer", () => {
         ]},
     ]);
   });
+
+  it("should ensure all links have non-blank text", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'quote', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/user/jdoe#profile",
+            children: [{text: ""}]
+          },
+          {text: ""},
+          {type: "link", url: "https://example.com/",
+            children: [{text: ""}]
+          },
+          {text: ""},
+      ]}
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/user/jdoe#profile",
+            children: [{text: "jdoe#profile"}]
+          },
+          {text: ""},
+          {type: "link", url: "https://example.com/",
+            children: [{text: "example.com"}]
+          },
+          {text: ""},
+      ]},
+    ]);
+  });
 });
 
 describe("HTML plugin insertData", () => {
