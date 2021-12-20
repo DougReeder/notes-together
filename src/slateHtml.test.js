@@ -214,6 +214,68 @@ describe("HTML plugin normalizer", () => {
       ]},
     ]);
   });
+
+  it("should move (block) images out of (inline) links", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'quote', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/grapefruit-img",
+            children: [{
+              type: 'image',
+              url: 'https://mozilla.org/?x=шеллы',
+              title: "Slice of grapefruit",
+              children: [
+                {text: "Grapefruit slice atop a pile of other slices"}]
+            }]
+          },
+          {text: ""},
+      ]},
+      {type: "link", url: "https://example.com/foo",
+        children: [{
+          type: 'image',
+          url: 'https://example.org',
+          title: "Something",
+          children: [
+            {text: "Some sort of thing"}]
+        }]
+      },
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'image',
+        url: 'https://mozilla.org/?x=шеллы',
+        title: "Slice of grapefruit",
+        children: [
+          {text: "Grapefruit slice atop a pile of other slices"}]
+      },
+      {type: 'quote', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/grapefruit-img",
+            children: [{text: "grapefruit-img"}]
+          },
+          {text: ""},
+      ]},
+      {
+        type: 'image',
+        url: 'https://example.org',
+        title: "Something",
+        children: [
+          {text: "Some sort of thing"}]
+      },
+      {type: 'paragraph', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/foo",
+            children: [{text: "foo"}]
+          },
+          {text: ""},
+      ]},
+    ]);
+  });
 });
 
 describe("HTML plugin insertData", () => {

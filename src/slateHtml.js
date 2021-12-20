@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element, Path, Transforms} from "slate";
+import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 
 function isBlank(node) {
@@ -19,7 +19,7 @@ function withHtml(editor) {   // defines Slate plugin
   const {isInline, isVoid, normalizeNode, insertData} = editor
 
   editor.isInline = element => {
-    switch (element.type) {
+    switch (element?.type) {
       case 'link':
         return true;
       default:
@@ -28,7 +28,7 @@ function withHtml(editor) {   // defines Slate plugin
   }
 
   editor.isVoid = element => {
-    switch (element.type) {
+    switch (element?.type) {
       // images are funny in Slate, and not void
       case 'thematic-break':
         return true;
@@ -40,6 +40,36 @@ function withHtml(editor) {   // defines Slate plugin
   editor.normalizeNode = entry => {
     const [node, path] = entry;
     // console.log("normalizeNode:", path, path.length > 0 ? node : 'editor')
+
+    if (Element.isElement(node) && ! editor.isInline(node.type)) {
+      const parentPath = Path.parent(path);
+      const parent = SlateNode.get(editor, parentPath);
+      if (editor.isInline(parent)) {
+        let newPath;
+        if (path.length > 2) {
+          newPath = path.slice(0, -2);
+        } else {
+          newPath = path.slice(0, -1);
+        }
+        const parentRef = Editor.pathRef(editor, parentPath);
+        Transforms.moveNodes(editor, {at: path, to: newPath});
+        if (1 === parent.children.length) {   // the moved node was the only child
+          Transforms.insertNodes(editor, {text: ""}, {at: [...parentRef.current, 0]});
+        }
+        parentRef.unref();
+        return;
+      }
+    }
+
+    if ('link' === node.type && isBlank(node)) {
+      try {
+        const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
+        Transforms.insertText(editor, linkText, {at: path});
+        return;
+      } catch (err) {
+        console.error("while adding text to normalize link:", err);
+      }
+    }
 
     if (1 === path.length) {
       if (!Element.isElement(node) || editor.isInline(node)) {
@@ -87,16 +117,6 @@ function withHtml(editor) {   // defines Slate plugin
       }
       if (changed) {
         return;
-      }
-    }
-
-    if ('link' === node.type && isBlank(node)) {
-      try {
-        const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
-        Transforms.insertText(editor, linkText, {at: path});
-        return;
-      } catch (err) {
-        console.error("while adding text to normalize link:", err);
       }
     }
 
