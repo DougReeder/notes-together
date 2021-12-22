@@ -26,7 +26,7 @@ import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';
 import CodeIcon from '@material-ui/icons/Code';
 import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
-import {MoreVert, Redo, StrikethroughS, Undo} from "@material-ui/icons";
+import {MoreVert, Redo, StrikethroughS, TextFormat, Undo} from "@material-ui/icons";
 import {Alert, AlertTitle} from "@material-ui/lab";
 import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
@@ -37,11 +37,22 @@ import {getRelevantBlockType, changeBlockType, changeContentType} from "./slateU
 import {isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
+import DateCompact from "./DateCompact";
+import {makeStyles} from "@material-ui/core/styles";
 
+
+const useStyles = makeStyles((theme) => ({
+  widgetAppBar: {
+    marginLeft: '1.5ch',
+    marginRight: '1.5ch',
+  },
+}));
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
 function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
+  const classes = useStyles();
+
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   // useEffect(() => {
@@ -271,6 +282,8 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     setDetailsMenuAnchorEl(evt.currentTarget);
   }
 
+  const [markMenuAnchorEl, setMarkMenuAnchorEl] = React.useState(null);
+
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
   // Defines our own custom set of helpers.
@@ -490,6 +503,22 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       </Dialog>
 
     </>);
+
+    const dateControl = editor.subtype?.startsWith('html') ?
+        <DateCompact date={noteDate} onChange={handleDateChange}/> :
+        <Input type="date" value={dateStr} onChange={handleDateChange} className={classes.widgetAppBar}/>;
+
+    function handleMarkItem(mark) {
+      queueMicrotask(() => {
+        ReactEditor.focus(editor);
+        if (previousSelection) {
+          Transforms.select(editor, previousSelection);
+        }
+        toggleMark(editor, mark);
+      });
+      setMarkMenuAnchorEl(null);
+    }
+
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
       formatControls = (<>
@@ -513,49 +542,40 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem value={'multiple'}>(Multiple)</MenuItem>
           <MenuItem value={'n/a'}>(n/a)</MenuItem>
         </Select>
-        <IconButton aria-label="Format italic"
-                    color={isMarkActive(editor, 'italic') ? 'primary' : 'default'}
-                    onMouseDown={evt => {
-                      evt.preventDefault();
-                      toggleMark(editor, 'italic');
-                      // ReactEditor.focus(editor);
-                    }}>
-          <FormatItalicIcon/>
+
+        <IconButton aria-controls="mark-menu" aria-haspopup="true" aria-label="Text Format" onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
+          <TextFormat/>
         </IconButton>
-        <IconButton aria-label="Format bold"
-                    color={isMarkActive(editor, 'bold') ? 'primary' : 'default'}
-                    onMouseDown={evt => {
-                      evt.preventDefault();
-                      toggleMark(editor, 'bold');
-                      // ReactEditor.focus(editor);
-                    }}>
-          <FormatBoldIcon/>
-        </IconButton>
-        <IconButton aria-label="Format monospaced"
-                    color={isMarkActive(editor, 'code') ? 'primary' : 'default'}
-                    onMouseDown={evt => {
-                      evt.preventDefault();
-                      toggleMark(editor, 'code');
-                      // ReactEditor.focus(editor);
-                    }}>
-          <CodeIcon/>
-        </IconButton>
-        <IconButton aria-label="Format underline"
-                    color={isMarkActive(editor, 'underline') ? 'primary' : 'default'}
-                    onMouseDown={evt => {
-                      evt.preventDefault();
-                      toggleMark(editor, 'underline');
-                    }}>
-          <FormatUnderlinedIcon/>
-        </IconButton>
-        <IconButton aria-label="Format strikethrough"
-                    color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'default'}
-                    onMouseDown={evt => {
-                      evt.preventDefault();
-                      toggleMark(editor, 'strikethrough');
-                    }}>
-          <StrikethroughS/>
-        </IconButton>
+        <Menu
+            id="mark-menu"
+            role="menu"
+            aria-label="Text Format Menu"
+            anchorEl={markMenuAnchorEl}
+            keepMounted
+            open={Boolean(markMenuAnchorEl)}
+            onClose={evt => {
+              setMarkMenuAnchorEl(null);
+              queueMicrotask(() => {
+                ReactEditor.focus(editor);
+              });
+            }}
+        >
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'italic')}>
+            Italic &nbsp;<FormatItalicIcon color={isMarkActive(editor, 'italic') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'bold')}>
+              Bold &nbsp;<FormatBoldIcon color={isMarkActive(editor, 'bold') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'code')}>
+            Monospaced &nbsp;<CodeIcon color={isMarkActive(editor, 'code') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'underline')}>
+            Underlined &nbsp;<FormatUnderlinedIcon color={isMarkActive(editor, 'underline') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'strikethrough')}>
+            Strikethrough &nbsp;<StrikethroughS color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+        </Menu>
       </>);
     } else {
       let typeLabel;
@@ -567,11 +587,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" onClick={prepareContentTypeDialog}>{typeLabel}</Button>
+        <Button variant="outlined" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
       </>);
     }
     noteControls = (<>
-      <Input type="date" value={dateStr} onChange={handleDateChange}/>
+      {dateControl}
       <IconButton aria-controls="details-menu" aria-haspopup="true" aria-label="Details menu" onClick={handleDetailsMenuClick}>
         <MoreVert/>
       </IconButton>

@@ -32,6 +32,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'absolute',
     right: '0.75rem',
     bottom: '0.75rem',
+    zIndex: 2
   },
 }));
 

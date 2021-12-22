@@ -7,17 +7,11 @@
 .MuiToolbar-root {
     justify-content: space-between;
     min-height: 52px !important;
-    flex-wrap: wrap;
+    max-height: 52px;
+    overflow: hidden;
 
     -webkit-user-select: none;
     user-select: none;
-}
-/* on smaller phones, hides second row of tools */
-@media (hover: none) and (pointer: coarse) and (max-height: 700px) {
-    .MuiToolbar-root {
-        height: 52px;
-        overflow: hidden;
-    }
 }
 
 /*.MuiButtonBase-root, .MuiInputBase-root {*/
