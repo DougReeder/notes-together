@@ -660,7 +660,7 @@ describe("deserializeHtml", () => {
     expect(slateNodes[3].children[0]).toEqual({text: "Firefox"});
     expect(slateNodes[4].type).toEqual('paragraph');
     expect(slateNodes[4].children[0]).toEqual({text: "Mozilla Firefox"});
-    expect(slateNodes[5].type).toEqual('paragraph');
+    expect(slateNodes[5].type).toEqual('quote');   // This treatment is a hack
     expect(slateNodes[5].children[0].text).toMatch(/A free, open source, cross-platform, graphical web browser./);
 
     expect(slateNodes.length).toEqual(6);

@@ -199,7 +199,7 @@ const ELEMENT_TAGS = {
   FIGURE: () => ({ type: 'paragraph' }),
   DETAILS: () => ({ type: 'paragraph' }),
   DT: () => ({ type: 'paragraph' }),   // TODO: implement natively
-  DD: () => ({ type: 'paragraph' }),   // TODO: implement natively
+  DD: () => ({ type: 'quote' }),   // TODO: implement natively
 }
 
 const TEXT_TAGS = {
