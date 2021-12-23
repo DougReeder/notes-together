@@ -547,11 +547,11 @@ describe("deserializeHtml", () => {
   });
 
   it("should merge the text of ignored tags", () => {
-    const html = `a<sub>1</sub> + b<sub>x</sub> = c<sup>2</sup>`;
+    const html = `<ruby>  明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby>`;
 
     const slateNodes = deserializeHtml(html, editor);
 
-    expect(slateNodes[0]).toEqual({text: "a1 + bx = c2"});
+    expect(slateNodes[0]).toEqual({text: ` 明日 (Ashita)`});
     expect(slateNodes.length).toEqual(1);
   });
 
@@ -587,7 +587,7 @@ describe("deserializeHtml", () => {
     expect(slateNodes[9]).toEqual({text: "Nineteen Eighty-Four", italic: true});
     expect(slateNodes[10]).toEqual({text: " foo "});
     expect(slateNodes[11]).toEqual({text: "x", italic: true});
-    expect(slateNodes[12]).toEqual({text: "1", italic: true});
+    expect(slateNodes[12]).toEqual({text: "1", italic: true, subscript: true});
     expect(slateNodes[13]).toEqual({text: " bar "});
     expect(slateNodes[14]).toEqual({text: "LOL", italic: true});
     expect(slateNodes[15]).toEqual({text: " spam "});
@@ -841,6 +841,41 @@ describe("serializeHtml and deserializeHtml", () => {
       {text: "assign using "},
       {text: "const a = b + c;", code: true, bold: true},
       {text: " as needed"},
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip superscript", () => {
+    const original = [
+      {text: "x"},
+      {text: "10", superscript: true},
+      {text: " + y"},
+      {text: "z", superscript: true},
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip subscript", () => {
+    const original = [
+      {text: "CH"},
+      {text: "4", subscript: true},
+      {text: " + O"},
+      {text: "2", subscript: true},
+      {text: " ---> CO"},
+      {text: "2", subscript: true},
+      {text: " + H"},
+      {text: "2", subscript: true},
+      {text: "O"}
     ];
 
     let html = serializeHtml(original);

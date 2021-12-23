@@ -216,6 +216,8 @@ const TEXT_TAGS = {
   VAR: () => ({ italic: true }),
   ABBR: () => ({ italic: true }),
   ADDRESS: () => ({ italic: true }),
+  SUP: () => ({ superscript: true}),
+  SUB: () => ({ subscript: true}),
   S: () => ({ strikethrough: true }),
   STRIKE: () => ({ strikethrough: true }),
   B: () => ({ bold: true }),
@@ -430,6 +432,14 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <em>{children}</em>
   }
 
+  if (leaf.superscript) {
+    children = <sup>{children}</sup>
+  }
+
+  if (leaf.subscript) {
+    children = <sub>{children}</sub>
+  }
+
   if (leaf.underline) {
     children = <u>{children}</u>
   }
@@ -458,6 +468,12 @@ function serializeHtml(slateNodes) {
         }
         if (slateNode.italic) {
           html = `<em>${html}</em>`;
+        }
+        if (slateNode.superscript) {
+          html = `<sup>${html}</sup>`;
+        }
+        if (slateNode.subscript) {
+          html = `<sub>${html}</sub>`;
         }
         if (slateNode.underline) {
           html = `<u>${html}</u>`;
