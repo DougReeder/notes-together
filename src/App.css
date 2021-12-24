@@ -135,12 +135,17 @@ body {
   flex: 1 1 auto;
 }
 
-.advice {
+.solo {
   position: absolute;
   margin: 0 auto;
   left: 2ch;
   right: 2ch;
   top: 6ch;
+}
+.trailing {
+  margin: 2ch 2ch 10ex 2ch;
+}
+.advice {
   max-width: 52ch;
   padding: 1ch;
   background: #d0f0ff;

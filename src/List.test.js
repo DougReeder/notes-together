@@ -10,19 +10,31 @@ import mockStubs from './mockStubs.json';
 import List from "./List";
 import React from "react";
 
+let mockStubList = [];
+
 jest.mock('./storage', () => ({
   findStubs: (searchWords, callback) => {
     setTimeout(() => {
-      for (const stub of mockStubs) {
-        stub.date = new Date(stub.date);
-      }
-      callback(null, mockStubs, {isPartial: false, isFinal: false});
+      callback(null, mockStubList, {isPartial: false, isFinal: false});
     }, 4);
   }
 }));
 
 describe("List", () => {
-  it("should render note summaries", async () => {
+  it("should render advice when no stubs returned", async () => {
+    mockStubList = [];
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+
+    await screen.findByRole('list');
+    expect(await screen.findByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+  });
+
+  it("should render note summaries & advice", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+
     const {container} = render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     const items = await screen.findAllByRole('listitem');
@@ -40,5 +52,7 @@ describe("List", () => {
     expect(items[5].textContent).toEqual("A shallow cash-grab.  More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world. The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.");
     expect(items[6].className).toEqual("divider");
     expect(items[6].textContent).toEqual("August 2020");
+
+    expect(screen.getByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
   });
 });
