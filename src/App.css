@@ -104,29 +104,6 @@ body {
 }
 
 
-.App-header {
-  min-height: 52px;
-  flex: 0 0 auto;
-
-  text-align: center;
-  background-color: #94bbe6;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-around;
-}
-.App-header input {
-  margin-left: 1.5ch;
-  flex: 1 1 auto;
-  min-width: 10ch;
-  font-size: 18px;
-}
-.count {
-  margin-left: 1.5ch;
-  margin-right: 1.5ch;
-  min-width: 3ch;
-}
-
 .MuiMenuItem-root {
   white-space: normal !important;
 }

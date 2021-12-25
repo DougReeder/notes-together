@@ -6,11 +6,12 @@ import List from './List';
 import Detail from './Detail'
 import './App.css';
 import {
+  AppBar,
   Fab,
   IconButton,
   Menu,
   MenuItem,
-  Snackbar
+  Snackbar, Toolbar
 } from "@material-ui/core";
 import {makeStyles} from '@material-ui/core/styles';
 import Slide from '@material-ui/core/Slide';
@@ -33,6 +34,27 @@ const useStyles = makeStyles((theme) => ({
     right: '0.75rem',
     bottom: '0.75rem',
     zIndex: 2
+  },
+  appbar: {
+    flexGrow: 0,
+    backgroundColor: "#94bbe6",
+    '& input': {
+      marginLeft: '1.5ch',
+      flex: '1 1 auto',
+      minWidth: '10ch',
+      fontSize: '18px',
+    },
+    '& .count': {
+      marginLeft: '1.5ch',
+      marginRight: '1.5ch',
+      minWidth: '3ch',
+      color: 'black',
+    }
+  },
+  spacer: {
+    height: '4px',
+    flex: '0 0 auto',
+    backgroundColor: 'white'
   },
 }));
 
@@ -285,32 +307,37 @@ function App() {
   return (
       <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
         <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
-          <header className="App-header">
-            <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words." aria-label="search notes" value={searchStr} onChange={onSearchChange} role="search" />
-            <div className="count" draggable="true" onDragStart={openTestMenu} >{count}</div>
-            <Menu
-                id="testMenu"
-                anchorEl={testMenuAnchorEl}
-                open={Boolean(testMenuAnchorEl)}
-                onClose={closeTestMenu}
-            >
-              <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
-              <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
-              <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
-              <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
-            </Menu>
-            <IconButton aria-label="Application menu" onClick={openAppMenu}>
-              <MenuIcon />
-            </IconButton>
-            <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)} onClose={setAppMenuAnchorEl.bind(this,null)} >
-              {/*<MenuItem>Preferences & Help</MenuItem>*/}
-              <MenuItem onClick={handleImportFileSingle}>Import one note per file</MenuItem>
-              <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file</MenuItem>
-            </Menu>
-            <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                   accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/calendar" + allowedFileTypesNonText.join(',') + ',' + allowedExtensions.join(',')}/>
-          </header>
+          <AppBar position="sticky" className={classes.appbar}>
+            <Toolbar>
+              <input type="search" placeholder="Enter search word(s)"
+                     title="Enter the first several letters of one or more search words." aria-label="search notes"
+                     value={searchStr} onChange={onSearchChange} role="search"/>
+              <div className="count" draggable="true" onDragStart={openTestMenu}>{count}</div>
+              <Menu
+                  id="testMenu"
+                  anchorEl={testMenuAnchorEl}
+                  open={Boolean(testMenuAnchorEl)}
+                  onClose={closeTestMenu}
+              >
+                <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
+                <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
+                <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
+                <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
+              </Menu>
+              <IconButton aria-label="Application menu" onClick={openAppMenu}>
+                <MenuIcon/>
+              </IconButton>
+              <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
+                    onClose={setAppMenuAnchorEl.bind(this, null)}>
+                {/*<MenuItem>Preferences & Help</MenuItem>*/}
+                <MenuItem onClick={handleImportFileSingle}>Import one note per file</MenuItem>
+                <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file</MenuItem>
+              </Menu>
+              <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
+                     accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/calendar" + allowedFileTypesNonText.join(',') + ',' + allowedExtensions.join(',')}/>
+            </Toolbar>
+          </AppBar>
+          <div className={classes.spacer}></div>
           <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
           <Fab onClick={addNote} className={classes.fab} color="primary" aria-label="add"><AddIcon /></Fab>
           <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
