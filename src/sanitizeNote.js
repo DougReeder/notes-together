@@ -63,7 +63,7 @@ const semanticOnly = {
     view: ['viewBox', 'preserveAspectRatio', 'zoomAndPan', 'viewTarget'],
     '*': ['id', 'tabindex', 'clip*', 'color*', 'cursor', 'display', 'fill*', 'height', 'mask', 'opacity', 'overflow', 'stroke*', 'transform', 'vector-effect', 'visibility', 'width', 'xlink*']
   },
-  allowedSchemes: [ 'http', 'https', 'data', 'mailto', 'tel' ],
+  allowedSchemes: [ 'http', 'https', 'data', 'blob', 'mailto', 'tel' ],
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
   transformTags: {

@@ -10,6 +10,7 @@ import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
 import {useSelected, useFocused} from 'slate-react'
+import imageFileToDataUrl from "./util/imageFileToDataUrl";
 
 function isBlank(node) {
   return /^\s*$/.test(SlateNode.string(node));
@@ -124,7 +125,7 @@ function withHtml(editor) {   // defines Slate plugin
   }
 
   // paste or drag & drop
-  editor.insertData = dataTransfer => {
+  editor.insertData = async dataTransfer => {
     try {
       if (editor.subtype?.startsWith('html')) {
         if (dataTransfer.types.indexOf('text/html') > -1) {
@@ -144,6 +145,26 @@ function withHtml(editor) {   // defines Slate plugin
           } else {   // plain text
             console.log("plain text", dataTransfer.items);
             insertData(dataTransfer);   // default handling
+          }
+        } else if (dataTransfer.types.indexOf('Files') > -1) {
+          for (const file of dataTransfer.files) {
+            if (file.type.startsWith('image/')) {
+              console.info(`${file.name} ${file.type} -> img element:`);
+              const {dataUrl, alt} = await imageFileToDataUrl(file);
+              if (!dataUrl) {
+                continue;
+              }
+              const slateNode = {
+                type: 'image',
+                url: dataUrl,
+                title: "",
+                children: [{text: alt}]
+              }
+              Transforms.insertNodes(editor, slateNode);
+            } else {
+              console.warn("not pasteable:", file.name, file.type);
+              window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+            }
           }
         } else {   // use default handling for images, etc.
           console.log("default handling", ...dataTransfer.items);
@@ -173,7 +194,8 @@ function withHtml(editor) {   // defines Slate plugin
       // Editor.normalize(editor, {force: true});
     } catch (err) {
       console.error("while pasting:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: "Can you type in the info?"}, window?.location?.origin);
+      const userMsg = err?.userMsg || "Can you open that in another app and copy?";
+      window.postMessage({kind: 'TRANSIENT_MSG', message: userMsg}, window?.location?.origin);
     }
   }
 
