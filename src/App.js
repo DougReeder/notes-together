@@ -22,6 +22,7 @@ import {Alert, AlertTitle} from "@material-ui/lab";
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
+import {visualViewportMatters} from "./util";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -114,7 +115,7 @@ function App() {
         break;
       case 'TRANSIENT_MSG':
         enqueueSnackbar(evt.data?.message || "Restart your device", {
-          anchorOrigin: {horizontal: 'right', vertical: 'bottom'},
+          anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
           key: evt.data?.key,
           TransitionComponent: Slide,

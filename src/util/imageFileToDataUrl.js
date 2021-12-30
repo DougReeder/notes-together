@@ -1,50 +1,53 @@
 // imageFileToDataUrl.js - downscales an image & converts to data URL
 // Copyright © 2017-2021 Doug Reeder
 
-export default function imageFileToDataUrl(file) {
+
+const MAX_SIZE = 200_000;   // max content size / 3
+
+
+async function imageFileToDataUrl(file) {
+  const texts = [];
+  if (file.name) {
+    const lastDotInd = file.name.lastIndexOf(".");
+    if (lastDotInd > 0 && lastDotInd < file.name.length - 1) {
+      texts.push(file.name.slice(0, lastDotInd));
+    } else {
+      texts.push(file.name);
+    }
+  }
+
+  // avoids converting vector to raster if reasonably possible
+  if (file.size < (MAX_SIZE * 1.4) && file.type === 'image/svg+xml') {
+    const dataUrl = await fileToDataUrl(file);
+    return {dataUrl, alt: texts.join('\n')};
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  const dataUrl = await evaluateImage(file, objectUrl);
+  URL.revokeObjectURL(objectUrl);
+
+  return {dataUrl, alt: texts.join('\n')};
+}
+
+function evaluateImage(blob, objectURL) {
   return new Promise(async (resolve, reject) => {
-    const MAX_SIZE = 200_000;   // max note size / 3
-    const texts = [];
-    if (file.name) {
-      const lastDotInd = file.name.lastIndexOf(".");
-      if (lastDotInd > 0 && lastDotInd < file.name.length - 1) {
-        texts.push(file.name.slice(0, lastDotInd));
-      } else {
-        texts.push(file.name);
-      }
-    }
-
-    // avoids converting vector to raster if reasonably possible
-    if (file.size < (MAX_SIZE * 1.4) && file.type === 'image/svg+xml') {
-      const dataUrl = await fileToDataUrl(file);
-      resolve({dataUrl, alt: texts.join('\n')});
-      return;
-    }
-
     const img = new Image();
-
-    const objectURL = URL.createObjectURL(file);
     img.src = objectURL;
 
-    img.onload = async function(evt) {   // 'this' is the img
+    img.onload = async function (evt) {   // 'this' is the img
       // Modern browsers respect the orientation data in EXIF.
       // console.log("img onload size:", this.width, this.height);
 
-      if (this.width > 1280 || this.height > 1280 || file.size > MAX_SIZE ||
-          ['image/tiff', 'image/jxl', 'image/avif', 'image/avci', 'image/heif', 'image/heic'].includes(file.type)) {
-        const dataUrl = resize(img, file.type);
-        URL.revokeObjectURL(objectURL);
-        resolve({dataUrl, alt: texts.join('\n')});
+      if (this.width > 1280 || this.height > 1280 || blob.size > MAX_SIZE ||
+          ['image/tiff', 'image/jxl', 'image/avif', 'image/avci', 'image/heif', 'image/heic'].includes(blob.type)) {
+        resolve(resize(img, blob.type));
       } else {
-        const dataUrl = await fileToDataUrl(file);
-        URL.revokeObjectURL(objectURL);
-        resolve({dataUrl, alt: texts.join('\n')});
+        resolve(await fileToDataUrl(blob));
       }
     };
 
     img.onerror = function (evt) {
       console.error("img onerror:", evt)
-      URL.revokeObjectURL(objectURL);
       reject(evt.error || new Error(evt.message));
     }
   });
@@ -84,3 +87,5 @@ function resize(img, fileType) {
   context.drawImage(img, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL('image/jpeg', 0.4);
 }
+
+export {imageFileToDataUrl, fileToDataUrl, evaluateImage};

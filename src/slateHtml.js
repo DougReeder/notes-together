@@ -10,7 +10,8 @@ import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
 import {useSelected, useFocused} from 'slate-react'
-import imageFileToDataUrl from "./util/imageFileToDataUrl";
+import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
+import {addSubstitution} from "./urlSubstitutions";
 
 function isBlank(node) {
   return /^\s*$/.test(SlateNode.string(node));
@@ -132,7 +133,7 @@ function withHtml(editor) {   // defines Slate plugin
           let html = dataTransfer.getData('text/html');
           // console.log("raw HTML", html);
           html = sanitizeHtml(html, semanticOnly);
-          console.log("sanitized HTML", html);
+          console.log("sanitized HTML", html.slice(0, 1024));
           const slateNodes = deserializeHtml(html, editor);
           console.log("HTML -> slateNodes:", slateNodes);
           Transforms.insertFragment(editor, slateNodes);
@@ -210,7 +211,21 @@ const ELEMENT_TAGS = {
   H2: () => ({ type: 'heading-two' }),
   H3: () => ({ type: 'heading-three' }),
   HR: () => ({ type: 'thematic-break'}),
-  IMG: el => ({ type: 'image', url: decodeURI(el.getAttribute('src')), title: el.getAttribute('title') || "" , children: [{text: el.getAttribute('alt') || ""}]}),
+  IMG: el => {
+    if (el.hasAttribute('src')) {
+      const src = decodeURI(el.getAttribute('src'));
+      if (src.startsWith('blob:')) {
+        addSubstitution(src);
+      }
+      return { type: 'image',
+        url: src,
+        title: el.getAttribute('title') || "" ,
+        children: [{text: el.getAttribute('alt') || ""}]
+      };
+    } else {
+      return {};
+    }
+  },
   LI: () => ({ type: 'list-item' }),
   OL: () => ({ type: 'numbered-list' }),
   UL: () => ({ type: 'bulleted-list' }),
@@ -474,7 +489,7 @@ const Leaf = ({ attributes, children, leaf }) => {
 }
 
 
-function serializeHtml(slateNodes) {
+function serializeHtml(slateNodes, substitutions = new Map()) {
   let inCodeBlock = false;
   return serializeSlateNode({children: slateNodes});
 
@@ -544,7 +559,17 @@ function serializeHtml(slateNodes) {
         case 'link':
           return `<a href="${encodeURI(slateNode.url)}" title="${slateNode.title}">${children}</a>`
         case 'image':
-          return `<img src="${encodeURI(slateNode.url)}" alt="${SlateNode.string(slateNode)}" title="${slateNode.title}">`;
+          if (slateNode.url.startsWith('blob:')) {
+            const dataUrl = substitutions.get(slateNode.url);
+            if (dataUrl) {
+              return `<img src="${encodeURI(dataUrl)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
+            } else {
+              console.error("No substitution for", slateNode.url);
+              return '';   // Doesn't save img tag.
+            }
+          } else {
+            return `<img src="${encodeURI(slateNode.url)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
+          }
         default:
           return children
       }

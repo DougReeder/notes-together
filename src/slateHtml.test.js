@@ -520,6 +520,34 @@ describe("serializeHtml", () => {
     const cleanHtml = sanitizeHtml(html, semanticOnly);
     expect(cleanHtml).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit" />');
   });
+
+  it("should substitute data URLs for object URLs in images", () => {
+    const substitutions = new Map();
+    substitutions.set('blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==');
+    const html = serializeHtml([{
+      type: 'image',
+      url: 'blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
+      title: "something",
+      children: [
+        {text: "a thing"}]
+    }], substitutions);
+    expect(html).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing" title="something">');
+
+    const cleanHtml = sanitizeHtml(html, semanticOnly);
+    expect(cleanHtml).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing" title="something" />');
+  });
+
+  it("should drop images containing an object URL with no substitution", () => {
+    const html = serializeHtml([{
+      type: 'image',
+      url: 'blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
+      title: "something",
+      children: [
+        {text: "a thing"}]
+    }], new Map());
+    expect(html).toEqual('');
+  });
 });
 
 
@@ -697,6 +725,17 @@ describe("deserializeHtml", () => {
     expect(slateNodes[0].children.length).toEqual(1);
     expect(slateNodes[0].children[0]).toEqual({text: "a slice of grapefruit", italic: true});
     expect(slateNodes.length).toEqual(1);
+  });
+
+  it("should parse image without src as not an image", () => {
+    const html = `<img src="ftp://ftp.funet.fi/pub/chicken.gif" alt="rooster"/>`;
+    const cleanHtml = sanitizeHtml(html, semanticOnly);
+
+    const slateNodes = deserializeHtml(cleanHtml, editor);
+
+    expect(slateNodes[0]?.type).not.toEqual('image');
+    expect(slateNodes.length).toBeLessThanOrEqual(1);
+    // expect(slateNodes).toEqual([{"children": [{"text": ""}]}]);
   });
 
   it("should drop blank Leaves between block Elements, so all the children of an Element are the same", () => {

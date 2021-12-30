@@ -39,6 +39,7 @@ import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
 import {makeStyles} from "@material-ui/core/styles";
+import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -49,6 +50,8 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
+
+let saveFn;   // Exposes side door for testing (rather than hidden button).
 
 function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   const classes = useStyles();
@@ -93,7 +96,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       if (hasTagsLikeHtml(theNote.mimeType)) {
         editor.subtype = 'html;hint=SEMANTIC';
         const html = sanitizeHtml(theNote.content, semanticOnly);
-        console.log("sanitized HTML:", html);
+        console.log("sanitized HTML:", html.slice(0, 1024));
         slateNodes = deserializeHtml(html, editor);
       } else if (!theNote.mimeType || /^text\//.test(theNote.mimeType)) {
         editor.subtype = /\/(.+)/.exec(theNote.mimeType)?.[1];
@@ -118,6 +121,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       saveOnAstChangeRef.current = false;
       Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
+      clearSubstitutions();
     } catch (err) {
       console.error(`while replacing note ${theNote.id}:`, err);
       setNoteErr(err);
@@ -237,14 +241,15 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   async function save(date) {
     let content;
     if (editor.subtype?.startsWith('html')) {
-      content = serializeHtml(editor.children);
-      console.log('save HTML:', noteId, editor.children, content, date);
+      content = serializeHtml(editor.children, await currentSubstitutions());
+      console.log('save HTML:', noteId, editor.children, content.slice(0, 1024), date);
     } else {
       content = editor.children.map(node => SlateNode.string(node)).join('\n')
       console.log('save text:', noteId, editor.children, content, date);
     }
     await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined), 'DETAIL');
   }
+  saveFn = save;
 
   const [noteErr, setNoteErr] = useState();
 
@@ -414,7 +419,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             key={editableKey}   // change the key to restart editor w/ new editorValue
             renderElement={renderElement}
             renderLeaf={renderLeaf}
-            placeholder="Type, or paste some rich text or an image."
+            placeholder="Type, or paste some rich text or a graphic."
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               switch (evt.key) {   // eslint-disable-line default-case
@@ -538,7 +543,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem value={'quote'}>Block Quote</MenuItem>
           <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
           {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
-          <MenuItem value={'image'}>(Image)</MenuItem>
+          <MenuItem value={'image'}>(Graphic)</MenuItem>
           <MenuItem value={'multiple'}>(Multiple)</MenuItem>
           <MenuItem value={'n/a'}>(n/a)</MenuItem>
         </Select>
@@ -631,11 +636,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         </MenuItem>
       </Menu>
       {formatControls}
-      <Button aria-label="Save" style={{position: 'absolute', left: -1000}} onPointerDown={evt => {
-        save(noteDate);
-      }}>
-        Save
-      </Button>
     </>);
   }
 
@@ -733,3 +733,5 @@ Detail.propTypes = {
 };
 
 export default Detail;
+export {saveFn};
+

@@ -1,7 +1,7 @@
 // imageFileToDataUrl.test.js - unit tests for image transcoding
 // Copyright © 2017-2021 Doug Reeder
 
-import imageFileToDataUrl from "./imageFileToDataUrl";
+import {imageFileToDataUrl} from "./imageFileToDataUrl";
 
 function dataURItoFile(dataURI, fileName) {
   // converts base64 to raw binary data held in a string

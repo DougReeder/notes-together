@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {upsertNote, getNote} from './storage';
-import Detail from "./Detail";
+import Detail, {saveFn} from "./Detail";
 
 jest.mock('./storage.js');
 
@@ -164,7 +164,7 @@ it('renders error if note missing', async () => {
 
     // upsertNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, "Hello", noteDate)));
 
-    userEvent.click(screen.getByRole('button', {name: "Save"}));
+    await saveFn(noteDate);
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC'), 'DETAIL');
   });
@@ -214,7 +214,7 @@ it('renders error if note missing', async () => {
     expect(await screen.findByRole('textbox')).toBeVisible();
     expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();
 
-    userEvent.click(screen.getByRole('button', {name: "Save"}));
+    await saveFn(noteDate);
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC'), 'DETAIL');
   });
@@ -232,7 +232,7 @@ it('renders error if note missing', async () => {
     userEvent.click(span);
     expect(textbox).toHaveFocus();
 
-    userEvent.click(screen.getByRole('button', {name: "Save"}));
+    await saveFn(noteDate);
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain'), 'DETAIL');
   });
@@ -250,7 +250,7 @@ it('renders error if note missing', async () => {
     userEvent.click(span);
     expect(textbox).toHaveFocus();
 
-    // userEvent.click(screen.getByRole('button', {name: "Save"}));
+    // await saveFn(noteDate);
     // expect(upsertNote).toHaveBeenCalledTimes(1);
     // expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain'), 'DETAIL');
   });
@@ -269,7 +269,7 @@ it('renders error if note missing', async () => {
     expect(textbox).toHaveFocus();
     expect(await screen.findByText(/This is hot stuff./)).toBeVisible();
 
-    userEvent.click(screen.getByRole('button', {name: "Save"}));
+    await saveFn(noteDate);
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK'), 'DETAIL');
   });
