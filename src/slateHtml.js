@@ -12,6 +12,8 @@ import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate"
 import {useSelected, useFocused} from 'slate-react'
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
+import {determineParseType} from "./FileImport";
+import {coerceToPlainText} from "./slateUtil";
 
 function isBlank(node) {
   return /^\s*$/.test(SlateNode.string(node));
@@ -129,75 +131,162 @@ function withHtml(editor) {   // defines Slate plugin
   editor.insertData = async dataTransfer => {
     try {
       if (editor.subtype?.startsWith('html')) {
-        if (dataTransfer.types.indexOf('text/html') > -1) {
-          let html = dataTransfer.getData('text/html');
-          // console.log("raw HTML", html);
-          html = sanitizeHtml(html, semanticOnly);
-          console.log("sanitized HTML", html.slice(0, 1024));
-          const slateNodes = deserializeHtml(html, editor);
-          console.log("HTML -> slateNodes:", slateNodes);
-          Transforms.insertFragment(editor, slateNodes);
-        } else if (dataTransfer.types.indexOf('text/plain') > -1) {
-          const text = dataTransfer.getData('text/plain');
-          if (isLikelyMarkdown(text)) {
-            const slateNodes = deserializeMarkdown(text);
-            console.log("MD -> slateNodes:", slateNodes);
-            Transforms.insertFragment(editor, slateNodes);
-          } else {   // plain text
-            console.log("plain text", dataTransfer.items);
-            insertData(dataTransfer);   // default handling
-          }
-        } else if (dataTransfer.types.indexOf('Files') > -1) {
-          for (const file of dataTransfer.files) {
-            if (file.type.startsWith('image/')) {
-              console.info(`${file.name} ${file.type} -> img element:`);
-              const {dataUrl, alt} = await imageFileToDataUrl(file);
-              if (!dataUrl) {
-                continue;
-              }
-              const slateNode = {
-                type: 'image',
-                url: dataUrl,
-                title: "",
-                children: [{text: alt}]
-              }
-              Transforms.insertNodes(editor, slateNode);
-            } else {
-              console.warn("not pasteable:", file.name, file.type);
-              window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
-            }
-          }
-        } else {   // use default handling for images, etc.
-          console.log("default handling", ...dataTransfer.items);
-          insertData(dataTransfer)
-          // // TODO: convert text/rtf to HTML
-          // // TODO: extract image metadata and append
-        }
-      } else if (editor.subtype?.startsWith('markdown') && dataTransfer.types.includes('text/html')) {
-        console.log("reserializing HTML as Markdown");
-        const html = dataTransfer.getData('text/html');
-        const syntaxTree = deserializeHtml(html, editor);
-        const markdown = serializeMarkdown(syntaxTree);
-        const lines = markdown.split('\n');
-        let slateNodes;
-        if (1 === lines.length) {
-          slateNodes = [{text: lines[0]}]
-        } else {
-          slateNodes = lines.map(line => {
-            return {type: 'paragraph', children: [{text: line}]};
-          });
-        }
-        Transforms.insertFragment(editor, slateNodes);
-      } else {   // not rich text
-        console.log("plain text; using default handling", ...dataTransfer.items);
-        insertData(dataTransfer)
+        await processDataTransfer(dataTransfer, pasteHtmlToRichText, pasteMarkdownToRichText, pasteText, pasteGraphicFileToRichText);
+      } else if (editor.subtype?.startsWith('markdown')) {
+        await processDataTransfer(dataTransfer, pasteHtmlToMarkdown, pasteText, pasteText, pasteGraphicFileToMarkdown);
+      } else {   // plain text mode
+        await processDataTransfer(dataTransfer, pasteHtmlToPlainText, pasteText, pasteText, pasteGraphicFileToPlainText);
       }
-      // Editor.normalize(editor, {force: true});
     } catch (err) {
       console.error("while pasting:", err);
       const userMsg = err?.userMsg || "Can you open that in another app and copy?";
       window.postMessage({kind: 'TRANSIENT_MSG', message: userMsg}, window?.location?.origin);
     }
+  }
+
+  async function processDataTransfer(dataTransfer, pasteHtml, pasteMarkdown, pastePlainText, pasteGraphicFile) {
+    if (dataTransfer.types.indexOf('text/html') > -1 && pasteHtml !== pasteHtmlToPlainText) {
+      let html = dataTransfer.getData('text/html');
+      pasteHtml(html);
+    } else if (dataTransfer.types.indexOf('text/plain') > -1) {
+      const text = dataTransfer.getData('text/plain');
+      if (isLikelyMarkdown(text)) {
+        pasteMarkdown(text);
+      } else {   // plain text
+        pastePlainText(text)
+      }
+    } else if (dataTransfer.types.indexOf('Files') > -1) {
+      for (const file of dataTransfer.files) {
+        const fileInfo = await determineParseType(file);
+        if (fileInfo.isMarkdown) {   // presumes Markdown heuristics are correct
+          fileInfo.parseType = 'text/markdown';
+        }
+        if (fileInfo.parseType.startsWith('image/')) {
+          await pasteGraphicFile(file);
+        } else if (!fileInfo.message) {   // no message means usable
+          await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async evt => {
+              try {
+                const text = evt.target.result;
+                switch (fileInfo.parseType) {
+                  case 'text/html':
+                    pasteHtml(text);
+                    break;
+                  case 'text/markdown':
+                    pasteMarkdown(text);
+                    break;
+                  default:   // some kind of text not excluded by determineParseType()
+                    pastePlainText(text)
+                    break;
+                }
+                resolve();
+              } catch (err) {
+                console.error("while pasting file:", err);
+                window.postMessage({kind: 'TRANSIENT_MSG', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+                reject(err);
+              }
+            };
+            reader.onerror = () => {
+              console.error("reader.onerror:", reader.error);
+              window.postMessage({kind: 'TRANSIENT_MSG', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+              reject(reader.error);
+            };
+            reader.readAsText(file);
+          });
+        } else {
+          console.warn("not pasteable:", file.name, file.type, fileInfo.message);
+          window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+        }
+      }
+    } else {   // use default handling, which probably does nothing
+      console.log("default handling", ...dataTransfer.items);
+      insertData(dataTransfer)
+    }
+  }
+
+
+  function pasteHtmlToRichText(html) {
+    html = sanitizeHtml(html, semanticOnly);
+    console.log("sanitized HTML", html.slice(0, 1024));
+    const slateNodes = deserializeHtml(html, editor);
+    console.log("HTML -> slateNodes:", slateNodes);
+    Editor.insertFragment(editor, slateNodes);
+  }
+
+  function pasteMarkdownToRichText(text) {
+    const slateNodes = deserializeMarkdown(text);
+    console.log("MD -> slateNodes:", slateNodes);
+    Editor.insertFragment(editor, slateNodes);
+  }
+
+  function pasteText(text) {
+    console.log("pasting text:", text);
+    Editor.insertText(editor, text);
+  }
+
+  async function pasteGraphicFileToRichText(file) {
+    const {dataUrl, alt} = await imageFileToDataUrl(file);
+    if (!dataUrl) {
+      console.error("Can't convert to data URL:", file);
+      return;
+    }
+    console.info(`${file.name} ${file.type} -> img element:`);
+    const slateNode = {
+      type: 'image',
+      url: dataUrl,
+      title: "",
+      children: [{text: alt}]
+    }
+    Editor.insertNode(editor, slateNode);
+  }
+
+
+  function pasteHtmlToMarkdown(html) {
+    html = sanitizeHtml(html, semanticOnly);
+    const syntaxTree = deserializeHtml(html, editor);
+    const markdown = serializeMarkdown(syntaxTree);
+    const lines = markdown.split('\n');
+    console.info("HTML -> Markdown:", markdown);
+
+    let slateNodes;
+    if (1 === lines.length) {
+      slateNodes = [{text: lines[0]}]
+    } else {
+      slateNodes = lines.map(line => {
+        return {type: 'paragraph', children: [{text: line}]};
+      });
+    }
+    Editor.insertFragment(editor, slateNodes);
+  }
+
+  async function pasteGraphicFileToMarkdown(file) {
+    const {dataUrl, alt} = await imageFileToDataUrl(file);
+    if (!dataUrl) {
+      console.error("Can't convert to data URL:", file);
+      return;
+    }
+    console.info(`${file.name} ${file.type} -> Markdown img:`);
+    const markdown = `![${alt}](${dataUrl} "")`;
+    Editor.insertText(editor, markdown);
+  }
+
+
+  function pasteHtmlToPlainText(html) {
+    console.log("HTML -> slateNodes -> coerceToPlainText");
+    html = sanitizeHtml(html, semanticOnly);
+    const slateNodes = deserializeHtml(html, editor);
+    Editor.withoutNormalizing(editor, () => {
+      Editor.insertFragment(editor, slateNodes);
+      coerceToPlainText(editor);
+    });
+  }
+
+  async function pasteGraphicFileToPlainText(file) {
+    const {alt} = await imageFileToDataUrl(file);
+    console.info(`${file.name} ${file.type} -> alt text:`, alt);
+
+    Editor.insertText(editor, alt);
   }
 
   return editor;

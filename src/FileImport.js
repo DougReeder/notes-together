@@ -51,41 +51,6 @@ function FileImport({files, isMultiple, doCloseImport}) {
     determineParseTypes(files)
   }, [files]);
 
-  async function determineParseType(file) {
-    // console.log(`selected file “${file.name}” "${file.type}"`)
-    // TODO: Convert a JPEG to data URL
-    const extMatch = /\.[^.]+$/.exec(file.name);
-    const extension = extMatch?.[0]?.toLowerCase();
-    if (hasTagsLikeHtml(file.type, extension)) {
-      return {file, parseType: 'text/html'};
-    } else {
-      if (!file.type.startsWith('text') &&
-          !allowedFileTypesNonText.includes(file.type) &&
-          !(!file.type && allowedExtensions.includes(extension))) {
-        console.error(`Not importable: “${file.name}” "${file.type}"`);
-        return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
-      }
-
-      const result = /\/([^;]+)/.exec(file.type);
-      switch (result?.[1]) {
-        case 'markdown':
-          return {file, parseType: 'text/markdown'};
-        case 'plain':
-          const isMarkdown = await checkForMarkdown(file);
-          // console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
-          return {file, parseType: 'text/plain', isMarkdown};
-        case 'rtf':
-        case 'xml':
-        case 'svg+xml':
-        case 'x-uuencode':
-          console.error(`Not importable: “${file.name}” "${file.type}"`);
-          return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
-        default:
-          return {file, parseType: 'text/' + (result?.[1] || extension.slice(1) || 'plain')};
-      }
-    }
-  }
-
   function handleToggleMarkdown(i, evt, isMarkdown) {
     imports[i].isMarkdown = isMarkdown;
     setImports(imports.slice(0));
@@ -204,6 +169,41 @@ FileImport.propTypes = {
 const allowedFileTypesNonText = ['application/xhtml+xml','application/mathml+xml','application/javascript', 'application/ecmascript','application/x-yaml','application/json', 'message/rfc822','image/svg+xml'];
 
 const allowedExtensions = ['.rst', '.txt', '.text', '.readme', '.me', '.1st', '.log', '.markdown', '.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.adoc', '.textile', '.rst', '.etx', '.org', '.apt', '.pod', '.html', '.htm', '.xhtml', '.php', '.jsp', '.asp', '.mustache', '.hbs', '.erb', '.njk', '.ejs', '.mustache', '.haml', '.pug', '.erb', '.json', '.yaml', '.yml', '.awk', '.vcs', '.ics', '.abc', '.js', '.ts', '.jsx', '.css', '.less', '.sass', '.m', '.java', '.properties', '.sql', '.c', '.h', '.cc', '.cxx', '.cpp', '.hpp', '.py', '.rb', '.pm', '.erl', '.hs', '.hbx', '.sh', '.csh', '.bat', '.inf', '.ni'];
+
+async function determineParseType(file) {
+  // console.log(`selected file “${file.name}” "${file.type}"`)
+  // TODO: Convert a JPEG to data URL
+  const extMatch = /\.[^.]+$/.exec(file.name);
+  const extension = extMatch?.[0]?.toLowerCase();
+  if (hasTagsLikeHtml(file.type, extension)) {
+    return {file, parseType: 'text/html'};
+  } else {
+    if (!file.type.startsWith('text') &&
+        !allowedFileTypesNonText.includes(file.type) &&
+        !(!file.type && allowedExtensions.includes(extension))) {
+      console.error(`Not importable: “${file.name}” "${file.type}"`);
+      return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
+    }
+
+    const result = /\/([^;]+)/.exec(file.type);
+    switch (result?.[1]) {
+      case 'markdown':
+        return {file, parseType: 'text/markdown'};
+      case 'plain':
+        const isMarkdown = await checkForMarkdown(file);
+        // console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
+        return {file, parseType: 'text/plain', isMarkdown};
+      case 'rtf':
+      case 'xml':
+      case 'svg+xml':
+      case 'x-uuencode':
+        console.error(`Not importable: “${file.name}” "${file.type}"`);
+        return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
+      default:
+        return {file, parseType: 'text/' + (result?.[1] || extension.slice(1) || 'plain')};
+    }
+  }
+}
 
 function checkForMarkdown(file) {
   return new Promise((resolve, reject) => {
@@ -445,4 +445,4 @@ QuietError.prototype.name = "QuietError";
 
 
 export default FileImport;
-export {allowedFileTypesNonText, allowedExtensions, checkForMarkdown, importFromFile};
+export {determineParseType, allowedFileTypesNonText, allowedExtensions, checkForMarkdown, importFromFile};

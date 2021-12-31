@@ -85,34 +85,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
         Editor.insertFragment(editor, slateNodes);
       }
 
-      const imageElmnts = Editor.nodes(editor, {
-        at: [],
-        match: (node, path) => 'image' === node.type,
-      });
-      for (const nodeEntry of imageElmnts) {
-        const altText = SlateNode.string(nodeEntry[0]) || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
-        Transforms.select(editor, nodeEntry[1]);
-        Editor.insertFragment(editor, [{text: altText}]);
-      }
-
-      Transforms.unwrapNodes(editor,
-          {
-            at: [],
-            match: node => !Editor.isEditor(node) && node.children?.every(child => Editor.isBlock(editor, child)),
-            mode: "all",
-          }
-      );
-
-      Transforms.select(editor, []);
-      editor.removeMark('italic');
-      editor.removeMark('bold');
-      editor.removeMark('code');
-      editor.removeMark('underline');
-      editor.removeMark('strikethrough');
-
-      Transforms.unsetNodes(editor, ['type', 'url', 'title'], {
-        match: (node, path) => SlateElement.isElement(node)
-      });
+      coerceToPlainText(editor);
     });
   } else if (newSubtype.startsWith('markdown')) {
     if (oldSubtype?.startsWith('html')) {
@@ -136,4 +109,37 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
   console.log(`${oldSubtype} => ${newSubtype}`)
 }
 
-export {getRelevantBlockType, isBlockActive, changeBlockType, changeContentType};
+function coerceToPlainText(editor) {
+  const imageElmnts = Editor.nodes(editor, {
+    at: [],
+    match: (node, path) => 'image' === node.type,
+  });
+  for (const nodeEntry of imageElmnts) {
+    const altText = SlateNode.string(nodeEntry[0]) || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
+    Transforms.select(editor, nodeEntry[1]);
+    Editor.insertFragment(editor, [{text: altText}]);
+  }
+
+  Transforms.unwrapNodes(editor,
+      {
+        at: [],
+        match: node => !Editor.isEditor(node) && node.children?.every(child => Editor.isBlock(editor, child)),
+        mode: "all",
+      }
+  );
+
+  Transforms.select(editor, []);
+  editor.removeMark('italic');
+  editor.removeMark('bold');
+  editor.removeMark('code');
+  editor.removeMark('underline');
+  editor.removeMark('strikethrough');
+  Transforms.deselect(editor);
+
+  Transforms.unsetNodes(editor, ['type', 'url', 'title'], {
+    at: [],
+    match: (node, path) => SlateElement.isElement(node)
+  });
+}
+
+export {getRelevantBlockType, isBlockActive, changeBlockType, changeContentType, coerceToPlainText};

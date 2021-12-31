@@ -5,6 +5,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
+import {base64DecToArr} from "./util/testUtil";
 
 class DataTransfer {
   constructor() {
@@ -316,6 +317,57 @@ describe("HTML plugin insertData", () => {
     ]);
   });
 
+  it("should paste Markdown files into rich text", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-two",
+        children: [
+          {text: "Nembutol"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Today is the first day of the rest of your life."}
+        ]},
+      { type: "code",
+        children: [
+          {text: "let a = b + c;"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 9 },
+      focus:  { path: [1, 0], offset: 48 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const file = new File([`**stuff**
+1. only item`], "minimal-markdown", {type: 'text/markdown'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-two",
+        children: [
+          {text: "Nembutol"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Today is "},
+          {text: "stuff", bold: true},
+        ]},
+      { type: "numbered-list", listStart: 1, children: [
+          {type: "list-item", children: [
+              {text: "only item"}
+            ]},
+        ]},
+      { type: "code",
+        children: [
+          {text: "let a = b + c;"}
+        ]},
+    ]);
+  });
+
   it("should paste plain text into rich text and match style", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
@@ -349,6 +401,7 @@ describe("HTML plugin insertData", () => {
         ]},
     ]);
   });
+
 
   it("should prefer pasting plain text into plain text", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -384,6 +437,7 @@ describe("HTML plugin insertData", () => {
         ]},
     ]);
   });
+
 
   it("should prefer pasting HTML into Markdown", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -425,6 +479,357 @@ describe("HTML plugin insertData", () => {
         children: [
           {text: "* Second list item"}
         ]},
+    ]);
+  });
+
+  it("should paste text into Markdown", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "# Another Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> A block quote"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "`code` and **bold**"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 4 },
+      focus:  { path: [1, 0], offset: 9 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', "*italic text*");
+    editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "# Another Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> A *italic text* quote"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "`code` and **bold**"}
+        ]},
+    ]);
+  });
+
+  it("should paste a text file into Markdown", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "# Yet Another Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "before target after"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> Yadda yadda"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 7 },
+      focus:  { path: [1, 0], offset: 13 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const file = new File(["A man, a plan, a canal, Panama!"], "palindrome.text", {type: 'text/csv'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "# Yet Another Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "before A man, a plan, a canal, Panama! after"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> Yadda yadda"}
+        ]},
+    ]);
+  });
+
+  it("should paste an HTML file into Markdown as Markdown", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "### Something Minor"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "before **target** after"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> Yadda yadda"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 7 },
+      focus:  { path: [1, 0], offset: 23 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const file = new File([`<code>const NUMBER = 42;</code><img src="http://example.com/pic" alt="natter"/>`], "stuff.html", {type: 'text/html'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "### Something Minor"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: 'before `const NUMBER = 42;`![natter](http://example.com/pic "")'}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> Yadda yadda"}
+        ]},
+    ]);
+  });
+
+  it("should paste a graphic file into Markdown as Markdown", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "## My Vacation"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "foretext **selected** aftertext"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> this and that"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 11 },
+      focus:  { path: [1, 0], offset: 19 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const svg = `<svg width="100" height="110" xmlns="http://www.w3.org/2000/svg">
+<circle cx="50" cy="55" r="50" fill="blue" />
+</svg>`;
+    const dataUrlSvg = 'data:image/svg+xml;base64,' + btoa(svg);
+    const file = new File([svg],
+        "circle.svg", {type: 'image/svg+xml'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "## My Vacation"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: `foretext **![circle](${dataUrlSvg} "")** aftertext`}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> this and that"}
+        ]},
+    ]);
+  });
+
+
+  it("should paste an HTML file into plain text as plain text", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = undefined;
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "A first line"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "A second line"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "A third line"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 2 },
+      focus:  { path: [1, 0], offset: 8 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const html = `<em>emphasized text</em>`;
+    const file = new File([html],
+        "short.html", {type: 'text/html'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "A first line"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "A emphasized text line"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "A third line"}
+        ]},
+    ]);
+  });
+
+  it("should paste a Markdown file into plain text as Markdown", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = undefined;
+    editor.children = [
+      {
+        type: "paragraph",
+        children: [
+          {text: "Some first line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Some second line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Some third line"}
+        ]
+      },
+    ];
+    editor.selection = {
+      anchor: {path: [1, 0], offset: 5},
+      focus: {path: [1, 0], offset: 11},
+    };
+
+    const dataTransfer = new DataTransfer();
+    const markdown = `1. erste
+2. zwitte`;
+    const file = new File([markdown],
+        "list.md", {type: 'text/markdown'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      {
+        type: "paragraph",
+        children: [
+          {text: "Some first line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {
+            text: `Some 1. erste
+2. zwitte line`
+          }
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Some third line"}
+        ]
+      },
+    ]);
+  });
+
+  it("should paste a graphic file into plain text as a file name", async () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = undefined;
+    editor.children = [
+      {
+        type: "paragraph",
+        children: [
+          {text: "Another first line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Another second line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Another third line"}
+        ]
+      },
+    ];
+    editor.selection = {
+      anchor: {path: [1, 0], offset: 8},
+      focus: {path: [1, 0], offset: 14},
+    };
+
+    const dataTransfer = new DataTransfer();
+    const svg = `<svg width="100" height="110" xmlns="http://www.w3.org/2000/svg">
+<rect width="30" height="30" fill="cyan" />
+</svg>`;
+    // const dataUrlSvg = 'data:image/svg+xml;base64,' + btoa(svg);
+    const file = new File([svg],
+        "square.svg", {type: 'image/svg+xml'});
+    dataTransfer.setData('Files', null);
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      {
+        type: "paragraph",
+        children: [
+          {text: "Another first line"}
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {
+            text: `Another square line`
+          }
+        ]
+      },
+      {
+        type: "paragraph",
+        children: [
+          {text: "Another third line"}
+        ]
+      },
     ]);
   });
 });
