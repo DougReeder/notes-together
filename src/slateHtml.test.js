@@ -603,7 +603,7 @@ describe("HTML plugin insertData", () => {
         ]},
       { type: "paragraph",
         children: [
-          {text: 'before `const NUMBER = 42;`![natter](http://example.com/pic "")'}
+          {text: 'before `const NUMBER = 42;`![natter](http://example.com/pic)'}
         ]},
       { type: "paragraph",
         children: [

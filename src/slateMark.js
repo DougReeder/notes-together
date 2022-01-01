@@ -1,5 +1,5 @@
 // slateMark.js - constants & functions to customize Slate for Markdown
-// Copyright © 2021 Doug Reeder under the MIT License
+// Copyright © 2021-2022 Doug Reeder under the MIT License
 
 import {adHocTextReplacements} from "./util";
 import {Text} from 'slate';
@@ -72,7 +72,7 @@ function deserializeMarkdown(markdown) {
               slateNodeStack[slateNodeStack.length-1].push({
                 type: 'link',
                 url: mdNode.destination,
-                title: mdNode.title,
+                title: mdNode.title || "",
                 children,
               });
             }
@@ -83,17 +83,14 @@ function deserializeMarkdown(markdown) {
               slateNodeStack.push([])
             } else {
               const children = slateNodeStack.pop();
-              let altText = "";
-              for (const child of children) {   // TODO: descend into grandchildren, etc.
-                if (child.text) {
-                  altText += child.text;
-                }
+              if (0 === children.length) {
+                children.push(textNode("", italic, bold));
               }
               slateNodeStack[slateNodeStack.length-1].push({
                 type: 'image',
                 url: mdNode.destination,
-                title: mdNode.title,
-                children: [textNode(altText)],
+                title: mdNode.title || "",
+                children,
               });
             }
             break;
@@ -352,9 +349,11 @@ function serializeMarkdown(slateNodes) {
           break;
 
         case 'link':
-          return `[${childrenText}](${escapeMarkdown(slateNode.url)} "${escapeMarkdown(slateNode.title)}")`;
+          const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
+          return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
         case 'image':
-          return `![${childrenText}](${escapeMarkdown(slateNode.url)} "${escapeMarkdown(slateNode.title)}")`;
+          const titleMarkup2 = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
+          return `![${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup2})`;
       }
       if (['paragraph', 'bulleted-list', 'numbered-list'].includes(slateNode.type) && i < slateNodes.length-1) {
         str += "\n";

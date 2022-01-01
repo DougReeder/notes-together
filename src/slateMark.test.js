@@ -124,6 +124,31 @@ let a = b**c, x = y**z;
     expect(md).toEqual(`* erste
 * zwitte`);
   });
+
+  it("should save children of graphic as alt text", () => {
+    const slateNodes = [
+      { type: 'image', url: 'http://example.com/pic', title: 'still life', children: [
+          {text: "tromp "},
+          {text: "l'oeil", bold: true},
+        ]}
+    ];
+
+    const md = serializeMarkdown(slateNodes);
+
+    expect(md).toEqual(`![tromp **l'oeil**](http://example.com/pic "still life")`);
+  });
+
+  it("should omit title of graphic when empty", () => {
+    const slateNodes = [
+      { type: 'image', url: 'https://example.com/other', children: [
+          {text: "Not a pipe"},
+        ]}
+    ];
+
+    const md = serializeMarkdown(slateNodes);
+
+    expect(md).toEqual(`![Not a pipe](https://example.com/other)`);
+  });
 });
 
 describe("serializeMarkdown & deserializeMarkdown", () => {
@@ -202,7 +227,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
             url: "https://developer.mozilla.org/en-US/docs/Web/HTML",
             title: "Hypertext Markup Language",
             children: [
-              {text: "HTML"}
+              {text: "HTML", bold: true}
             ]},
           {text: " specification"},
         ]}
@@ -222,7 +247,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
             url: "https://example.com/pic",
             title: "Rover",
             children: [
-              {text: "dog"}
+              {text: "dog", italic: true}
             ]},
           {text: " is a spaniel"},
         ]}
