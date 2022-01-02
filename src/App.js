@@ -331,11 +331,11 @@ function App() {
               <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                     onClose={setAppMenuAnchorEl.bind(this, null)}>
                 {/*<MenuItem>Preferences & Help</MenuItem>*/}
-                <MenuItem onClick={handleImportFileSingle}>Import one note per file</MenuItem>
-                <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file</MenuItem>
+                <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
+                <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               </Menu>
               <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                     accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values,text/troff,text/vcard,text/calendar" + allowedFileTypesNonText.join(',') + ',' + allowedExtensions.join(',')}/>
+                     accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
             </Toolbar>
           </AppBar>
           <div className={classes.spacer}></div>

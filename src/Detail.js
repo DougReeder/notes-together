@@ -40,6 +40,7 @@ import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
 import {makeStyles} from "@material-ui/core/styles";
 import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
+import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -628,11 +629,17 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           Redo &nbsp;<Redo/>
         </MenuItem>
         <MenuItem onClick={evt => {
+          pasteFileInput.current.click();
+          setDetailsMenuAnchorEl(null);
+        }}>
+          Paste Files...
+        </MenuItem>
+        <MenuItem onClick={evt => {
           setDetailsMenuAnchorEl(null);
           setEffectiveSubtype('html');
           setIsContentTypeDialogOpen(true);
         }}>
-          Change note type
+          Change note type...
         </MenuItem>
       </Menu>
       {formatControls}
@@ -677,6 +684,28 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }
 
+  const pasteFileInput = useRef(null);
+
+  function pasteFileChange(evt) {
+    try {
+      // console.log("paste files:", evt.target.files)
+      ReactEditor.focus(editor);
+      if (previousSelection) {
+        Transforms.select(editor, previousSelection);
+      }
+      const dataTransfer = new DataTransfer();
+      for (const file of evt.target.files) {
+        dataTransfer.items.add(file);
+      }
+      editor.insertData(dataTransfer);
+    } catch (err) {
+      console.error("while pasting files:", err);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+    } finally {
+      pasteFileInput.current.value = "";
+    }
+  }
+
   const appbarStyle = {flexGrow: 0, backgroundColor: "#94bbe6"};
   if (visualViewportMatters()) {
     appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
@@ -708,6 +737,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           {content}
         </ErrorBoundary>
       </Box>
+      <input id="pasteFileInput" type="file" hidden={true} ref={pasteFileInput} onChange={pasteFileChange} multiple={true}
+           accept={"image/*,text/plain,text/markdown,text/html,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
+
   </>);
 }
 
