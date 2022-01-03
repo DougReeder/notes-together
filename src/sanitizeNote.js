@@ -119,6 +119,15 @@ function sanitizeNote(memoryNote, textFilter) {
 
   semanticExtractKeywords.textFilter = textFilter;
 
+  if ('function' === typeof textFilter) {
+    semanticExtractKeywords.transformTags.img = (tagName, attribs) => {
+      if (attribs.alt) {
+        textFilter(attribs.alt);
+      }
+      return {tagName, attribs};
+    };
+  }
+
   let sanitizedContent, title;
   if (hasTagsLikeHtml(memoryNote.mimeType)) {
     if ('string' === typeof memoryNote.title) {

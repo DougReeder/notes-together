@@ -335,7 +335,7 @@ function App() {
                 <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               </Menu>
               <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                     accept={"text/plain,text/markdown,text/html,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
+                     accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
             </Toolbar>
           </AppBar>
           <div className={classes.spacer}></div>

@@ -8,12 +8,12 @@ const MAX_SIZE = 200_000;   // max content size / 3
 async function imageFileToDataUrl(file) {
   const texts = [];
   if (file.name) {
-    const lastDotInd = file.name.lastIndexOf(".");
-    if (lastDotInd > 0 && lastDotInd < file.name.length - 1) {
-      texts.push(file.name.slice(0, lastDotInd));
-    } else {
+    // const lastDotInd = file.name.lastIndexOf(".");
+    // if (lastDotInd > 0 && lastDotInd < file.name.length - 1) {
+    //   texts.push(file.name.slice(0, lastDotInd));
+    // } else {
       texts.push(file.name);
-    }
+    // }
   }
 
   // avoids converting vector to raster if reasonably possible
@@ -47,8 +47,10 @@ function evaluateImage(blob, objectURL) {
     };
 
     img.onerror = function (evt) {
-      console.error("img onerror:", evt)
-      reject(evt.error || new Error(evt.message));
+      console.error("img onerror:", evt);
+      const err = evt.error || new Error(evt.message);
+      err.userMsg = "Not loadable. Can you convert to a different format?";
+      reject(err);
     }
   });
 }

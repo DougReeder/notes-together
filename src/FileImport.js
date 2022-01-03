@@ -20,6 +20,7 @@ import CloseIcon from '@material-ui/icons/Close';
 import {isLikelyMarkdown} from "./util";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
+import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 
 function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
@@ -172,10 +173,11 @@ const allowedExtensions = ['.rst', '.txt', '.text', '.readme', '.me', '.1st', '.
 
 async function determineParseType(file) {
   // console.log(`selected file “${file.name}” "${file.type}"`)
-  // TODO: Convert a JPEG to data URL
   const extMatch = /\.[^.]+$/.exec(file.name);
   const extension = extMatch?.[0]?.toLowerCase();
-  if (hasTagsLikeHtml(file.type, extension)) {
+  if (file.type.startsWith('image/')) {
+    return {file, parseType: file.type};
+  } else if (hasTagsLikeHtml(file.type, extension)) {
     return {file, parseType: 'text/html'};
   } else {
     if (!file.type.startsWith('text') &&
@@ -220,54 +222,67 @@ function checkForMarkdown(file) {
   });
 }
 
+/** @returns Promise */
 function importFromFile(file, parseType, isMultiple) {
   // console.log(`importFromFile "${file.name}" ${parseType}`);
+  if (parseType.startsWith('image/')) {
+    return importGraphic(file);
+  } else {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async evt => {
+        try {
+          const text = evt.target.result;
+          const coda = file.name;
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async evt => {
-      try {
-        const text = evt.target.result;
-        // console.log('onload', '“' + text.slice(0, 100) + '...”');
-        const coda = file.name;   // TODO: remove file extension
-
-        let response;
-        switch (parseType) {
-          case 'text/html':
-            response = await importHtml(text, file.lastModified, coda);
-            break;
-          case 'text/plain':
-          case 'text/markdown':
-            if (isMultiple) {
-              response = await splitIntoNotes(text, file.lastModified, coda, parseType);
-            } else {
+          let response;
+          switch (parseType) {
+            case 'text/html':
+              response = await importHtml(text, file.lastModified, coda);
+              break;
+            case 'text/plain':
+            case 'text/markdown':
+              if (isMultiple) {
+                response = await splitIntoNotes(text, file.lastModified, coda, parseType);
+              } else {
+                response = await importText(text, file.lastModified, coda, parseType);
+              }
+              break;
+            default:
               response = await importText(text, file.lastModified, coda, parseType);
-            }
-            break;
-          default:
-            response = await importText(text, file.lastModified, coda, parseType);
-            break;
-        }
-        console.info(`finished importing ${response.noteIds.length} ${parseType} notes from "${file.name}"`, response.messages);
+              break;
+          }
+          console.info(`finished importing ${response.noteIds.length} ${parseType} notes from "${file.name}"`, response.messages);
 
-        const msgs = response.messages || [];
-        if (response.noteIds.length > 1) {
-          msgs.unshift(`${response.noteIds.length} notes`);
-        } else if (1 === response.noteIds.length) {
-          msgs.unshift("1 note");
-        } else if (0 === msgs.length) {   // 0 === response.noteIds.length
-          msgs.unshift("No notes");
+          const msgs = response.messages || [];
+          if (response.noteIds.length > 1) {
+            msgs.unshift(`${response.noteIds.length} notes`);
+          } else if (1 === response.noteIds.length) {
+            msgs.unshift("1 note");
+          } else if (0 === msgs.length) {   // 0 === response.noteIds.length
+            msgs.unshift("No notes");
+          }
+          resolve({noteIds: response.noteIds, message: msgs.join("; ")});
+        } catch (err) {
+          reject(err);
         }
-        resolve({noteIds: response.noteIds, message: msgs.join("; ")});
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = evt => {
-      reject(reader.error);
-    };
-    reader.readAsText(file);
-  });
+      };
+      reader.onerror = evt => {
+        reject(reader.error);
+      };
+      reader.readAsText(file);
+    });
+  }
+}
+
+async function importGraphic(file) {
+  const {dataUrl, alt} = await imageFileToDataUrl(file);
+  const html = `<p></p><img alt="${alt}" src="${dataUrl}" /><p></p>`;
+
+  const newNote = createMemoryNote(null, html, new Date(file.lastModified), 'text/html;hint=SEMANTIC');
+  const cleanNote = await upsertNote(newNote);
+  console.info(`finished importing 1 HTML note from "${file.name}" ${file.type}`, cleanNote.id);
+  return {noteIds: [cleanNote.id], message: "1 note"};
 }
 
 async function importHtml(html, fileDateValue, coda) {

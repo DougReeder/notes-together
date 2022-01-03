@@ -652,7 +652,7 @@ describe("HTML plugin insertData", () => {
         ]},
       { type: "paragraph",
         children: [
-          {text: `foretext **![circle](${dataUrlSvg} "")** aftertext`}
+          {text: `foretext **![circle.svg](${dataUrlSvg} "")** aftertext`}
         ]},
       { type: "paragraph",
         children: [
@@ -820,7 +820,7 @@ describe("HTML plugin insertData", () => {
         type: "paragraph",
         children: [
           {
-            text: `Another square line`
+            text: `Another square.svg line`
           }
         ]
       },
