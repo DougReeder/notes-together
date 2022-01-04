@@ -10,6 +10,7 @@ import {base64DecToArr} from "./util/testUtil";
 class DataTransfer {
   constructor() {
     this._items = new Map();
+    this.files = [];
   }
 
   get types() {
@@ -281,6 +282,7 @@ describe("HTML plugin normalizer", () => {
 
 describe("HTML plugin insertData", () => {
   it("should prefer pasting HTML into rich text, & paste as rich text", () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -315,9 +317,11 @@ describe("HTML plugin insertData", () => {
           {text: " that is the question."},
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste Markdown files into rich text", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -342,7 +346,6 @@ describe("HTML plugin insertData", () => {
     const dataTransfer = new DataTransfer();
     const file = new File([`**stuff**
 1. only item`], "minimal-markdown", {type: 'text/markdown'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -366,9 +369,11 @@ describe("HTML plugin insertData", () => {
           {text: "let a = b + c;"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste plain text into rich text and match style", () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -400,10 +405,12 @@ describe("HTML plugin insertData", () => {
           {text: "To be, or not to be,E pluribus unum that is the question.", italic: true},
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
 
   it("should prefer pasting plain text into plain text", () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -436,10 +443,12 @@ describe("HTML plugin insertData", () => {
           {text: "To be, or not to be,E pluribus unum that is the question."},
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
 
   it("should prefer pasting HTML into Markdown", () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -480,9 +489,11 @@ describe("HTML plugin insertData", () => {
           {text: "* Second list item"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste text into Markdown", () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -522,9 +533,11 @@ describe("HTML plugin insertData", () => {
           {text: "`code` and **bold**"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste a text file into Markdown", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -548,7 +561,6 @@ describe("HTML plugin insertData", () => {
 
     const dataTransfer = new DataTransfer();
     const file = new File(["A man, a plan, a canal, Panama!"], "palindrome.text", {type: 'text/csv'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -566,9 +578,11 @@ describe("HTML plugin insertData", () => {
           {text: "> Yadda yadda"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste an HTML file into Markdown as Markdown", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -592,7 +606,6 @@ describe("HTML plugin insertData", () => {
 
     const dataTransfer = new DataTransfer();
     const file = new File([`<code>const NUMBER = 42;</code><img src="http://example.com/pic" alt="natter"/>`], "stuff.html", {type: 'text/html'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -610,9 +623,11 @@ describe("HTML plugin insertData", () => {
           {text: "> Yadda yadda"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste a graphic file into Markdown as Markdown", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -641,7 +656,6 @@ describe("HTML plugin insertData", () => {
     const dataUrlSvg = 'data:image/svg+xml;base64,' + btoa(svg);
     const file = new File([svg],
         "circle.svg", {type: 'image/svg+xml'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -659,10 +673,12 @@ describe("HTML plugin insertData", () => {
           {text: "> this and that"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
 
   it("should paste an HTML file into plain text as plain text", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -688,7 +704,6 @@ describe("HTML plugin insertData", () => {
     const html = `<em>emphasized text</em>`;
     const file = new File([html],
         "short.html", {type: 'text/html'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -706,9 +721,11 @@ describe("HTML plugin insertData", () => {
           {text: "A third line"}
         ]},
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste a Markdown file into plain text as Markdown", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -741,7 +758,6 @@ describe("HTML plugin insertData", () => {
 2. zwitte`;
     const file = new File([markdown],
         "list.md", {type: 'text/markdown'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -768,9 +784,11 @@ describe("HTML plugin insertData", () => {
         ]
       },
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
   it("should paste a graphic file into plain text as a file name", async () => {
+    window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -805,7 +823,6 @@ describe("HTML plugin insertData", () => {
     // const dataUrlSvg = 'data:image/svg+xml;base64,' + btoa(svg);
     const file = new File([svg],
         "square.svg", {type: 'image/svg+xml'});
-    dataTransfer.setData('Files', null);
     dataTransfer.files = [file];
     await editor.insertData(dataTransfer);
 
@@ -831,7 +848,24 @@ describe("HTML plugin insertData", () => {
         ]
       },
     ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
+
+  it("should post a message if the paste type isn't handled", async () => {
+    window.postMessage = jest.fn();
+
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = undefined;
+    editor.children = [{type: "paragraph", children: [{text: ""}]}];
+    editor.selection = null;
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/xml', '<?xml version="1.0" encoding="UTF-8"?>');
+    await editor.insertData(dataTransfer);
+
+    expect(window.postMessage).toHaveBeenCalledTimes(1);
+    expect(window.postMessage).toHaveBeenLastCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, expect.anything());
+  })
 });
 
 describe("serializeHtml", () => {

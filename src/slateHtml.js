@@ -155,7 +155,7 @@ function withHtml(editor) {   // defines Slate plugin
       } else {   // plain text
         pastePlainText(text)
       }
-    } else if (dataTransfer.types.indexOf('Files') > -1) {
+    } else if (dataTransfer.files.length > 0) {
       for (const file of dataTransfer.files) {
         const fileInfo = await determineParseType(file);
         if (fileInfo.isMarkdown) {   // presumes Markdown heuristics are correct
@@ -200,7 +200,8 @@ function withHtml(editor) {   // defines Slate plugin
         }
       }
     } else {   // use default handling, which probably does nothing
-      console.log("default handling", ...dataTransfer.items);
+      console.warn("default handling", ...dataTransfer.items);
+      window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, window?.location?.origin);
       insertData(dataTransfer)
     }
   }
