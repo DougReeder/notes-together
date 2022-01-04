@@ -218,9 +218,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       }
     } catch (err) {
       console.error("handleSlateChange:", err);
-      setNoteErr(err);
-      setPreviousSelection(null);
-      setPreviousBlockType('n/a');
+      if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
+        window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't save. Split this note into multiple notes"}, window?.location?.origin);
+      } else {
+        setNoteErr(err);
+        setPreviousSelection(null);
+        setPreviousBlockType('n/a');
+      }
     }
   }
 
