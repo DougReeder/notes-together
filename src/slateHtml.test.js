@@ -320,6 +320,102 @@ describe("HTML plugin insertData", () => {
     expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
+  it("should prefer pasting URLs, over plain text, into rich text", async () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-one",
+        children: [
+          {text: "A Boring Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Whenever you find yourself on the side of the majority, it is time to pause and reflect. —Mark Twain"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 9 },
+      focus:  { path: [1, 0], offset: 12 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/uri-list', `https://www.mozilla.org
+# A second link
+http://www.example.com`);
+    dataTransfer.setData('text/plain', `https://www.mozilla.org
+http://www.example.com`);
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-one",
+        children: [
+          {text: "A Boring Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Whenever "},
+          {type: 'link', url: 'https://www.mozilla.org', title: '', children: [
+              {text: "https://www.mozilla.org"}
+            ]},
+          {text: ""},
+          {type: 'link', url: 'http://www.example.com', title: '', children: [
+              {text: "A second link"}
+            ]},
+          {text: " find yourself on the side of the majority, it is time to pause and reflect. —Mark Twain"},
+        ]},
+    ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
+  });
+
+
+  it("should paste URL list files into rich text", async () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-two",
+        children: [
+          {text: "Another Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "The greatest wealth is to live content with little. —Plato"}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 4 },
+      focus:  { path: [1, 0], offset: 12 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const file = new File([`https://w3.org
+# Internet Assigned Numbers Authority   
+http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-two",
+        children: [
+          {text: "Another Title"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "The "},
+          {type: 'link', url: 'https://w3.org', title: '', children: [
+              {text: "https://w3.org"}
+            ]},
+          {text: ""},
+          {type: 'link', url: 'http://iana.org', title: '', children: [
+              {text: "Internet Assigned Numbers Authority   "}
+            ]},
+          {text: " wealth is to live content with little. —Plato"},
+        ]},
+    ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
+  });
+
   it("should paste Markdown files into rich text", async () => {
     window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
@@ -487,6 +583,54 @@ describe("HTML plugin insertData", () => {
       { type: "paragraph",
         children: [
           {text: "* Second list item"}
+        ]},
+    ]);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
+  });
+
+  it("should prefer pasting URI lists, over text, into Markdown", async () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown';
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "# Some Dull Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> All that we are is the result of what we have thought. —Buddha"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> The most courageous act is still to think for yourself. Aloud. —Coco Chanel "}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 6 },
+      focus:  { path: [1, 0], offset: 10 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/uri-list', `https://reed.edu
+# The paradigmatic example
+https://www.example.org`);
+    dataTransfer.setData('text/plain', `https://reed.edu
+https://www.example.org`);
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "# Some Dull Title"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> All [https://reed.edu](https://reed.edu)[The paradigmatic example](https://www.example.org) we are is the result of what we have thought. —Buddha"},
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "> The most courageous act is still to think for yourself. Aloud. —Coco Chanel "}
         ]},
     ]);
     expect(window.postMessage).toHaveBeenCalledTimes(0);

@@ -129,13 +129,14 @@ function withHtml(editor) {   // defines Slate plugin
 
   // paste or drag & drop
   editor.insertData = async dataTransfer => {
+    // console.log("types:", JSON.stringify(dataTransfer.types), "   files:", JSON.stringify(dataTransfer.files));
     try {
       if (editor.subtype?.startsWith('html')) {
-        await processDataTransfer(dataTransfer, pasteHtmlToRichText, pasteMarkdownToRichText, pasteText, pasteGraphicFileToRichText);
+        await processDataTransfer(dataTransfer, pasteHtmlToRichText, pasteUriListToRichText, pasteMarkdownToRichText, pasteText, pasteGraphicFileToRichText);
       } else if (editor.subtype?.startsWith('markdown')) {
-        await processDataTransfer(dataTransfer, pasteHtmlToMarkdown, pasteText, pasteText, pasteGraphicFileToMarkdown);
+        await processDataTransfer(dataTransfer, pasteHtmlToMarkdown, pasteUriListToMarkdown, pasteText, pasteText, pasteGraphicFileToMarkdown);
       } else {   // plain text mode
-        await processDataTransfer(dataTransfer, pasteHtmlToPlainText, pasteText, pasteText, pasteGraphicFileToPlainText);
+        await processDataTransfer(dataTransfer, pasteHtmlToPlainText, pasteText, pasteText, pasteText, pasteGraphicFileToPlainText);
       }
     } catch (err) {
       console.error("while pasting:", err);
@@ -144,10 +145,13 @@ function withHtml(editor) {   // defines Slate plugin
     }
   }
 
-  async function processDataTransfer(dataTransfer, pasteHtml, pasteMarkdown, pastePlainText, pasteGraphicFile) {
+  async function processDataTransfer(dataTransfer, pasteHtml, pasteUriList, pasteMarkdown, pastePlainText, pasteGraphicFile) {
     if (dataTransfer.types.indexOf('text/html') > -1 && pasteHtml !== pasteHtmlToPlainText) {
       let html = dataTransfer.getData('text/html');
       pasteHtml(html);
+    } else if (dataTransfer.types.indexOf('text/uri-list') > -1) {
+      const uriList = dataTransfer.getData('text/uri-list');
+      pasteUriList(uriList);
     } else if (dataTransfer.types.indexOf('text/plain') > -1) {
       const text = dataTransfer.getData('text/plain');
       if (isLikelyMarkdown(text)) {
@@ -172,6 +176,9 @@ function withHtml(editor) {   // defines Slate plugin
                 switch (fileInfo.parseType) {
                   case 'text/html':
                     pasteHtml(text);
+                    break;
+                  case 'text/uri-list':
+                    pasteUriList(text);
                     break;
                   case 'text/markdown':
                     pasteMarkdown(text);
@@ -212,6 +219,28 @@ function withHtml(editor) {   // defines Slate plugin
     console.log("sanitized HTML", html.slice(0, 1024));
     const slateNodes = deserializeHtml(html, editor);
     console.log("HTML -> slateNodes:", slateNodes);
+    Editor.insertFragment(editor, slateNodes);
+  }
+
+  function pasteUriListToRichText(uriList) {
+    const slateNodes = [];
+    let comment = "", url;
+    for (const line of uriList.split(/\r\n|\n/)) {
+      if ('#' === line[0]) {
+        comment = /#\s*(.*)/.exec(line)[1] || "";
+      } else if ((url = line?.trim())) {
+        slateNodes.push({
+          type: 'link',
+          url: url,
+          title: "",
+          children: [{text: comment || url}]
+        });
+        comment = "";
+      } else {
+        comment = "";
+      }
+    }
+    console.info('URI list -> link element(s):', slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
 
@@ -259,6 +288,23 @@ function withHtml(editor) {   // defines Slate plugin
       });
     }
     Editor.insertFragment(editor, slateNodes);
+  }
+
+  function pasteUriListToMarkdown(uriList) {
+    let markdown = "";
+    let comment = "", url;
+    for (const line of uriList.split(/\r\n|\n/)) {
+      if ('#' === line[0]) {
+        comment = /#\s*(.*)/.exec(line)[1] || "";
+      } else if ((url = line?.trim())) {
+        markdown += `[${comment || url}](${url})`;
+        comment = "";
+      } else {
+        comment = "";
+      }
+    }
+    console.info("URI list -> Markdown:", markdown);
+    Editor.insertText(editor, markdown);
   }
 
   async function pasteGraphicFileToMarkdown(file) {
