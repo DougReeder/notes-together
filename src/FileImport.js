@@ -1,5 +1,5 @@
 // FileImport.js - file import dialog & functions
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import {extractUserMessage} from "./util/extractUserMessage";
 import {
@@ -24,17 +24,30 @@ import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 
 function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
+  const [isMarkdownColumnShown, setIsMarkdownColumnShown] = useState(true);
   const importPhase = useRef('');   // PREPARING, ACTIVE, or DONE
   const numNotesCreated = useRef(0);
   const lastSuccessfulFileName = useRef("");
+  const importBtnRef = useRef();
 
   useEffect(() => {
     async function determineParseTypes(files) {
+      let isMarkdownColumnRequired = false;
+      let isReviewRequired = false;
       const newImports = [];
       for (const file of files) {
         try {
-          newImports.push(await determineParseType(file));
-        } catch (err) {
+          const importMetadata = await determineParseType(file);
+          newImports.push(importMetadata);
+          if (['text/markdown', 'text/plain'].includes(importMetadata.parseType)) {
+            isMarkdownColumnRequired = true;
+          }
+          if ('text/plain' === importMetadata.parseType || importMetadata.message) {
+            isReviewRequired = true;
+          }
+        } catch (err) {   // typically an unreadable text file
+          isMarkdownColumnRequired = true;
+          isReviewRequired = true;
           let message;
           if (['NotFoundError', 'NotReadableError'].includes(err.name)) {   // Firefox, Safari
             message = "Ask your administrator for permission to read this.";
@@ -48,6 +61,11 @@ function FileImport({files, isMultiple, doCloseImport}) {
       lastSuccessfulFileName.current = "";
       setImports(newImports);
       numNotesCreated.current = 0;
+
+      setIsMarkdownColumnShown(isMarkdownColumnRequired);
+      if (!isReviewRequired) {
+        importBtnRef.current?.click();
+      }
     }
     determineParseTypes(files)
   }, [files]);
@@ -102,19 +120,21 @@ function FileImport({files, isMultiple, doCloseImport}) {
     dialogTitle = 1 === numNotesCreated.current ?
         "Imported 1 Note" :
         `Imported ${numNotesCreated.current} Notes`;
-  } else {   // PREPARING or ACTIVE
+  } else if ('ACTIVE' === importPhase.current) {
+    dialogTitle = "Importing...";
+  } else {   // PREPARING
     if (isMultiple) {
-      if (window.innerWidth >= 430) {
-        dialogTitle = "Importing Multiple Notes/File";
-      } else if (window.innerWidth >= 380) {
-        dialogTitle = "Import. Multiple Notes/File";
+      if (window.innerWidth >= 490) {
+        dialogTitle = "Review Import (Multiple Notes/File)";
       } else {
-        dialogTitle = "Imp. Mult. Notes/File";
+        dialogTitle = "Review Import";
       }
     } else {
-      dialogTitle = 1 === imports.length ?
-          "Importing 1 File" :
-          `Importing ${imports.length} Files`;
+      if (window.innerWidth >= 450) {
+        dialogTitle = "Review Import (One Note/File)";
+      } else {
+        dialogTitle = "Review Import";
+      }
     }
   }
 
@@ -128,7 +148,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
             <Typography id="import-title" sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
               {dialogTitle}
             </Typography>
-            <Button autoFocus disabled={'DONE' === importPhase.current} color="inherit" onClick={handleImportOrCancel}>
+            <Button ref={importBtnRef} variant="contained" autoFocus disabled={'DONE' === importPhase.current} style={{marginRight: '1ch'}} onClick={handleImportOrCancel}>
               {'PREPARING' === importPhase.current ? "Import" : "Cancel"}
             </Button>
           </Toolbar>
@@ -138,17 +158,17 @@ function FileImport({files, isMultiple, doCloseImport}) {
           <TableHead>
             <TableRow>
               <TableCell><strong>File Name</strong></TableCell>
-              <TableCell><strong>Contains Markdown</strong></TableCell>
+              {isMarkdownColumnShown && <TableCell><strong>Contains Markdown</strong></TableCell>}
               <TableCell><strong>Result</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {imports.map(({file, parseType, isMarkdown, isImporting, message}, i) => (<TableRow key={i}>
               <TableCell>{file.name}</TableCell>
-              <TableCell>{
+              {isMarkdownColumnShown && <TableCell>{
                 ('text/plain' === parseType && <Checkbox checked={isMarkdown} disabled={Boolean(message)} onChange={handleToggleMarkdown.bind(this, i)} />) ||
                 ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
-              }</TableCell>
+              }</TableCell>}
               <TableCell>{message || (isImporting && <CircularProgress size="2ex" />)}</TableCell>
             </TableRow>))}
           </TableBody>

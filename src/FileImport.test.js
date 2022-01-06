@@ -1,5 +1,5 @@
 // FileImport.test.js - automated tests for importing notes from files
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import auto from "fake-indexeddb/auto.js";
 import {init, getNote} from "./storage";
@@ -11,6 +11,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import {validate as uuidValidate} from "uuid";
 import {TITLE_MAX} from "./Note";
+import {dataURItoFile} from "./util/testUtil";
 
 describe("checkForMarkdown", () => {
   it("should throw for non-file", async () => {
@@ -477,6 +478,10 @@ const fileDateText = '1991-02-17T23:00:00Z';
 const textContent = 'London Bridge is falling down\n\n\n\nMary, Mary, quite contrary';
 const textFile = new File([textContent], 'nursery-rhymes.txt', {type: 'text/plain', lastModified: Date.parse(fileDateText)});
 
+const fileDatePng = '2001-09-30T10:00:00Z';
+const dataUrlDot = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==';
+const pngFile = dataURItoFile(dataUrlDot, 'dot.png', fileDatePng);
+
 const fiveFiles = [htmlFile, binaryFile, markdownFile, markDownInTextFile, textFile];
 
 describe("FileImport", () => {
@@ -499,11 +504,11 @@ describe("FileImport", () => {
 
     render(<FileImport files={[htmlFile, binaryFile, rtfFile, markdownFile, markDownInTextFile, textFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 6 Files/})).toBeVisible())
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Review Import \(One Note\/File\)/})).toBeVisible());
 
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
-    expect(screen.getByRole('button', {name: "Import"})).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', {name: "Import"})).toBeEnabled());
 
     const rows = screen.queryAllByRole('row');
     expect(rows.length).toEqual(1+6);
@@ -542,17 +547,47 @@ describe("FileImport", () => {
     expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
   });
 
+  it("should not render Markdown column when not needed", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={[htmlFile, binaryFile, rtfFile, pngFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
+
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Review Import \(One Note\/File\)/})).toBeVisible());
+
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', {name: "Import"})).toBeEnabled());
+
+    const rows = screen.queryAllByRole('row');
+    expect(rows.length).toEqual(1+4);
+    const headers = screen.queryAllByRole('columnheader');
+    expect(headers[0].textContent).toEqual('File Name');
+    expect(headers[1].textContent).toEqual('Result');
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("binary");
+    expect(cells[3].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[4].textContent).toEqual("typical.rtf");
+    expect(cells[5].textContent).toEqual("Not importable. Open in appropriate app & copy.");
+    expect(cells[6].textContent).toEqual("dot.png");
+    expect(cells[7].textContent).toEqual("");
+    expect(cells.length).toEqual(4*2);
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
+  });
+
   it("should import & summarize results", async () => {
     const mockCloseImport = jest.fn();
 
     render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Review Import \(One Note\/File\)/})).toBeVisible())
 
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
-    const importBtn = screen.getByRole('button', {name: "Import"});
-    expect(importBtn).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', {name: "Import"})).toBeEnabled());
 
     const cells = screen.queryAllByRole('cell');
     expect(cells[0].textContent).toEqual("Oregon.html");
@@ -578,7 +613,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("");
     expect(cells.length).toEqual(5*3);
 
-    userEvent.click(importBtn);
+    userEvent.click(screen.getByRole('button', {name: "Import"}));
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
@@ -599,7 +634,7 @@ describe("FileImport", () => {
     render(<FileImport files={fiveFiles} isMultiple={true} doCloseImport={mockCloseImport}/>);
 
     await waitFor(() => expect(screen.queryAllByRole('row').length).toEqual(1+5));
-    expect(screen.getByRole('dialog', {name: "Importing Multiple Notes/File"})).toBeVisible()
+    expect(screen.getByRole('dialog', {name: "Review Import (Multiple Notes/File)"})).toBeVisible()
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
     const importBtn = screen.getByRole('button', {name: "Import"});
@@ -649,26 +684,16 @@ describe("FileImport", () => {
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
   });
 
-
-  it("should use singular title for 1 file", async () => {
-    const mockCloseImport = jest.fn();
-
-    render(<FileImport files={[markDownInTextFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
-
-    await waitFor(() => expect(screen.getByRole('dialog', {name: "Importing 1 File"})).toBeVisible())
-  });
-
   it("should import single notes from text & Markdown files when flagged", async () => {
     const mockCloseImport = jest.fn();
 
     render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
-    await waitFor(() => expect(screen.getByRole('dialog', {name: /Importing 5 Files/})).toBeVisible())
+    await waitFor(() => expect(screen.getByRole('dialog', {name: /Review Import \(One Note\/File\)/})).toBeVisible())
 
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeEnabled();
-    const importBtn = screen.getByRole('button', {name: "Import"});
-    expect(importBtn).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', {name: "Import"})).toBeEnabled());
 
     const cells = screen.queryAllByRole('cell');
     expect(cells[0].textContent).toEqual("Oregon.html");
@@ -694,7 +719,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("");
     expect(cells.length).toEqual(5*3);
 
-    userEvent.click(importBtn);
+    userEvent.click(screen.getByRole('button', {name: "Import"}));
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
@@ -707,5 +732,27 @@ describe("FileImport", () => {
 
     userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+  });
+
+  it("should skip review, when all files are readable, an importable type, and not text", async () => {
+    const mockCloseImport = jest.fn();
+
+    render(<FileImport files={[htmlFile, markdownFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
+    await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 2 Notes"})).toBeVisible())
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeEnabled();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeDisabled();
+    const cells = screen.queryAllByRole('cell');
+    expect(cells[0].textContent).toEqual("Oregon.html");
+    expect(cells[1].textContent).toEqual("");
+    expect(cells[2].textContent).toEqual("1 note");
+    expect(cells[3].textContent).toEqual("Burroughs.md");
+    expect(cells[4].textContent).toEqual("");
+    expect(cells[5].textContent).toEqual("1 note");
+    expect(cells.length).toEqual(2*3);
+    expect(mockCloseImport).not.toHaveBeenCalled();
+
+    userEvent.click(closeBtn);
+    expect(mockCloseImport).toHaveBeenCalledWith("Burroughs.md", expect.anything());
   });
 });

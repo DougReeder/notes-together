@@ -1,6 +1,6 @@
 // testUtil.js - utility function for automated testing
 
-export function dataURItoFile(dataURI, fileName) {
+export function dataURItoFile(dataURI, fileName, date) {
   // converts base64 to raw binary data held in a string
   // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
   const byteString = atob(dataURI.split(',')[1]);
@@ -20,7 +20,11 @@ export function dataURItoFile(dataURI, fileName) {
   }
 
   // writes the ArrayBuffer to a file
-  return new File([ab], fileName, {type: mimeString})
+  let options = {type: mimeString};
+  if (date) {
+    options.lastModified = date.valueOf();
+  }
+  return new File([ab], fileName, options);
 }
 
 
