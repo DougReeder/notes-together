@@ -223,7 +223,7 @@ function List(props) {
 
   const adviceGettingStarted = <>
     <h2>Write, import or sync some notes!</h2>
-    <p>To create a new note, tap the <button className="actionBtn" style={{border: 0, borderRadius: '2ch', backgroundColor: "#3f51b5", color: 'white' , position:"static", transform: "scale(0.8)", verticalAlign: "middle"}}><span>+</span></button> button.
+    <p>To create a new note, tap the <button className="actionBtn" style={{width: '4ch', height: '4ch', position: "relative", top: '-1ch', border: 0, borderRadius: '2ch', backgroundColor: "#3f51b5", color: 'white', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}}><div>+</div></button> button.
       You can paste or drag rich text and pictures into it.</p>
     <p>Drag text, Markdown or HTML files to this panel, or tap the <IconButton style={{padding: 0}}><MenuIcon /></IconButton> button, then <b>Import ...</b></p>
     <p>Tap <b>Connect Your Storage</b> to sync your notes with a remote server.</p>
