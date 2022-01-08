@@ -86,10 +86,10 @@ function findStubs(searchWords, callback) {
         console.log("IDB:", evt.target.error?.name, msg);
       } else {
         console.error("IDB findStubs:", evt.target.error);
+        findStubsTransaction = null;
         callback(evt.target.error);
       }
       evt.stopPropagation();
-      findStubsTransaction = null;
     };
     // findStubsTransaction.onabort = function (evt) {
     //   console.log("xaction aborted for", searchStr);
