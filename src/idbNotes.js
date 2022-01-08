@@ -103,6 +103,7 @@ function findStubs(searchWords, callback) {
       searchStubs(callback, noteStore, new Set(searchWords));
     }
   }).catch(err => {
+    findStubsTransaction = null;
     callback(err);
   });
 }

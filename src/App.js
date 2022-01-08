@@ -210,7 +210,7 @@ function App() {
         console.warn("no files selected");
       }
     } catch (err) {
-      console.error("while importing multiple notes:", err);
+      console.error("while selecting files to import:", err);
       setTransientErr(err);
     }
   }

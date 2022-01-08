@@ -433,6 +433,50 @@ describe("storage", () => {
   });
 
   describe("changeHandler", () => {
+    it("should create a note from incoming upsert", async () => {
+      const id = generateTestId();
+      const remoteNote = {
+        id: id,
+        content: `<p> Lorem ipsum dolor sit amet </p>`,
+        title: `Itaque earum rerum hic tenetur a sapiente delectus`,
+        date: new Date(1600, 2, 15),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      await changeHandler({origin: 'remote', oldValue: false, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(remoteNote.content);
+      expect(retrieved.title).toEqual(remoteNote.title);
+      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+    });
+
+    it("should delete a note from incoming delete", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `<p> Lorem ipsum dolor sit amet </p>`,
+        title: `ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.`,
+        date: new Date(1918, 10, 11),
+        mimeType: 'text/html;hint=SEMANTIC'
+      };
+      await upsertNote(localNote);
+      await changeHandler({origin: 'remote', oldValue: localNote, newValue: false});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved).toBeFalsy();
+    });
+
     it("should retain a modified note which was deleted on another device", async () => {
       const id = generateTestId();
       const localNote = {
@@ -497,7 +541,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 11);
       });
 
       const retrieved = await getNote(id);

@@ -518,7 +518,7 @@ function deserializeHtml(html, editor) {
       return children;
     } catch (err) {
       console.error("while deserializing HTML:", err);
-      return [{text: el.innerText || ""}];
+      return [{text: el?.innerText || ""}];
     } finally {
       if ('PRE' === nodeName) {
         activeCodeBlockStack.pop();
@@ -700,7 +700,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
             if (dataUrl) {
               return `<img src="${encodeURI(dataUrl)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
             } else {
-              console.error("No substitution for", slateNode.url);
+              console.error("No substitution for", slateNode?.url);
               return '';   // Doesn't save img tag.
             }
           } else {
@@ -711,7 +711,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
       }
     } catch (err) {
       console.error("serializeSlateNode:", err);
-      return "";
+      return SlateNode.string(slateNode) || "";
     }
   }
 }

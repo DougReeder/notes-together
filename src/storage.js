@@ -27,10 +27,10 @@ async function changeHandler(evt) {
     switch (evt.origin) {   // eslint-disable-line default-case
       case 'remote':
         if (evt.newValue) {   // create or update
-          console.log("remoteStorage incoming upsert:", evt.newValue);
+          console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
           await upsertNote(evt.newValue, 'REMOTE');
         } else {   // delete
-          console.log("remoteStorage incoming delete:", evt.oldValue);
+          console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
           await deleteNoteDb(evt.oldValue.id);
         }
         break;
@@ -138,7 +138,7 @@ function initRemote() {
     });
 
     remoteStorage.on('not-connected', function () {
-      console.log("remoteStorage not-connected (anonymous mode)", remoteStorage.remote.token);
+      console.log("remoteStorage not-connected (anonymous mode)", remoteStorage.remote?.token);
     });
 
     remoteStorage.on('disconnected', function () {
@@ -146,9 +146,9 @@ function initRemote() {
     });
 
     remoteStorage.on('error', function (err) {
-      console.error("remoteStorage error", err.name, err.message);
-      if ('Unauthorized' === err.name) { return; }
-      window.postMessage({kind: 'TRANSIENT_MSG', message: err.message}, window?.location?.origin);
+      console.error("remoteStorage error", err?.name, err?.message, err);
+      if ('Unauthorized' === err?.name) { return; }
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
     });
 
     remoteStorage.on('network-offline', () => {

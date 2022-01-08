@@ -63,7 +63,7 @@ function fileToDataUrl(file) {
       resolve(dataUrl);
     };
     reader.onerror = evt => {
-      console.error(reader.error)
+      console.error("fileToDataUrl:", reader.error);
       reject(evt.target.error);
     }
     reader.readAsDataURL(file);

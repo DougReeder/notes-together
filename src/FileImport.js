@@ -365,7 +365,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
           const cleanNote = await upsertNote(note);
           noteIds.push(cleanNote.id);
         } catch (err) {
-          console.error(err);
+          console.error("splitIntoNotes:", err);
           const msg = extractUserMessage(err);
           if (err.name !== 'QuietError' && ! messages.includes(msg)) {
             messages.push(msg);
@@ -394,7 +394,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
       const cleanNote = await upsertNote(note);
       noteIds.push(cleanNote.id);
     } catch (err) {
-      console.error(err);
+      console.error("while forming last note:", err);
       const msg = extractUserMessage(err);
       if (err.name !== 'QuietError' && ! messages.includes(msg)) {
         messages.push(msg);

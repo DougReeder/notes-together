@@ -184,7 +184,7 @@ function deserializeMarkdown(markdown) {
             break;
 
           default:
-            console.error("unknown MD:", mdNode.type, mdNode.literal);
+            console.error("unknown MD:", mdNode?.type, mdNode?.literal);
         }
       }
     } catch (err) {

@@ -124,7 +124,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       setNoteDate(theNote.date);
       clearSubstitutions();
     } catch (err) {
-      console.error(`while replacing note ${theNote.id}:`, err);
+      console.error(`while replacing note ${theNote?.id}:`, err);
       setNoteErr(err);
     } finally {
       queueMicrotask(() => {
@@ -182,9 +182,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       setEditorValue(newValue);
 
       if (! ('noteSubtype' in editor.children[0]) && 'subtype' in editor) {
-        console.warn("preserve subtype 1:", editor.children[0].noteSubtype, '<-', editor.subtype)
+        console.warn("preserve subtype 1:", editor.children[0]?.noteSubtype, '<-', editor.subtype)
         queueMicrotask(() => {
-          console.warn("preserve subtype 2:", editor.children[0].noteSubtype, '<-', editor.subtype)
+          console.warn("preserve subtype 2:", editor.children[0]?.noteSubtype, '<-', editor.subtype)
           saveOnAstChangeRef.current = false;
               Transforms.setNodes(editor, {noteSubtype: editor.subtype}, {at: [0]})
           queueMicrotask(() => {
@@ -193,7 +193,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         });
       } else {
         // console.log("preserve subtype:", editor.children[0].noteSubtype, '->', editor.subtype)
-        editor.subtype = editor.children[0].noteSubtype;
+        editor.subtype = editor.children[0]?.noteSubtype;
       }
 
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
