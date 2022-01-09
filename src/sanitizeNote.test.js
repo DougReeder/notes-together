@@ -138,6 +138,70 @@ unstyled text small red text unstyled text`);
     expect(wordArr.length).toEqual(3);
   });
 
+  it("should extract normalized keywords from Markdown, ignoring URLs, via textFilter",  () => {
+    const originalText = `## The ![**Grand Canyon**](data:image/jpeg;base64,ABDCEFG1234567)!
+ ---
+ **bold** and *italic*`;
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/markdown;hint=COMMONMARK');
+    const wordSet = new Set();
+    const textFilter = function (text) {
+      for (const word of parseWords(text)) {
+        wordSet.add(word);
+      }
+      return text;
+    }
+
+    const cleanNote = sanitizeNote(original, textFilter);
+
+    expect(cleanNote.content).toEqual(originalText);
+    const wordArr = Array.from(wordSet);
+    expect(wordArr).toContain("THE");
+    expect(wordArr).toContain("GRAND");
+    expect(wordArr).toContain("CANYON");
+    expect(wordArr).toContain("BOLD");
+    expect(wordArr).toContain("AND");
+    expect(wordArr).toContain("ITALIC");
+    expect(wordArr).not.toContain("DATA");
+    expect(wordArr).not.toContain("IMAGE");
+    expect(wordArr).not.toContain("JPEG");
+    expect(wordArr).not.toContain("BASE64");
+    expect(wordArr).not.toContain("ABDCEFG1234567");
+    expect(wordArr.length).toEqual(6);
+
+    let titleLines = cleanNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^The Grand Canyon!/);
+    expect(titleLines[1]).toMatch(/^bold and italic/);
+  });
+
+  it("should extract remove markup when extracting title from Markdown note",  () => {
+    const originalText = `   Some Pretentious Title
+=================
+> Some famous quote`;
+    const original = createMemoryNote(generateTestId(), originalText, null, 'text/markdown;hint=COMMONMARK');
+    const wordSet = new Set();
+    const textFilter = function (text) {
+      for (const word of parseWords(text)) {
+        wordSet.add(word);
+      }
+      return text;
+    }
+
+    const cleanNote = sanitizeNote(original, textFilter);
+
+    expect(cleanNote.content).toEqual(originalText);
+    const wordArr = Array.from(wordSet);
+    expect(wordArr).toContain("SOME");
+    expect(wordArr).toContain("PRETENTIOUS");
+    expect(wordArr).toContain("TITLE");
+    expect(wordArr).toContain("FAMOUS");
+    expect(wordArr).toContain("QUOTE");
+    expect(wordArr.length).toEqual(5);
+
+    let titleLines = cleanNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^Some Pretentious Title/);
+    expect(titleLines[1]).toMatch(/^Some famous quote/);
+  });
+
   it("should extract a title from h tags, prioritizing higher", () => {
     const originalId = generateTestId();
     const originalText = `  <hr/><h6>trivial heading</h6>

@@ -138,6 +138,26 @@ function sanitizeNote(memoryNote, textFilter) {
       sanitizedContent = result.sanitizedText;
       title = result.title;
     }
+  } else if (memoryNote.mimeType?.startsWith('text/markdown')) {
+    sanitizedContent = memoryNote.content;   // Markdown doesn't need to be sanitized
+    // excludes links and images from keyword extraction
+    const contentArray = memoryNote.content.split(/]\((?:https?|data|blob):[^)]+\)/);
+    for (const run of contentArray) {
+      textFilter(run);
+    }
+    if ('string' === typeof memoryNote.title) {
+      title = memoryNote.title;
+    } else {
+      let usefulContent = '', i = 0;
+      while (usefulContent.length < TITLE_MAX && i < contentArray.length) {
+        usefulContent += contentArray[i++];
+      }
+      // quick & dirty code to remove markup when extracting title
+      title = usefulContent.slice(0, TITLE_MAX)
+      .replace(/={3,}|-{3,}|\*|_|^\s{0,3}#+|^\s{0,3}>|`+|!\[|~|\|/gm, '')
+      .replace(/(\n\s*)+/g, '\n')
+      .trim();
+    }
   } else {
     sanitizedContent = memoryNote.content;   // plain text doesn't need to be sanitized
     if ('function' === typeof textFilter) {

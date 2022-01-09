@@ -234,14 +234,18 @@ review.t`);
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^Subject Area/);
+    expect(titleLines[1]).toMatch(/^Actual Title/);
     expect(retrievedNote.content).toEqual(content0 + '\nactually-markdown.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^Item          Price      # In stock/);
+    expect(titleLines[1]).toMatch(/^Juicy Apples  1.99       7/);
     expect(retrievedNote.content).toEqual(content1 + '\nactually-markdown.txt');
     expect(retrievedNote.date).toEqual(new Date(date1));
   });
@@ -307,14 +311,14 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.title).toMatch(/^introduction\ninterminable.md/);
     expect(retrievedNote.content).toEqual(content0 + '\ninterminable.md');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.title).toMatch(/^Lorem ipsum dolor sit amet, consectetur adipiscing elit/);
     expect(retrievedNote.content).toEqual(lipsum + '\ninterminable.md');
     expect(retrievedNote.date).toEqual(new Date(date2));
   });
@@ -424,7 +428,7 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    expect(retrievedNote.title).toMatch(/^Lorem Ipsum\n1. Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
     expect(retrievedNote.content).toEqual(fileContent + "\n\ndivided.txt");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
