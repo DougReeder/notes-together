@@ -504,6 +504,126 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
     expect(window.postMessage).toHaveBeenCalledTimes(0);
   });
 
+  it("should paste a graphic file into rich text as rich text, replacing a blank paragraph", async () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-three",
+        children: [
+          {text: "My Essay"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: ""}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Something appropriate."}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 0 },
+      focus:  { path: [1, 0], offset: 0 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const svg = `<svg width="400" height="410" xmlns="http://www.w3.org/2000/svg">
+<circle cx="200" cy="200" r="69" fill="orage" />
+</svg>`;
+    const file = new File([svg],
+        "disk.svg", {type: 'image/svg+xml'});
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-three",
+        children: [
+          {text: "My Essay"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: ""}
+        ]},
+      {type: "image",
+        url: expect.anything(),
+        title: "",
+        children: [
+          {text: "disk.svg"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: ""}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Something appropriate."}
+        ]},
+    ]);
+    expect(editor.children[2].url).toMatch(/^data:image\/svg\+xml/);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
+  });
+
+  it("should paste a graphic file into rich text as rich text, replacing text", async () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      { type: "heading-three",
+        children: [
+          {text: "My Essay"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "lead-in argument summary"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Something appropriate."}
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [1, 0], offset: 8 },
+      focus:  { path: [1, 0], offset: 16 },
+    };
+
+    const dataTransfer = new DataTransfer();
+    const svg = `<svg width="400" height="410" xmlns="http://www.w3.org/2000/svg">
+<circle cx="200" cy="200" r="69" fill="orage" />
+</svg>`;
+    const file = new File([svg],
+        "disk.svg", {type: 'image/svg+xml'});
+    dataTransfer.files = [file];
+    await editor.insertData(dataTransfer);
+
+    expect(editor.children).toEqual([
+      { type: "heading-three",
+        children: [
+          {text: "My Essay"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "lead-in "}
+        ]},
+      {type: "image",
+        url: expect.anything(),
+        title: "",
+        children: [
+          {text: "disk.svg"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: " summary"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "Something appropriate."}
+        ]},
+    ]);
+    expect(editor.children[2].url).toMatch(/^data:image\/svg\+xml/);
+    expect(window.postMessage).toHaveBeenCalledTimes(0);
+  });
+
 
   it("should prefer pasting plain text into plain text", () => {
     window.postMessage = jest.fn();

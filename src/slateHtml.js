@@ -261,14 +261,18 @@ function withHtml(editor) {   // defines Slate plugin
       console.error("Can't convert to data URL:", file);
       return;
     }
-    console.info(`${file.name} ${file.type} -> img element:`);
-    const slateNode = {
-      type: 'image',
-      url: dataUrl,
-      title: "",
-      children: [{text: alt}]
-    }
-    Editor.insertNode(editor, slateNode);
+    console.info(`${file.name} ${file.type} -> image element:`);
+    const slateNodes = [
+      {type: 'paragraph', children: [{text: ""}]},
+      {
+        type: 'image',
+        url: dataUrl,
+        title: "",
+        children: [{text: alt}]
+      },
+      {type: 'paragraph', children: [{text: ""}]},
+    ];
+    Editor.insertFragment(editor, slateNodes);
   }
 
 
