@@ -26,8 +26,14 @@ body {
   align-items: stretch;
 }
 
-.panel {
+.panel, .separator {
   height: 100vh;
+}
+
+.separator {
+  width: 1px;
+  background: #666666;
+  flex: 0 0 auto;
 }
 
 @supports (-webkit-touch-callout: none) {   /* Safari iOS */
@@ -38,12 +44,12 @@ body {
     overflow: hidden;
   }
 
-  .panel {
+  .panel, .separator {
     height: -webkit-fill-available;
   }
 }
 
-@media all and (min-width: 640px) {
+@media all and (min-width: 641px) {
   .panelContainer {
     width: 100vw;
     justify-content: center;
@@ -67,7 +73,7 @@ body {
   }
 }
 
-@media all and (max-width: 639px) {
+@media all and (max-width: 640px) {
   .panelContainer {
     width: 200vw;
     transform: translateX(0);
@@ -82,6 +88,10 @@ body {
     display: inline-block;
     vertical-align: top;
     white-space: normal;
+  }
+
+  .separator {
+    display: none;
   }
 }
 
@@ -126,7 +136,7 @@ body {
   max-width: 52ch;
   padding: 1ch;
   background: #d0f0ff;
-  border: 1px solid;
+  border: 1px solid #666666;
   border-radius: 1ch;
 }
 .advice h2 {

@@ -146,7 +146,7 @@ function App() {
     if ('Escape' === evt.code) {
       if (evt.target.dataset.slateEditor) {
         evt.target.blur();
-      } else if (window.innerWidth < 640 && 'DETAIL' === mustShowPanel) {
+      } else if (window.innerWidth < 641 && 'DETAIL' === mustShowPanel) {
         setMustShowPanel('LIST');
       } else {
         setSearchStr("");
@@ -360,6 +360,7 @@ function App() {
           </Snackbar>
           <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
         </div>
+        <div className="separator"></div>
         <div className="panel panelDetail">
           <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
         </div>

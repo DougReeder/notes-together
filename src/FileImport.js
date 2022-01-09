@@ -297,7 +297,7 @@ function importFromFile(file, parseType, isMultiple) {
 
 async function importGraphic(file) {
   const {dataUrl, alt} = await imageFileToDataUrl(file);
-  const html = `<p></p><img alt="${alt}" src="${dataUrl}" /><p></p>`;
+  const html = `<h1></h1><img alt="${alt}" src="${dataUrl}" /><p></p>`;
 
   const newNote = createMemoryNote(null, html, new Date(file.lastModified), 'text/html;hint=SEMANTIC');
   const cleanNote = await upsertNote(newNote);
