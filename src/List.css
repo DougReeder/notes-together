@@ -73,6 +73,11 @@ li.selected {
 li.selected > .title {
     border-color: lightblue;
 }
+.untitled {
+    color: gray;
+    text-align: end;
+    line-height: 5ex;
+}
 
 .itemButtons {
     position: absolute;

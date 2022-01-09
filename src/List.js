@@ -253,7 +253,13 @@ function List(props) {
               </svg>
             </li>);
           }
-          const titleLines = ('string' === typeof note.title ? note.title : "⸮").split('\n');
+          let titleDiv;
+          if ('string' === typeof note.title && /\S/.test(note.title)) {
+            const titleLines = note.title.split('\n');
+            titleDiv = <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+          } else {
+            titleDiv = <div className="title untitled">Untitled</div>
+          }
           let itemButtons;
           if (note.id in itemButtonsIds) {
             itemButtons = (
@@ -268,13 +274,13 @@ function List(props) {
             note.id === selectedNoteId ?
               <li data-id={note.id} key={note.id} ref={selectedElmntRef}
                   className="summary selected">
-                <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+                {titleDiv}
                 {itemButtons}
               </li>
               :
               <li data-id={note.id} key={note.id}
                   className="summary">
-                <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+                {titleDiv}
                 {itemButtons}
               </li>
       );
