@@ -248,6 +248,16 @@ function App() {
     }
   }
 
+  function handleDeleteSelected(evt) {
+    if (selectedNoteId) {
+      deleteNote(selectedNoteId);
+    } else {
+      window.postMessage({kind: 'TRANSIENT_MSG', message: "First, select a note!", severity: 'info'}, window?.location?.origin);
+    }
+    setAppMenuAnchorEl(null);
+  }
+
+
   const [testMenuAnchorEl, setTestMenuAnchorEl] = React.useState(null);
 
   function openTestMenu(evt) {
@@ -333,6 +343,7 @@ function App() {
                 {/*<MenuItem>Preferences & Help</MenuItem>*/}
                 <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
                 <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
+                <MenuItem onClick={handleDeleteSelected}>Delete selected note</MenuItem>
               </Menu>
               <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                      accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
