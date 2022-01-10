@@ -118,7 +118,7 @@ unstyled text small red text unstyled text`);
   });
 
   it("should allow extraction of normalized keywords from text via textFilter",  () => {
-    const originalText = "editor-in-chief\n================foo_bar Foo.bar _underlined_\n";
+    const originalText = "   editor-in-chief\n\n  ================foo_bar Foo.bar _underlined_\n";
     const original = createMemoryNote(generateTestId(), originalText, null, 'text/plain');
     const wordSet = new Set();
     const textFilter = function (text) {
@@ -136,6 +136,8 @@ unstyled text small red text unstyled text`);
     expect(wordArr).toContain("FOOBAR");
     expect(wordArr).toContain("UNDERLINED");
     expect(wordArr.length).toEqual(3);
+
+    expect(cleanNote.title).toMatch(/^editor-in-chief\n================foo_bar Foo.bar _underlined_/);
   });
 
   it("should extract normalized keywords from Markdown, ignoring URLs, via textFilter",  () => {
@@ -462,7 +464,9 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.title).toEqual("The <p> tag denotes a paragraph. \n      The &nbsp; entity denotes a non-breaking space");
+    let titleLines = cleanNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^The <p> tag denotes a paragraph./);
+    expect(titleLines[1]).toMatch(/The &nbsp; entity denotes a non-breaking space/);
     expect(cleanNote.content).toEqual(` The <p> tag denotes a paragraph. 
       The &nbsp; entity denotes a non-breaking space `);
     expect(cleanNote.mimeType).toEqual('text/plain');

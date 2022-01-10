@@ -166,7 +166,7 @@ function sanitizeNote(memoryNote, textFilter) {
     if ('string' === typeof memoryNote.title) {
       title = memoryNote.title;
     } else {
-      title = memoryNote.content.slice(0, TITLE_MAX).trim();
+      title = memoryNote.content.slice(0, TITLE_MAX).replace(/(\n\s*)+/g, '\n').trim();
     }
   }
 

@@ -153,7 +153,9 @@ There's three things to say about this:
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content);
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toEqual("Popular Novel");
+    expect(titleLines[1]).toEqual("Review copyright 2021 by Doug Reeder");
     expect(retrievedNote.content).toEqual(fileContent + `
 
 review.t`);
@@ -182,21 +184,27 @@ review.t`);
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^Tadka Indian Cuisine/);
+    expect(titleLines[1]).toMatch(/^nice atmosphere/);
     expect(retrievedNote.content).toEqual(content0 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^The Matrix \(1999\)/);
+    expect(titleLines[1]).toMatch(/^wouldn't cows be a better heat source?/);
     expect(retrievedNote.content).toEqual(content1 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date1));
 
     retrievedNote = await getNote(noteIds[2]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^CbusJS d3/);
+    expect(titleLines[1]).toMatch(/^Nye County, Nevada/);
     expect(retrievedNote.content).toEqual(content2 + '\n\nmelange.txt');
     expect(Math.abs(retrievedNote.date - new Date(fileDate))).toBeLessThan(5);
   });
@@ -273,14 +281,16 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^before/);
     expect(retrievedNote.content).toEqual(content0 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^after/);
     expect(retrievedNote.content).toEqual(content2 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date2));
   });
@@ -350,7 +360,9 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/javascript');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/^if \('chrome' in window && 'fileSystem' in chrome\) \{/);
+    expect(titleLines[1]).toMatch(/history.pushState = function \(newState\) \{/);
     expect(retrievedNote.content).toEqual(fileContent + "\n\nhistoryStub.js");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
@@ -393,7 +405,9 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual(retrievedNote.content.slice(0, TITLE_MAX).trim());
+    let titleLines = retrievedNote.title.split('\n');
+    expect(titleLines[0]).toMatch(/Some Title/);
+    expect(titleLines[1]).toMatch(/^Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
     expect(retrievedNote.content).toEqual(fileContent + "\n\ngap.txt");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
