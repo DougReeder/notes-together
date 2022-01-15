@@ -145,10 +145,31 @@ function initRemote() {
       console.log("remoteStorage disconnected", arguments);
     });
 
+    let lastNotificationTime = 0;
+    let lastSyncErrTime = 0;
+    const INITIAL_NOTIFICATION_TIMEOUT = 10_000;
+    let notificationTimeout = INITIAL_NOTIFICATION_TIMEOUT;
+    const TEN_MINUTES = 10 * 60 * 1000;
+
     remoteStorage.on('error', function (err) {
-      console.error("remoteStorage error", err?.name, err?.message, err);
+      console.error("remoteStorage error:" /*, err?.name, err?.message*/ , err);
       if ('Unauthorized' === err?.name) { return; }
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      if ("SyncError" === err?.name) {
+        const timeDiff = Date.now() - lastNotificationTime;
+        if (timeDiff > notificationTimeout - 5000) {
+          window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+          lastNotificationTime = Date.now();
+
+          if (Date.now() - lastSyncErrTime > TEN_MINUTES) {
+            notificationTimeout = INITIAL_NOTIFICATION_TIMEOUT;
+          } else {
+            notificationTimeout = Math.min(notificationTimeout * 2, TEN_MINUTES);
+          }
+        }
+        lastSyncErrTime = Date.now();
+      } else {
+        window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      }
     });
 
     remoteStorage.on('network-offline', () => {
