@@ -1,7 +1,7 @@
 // slateUtil.js - utility functions for Slate editor
 // © 2021 Doug Reeder under the MIT License
 
-import {Editor, Element as SlateElement, Node as SlateNode, Transforms} from 'slate';
+import {Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange} from 'slate';
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 
 
@@ -66,7 +66,7 @@ function changeBlockType(editor, type) {
     const newProperties = {
       type: isActive ? 'paragraph' : isList ? 'list-item' : type,
     }
-    Transforms.setNodes(editor, newProperties);
+    Transforms.setNodes(editor, newProperties, {split: SlateRange.isExpanded(editor.selection)});
 
     if (!isActive && isList) {
       const block = {type: type, children: []}

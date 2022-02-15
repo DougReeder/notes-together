@@ -318,7 +318,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     queueMicrotask(() => {
       ReactEditor.focus(editor);
       // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
-      if (previousSelection && (!SlateRange.isCollapsed(previousSelection) || 0 === SlateNode.string(SlateNode.get(editor, previousSelection?.anchor?.path)).length)) {
+      if (previousSelection) {
         // changes block type
         Transforms.select(editor, previousSelection);
         if (['image', 'link'].indexOf(previousBlockType) > -1) {
@@ -348,17 +348,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         }
       } else {
         // appends block
-        let path;
-        if (previousSelection) {
-          let point = Editor.after(editor, previousSelection?.anchor?.path?.slice(0, 1));
-          if (point) {
-            path = point.path.slice(0, 1);
-          } else {
-            path = [editor.children.length];
-          }
-        } else {
-          path = [editor.children.length];
-        }
+        let path = [editor.children.length];
         switch (targetType) {
           default:
             Transforms.insertNodes(editor,
