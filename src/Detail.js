@@ -475,6 +475,45 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                   }
                   break;
                 }
+                case '*':
+                case '8':
+                  if (isHotkey('mod+*', { byKey: true }, evt) || isHotkey('mod+8', { byKey: true }, evt) || isHotkey('mod+shift+8', evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'bulleted-list');
+                  }
+                  break;
+                case '1':
+                  if (isHotkey('mod+1', { byKey: true }, evt) ||
+                      isHotkey('mod+shift+1', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'numbered-list');
+                  }
+                  break;
+                case 't':   // blocked in Chrome
+                  if (isHotkey('mod+shift+t', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-one');
+                  }
+                  break;
+                case 'h':
+                  if (isHotkey('mod+shift+h', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-two');
+                  }
+                  break;
+                case 's':
+                  if (isHotkey('mod+shift+s', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-three');
+                  }
+                  break;
+                case "'":
+                case '"':
+                  if (isHotkey("mod+'", { byKey: true }, evt) || isHotkey("mod+shift+'", { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'quote');
+                  }
+                  break;
               }
             }}
         />
