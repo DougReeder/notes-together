@@ -260,25 +260,25 @@ describe("storage", () => {
       expect(wordSet2).toEqual(wordSet);
     });
 
-    it('should parse "℥" symbol as OZ', () => {
-      const wordArr = Array.from(parseWords("23℥ brimstone"));
-
-      expect(wordArr).toContain("23OZ");
-      expect(wordArr).toContain("BRIMSTONE");
-    });
-
-    it('should parse "℻" symbol as FAX', () => {
-      const wordArr = Array.from(parseWords("order ℻614-555-1212"));
-
-      expect(wordArr).toContain("ORDER");
-      expect(wordArr).toContain("FAX6145551212");
-    });
-
-    it('should parse "℞" symbol as Rx', () => {
-      const wordArr = Array.from(parseWords("℞2901"));
-
-      expect(wordArr).toContain("RX2901");
-    })
+    // it('should parse "℥" symbol as OZ', () => {
+    //   const wordArr = Array.from(parseWords("23℥ brimstone"));
+    //
+    //   expect(wordArr).toContain("23OZ");
+    //   expect(wordArr).toContain("BRIMSTONE");
+    // });
+    //
+    // it('should parse "℻" symbol as FAX', () => {
+    //   const wordArr = Array.from(parseWords("order ℻614-555-1212"));
+    //
+    //   expect(wordArr).toContain("ORDER");
+    //   expect(wordArr).toContain("FAX6145551212");
+    // });
+    //
+    // it('should parse "℞" symbol as Rx', () => {
+    //   const wordArr = Array.from(parseWords("℞2901"));
+    //
+    //   expect(wordArr).toContain("RX2901");
+    // });
   });
 
   describe("upsertNote", () => {

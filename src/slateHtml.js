@@ -509,7 +509,7 @@ function deserializeHtml(html, editor) {
 
       if (ELEMENT_TAGS[nodeName]) {
         const attrs = ELEMENT_TAGS[nodeName](el)
-        if (attrs.children instanceof Array) {
+        if (Array.isArray(attrs.children)) {
           for (const child of attrs.children) {
             Object.assign(child, marks);
           }

@@ -545,7 +545,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
     const dateControl = editor.subtype?.startsWith('html') ?
         <DateCompact date={noteDate} onChange={handleDateChange}/> :
-        <Input type="date" value={dateStr} onChange={handleDateChange} className={classes.widgetAppBar}/>;
+        <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} className={classes.widgetAppBar}/>;
 
     function handleMarkItem(mark) {
       queueMicrotask(() => {
@@ -562,7 +562,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     if (editor.subtype?.startsWith('html')) {
       formatControls = (<>
         <Select
-            title="Block type"
+            title="Open block type menu"
             id="type-select"
             value={previousBlockType}
             onChange={handleSelectedBlockTypeChange}
@@ -582,13 +582,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem value={'n/a'}>(n/a)</MenuItem>
         </Select>
 
-        <IconButton aria-controls="mark-menu" aria-haspopup="true" aria-label="Text Format" onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
+        <IconButton aria-haspopup="true" title="Open text format menu" onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
           <TextFormat/>
         </IconButton>
         <Menu
             id="mark-menu"
             role="menu"
-            aria-label="Text Format Menu"
+            aria-label="Text format menu"
             anchorEl={markMenuAnchorEl}
             keepMounted
             open={Boolean(markMenuAnchorEl)}
@@ -632,18 +632,18 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
+        <Button variant="outlined" title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
       </>);
     }
     noteControls = (<>
       {dateControl}
-      <IconButton aria-controls="details-menu" aria-haspopup="true" aria-label="Details menu" onClick={handleDetailsMenuClick}>
+      <IconButton aria-controls="details-menu" aria-haspopup="true" title="Open editor menu" onClick={handleDetailsMenuClick}>
         <MoreVert/>
       </IconButton>
       <Menu
           id="details-menu"
           role="menu"
-          aria-label="Details menu"
+          aria-label="Editor menu"
           anchorEl={detailsMenuAnchorEl}
           keepMounted
           open={Boolean(detailsMenuAnchorEl)}
@@ -747,7 +747,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   return (<>
       <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
         <Toolbar>
-          <IconButton title="back" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
+          <IconButton title="Out to list panel" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
             <ArrowBackIcon />
           </IconButton>
           {Boolean(noteDate) && ! noteErr ? noteControls : null}

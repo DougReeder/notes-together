@@ -9,8 +9,7 @@ import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
-import {Button, IconButton} from "@material-ui/core";
-import MenuIcon from "@material-ui/icons/Menu";
+import {Button} from "@material-ui/core";
 
 
 function List(props) {
@@ -97,7 +96,7 @@ function List(props) {
       if (uuidValidate(id) && id === pointerRef.current.downId) {
         if (Date.now() - pointerRef.current.downStamp < 500) {   // click
           if (! evt.target.closest("div.itemButtons")) {
-            handleSelect(id, true);
+            handleSelect(id, 'DETAIL');
           }
         } else {   // long-press
           const newItemButtonIds = {};
@@ -181,7 +180,7 @@ function List(props) {
       }
       const newId = notes[selectedInd]?.id;
       if (uuidValidate(newId)) {
-        handleSelect(newId, false);
+        handleSelect(newId, null);
       }
     }
   }, [handleSelect, notes, selectedNoteId, itemButtonsIds]);
@@ -223,10 +222,10 @@ function List(props) {
 
   const adviceGettingStarted = <>
     <h2>Write, import or sync some notes!</h2>
-    <p>To create a new note, tap the <button className="actionBtn" style={{width: '4ch', height: '4ch', position: "relative", top: '-1ch', border: 0, borderRadius: '2ch', backgroundColor: "#3f51b5", color: 'white', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}}><div>+</div></button> button.
+    <p>To create a new note, tap the add button in the lower right of this pane. ➘
       You can paste or drag rich text and pictures into the editor pane.</p>
-    <p>Drag text, Markdown or HTML files to this pane, or tap the <IconButton style={{padding: 0}}><MenuIcon /></IconButton> button, then <b>Import ...</b></p>
-    <p>Tap <b>Connect Your Storage</b> below to sync your notes with a remote server.</p>
+    <p>Drag text, Markdown, HTML or graphic files to this pane, or open the application menu in the upper right of this pane ➚, then <b>Import ...</b></p>
+    <p>Tap <b>Connect Your Storage</b> below to back up your notes, and sync them between devices.</p>
   </>;
 
   let listItems;
@@ -286,16 +285,16 @@ function List(props) {
       );
     }
     if (notes.length < 16 && 0 === searchWords.size) {
-      listItems.push(<div key="advice" className="advice trailing">{adviceGettingStarted}</div>);
+      listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>);
     }
   } else {
     if (searchWords.size > 0) {
-      listItems = <div className="advice solo">
+      listItems = <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>
         <h2>No Matching Notes</h2>
         Try just the first few letters of your search word(s), or synonyms of them.
       </div>
     } else {
-      listItems = <div className="advice solo">{adviceGettingStarted}</div>;
+      listItems = <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>;
     }
   }
   return (

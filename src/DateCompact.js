@@ -32,7 +32,7 @@ function DateCompact({date, onChange}) {
   }
 
   return <>
-    <Typography onClick={handleDateClick} style={{color: "black", margin: "1.5ch"}}>
+    <Typography onClick={handleDateClick} style={{color: "black", margin: "1.5ch", cursor: 'pointer'}} title="Click to change date">
       {dateStr}
     </Typography>
     <Dialog

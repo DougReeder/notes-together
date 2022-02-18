@@ -11,6 +11,7 @@
 const diacritics = {
 // Latin-1 Supplement
     "\u00AA": "a",   // FEMININE ORDINAL INDICATOR
+    // "\u00B0": "degrees",
     "\u00B2": "2",   // SUPERSCRIPT TWO
     "\u00B3": "3",
     // "\u00B5": "u",   // micro sign
@@ -780,12 +781,14 @@ const diacritics = {
     "\u2092": "o",   // LATIN SUBSCRIPT SMALL LETTER o
     "\u2093": "x",   // LATIN SUBSCRIPT SMALL LETTER X
     // Letterlike Symbols
-    "\u2116": "Number",
-    "\u211E": "Rx",
-    "\u2121": "Telephone",
-    "\u2125": "oz",
+    // "\u2114": "LB",   // L B BAR SYMBOL
+    // "\u2116": "Number",
+    // "\u211E": "Rx",
+    // "\u2121": "Telephone",
+    // "\u2125": "oz",
+    // "\u2126": "Ohms",   // Ohm sign (omega)
     "\u212B": "A",   // Ångström
-    "\u213B": "Fax",
+    // "\u213B": "Fax",
     // Number Forms
     "\u2184": "c",   // LATIN SMALL LETTER REVERSED C
     // Enclosed Alphanumerics

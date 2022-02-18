@@ -142,7 +142,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
       <Dialog fullScreen open={files.length > 0} aria-labelledby="import-title">
         <AppBar style={{position: 'sticky'}}>
           <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)} aria-label="Close" >
+            <IconButton edge="start" color="inherit" onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)} title="Close">
               <CloseIcon />
             </IconButton>
             <Typography id="import-title" sx={{ ml: 2, flex: 1 }} variant="h6" component="div">

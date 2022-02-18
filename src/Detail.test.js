@@ -21,7 +21,7 @@ describe("Details component", () => {
   it("always has back button", async () => {
     const setMustShowPanel = jest.fn();
     render(<Detail noteId={null} setMustShowPanel={setMustShowPanel}></Detail>);
-    const backBtn = await screen.findByRole('button', {name: "back"});
+    const backBtn = await screen.findByRole('button', {name: "Out to list panel"});
     expect(backBtn).toBeInTheDocument();
 
     userEvent.click(backBtn);
@@ -44,8 +44,8 @@ describe("Details component", () => {
     expect(item).toBeVisible();
     expect(item.textContent).toEqual("YESTERDAY I found in a cupboard");
 
-    expect(await screen.getByTitle('Block type')).toBeVisible();
-    const backBtn = await screen.findByRole('button', {name: "back"});
+    expect(await screen.getByTitle('Open block type menu')).toBeVisible();
+    const backBtn = await screen.findByRole('button', {name: "Out to list panel"});
     expect(backBtn).toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe("Details component", () => {
     expect(screen.getByText('# Modern Physics')).toBeVisible();
 
     // expect(await screen.queryByTitle('Block type')).not.toBeInTheDocument();
-    const backBtn = await screen.findByRole('button', {name: "back"});
+    const backBtn = await screen.findByRole('button', {name: "Out to list panel"});
     expect(backBtn).toBeInTheDocument();
   });
 
@@ -282,8 +282,8 @@ it('renders error if note missing', async () => {
     render(<Detail noteId={noteId}></Detail>);
 
     // waits for content type button to be visible
-    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
-    const detailsMenuBtn = screen.getByRole('button', {name: "Details menu"});
+    await waitFor(() => expect(screen.getByRole('button', {name: "Change content type"})).toBeVisible());
+    const detailsMenuBtn = screen.getByRole('button', {name: "Open editor menu"});
     expect(detailsMenuBtn).toBeVisible();
     // format controls are not present
     expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();
@@ -307,17 +307,17 @@ it('renders error if note missing', async () => {
     userEvent.click(richTextBtn);
     // now, format controls are present, and content type button is not present
     await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
-    expect(screen.queryByRole('button', {name: "plain text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
 
     userEvent.click(detailsMenuBtn);
     userEvent.click(screen.getByRole('menuitem', {name: /Undo/}));
-    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
+    await waitFor(() => expect(screen.getByRole('button', {name: "Change content type"})).toBeVisible());
     expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();
 
     userEvent.click(detailsMenuBtn);
     userEvent.click(screen.getByRole('menuitem', {name: /Redo/}));
     await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
-    expect(screen.queryByRole('button', {name: "plain text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
   });
 
   // it('allows typing enter in blank item to end list', async () => {

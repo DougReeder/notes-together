@@ -138,6 +138,7 @@ body {
   background: #d0f0ff;
   border: 1px solid #666666;
   border-radius: 1ch;
+  cursor: help;
 }
 .advice h2 {
   margin-block-start: 0;
@@ -190,4 +191,32 @@ body {
 }
 #remotestorage-widget .rs-widget.rs-closed {
   max-width: 56px;
+}
+
+/* HelpPane */
+h4 {
+  margin-block-end: 1em;
+}
+
+h4:first-child {
+  margin-block-start: 0;
+}
+
+p:last-child {
+  margin-block-end: 0;
+}
+
+table.shortcuts {
+  width: 100%;
+  margin-top: 1em;
+}
+.shortcuts caption {
+  padding-bottom: .45em;
+  font-weight: bold;
+}
+.shortcuts tr:nth-child(2n+1) {
+  background-color: #eee;
+}
+.shortcuts td {
+  padding: .45em;
 }

@@ -23,6 +23,8 @@ import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import {visualViewportMatters} from "./util";
+import HelpPane from "./HelpPane";
+import {Delete, Help} from "@material-ui/icons";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -71,13 +73,21 @@ function App() {
   const [count, setCount] = useState(" ");
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
 
+  // LIST, DETAIL or HELP
+  const [mustShowPanel, setMustShowPanel] = useState('LIST');
+
   const [selectedNoteId, setSelectedNoteId] = useState(null);
-  const handleSelect = useCallback((id, showDetail) => {
-    setSelectedNoteId(id);
-    if (showDetail) {
+
+  function handleSelect(id, newPanel) {
+    if (id) {
+      setSelectedNoteId(id);
+    }
+    if (newPanel) {
+      setMustShowPanel(newPanel);
+    } else if (id && 'HELP' === mustShowPanel) {
       setMustShowPanel('DETAIL');
     }
-  }, []);
+  }
 
   const focusOnLoad = useRef(false);   // no re-render when changed
   async function addNote() {
@@ -96,9 +106,6 @@ function App() {
   const clearFocusOnLoad = useCallback(() => {
     focusOnLoad.current = false;   // reference, so doesn't cause re-render
   }, []);
-
-  // LIST or DETAIL
-  const [mustShowPanel, setMustShowPanel] = useState('LIST');
 
   const {enqueueSnackbar} = useSnackbar();
 
@@ -146,7 +153,7 @@ function App() {
     if ('Escape' === evt.code) {
       if (evt.target.dataset.slateEditor) {
         evt.target.blur();
-      } else if (window.innerWidth < 641 && 'DETAIL' === mustShowPanel) {
+      } else if (window.innerWidth < 641 && 'LIST' !== mustShowPanel) {
         setMustShowPanel('LIST');
       } else {
         setSearchStr("");
@@ -163,7 +170,7 @@ function App() {
         }
         break;
       case 'ArrowLeft':
-        if ('DETAIL' === mustShowPanel) {
+        if ('LIST' !== mustShowPanel) {
           setMustShowPanel('LIST');
         }
         break;
@@ -184,6 +191,11 @@ function App() {
 
   function openAppMenu(evt) {
     setAppMenuAnchorEl(evt.currentTarget);
+  }
+
+  function showHelp() {
+    setMustShowPanel('HELP');
+    setAppMenuAnchorEl(null);
   }
 
   const fileInput = useRef(null);
@@ -321,9 +333,9 @@ function App() {
           <AppBar position="sticky" className={classes.appbar}>
             <Toolbar>
               <input type="search" placeholder="Enter search word(s)"
-                     title="Enter the first several letters of one or more search words." aria-label="search notes"
+                     title="Enter the first several letters of one or more search words."
                      value={searchStr} onChange={onSearchChange} role="search"/>
-              <div className="count" draggable="true" onDragStart={openTestMenu}>{count}</div>
+              <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
               <Menu
                   id="testMenu"
                   anchorEl={testMenuAnchorEl}
@@ -335,15 +347,15 @@ function App() {
                 <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
                 <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
               </Menu>
-              <IconButton aria-label="Application menu" onClick={openAppMenu}>
+              <IconButton onClick={openAppMenu} title="Open application menu">
                 <MenuIcon/>
               </IconButton>
               <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                     onClose={setAppMenuAnchorEl.bind(this, null)}>
-                {/*<MenuItem>Preferences & Help</MenuItem>*/}
+                <MenuItem onClick={showHelp}>Help &nbsp; <Help/></MenuItem>
                 <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
                 <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
-                <MenuItem onClick={handleDeleteSelected}>Delete selected note</MenuItem>
+                <MenuItem onClick={handleDeleteSelected}>Delete selected note &nbsp; <Delete/></MenuItem>
               </Menu>
               <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                      accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
@@ -351,7 +363,7 @@ function App() {
           </AppBar>
           <div className={classes.spacer}></div>
           <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
-          <Fab onClick={addNote} className={classes.fab} color="primary" aria-label="add"><AddIcon /></Fab>
+          <Fab onClick={addNote} className={classes.fab} color="primary" title="Add note"><AddIcon /></Fab>
           <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
             <Alert onClose={handleSnackbarClose} severity="error">
               <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
@@ -362,7 +374,11 @@ function App() {
         </div>
         <div className="separator"></div>
         <div className="panel panelDetail">
-          <Detail noteId={selectedNoteId} searchStr={searchStr} focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null} setMustShowPanel={setMustShowPanel}></Detail>
+          {'DETAIL' === mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
+                                               focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
+                                               setMustShowPanel={setMustShowPanel}></Detail> :
+              <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
+          }
         </div>
       </div>
   );
