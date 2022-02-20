@@ -6,6 +6,7 @@ import './index.css';
 import '@fontsource/roboto';
 import reportWebVitals from './reportWebVitals';
 import {SnackbarProvider} from "notistack";
+import {BrowserRouter} from "react-router-dom";
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -42,7 +43,9 @@ init().then(remoteStorage => {   // init is idempotent
 ReactDOM.render(
   <React.StrictMode>
     <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </SnackbarProvider>
   </React.StrictMode>,
   document.getElementById('root')

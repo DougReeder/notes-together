@@ -1,7 +1,8 @@
 import {createMemoryNote} from './Note';
 import {init, upsertNote, parseWords, deleteNote} from './storage';
 import {findFillerNoteIds} from './idbNotes';
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
+import {useSearchParams} from "react-router-dom";
 import List from './List';
 import Detail from './Detail'
 import './App.css';
@@ -63,11 +64,13 @@ const useStyles = makeStyles((theme) => ({
 
 function App() {
   // TODO: replace string with set of normalized search terms
-  const [searchStr, setSearchStr] = useState("");
-  const [searchWords, setSearchWords] = useState(new Set());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {searchStr, searchWords} = useMemo(() => {
+    const searchStr = searchParams.get('words') || "";
+    return {searchStr, searchWords: parseWords(searchStr)};
+  }, [searchParams]);
   const onSearchChange = evt => {
-    setSearchStr(evt.target.value);
-    setSearchWords(parseWords(evt.target.value));
+    setSearchParams(new URLSearchParams({words: evt.target.value}));
   }
 
   const [count, setCount] = useState(" ");
@@ -156,8 +159,7 @@ function App() {
       } else if (window.innerWidth < 641 && 'LIST' !== mustShowPanel) {
         setMustShowPanel('LIST');
       } else {
-        setSearchStr("");
-        setSearchWords(new Set());
+        setSearchParams(new URLSearchParams());
       }
     }
     if (evt.target.dataset.slateEditor) {
@@ -177,7 +179,7 @@ function App() {
       // default:
       //   console.log("App keyListener:", evt.code, evt.target, mustShowPanel)
     }
-  }, [mustShowPanel]);
+  }, [mustShowPanel, setSearchParams]);
   useEffect(() => {
     document.addEventListener('keydown', keyListener);
 
@@ -255,8 +257,7 @@ function App() {
     setImportFiles([]);
     fileInput.current.value = "";
     if (lastSuccessfulFileName) {
-      setSearchStr(lastSuccessfulFileName);
-      setSearchWords(parseWords(lastSuccessfulFileName));
+      setSearchParams(new URLSearchParams({words: lastSuccessfulFileName}));
     }
   }
 
