@@ -1,6 +1,11 @@
 
 ol.list {
+    flex: 1 1 auto;
     position: relative;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -17,6 +22,7 @@ ol.list {
 }
 
 li.summary {
+    flex: 0 0 auto;
     height: 7.5ex;
     overflow: hidden;
 
@@ -34,6 +40,7 @@ li.summary + li.summary {
 }
 
 li.divider {
+    flex: 0 0 auto;
     height: 2.5ex;
     position: sticky;
     top: 0;
@@ -120,4 +127,26 @@ ol.list ul, ol.list ol {
 
 ol.list th {
     font-weight: normal;
+}
+
+
+.advice {
+    align-self: center;
+    max-width: 52ch;
+    margin: 2ch 2ch 10ex 2ch;
+    padding: 1ch;
+    background: #d0f0ff;
+    border: 1px solid #666666;
+    border-radius: 1ch;
+    cursor: help;
+}
+.advice h2 {
+    margin-block-start: 0;
+    margin-block-end: 1ex;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    font-weight:bold;
+    font-size: larger;
+    text-align: center;
+    text-transform: capitalize;
 }

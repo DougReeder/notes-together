@@ -222,10 +222,10 @@ function List(props) {
 
   const adviceGettingStarted = <>
     <h2>Write, import or sync some notes!</h2>
-    <p>To create a new note, tap the add button in the lower right of this pane. ➘
+    <p>To create a new note, tap the add button in the lower right of this pane. ➘
       You can paste or drag rich text and pictures into the editor pane.</p>
-    <p>Drag text, Markdown, HTML or graphic files to this pane, or open the application menu in the upper right of this pane ➚, then <b>Import ...</b></p>
-    <p>Tap <b>Connect Your Storage</b> below to back up your notes, and sync them between devices.</p>
+    <p>Drag text, Markdown, HTML or graphic files to this pane. Or from the application menu in the upper right of this pane ➚, select <b>Import ...</b></p>
+    <p>Tap <b>Connect Your Storage</b> below ⬇︎ to back up your notes, and sync them between devices.</p>
   </>;
 
   let listItems;

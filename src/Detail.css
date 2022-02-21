@@ -22,7 +22,7 @@
 /*    height: 52px;*/
 /*}*/
 
-.MuiInputBase-root {
+.MuiToolbar-root .MuiInputBase-root {
     max-width: 16ch;
 }
 
@@ -38,7 +38,11 @@
 }
 
 [role=textbox] > *:first-child {
-    margin-top: 0;
+    margin-block-start: 0;
+}
+
+[role=textbox] > *:last-child {
+    margin-block-end: 0;
 }
 
 /** blocks of a plain content note have similar spacing to line breaks within a block */
@@ -54,30 +58,18 @@ details {
 
 
 h1 {
-    margin-block-start: 0;
-    margin-block-end: 1ex;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
     font-size: 1.5em;
     text-align: center;
     text-transform: capitalize;
 }
 
 h2 {
-    margin-block-start: 0;
-    margin-block-end: 1ex;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
     font-size: 1.25em;
     text-align: center;
     text-transform: capitalize;
 }
 
 h3 {
-    margin-block-start: 0;
-    margin-block-end: 1ex;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
     font-size: 1em;
     text-align: center;
     text-transform: capitalize;
