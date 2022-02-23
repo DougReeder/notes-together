@@ -84,7 +84,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }]);
   const [editableKey, setEditableKey] = useState(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
   const editor = useMemo(
-      () => withHtml(withReact(withHistory(createEditor()))),
+      () => withHtml(withHistory(withReact(createEditor()))),
       []
   );
   const [noteDate, setNoteDate] = useState();
@@ -115,8 +115,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       slateNodes[0].noteSubtype = editor.subtype;
 
       Transforms.deselect(editor);
-      setPreviousSelection(null);
-      setPreviousBlockType('n/a');
       setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
       setEditorValue(slateNodes);
       saveOnAstChangeRef.current = false;
@@ -172,9 +170,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }, [noteId, replaceNote, focusOnLoadCB, editor]);
 
-  const [previousSelection, setPreviousSelection] = useState(null);
-  const [previousBlockType, setPreviousBlockType] = useState('n/a');
-
 
   async function handleSlateChange(newValue) {
     try {
@@ -206,24 +201,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         forceUpdate();   // updates the mark indicators
         console.log("selection change:", editor.operations);
       }
-
-      if (editor.selection) {
-        // For a Slate Range (or null), JSON is good enough (and deep clones).
-        const copiedSelection = JSON.parse(JSON.stringify(editor.selection));
-        setPreviousSelection(copiedSelection);
-        setPreviousBlockType(getRelevantBlockType(editor));
-        // console.log("copiedSelection:", JSON.stringify(copiedSelection));
-      } else {
-        console.log("not copying selection:", editor.selection);
-      }
     } catch (err) {
       console.error("handleSlateChange:", err);
       if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
         window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't save. Split this note into multiple notes"}, window?.location?.origin);
       } else {
         setNoteErr(err);
-        setPreviousSelection(null);
-        setPreviousBlockType('n/a');
       }
     }
   }
@@ -317,11 +300,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     const targetType = evt.target.value;
     queueMicrotask(() => {
       ReactEditor.focus(editor);
-      // console.log("handleSelectedBlockTypeChange previousSelection:", JSON.stringify(previousSelection))
-      if (previousSelection) {
+      if (editor.selection) {
         // changes block type
-        Transforms.select(editor, previousSelection);
-        if (['image', 'link'].indexOf(previousBlockType) > -1) {
+        if (['image', 'link'].indexOf(getRelevantBlockType(editor)) > -1) {
           window.postMessage({
             kind: 'TRANSIENT_MSG',
             severity: 'warning',
@@ -394,155 +375,38 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     setIsContentTypeDialogOpen(false);
   }
 
+  const appbarStyle = {flexGrow: 0, backgroundColor: "#94bbe6"};
+  if (visualViewportMatters()) {
+    appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
+  }
+
+  const outBtn = <IconButton title="Out to list panel" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
+    <ArrowBackIcon />
+  </IconButton>;
+
+
   let content;
   let noteControls = null;
   if (noteErr) {
-    content = (<Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
-      <AlertTitle>{noteErr?.userMsg || "Restart your device"}</AlertTitle>
-      {noteErr?.message || noteErr?.name || noteErr?.toString()}
-    </Alert>);
+    content = <>
+      <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
+        <Toolbar>{outBtn}</Toolbar>
+      </AppBar>
+      <Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
+        <AlertTitle>{noteErr?.userMsg || "Restart your device"}</AlertTitle>
+        {noteErr?.message || noteErr?.name || noteErr?.toString()}
+      </Alert>
+    </>;
   } else if (!noteDate) {
     content = (<>
+      <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
+        <Toolbar>{outBtn}</Toolbar>
+      </AppBar>
       <div style={{width: '100%', height: '100%', backgroundImage: 'url(' + process.env.PUBLIC_URL + '/icons/NotesTogether-icon-gray.svg)',
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
       <div style={{position: 'absolute', bottom: '2em', left: '0', right: '0', textAlign: 'center', color: '#616161' }}>Select a note on the left to display it in full.</div>
     </>);
   } else {
-    content = (<>
-      <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
-        <Editable
-            key={editableKey}   // change the key to restart editor w/ new editorValue
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            placeholder="Type, or paste some rich text or a graphic."
-            className={editor.subtype?.startsWith('html') ? null : "unformatted"}
-            onKeyDown={evt => {
-              switch (evt.key) {   // eslint-disable-line default-case
-                case 'Enter':
-                  if (isHotkey('mod+Enter', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    editor.insertText('\n');
-                  } else if (SlateRange.isCollapsed(editor.selection)) {
-                    const textNode = SlateNode.get(editor, editor.selection?.anchor?.path);
-                    const parentPath = editor.selection?.anchor?.path?.slice(0, -1);
-                    const parentElmnt = SlateNode.get(editor, parentPath);
-                    if (['heading-one', 'heading-two', 'heading-three'].includes(parentElmnt.type)) {
-                      evt.preventDefault();
-                      const newPath = [...parentPath.slice(0, -1), parentPath[parentPath.length-1]+1];
-                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
-                    } else if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
-                      evt.preventDefault();
-                      Editor.withoutNormalizing(editor, () => {
-                        const listPath = parentPath.slice(0, -1);
-                        const listElmnt = SlateNode.get(editor, listPath);
-                        let newPath;
-                        if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
-                          Transforms.removeNodes(editor, {at: listPath});
-                          newPath = listPath;
-                        } else {
-                          Transforms.removeNodes(editor, {at: parentPath});
-                          newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length - 2] + 1];
-                        }
-                        Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-                        Transforms.select(editor, {
-                          anchor: {path: [...newPath, 0], offset: 0},
-                          focus: {path: [...newPath, 0], offset: 0}
-                        });
-                      });
-                    }
-                  }
-                  break;
-                case 'i':
-                  if (isHotkey('mod+i', { byKey: true }, evt)) {
-                    evt.preventDefault()
-                    toggleMark(editor, 'italic');
-                  }
-                  break;
-                case 'b':
-                  if (isHotkey('mod+b', { byKey: true }, evt)) {
-                    evt.preventDefault()
-                    toggleMark(editor, 'bold');
-                  }
-                  break;
-                case '`': {
-                  if (isHotkey('mod+`', { byKey: true }, evt)) {
-                    evt.preventDefault()
-                    toggleMark(editor, 'code');
-                  } else if (isHotkey('mod+shift+`', evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'code');
-                  }
-                  break;
-                }
-                case '*':
-                case '8':
-                  if (isHotkey('mod+*', { byKey: true }, evt) || isHotkey('mod+8', { byKey: true }, evt) || isHotkey('mod+shift+8', evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'bulleted-list');
-                  }
-                  break;
-                case '1':
-                  if (isHotkey('mod+1', { byKey: true }, evt) ||
-                      isHotkey('mod+shift+1', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'numbered-list');
-                  }
-                  break;
-                case 't':   // blocked in Chrome
-                  if (isHotkey('mod+shift+t', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'heading-one');
-                  }
-                  break;
-                case 'h':
-                  if (isHotkey('mod+shift+h', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'heading-two');
-                  }
-                  break;
-                case 's':
-                  if (isHotkey('mod+shift+s', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'heading-three');
-                  }
-                  break;
-                case "'":
-                case '"':
-                  if (isHotkey("mod+'", { byKey: true }, evt) || isHotkey("mod+shift+'", { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    changeBlockType(editor, 'quote');
-                  }
-                  break;
-              }
-            }}
-        />
-      </Slate>
-      <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">
-        <DialogTitle id="content-type-dialog-title">Change type of note?</DialogTitle>
-        { !editor.subtype || editor.subtype.startsWith('plain') ? (
-          <DialogContent>
-            <FormControlLabel
-                label="Note already contains Markdown notation"
-                control={<Checkbox checked={'markdown' === effectiveSubtype} onChange={handleEffectiveCheckbox} name="writtenAsMarkdown" />}
-            />
-          </DialogContent>
-        ) : null }
-        <DialogActions>
-          <Button disabled={!editor.subtype || editor.subtype?.startsWith('plain')} onClick={handleChangeContentType.bind(this, 'plain')}>
-            Plain Text
-          </Button>
-          <Button disabled={editor.subtype?.startsWith('markdown')} onClick={handleChangeContentType.bind(this, 'markdown')}>
-            Mark­down
-          </Button>
-          <Button disabled={editor.subtype?.startsWith('html')} onClick={handleChangeContentType.bind(this, 'html;hint=SEMANTIC')}>
-            Rich Text
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-    </>);
-
     const dateControl = editor.subtype?.startsWith('html') ?
         <DateCompact date={noteDate} onChange={handleDateChange}/> :
         <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} className={classes.widgetAppBar}/>;
@@ -550,9 +414,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     function handleMarkItem(mark) {
       queueMicrotask(() => {
         ReactEditor.focus(editor);
-        if (previousSelection) {
-          Transforms.select(editor, previousSelection);
-        }
         toggleMark(editor, mark);
       });
       setMarkMenuAnchorEl(null);
@@ -564,7 +425,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         <Select
             title="Open block type menu"
             id="type-select"
-            value={previousBlockType}
+            value={getRelevantBlockType(editor)}
             onChange={handleSelectedBlockTypeChange}
             style={{minWidth: '15ch'}}
         >
@@ -677,6 +538,147 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       </Menu>
       {formatControls}
     </>);
+
+    content = (<>
+      <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
+        <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
+          <Toolbar>
+            {outBtn}
+            {Boolean(noteDate) && ! noteErr ? noteControls : null}
+          </Toolbar>
+        </AppBar>
+        <Editable
+            key={editableKey}   // change the key to restart editor w/ new editorValue
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            placeholder="Type, or paste some rich text or a graphic."
+            className={editor.subtype?.startsWith('html') ? null : "unformatted"}
+            onKeyDown={evt => {
+              switch (evt.key) {   // eslint-disable-line default-case
+                case 'Enter':
+                  if (isHotkey('mod+Enter', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    editor.insertText('\n');
+                  } else if (SlateRange.isCollapsed(editor.selection)) {
+                    const textNode = SlateNode.get(editor, editor.selection?.anchor?.path);
+                    const parentPath = editor.selection?.anchor?.path?.slice(0, -1);
+                    const parentElmnt = SlateNode.get(editor, parentPath);
+                    if (['heading-one', 'heading-two', 'heading-three'].includes(parentElmnt.type)) {
+                      evt.preventDefault();
+                      const newPath = [...parentPath.slice(0, -1), parentPath[parentPath.length-1]+1];
+                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+                    } else if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
+                      evt.preventDefault();
+                      Editor.withoutNormalizing(editor, () => {
+                        const listPath = parentPath.slice(0, -1);
+                        const listElmnt = SlateNode.get(editor, listPath);
+                        let newPath;
+                        if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
+                          Transforms.removeNodes(editor, {at: listPath});
+                          newPath = listPath;
+                        } else {
+                          Transforms.removeNodes(editor, {at: parentPath});
+                          newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length - 2] + 1];
+                        }
+                        Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+                        Transforms.select(editor, {
+                          anchor: {path: [...newPath, 0], offset: 0},
+                          focus: {path: [...newPath, 0], offset: 0}
+                        });
+                      });
+                    }
+                  }
+                  break;
+                case 'i':
+                  if (isHotkey('mod+i', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'italic');
+                  }
+                  break;
+                case 'b':
+                  if (isHotkey('mod+b', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'bold');
+                  }
+                  break;
+                case '`': {
+                  if (isHotkey('mod+`', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'code');
+                  } else if (isHotkey('mod+shift+`', evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'code');
+                  }
+                  break;
+                }
+                case '*':
+                case '8':
+                  if (isHotkey('mod+*', { byKey: true }, evt) || isHotkey('mod+8', { byKey: true }, evt) || isHotkey('mod+shift+8', evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'bulleted-list');
+                  }
+                  break;
+                case '1':
+                  if (isHotkey('mod+1', { byKey: true }, evt) ||
+                      isHotkey('mod+shift+1', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'numbered-list');
+                  }
+                  break;
+                case 't':   // blocked in Chrome
+                  if (isHotkey('mod+shift+t', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-one');
+                  }
+                  break;
+                case 'h':
+                  if (isHotkey('mod+shift+h', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-two');
+                  }
+                  break;
+                case 's':
+                  if (isHotkey('mod+shift+s', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'heading-three');
+                  }
+                  break;
+                case "'":
+                case '"':
+                  if (isHotkey("mod+'", { byKey: true }, evt) || isHotkey("mod+shift+'", { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'quote');
+                  }
+                  break;
+              }
+            }}
+        />
+      </Slate>
+      <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">
+        <DialogTitle id="content-type-dialog-title">Change type of note?</DialogTitle>
+        { !editor.subtype || editor.subtype.startsWith('plain') ? (
+            <DialogContent>
+              <FormControlLabel
+                  label="Note already contains Markdown notation"
+                  control={<Checkbox checked={'markdown' === effectiveSubtype} onChange={handleEffectiveCheckbox} name="writtenAsMarkdown" />}
+              />
+            </DialogContent>
+        ) : null }
+        <DialogActions>
+          <Button disabled={!editor.subtype || editor.subtype?.startsWith('plain')} onClick={handleChangeContentType.bind(this, 'plain')}>
+            Plain Text
+          </Button>
+          <Button disabled={editor.subtype?.startsWith('markdown')} onClick={handleChangeContentType.bind(this, 'markdown')}>
+            Mark­down
+          </Button>
+          <Button disabled={editor.subtype?.startsWith('html')} onClick={handleChangeContentType.bind(this, 'html;hint=SEMANTIC')}>
+            Rich Text
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+    </>);
   }
 
   function prepareContentTypeDialog() {
@@ -702,11 +704,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       edge = 'end';
     }
     if (edge) {
-      if (previousSelection) {
+      if (editor.selection) {   // TODO: neither this nor focus are ever truthy here
         ReactEditor.deselect(editor);
         ReactEditor.blur(editor);
-        setPreviousSelection(null);
-        setPreviousBlockType('n/a');
       } else {
         ReactEditor.focus(editor);
         Transforms.select(editor, Editor.point(editor, [], {edge}));
@@ -723,9 +723,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     try {
       // console.log("paste files:", evt.target.files)
       ReactEditor.focus(editor);
-      if (previousSelection) {
-        Transforms.select(editor, previousSelection);
-      }
       const dataTransfer = new DataTransfer();
       for (const file of evt.target.files) {
         dataTransfer.items.add(file);
@@ -739,20 +736,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }
 
-  const appbarStyle = {flexGrow: 0, backgroundColor: "#94bbe6"};
-  if (visualViewportMatters()) {
-    appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
-  }
-
   return (<>
-      <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
-        <Toolbar>
-          <IconButton title="Out to list panel" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
-            <ArrowBackIcon />
-          </IconButton>
-          {Boolean(noteDate) && ! noteErr ? noteControls : null}
-        </Toolbar>
-      </AppBar>
       <Box ref={boxRef} onClick={toggleFocus} style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
         <ErrorBoundary
             FallbackComponent={ErrorFallback}
