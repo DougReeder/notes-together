@@ -52,6 +52,7 @@ function HelpPane({setMustShowPanel}) {
 
         <h4>How do I undo mistakes?</h4>
         <p>From the editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
+        <p>On MacOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
 
         <h4>How do I use voice dictation/voice typing on a phone or tablet?</h4>
         <ol>
@@ -61,7 +62,7 @@ function HelpPane({setMustShowPanel}) {
         </ol>
 
         <h4>How do I back up my notes, or sync between devices?</h4>
-        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">RemoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then connect to it, using the widget in the lower-left of the list panel.</p>
+        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">RemoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then use the widget in the lower-left of the list panel to connect to it.</p>
         <svg style={{position: 'relative', bottom: '1.2ex'}}
             className="rs-main-logo" id="rs-main-logo-remotestorage" version="1.1" width="0.739008in" height="0.853339in"
             viewBox="0 0 739 853"> <g> <polygon className="rs-logo-shape"
@@ -112,11 +113,11 @@ function HelpPane({setMustShowPanel}) {
             <tr><td>ctrl+return or ⌘⏎</td><td>line break</td></tr>
             <tr><td>ctrl+B or ⌘B</td><td>bold text</td></tr>
             <tr><td>ctrl+I or ⌘I</td><td>italic text</td></tr>
-            <tr><td>ctrl+` or ⌘`</td><td>monospaced text</td></tr>
+            <tr><td>ctrl+` or ⌘`</td><td>monospaced phrase</td></tr>
             <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
             <tr><td>shift+ctrl+* or ⇧⌘*</td><td>bulleted list</td></tr>
             <tr><td>ctrl+1 or shift+ctrl+1 or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
-            <tr><td>shift+ctrl+T or ⇧⌘T (except Chrome)</td><td>title</td></tr>
+            <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>
             <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
             <tr><td>shift+ctrl+S or ⇧⌘S</td><td>subheading</td></tr>
             <tr><td>ctrl+' or shift+ctrl+' or ⌘' or ⇧⌘'</td><td>block quote</td></tr>
@@ -142,7 +143,7 @@ function HelpPane({setMustShowPanel}) {
         </ul>
 
         <h4>What formatting is supported for imported files and pasted text?</h4>
-        <p>Headings, paragraphs, lists, {/*tables,*/} images and other semantic HTML are supported.</p>
+        <p>Headings, paragraphs, lists, {/*tables,*/} graphics and other semantic HTML are imported, but not the styles.</p>
         <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a>, is supported in files with the extension <code>.md</code> or (optionally) text files.</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
@@ -158,13 +159,13 @@ function HelpPane({setMustShowPanel}) {
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>
 
         <h4>How do I add a link?</h4>
-        <p>Surf to the page in a web browser. From the browser's URL bar, drag the URL to the Notes Together editor.</p>
+        <p>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor.</p>
 
         <h4>How do I follow a link, in a Rich Text note?</h4>
         <p>Right-click the link, then select <b>Open link in new tab</b>.</p>
 
-        <h4>How is editing a Markdown note different than plain text?</h4>
-        <p>Pasted rich text and graphics are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated.</p>
+        <h4>Does the editor behave differently when editing a Markdown note?</h4>
+        <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated.</p>
       </div>
     </Box>
   </>;
