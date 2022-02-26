@@ -95,11 +95,11 @@ function FileImport({files, isMultiple, doCloseImport}) {
           // console.log(`changing parseType of "${file.name}" to Markdown`)
           parseType = 'text/markdown';
         }
-        const {noteIds, message} = await importFromFile(file, parseType, isMultiple);
+        const {noteIds, message, coda} = await importFromFile(file, parseType, isMultiple);
         record.message = message;
         numNotesCreated.current += noteIds.length
-        if (noteIds.length > 0) {
-          lastSuccessfulFileName.current = file.name;
+        if (noteIds.length > 0 && coda) {
+          lastSuccessfulFileName.current = coda;
         }
       } catch (err) {
         record.message = extractUserMessage(err);
@@ -253,7 +253,7 @@ function importFromFile(file, parseType, isMultiple) {
       reader.onload = async evt => {
         try {
           const text = evt.target.result;
-          const coda = file.name;
+          const coda = isMultiple && ['text/plain', 'text/markdown'].includes(file.type) && /\bserene-notes\b/i.test(file.name) ? '' : file.name;
 
           let response;
           switch (parseType) {
@@ -282,7 +282,7 @@ function importFromFile(file, parseType, isMultiple) {
           } else if (0 === msgs.length) {   // 0 === response.noteIds.length
             msgs.unshift("No notes");
           }
-          resolve({noteIds: response.noteIds, message: msgs.join("; ")});
+          resolve({noteIds: response.noteIds, message: msgs.join("; "), coda});
         } catch (err) {
           reject(err);
         }
@@ -323,9 +323,9 @@ async function importHtml(html, fileDateValue, coda) {
       }
 
       if (endPos >= 0) {
-        html = html.slice(0, endPos) + '<p>' + coda + '</p>' + html.slice(endPos);
+        html = html.slice(0, endPos) + '<p><em>' + coda + '</em></p>' + html.slice(endPos);
       } else {
-        html += '<p>' + coda + '</p>';
+        html += '<p><em>' + coda + '</em></p>';
       }
     }
 
@@ -425,7 +425,8 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   const noteChars = lines.reduce(function (previousValue, currentString) {
     return previousValue + currentString.length;
   }, 0);
-  if (noteChars > ('text/plain' === parseType ? 60_000 : 600_000)) {
+  const isMarkdown = 'text/markdown' === parseType;
+  if (noteChars > (isMarkdown ? 600_000 : 60_000)) {
     throw new Error(`Divide manually before importing`);
   }
   // last line may or may not be date
@@ -441,7 +442,9 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   let content;
   content = lines.join('\n');
   if (coda) {
-    content += '\n\n' + coda;
+    content += '\n\n' + (isMarkdown ? '*' : '') + coda + (isMarkdown ? '*' : '');
+  } else {
+    content += '\n';
   }
   return createMemoryNote(null, content, new Date(dateValue), parseType);
 }

@@ -70,7 +70,7 @@ describe("importFromFile", () => {
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
     expect(retrievedNote.title).toEqual(`Some Topic
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`);
-    expect(retrievedNote.content).toEqual(fileContent + "<p>Lipsum.html</p>");
+    expect(retrievedNote.content).toEqual(fileContent + "<p><em>Lipsum.html</em></p>");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
 
@@ -94,7 +94,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 Buckaroo-Banzai.html`);
     expect(retrievedNote.content).toEqual(`
 <blockquote>No matter where you go, there you are.</blockquote>
-<p>Buckaroo-Banzai.html</p>`);
+<p><em>Buckaroo-Banzai.html</em></p>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
 
@@ -245,7 +245,7 @@ review.t`);
     let titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toMatch(/^Subject Area/);
     expect(titleLines[1]).toMatch(/^Actual Title/);
-    expect(retrievedNote.content).toEqual(content0 + '\nactually-markdown.txt');
+    expect(retrievedNote.content).toEqual(content0 + '\n*actually-markdown.txt*');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
@@ -254,7 +254,77 @@ review.t`);
     titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toMatch(/^Item          Price      # In stock/);
     expect(titleLines[1]).toMatch(/^Juicy Apples  1.99       7/);
-    expect(retrievedNote.content).toEqual(content1 + '\nactually-markdown.txt');
+    expect(retrievedNote.content).toEqual(content1 + '\n*actually-markdown.txt*');
+    expect(retrievedNote.date).toEqual(new Date(date1));
+  });
+
+  it("should import a Serene Notes backup as Markdown without appending the file name", async () => {
+    const content0 = `## First Title
+
+body text of first note
+`;
+    const date0 = '2006-01-22T07:34:34.085Z';
+    const content1 = `# Second Title
+
+body text of second note
+`;
+    const date1 = '2007-02-13T04:19:06.697Z';
+    const file = new File([content0, date0, '\n\n\n\n', content1, date1, '\n\n\n\n'],
+        "serene-notes-2021-12-31T0430.txt",
+        {type: 'text/plain', lastModified: Date.parse('2021-12-31T0430Z')});
+
+    const {noteIds, message} = await importFromFile(file, 'text/markdown', true);
+    expect(Array.isArray(noteIds)).toBeTruthy();
+    expect(noteIds.length).toEqual(2);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(message).toEqual("2 notes");
+
+    let retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.content).toEqual(content0);
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(noteIds[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.content).toEqual(content1);
+    expect(retrievedNote.date).toEqual(new Date(date1));
+  });
+
+  it("should import a Serene Notes backup as plain text without appending the file name", async () => {
+    const content0 = `Something groovy
+
+more fab
+`;
+    const date0 = '2010-01-22T07:34:34.085Z';
+    const content1 = `Harshness
+
+yucking my yum
+`;
+    const date1 = '2009-02-13T04:19:06.697Z';
+    const file = new File([content0, date0, '\n\n\n\n', content1, date1, '\n\n\n\n'],
+        "serene-notes-2020-07-15T0430.txt",
+        {type: 'text/plain', lastModified: Date.parse('2021-12-31T0430Z')});
+
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
+    expect(Array.isArray(noteIds)).toBeTruthy();
+    expect(noteIds.length).toEqual(2);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(uuidValidate(noteIds[1])).toBeTruthy();
+    expect(message).toEqual("2 notes");
+
+    let retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.content).toEqual(content0);
+    expect(retrievedNote.date).toEqual(new Date(date0));
+
+    retrievedNote = await getNote(noteIds[1]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.content).toEqual(content1);
     expect(retrievedNote.date).toEqual(new Date(date1));
   });
 
@@ -322,14 +392,14 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.title).toMatch(/^introduction\ninterminable.md/);
-    expect(retrievedNote.content).toEqual(content0 + '\ninterminable.md');
+    expect(retrievedNote.content).toEqual(content0 + '\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date0));
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.title).toMatch(/^Lorem ipsum dolor sit amet, consectetur adipiscing elit/);
-    expect(retrievedNote.content).toEqual(lipsum + '\ninterminable.md');
+    expect(retrievedNote.content).toEqual(lipsum + '\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date2));
   });
 
