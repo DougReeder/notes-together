@@ -19,8 +19,9 @@ import {
   Input,
   MenuItem,
   Select,
-  Toolbar, Checkbox, Menu
+  Toolbar, Menu
 } from "@material-ui/core";
+import Checkbox from "@material-ui/core/Checkbox";
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import FormatItalicIcon from '@material-ui/icons/FormatItalic';

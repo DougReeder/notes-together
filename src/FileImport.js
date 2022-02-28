@@ -4,7 +4,7 @@
 import {extractUserMessage} from "./util/extractUserMessage";
 import {
   AppBar,
-  Button, Checkbox, CircularProgress,
+  Button, CircularProgress,
   Dialog,
   IconButton,
   Table, TableBody, TableCell,
@@ -13,6 +13,7 @@ import {
   Toolbar,
   Typography
 } from "@material-ui/core";
+import Checkbox from "@material-ui/core/Checkbox";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import React, {useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
