@@ -13,35 +13,22 @@ import {
   Menu,
   MenuItem,
   Snackbar, Toolbar
-} from "@material-ui/core";
-import {makeStyles} from '@material-ui/core/styles';
-import Slide from '@material-ui/core/Slide';
-import AddIcon from '@material-ui/icons/Add';
-import MenuIcon from '@material-ui/icons/Menu';
+} from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
+import Slide from '@mui/material/Slide';
+import AddIcon from '@mui/icons-material/Add';
+import MenuIcon from '@mui/icons-material/Menu';
 import FileImport, {allowedExtensions, allowedFileTypesNonText} from './FileImport';
-import {Alert, AlertTitle} from "@material-ui/lab";
+import {Alert, AlertTitle} from '@mui/material';
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import {visualViewportMatters} from "./util";
 import HelpPane from "./HelpPane";
-import {Delete, Help} from "@material-ui/icons";
+import {Delete, Help} from "@mui/icons-material";
 
 const useStyles = makeStyles((theme) => ({
-  root: {
-    '& > *': {
-      margin: theme.spacing(1),
-    },
-  },
-  fab: {
-    position: 'absolute',
-    right: '0.75rem',
-    bottom: '0.75rem',
-    zIndex: 2
-  },
   appbar: {
-    flexGrow: 0,
-    backgroundColor: "#94bbe6",
     '& input': {
       marginLeft: '1.5ch',
       flex: '1 1 auto',
@@ -52,13 +39,7 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: '1.5ch',
       marginRight: '1.5ch',
       minWidth: '3ch',
-      color: 'black',
     }
-  },
-  spacer: {
-    height: '4px',
-    flex: '0 0 auto',
-    backgroundColor: 'white'
   },
 }));
 
@@ -329,59 +310,59 @@ function App() {
   const classes = useStyles();
 
   return (
-      <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
-        <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
-          <AppBar position="sticky" className={classes.appbar}>
-            <Toolbar>
-              <input type="search" placeholder="Enter search word(s)"
-                     title="Enter the first several letters of one or more search words."
-                     value={searchStr} onChange={onSearchChange} role="search"/>
-              <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
-              <Menu
-                  id="testMenu"
-                  anchorEl={testMenuAnchorEl}
-                  open={Boolean(testMenuAnchorEl)}
-                  onClose={closeTestMenu}
-              >
-                <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
-                <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
-                <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
-                <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
-              </Menu>
-              <IconButton onClick={openAppMenu} title="Open application menu">
-                <MenuIcon/>
-              </IconButton>
-              <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
-                    onClose={setAppMenuAnchorEl.bind(this, null)}>
-                <MenuItem onClick={showHelp}>Help &nbsp; <Help/></MenuItem>
-                <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
-                <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
-                <MenuItem onClick={handleDeleteSelected}>Delete selected note &nbsp; <Delete/></MenuItem>
-              </Menu>
-              <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
-                     accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
-            </Toolbar>
-          </AppBar>
-          <div className={classes.spacer}></div>
-          <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
-          <Fab onClick={addNote} className={classes.fab} color="primary" title="Add note"><AddIcon /></Fab>
-          <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
-            <Alert onClose={handleSnackbarClose} severity="error">
-              <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
-              {transientErr?.message || transientErr?.name || transientErr?.toString()}
-            </Alert>
-          </Snackbar>
-          <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
-        </div>
-        <div className="separator"></div>
-        <div className="panel panelDetail">
-          {'DETAIL' === mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
-                                               focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
-                                               setMustShowPanel={setMustShowPanel}></Detail> :
-              <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
-          }
-        </div>
+    <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
+      <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
+        <AppBar position="sticky" className={classes.appbar}>
+          <Toolbar>
+            <input type="search" placeholder="Enter search word(s)"
+                   title="Enter the first several letters of one or more search words."
+                   value={searchStr} onChange={onSearchChange} role="search"/>
+            <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
+            <Menu
+                id="testMenu"
+                anchorEl={testMenuAnchorEl}
+                open={Boolean(testMenuAnchorEl)}
+                onClose={closeTestMenu}
+            >
+              <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
+              <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
+              <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
+              <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
+            </Menu>
+            <IconButton onClick={openAppMenu} title="Open application menu" size="large">
+              <MenuIcon/>
+            </IconButton>
+            <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
+                  onClose={setAppMenuAnchorEl.bind(this, null)}>
+              <MenuItem onClick={showHelp}>Help &nbsp; <Help/></MenuItem>
+              <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
+              <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
+              <MenuItem onClick={handleDeleteSelected}>Delete selected note &nbsp; <Delete/></MenuItem>
+            </Menu>
+            <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
+                   accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
+          </Toolbar>
+        </AppBar>
+        <div style={{height: '4px', flex: '0 0 auto', backgroundColor: 'white'}}></div>
+        <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
+        <Fab onClick={addNote} color="primary" title="Add note"><AddIcon /></Fab>
+        <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
+          <Alert onClose={handleSnackbarClose} severity="error">
+            <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
+            {transientErr?.message || transientErr?.name || transientErr?.toString()}
+          </Alert>
+        </Snackbar>
+        <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
       </div>
+      <div className="separator"></div>
+      <div className="panel panelDetail">
+        {'DETAIL' === mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
+                                             focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
+                                             setMustShowPanel={setMustShowPanel}></Detail> :
+            <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
+        }
+      </div>
+    </div>
   );
 }
 

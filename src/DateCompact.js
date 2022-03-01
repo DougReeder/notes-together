@@ -2,7 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import PropTypes from 'prop-types';
-import {Button, Dialog, DialogActions, DialogContent, Input, Typography} from "@material-ui/core";
+import {Button, Dialog, DialogActions, DialogContent, Input, Typography} from "@mui/material";
 import React, {useState} from "react";
 
 const months = [
@@ -32,7 +32,7 @@ function DateCompact({date, onChange}) {
   }
 
   return <>
-    <Typography onClick={handleDateClick} style={{color: "black", margin: "1.5ch", cursor: 'pointer'}} title="Click to change date">
+    <Typography onClick={handleDateClick} style={{margin: "1.5ch", cursor: 'pointer'}} title="Click to change date">
       {dateStr}
     </Typography>
     <Dialog

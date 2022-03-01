@@ -12,12 +12,12 @@ import {
   TableRow,
   Toolbar,
   Typography
-} from "@material-ui/core";
-import Checkbox from "@material-ui/core/Checkbox";
+} from "@mui/material";
+import Checkbox from "@mui/material/Checkbox";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import React, {useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
-import CloseIcon from '@material-ui/icons/Close';
+import CloseIcon from '@mui/icons-material/Close';
 import {isLikelyMarkdown} from "./util";
 import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
@@ -140,41 +140,43 @@ function FileImport({files, isMultiple, doCloseImport}) {
   }
 
   return (
-      <Dialog fullScreen open={files.length > 0} aria-labelledby="import-title">
-        <AppBar style={{position: 'sticky'}}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)} title="Close">
-              <CloseIcon />
-            </IconButton>
-            <Typography id="import-title" sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              {dialogTitle}
-            </Typography>
-            <Button ref={importBtnRef} variant="contained" autoFocus disabled={'DONE' === importPhase.current} style={{marginRight: '1ch'}} onClick={handleImportOrCancel}>
-              {'PREPARING' === importPhase.current ? "Import" : "Cancel"}
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <Table size="small" style={{maxWidth: '80em', marginLeft: 'auto',
-          marginRight: 'auto'}}>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>File Name</strong></TableCell>
-              {isMarkdownColumnShown && <TableCell><strong>Contains Markdown</strong></TableCell>}
-              <TableCell><strong>Result</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {imports.map(({file, parseType, isMarkdown, isImporting, message}, i) => (<TableRow key={i}>
-              <TableCell>{file.name}</TableCell>
-              {isMarkdownColumnShown && <TableCell>{
-                ('text/plain' === parseType && <Checkbox checked={isMarkdown} disabled={Boolean(message)} onChange={handleToggleMarkdown.bind(this, i)} />) ||
-                ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
-              }</TableCell>}
-              <TableCell>{message || (isImporting && <CircularProgress size="2ex" />)}</TableCell>
-            </TableRow>))}
-          </TableBody>
-        </Table>
-      </Dialog>
+    <Dialog fullScreen open={files.length > 0} aria-labelledby="import-title">
+      <AppBar>
+        <Toolbar>
+          <IconButton edge="start" color="inherit"
+              title="Close" size="large"
+              onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)}>
+            <CloseIcon />
+          </IconButton>
+          <Typography id="import-title" sx={{ ml: 2, flex: "0 0 auto" }} variant="h6">
+            {dialogTitle}
+          </Typography>
+          <Button ref={importBtnRef} variant="contained" color="secondary" autoFocus disabled={'DONE' === importPhase.current} style={{marginRight: '1ch', backgroundColorX: '#e0e0e0', colorX: 'black'}} onClick={handleImportOrCancel}>
+            {'PREPARING' === importPhase.current ? "Import" : "Cancel"}
+          </Button>
+        </Toolbar>
+      </AppBar>
+      <Table size="small" style={{maxWidth: '80em', marginLeft: 'auto',
+        marginRight: 'auto'}}>
+        <TableHead>
+          <TableRow>
+            <TableCell><strong>File Name</strong></TableCell>
+            {isMarkdownColumnShown && <TableCell><strong>Contains Markdown</strong></TableCell>}
+            <TableCell><strong>Result</strong></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {imports.map(({file, parseType, isMarkdown, isImporting, message}, i) => (<TableRow key={i}>
+            <TableCell>{file.name}</TableCell>
+            {isMarkdownColumnShown && <TableCell>{
+              ('text/plain' === parseType && <Checkbox checked={isMarkdown} disabled={Boolean(message)} onChange={handleToggleMarkdown.bind(this, i)} />) ||
+              ('text/markdown' === parseType && <Checkbox checked={true} disabled={true}/>)
+            }</TableCell>}
+            <TableCell>{message || (isImporting && <CircularProgress size="2ex" />)}</TableCell>
+          </TableRow>))}
+        </TableBody>
+      </Table>
+    </Dialog>
   );
 }
 

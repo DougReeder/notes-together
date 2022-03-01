@@ -1,21 +1,23 @@
 // HelpPane.js - Preferences & HelpPane for Notes Together
 // Copyright © 2022 Doug Reeder
 
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import {AppBar, Box, IconButton, Toolbar, Typography} from "@material-ui/core";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
 import PropTypes from 'prop-types';
 import React from "react";
-import MenuIcon from "@material-ui/icons/Menu";
-import {KeyboardVoice, MoreVert, Redo, Settings, Undo} from "@material-ui/icons";
+import MenuIcon from "@mui/icons-material/Menu";
+import {KeyboardVoice, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
 
 function HelpPane({setMustShowPanel}) {
   return <>
-    <AppBar position="static" style={{flexGrow: 0, backgroundColor: "#94bbe6"}}>
+    <AppBar>
       <Toolbar style={{justifyContent: 'flex-start'}}>
-        <IconButton title="Out to list pane" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
+        <IconButton title="Out to list pane" className="narrowLayoutOnly"
+            edge={false} size="large"
+            onClick={setMustShowPanel?.bind(this, 'LIST')}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography style={{color: "black", margin: "1.5ch"}}>
+        <Typography style={{margin: "1.5ch"}}>
             Help
         </Typography>
       </Toolbar>

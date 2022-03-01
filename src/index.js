@@ -7,6 +7,7 @@ import '@fontsource/roboto';
 import reportWebVitals from './reportWebVitals';
 import {SnackbarProvider} from "notistack";
 import {BrowserRouter} from "react-router-dom";
+import {ThemeProvider, StyledEngineProvider, createTheme} from '@mui/material/styles';
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -40,11 +41,50 @@ init().then(remoteStorage => {   // init is idempotent
   // console.log("remoteStorage initialized:", remoteStorage);
 });
 
+const theme = createTheme({
+  components: {
+    MuiFab: {
+      styleOverrides: {
+        root: {
+          position: 'absolute',
+          right: '0.75rem',
+          bottom: '0.75rem',
+          zIndex: 2
+        }
+      },
+    },
+    MuiAppBar: {
+      defaultProps: {
+        position: 'sticky',
+      },
+      styleOverrides: {
+        root: {
+          color: 'black',
+          backgroundColor: '#94bbe6',
+          flexGrow: 0
+        }
+      },
+    },
+  },
+  palette: {
+  //   primary: {
+  //     main: '#94bbe6',
+  //   },
+    secondary: {
+      main: '#555',   // buttons on AppBars
+    }
+  },
+});
+
 ReactDOM.render(
   <React.StrictMode>
     <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
       <BrowserRouter>
-        <App />
+        <StyledEngineProvider injectFirst>
+          <ThemeProvider theme={theme}>
+            <App />
+          </ThemeProvider>
+        </StyledEngineProvider>
       </BrowserRouter>
     </SnackbarProvider>
   </React.StrictMode>,

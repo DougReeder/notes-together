@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
-import {Button} from "@material-ui/core";
+import {Button} from "@mui/material";
 
 
 function List(props) {

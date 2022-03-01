@@ -20,15 +20,15 @@ import {
   MenuItem,
   Select,
   Toolbar, Menu
-} from "@material-ui/core";
-import Checkbox from "@material-ui/core/Checkbox";
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import FormatBoldIcon from '@material-ui/icons/FormatBold';
-import FormatItalicIcon from '@material-ui/icons/FormatItalic';
-import CodeIcon from '@material-ui/icons/Code';
-import FormatUnderlinedIcon from '@material-ui/icons/FormatUnderlined';
-import {MoreVert, Redo, StrikethroughS, TextFormat, Undo} from "@material-ui/icons";
-import {Alert, AlertTitle} from "@material-ui/lab";
+} from "@mui/material";
+import Checkbox from "@mui/material/Checkbox";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import CodeIcon from '@mui/icons-material/Code';
+import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
+import {MoreVert, Redo, StrikethroughS, TextFormat, Undo} from "@mui/icons-material";
+import {Alert, AlertTitle} from '@mui/material';
 import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
@@ -39,7 +39,7 @@ import {isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
-import {makeStyles} from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 
@@ -376,12 +376,14 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     setIsContentTypeDialogOpen(false);
   }
 
-  const appbarStyle = {flexGrow: 0, backgroundColor: "#94bbe6"};
+  const appbarStyle = {};
   if (visualViewportMatters()) {
     appbarStyle.transform = `translate(${viewportScrollX}px, ${viewportScrollY}px)`;
   }
 
-  const outBtn = <IconButton title="Out to list panel" className="narrowLayoutOnly" edge={false} onClick={setMustShowPanel?.bind(this, 'LIST')} >
+  const outBtn = <IconButton title="Out to list panel" className="narrowLayoutOnly"
+      edge={false} size="large"
+      onClick={setMustShowPanel?.bind(this, 'LIST')}>
     <ArrowBackIcon />
   </IconButton>;
 
@@ -428,6 +430,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             id="type-select"
             value={getRelevantBlockType(editor)}
             onChange={handleSelectedBlockTypeChange}
+            variant="standard"
             style={{minWidth: '15ch'}}
         >
           <MenuItem value={'paragraph'}>Body</MenuItem>
@@ -444,7 +447,8 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem value={'n/a'}>(n/a)</MenuItem>
         </Select>
 
-        <IconButton aria-haspopup="true" title="Open text format menu" onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
+        <IconButton aria-haspopup="true" title="Open text format menu" size="large"
+            onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
           <TextFormat/>
         </IconButton>
         <Menu
@@ -494,12 +498,14 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
+        <Button variant="outlined" style={{color: "black", borderColor: "black"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
       </>);
     }
     noteControls = (<>
       {dateControl}
-      <IconButton aria-controls="details-menu" aria-haspopup="true" title="Open editor menu" onClick={handleDetailsMenuClick}>
+      <IconButton aria-controls="details-menu" aria-haspopup="true"
+          title="Open editor menu" size="large"
+          onClick={handleDetailsMenuClick}>
         <MoreVert/>
       </IconButton>
       <Menu
