@@ -76,10 +76,11 @@ function HelpPane({setMustShowPanel}) {
         <p>You can add tag or category words to your notes, if they don't already contain them. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for “movie” or “review”.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
+        <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
         <table className="shortcuts">
           <caption>Anywhere</caption>
           <tbody>
-            <tr><td>escape</td><td>out to list panel or clear search</td></tr>
+            <tr><td>escape ⎋</td><td>navigate out: close dialog, show list panel, then clear search</td></tr>
             <tr><td>ctrl+shift+plus or ​⇧⌘+</td><td>increase application text size</td></tr>
             <tr><td>ctrl+minus or ⌘-</td><td>decrease application text size</td></tr>
           </tbody>
@@ -88,9 +89,15 @@ function HelpPane({setMustShowPanel}) {
           <caption>Outside editor</caption>
           <tbody>
             <tr><td>down-arrow ⬇️</td><td>select next note</td></tr>
-            <tr><td>shift- alt- or ctrl-down-arrow</td><td>skip downward through the list</td></tr>
+            <tr><td>shift-down-arrow ⇧⬇️</td><td>skip 5 down through the list</td></tr>
+            <tr><td>alt-down-arrow ⌥⬇️</td><td>skip 25 down through the list</td></tr>
+            <tr><td>Page Down ⇟</td><td>skip 10 down through the list</td></tr>
+            <tr><td>End ↘ or ctrl-down-arrow ⎈⬇️</td><td>skip to end of list</td></tr>
             <tr><td>up-arrow ⬆️</td><td>select previous note</td></tr>
-            <tr><td>shift- alt- or ctrl-up-arrow</td><td>skip upward through the list</td></tr>
+            <tr><td>shift-up-arrow ⇧⬆️️</td><td>skip 5 up through the list</td></tr>
+            <tr><td>alt-up-arrow️ ⌥⬆️</td><td>skip 25 up through the list</td></tr>
+            <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
+            <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
@@ -117,7 +124,7 @@ function HelpPane({setMustShowPanel}) {
             <tr><td>ctrl+I or ⌘I</td><td>italic text</td></tr>
             <tr><td>ctrl+` or ⌘`</td><td>monospaced phrase</td></tr>
             <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
-            <tr><td>shift+ctrl+* or ⇧⌘*</td><td>bulleted list</td></tr>
+            <tr><td>ctrl+8 or shift+ctrl+* or ctrl+- or shift-ctrl+-<br/>or ⌘8 or ⇧⌘* or ⌘- or ⇧⌘-</td><td>bulleted list</td></tr>
             <tr><td>ctrl+1 or shift+ctrl+1 or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
             <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>
             <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
@@ -126,10 +133,10 @@ function HelpPane({setMustShowPanel}) {
           </tbody>
         </table>
 
-        <h4>How do I change the order of notes?</h4>
-        <p>Click the date in the upper left of the editing panel.</p>
+        <h4>Can I change the order of notes?</h4>
+        <p>Click the date in the upper left of the editing panel and set the date earlier or later.</p>
 
-        <h4>How should I deal with large amounts of text?</h4>
+        <h4>How can I organize large amounts of text?</h4>
         <p>Think of yourself as working with a set of notes on a 1–3 word topic. Split long notes into several short notes. Append the topic to each. Enter the topic in the search field. New notes will be tagged with this topic.</p>
         {/*<p>You can export all your notes on a topic with the menu command <strong>Export matching notes to*/}
         {/*  file</strong>. Moving these files off a phone may require creative use of Wi-Fi Direct, Bluetooth, Air*/}

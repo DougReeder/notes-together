@@ -621,7 +621,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                 }
                 case '*':
                 case '8':
-                  if (isHotkey('mod+*', { byKey: true }, evt) || isHotkey('mod+8', { byKey: true }, evt) || isHotkey('mod+shift+8', evt)) {
+                case '-':
+                  if (isHotkey('mod+*', { byKey: true }, evt) ||
+                      isHotkey('mod+8', { byKey: true }, evt) ||
+                      isHotkey('mod+shift+8', { byKey: true }, evt) ||
+                      isHotkey('mod+-', { byKey: true }, evt) ||
+                      isHotkey('mod+shift+-', { byKey: true }, evt)){
                     evt.preventDefault();
                     changeBlockType(editor, 'bulleted-list');
                   }
