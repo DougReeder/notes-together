@@ -49,7 +49,9 @@ const theme = createTheme({
           position: 'absolute',
           right: '0.75rem',
           bottom: '0.75rem',
-          zIndex: 2
+          zIndex: 2,
+          color: 'black',
+          backgroundColor: '#94bbe6',
         }
       },
     },
@@ -67,11 +69,11 @@ const theme = createTheme({
     },
   },
   palette: {
-  //   primary: {
-  //     main: '#94bbe6',
-  //   },
+    // primary: {
+    //   main: '#94bbe6',
+    // },
     secondary: {
-      main: '#555',   // buttons on AppBars
+      main: '#0061bd',   // important buttons on AppBars
     }
   },
 });

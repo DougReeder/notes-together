@@ -67,7 +67,7 @@ li.divider > .rightLine {
 
 
 li.selected {
-    background-color: lightblue;
+    background-color: #fffaad;
 }
 
 .title {
@@ -78,7 +78,7 @@ li.selected {
     border-bottom: 1.25ex solid white;
 }
 li.selected > .title {
-    border-color: lightblue;
+    border-color: #fffaad;
 }
 .untitled {
     color: gray;
