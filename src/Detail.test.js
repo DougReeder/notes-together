@@ -282,7 +282,7 @@ it('renders error if note missing', async () => {
     render(<Detail noteId={noteId}></Detail>);
 
     // waits for content type button to be visible
-    await waitFor(() => expect(screen.getByRole('button', {name: "Change content type"})).toBeVisible());
+    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
     const detailsMenuBtn = screen.getByRole('button', {name: "Open editor menu"});
     expect(detailsMenuBtn).toBeVisible();
     // format controls are not present
@@ -311,7 +311,7 @@ it('renders error if note missing', async () => {
 
     userEvent.click(detailsMenuBtn);
     userEvent.click(screen.getByRole('menuitem', {name: /Undo/}));
-    await waitFor(() => expect(screen.getByRole('button', {name: "Change content type"})).toBeVisible());
+    await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
     expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();
 
     userEvent.click(detailsMenuBtn);
