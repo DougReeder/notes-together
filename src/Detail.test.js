@@ -212,7 +212,7 @@ it('renders error if note missing', async () => {
     render(<Detail noteId={noteId}></Detail>);
 
     expect(await screen.findByRole('textbox')).toBeVisible();
-    expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();
+    expect(screen.queryByRole('button', {name: "Open text style menu"})).toBeVisible();
 
     await saveFn(noteDate);
     expect(upsertNote).toHaveBeenCalledTimes(1);
@@ -306,7 +306,7 @@ it('renders error if note missing', async () => {
 
     userEvent.click(richTextBtn);
     // now, format controls are present, and content type button is not present
-    await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
+    await waitFor(() => expect(screen.queryByRole('button', {name: "Open text style menu"})).toBeVisible());
     expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
 
     userEvent.click(detailsMenuBtn);
@@ -316,7 +316,7 @@ it('renders error if note missing', async () => {
 
     userEvent.click(detailsMenuBtn);
     userEvent.click(screen.getByRole('menuitem', {name: /Redo/}));
-    await waitFor(() => expect(screen.queryByRole('button', {name: "(n/a)"})).toBeVisible());
+    await waitFor(() => expect(screen.queryByRole('button', {name: "Open text style menu"})).toBeVisible());
     expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
   });
 

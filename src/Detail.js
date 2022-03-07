@@ -18,7 +18,6 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Select,
   Toolbar, Menu
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
@@ -52,6 +51,21 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 // const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
+
+const BLOCK_TYPE = {
+  'heading-one': <h1>Title</h1>,
+  'heading-two': <h2>Heading</h2>,
+  'heading-three': <h3>Subheading</h3>,
+  'paragraph': "Body",
+  'bulleted-list': "Bulleted List",
+  'numbered-list': "Numbered List",
+  'quote': "Block Quote",
+  'code': <code>Monospaced</code>,
+  'image': "(Graphic)",
+  // 'thematic-break': "Horizontal Rule",
+  'multiple': "(Multiple)",
+  'n/a': "(n/a)"
+}
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
@@ -273,10 +287,15 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   const [detailsMenuAnchorEl, setDetailsMenuAnchorEl] = React.useState(null);
   function handleDetailsMenuClick(evt) {
+    previousSelection.current = JSON.parse(JSON.stringify(editor.selection));
     setDetailsMenuAnchorEl(evt.currentTarget);
   }
 
+  const [blockTypeMenuAnchorEl, setBlockTypeMenuAnchorEl] = React.useState(null);
+
   const [markMenuAnchorEl, setMarkMenuAnchorEl] = React.useState(null);
+
+  const previousSelection = useRef(null);
 
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
@@ -297,10 +316,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     forceUpdate();   // so buttons can change colors
   }
 
-  function handleSelectedBlockTypeChange(evt) {
-    const targetType = evt.target.value;
+  function handleSelectedBlockTypeChange(targetType) {
     queueMicrotask(() => {
       ReactEditor.focus(editor);
+      if (! editor.selection && previousSelection.current) {
+        Transforms.select(editor, previousSelection.current);
+      }
+      previousSelection.current = null;
       if (editor.selection) {
         // changes block type
         if (['image', 'link'].indexOf(getRelevantBlockType(editor)) > -1) {
@@ -311,7 +333,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           }, window?.location?.origin);
           return;
         }
-        // console.log(`${previousBlockType} -> ${targetType}`);
         switch (targetType) {
           default:
             changeBlockType(editor, targetType);
@@ -363,6 +384,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         }
       }
     });
+    setBlockTypeMenuAnchorEl(null);
   }
 
   const [isContentTypeDialogOpen, setIsContentTypeDialogOpen] = useState(false);
@@ -417,6 +439,10 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     function handleMarkItem(mark) {
       queueMicrotask(() => {
         ReactEditor.focus(editor);
+        if (! editor.selection && previousSelection.current) {
+          Transforms.select(editor, previousSelection.current);
+        }
+        previousSelection.current = null;
         toggleMark(editor, mark);
       });
       setMarkMenuAnchorEl(null);
@@ -425,41 +451,51 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
       formatControls = (<>
-        <Select
-            title="Open block type menu"
-            id="type-select"
-            value={getRelevantBlockType(editor)}
-            onChange={handleSelectedBlockTypeChange}
-            variant="standard"
-            style={{minWidth: '15ch'}}
+        <Button variant="outlined" aria-haspopup="true" title="Open block type menu"
+                sx={{width: '18.5ch', height: '36px', flexShrink: 1, color: 'black', borderColor: 'black'}}
+            onClick={evt => {
+              previousSelection.current = JSON.parse(JSON.stringify(editor.selection));
+              setBlockTypeMenuAnchorEl(evt.currentTarget);
+            }}>
+          {BLOCK_TYPE[getRelevantBlockType(editor)]}
+        </Button>
+        <Menu
+            id="block-type-menu"
+            role="menu"
+            aria-label="Block type"
+            anchorEl={blockTypeMenuAnchorEl}
+            keepMounted
+            open={Boolean(blockTypeMenuAnchorEl)}
+            onClose={evt => {
+              setBlockTypeMenuAnchorEl(null);
+              previousSelection.current = null;
+              queueMicrotask(() => {
+                ReactEditor.focus(editor);
+              });
+            }}
         >
-          <MenuItem value={'paragraph'}>Body</MenuItem>
-          <MenuItem value={'heading-one'}><h1>Title</h1></MenuItem>
-          <MenuItem value={'heading-two'}><h2>Heading</h2></MenuItem>
-          <MenuItem value={'heading-three'}><h3>Subheading</h3></MenuItem>
-          <MenuItem value={'bulleted-list'}>• Bulleted List</MenuItem>
-          <MenuItem value={'numbered-list'}>Numbered List</MenuItem>
-          <MenuItem value={'quote'}>Block Quote</MenuItem>
-          <MenuItem value={'code'}><code>Monospaced</code></MenuItem>
-          {/*<MenuItem value={'thematic-break'}>Thematic break</MenuItem>*/}
-          <MenuItem value={'image'}>(Graphic)</MenuItem>
-          <MenuItem value={'multiple'}>(Multiple)</MenuItem>
-          <MenuItem value={'n/a'}>(n/a)</MenuItem>
-        </Select>
+          {Object.entries(BLOCK_TYPE).map(([key, label]) =>
+              <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, key)} key={key}>{label}</MenuItem>
+          )}
+        </Menu>
 
-        <IconButton aria-haspopup="true" title="Open text format menu" size="large"
-            onClick={evt => setMarkMenuAnchorEl(evt.currentTarget)}>
+        <IconButton aria-haspopup="true" title="Open text style menu" size="large"
+            onClick={evt => {
+              previousSelection.current = JSON.parse(JSON.stringify(editor.selection));
+              setMarkMenuAnchorEl(evt.currentTarget);
+            }}>
           <TextFormat/>
         </IconButton>
         <Menu
             id="mark-menu"
             role="menu"
-            aria-label="Text format menu"
+            aria-label="Text style menu"
             anchorEl={markMenuAnchorEl}
             keepMounted
             open={Boolean(markMenuAnchorEl)}
             onClose={evt => {
               setMarkMenuAnchorEl(null);
+              previousSelection.current = null;
               queueMicrotask(() => {
                 ReactEditor.focus(editor);
               });
@@ -515,27 +551,37 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           anchorEl={detailsMenuAnchorEl}
           keepMounted
           open={Boolean(detailsMenuAnchorEl)}
-          onClose={evt => setDetailsMenuAnchorEl(null)}
+          onClose={evt => {
+            previousSelection.current = null;
+            setDetailsMenuAnchorEl(null)
+          }}
       >
         <MenuItem onClick={evt => {
+          previousSelection.current = null;
           editor.undo();
           setDetailsMenuAnchorEl(null);
         }}>
           Undo &nbsp;<Undo/>
         </MenuItem>
         <MenuItem onClick={evt => {
+          previousSelection.current = null;
           editor.redo();
           setDetailsMenuAnchorEl(null);
         }}>
           Redo &nbsp;<Redo/>
         </MenuItem>
         <MenuItem onClick={evt => {
+          if (!editor.selection && previousSelection.current) {
+            Transforms.select(editor, previousSelection.current);
+          }
+          previousSelection.current = null;
           pasteFileInput.current.click();
           setDetailsMenuAnchorEl(null);
         }}>
           Paste Files...
         </MenuItem>
         <MenuItem onClick={evt => {
+          previousSelection.current = null;
           setDetailsMenuAnchorEl(null);
           setEffectiveSubtype('html');
           setIsContentTypeDialogOpen(true);

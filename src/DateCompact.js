@@ -2,7 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import PropTypes from 'prop-types';
-import {Button, Dialog, DialogActions, DialogContent, Input, Typography} from "@mui/material";
+import {Button, Dialog, DialogActions, DialogContent, Input} from "@mui/material";
 import React, {useState} from "react";
 
 const months = [
@@ -12,13 +12,13 @@ const months = [
 function DateCompact({date, onChange}) {
   let dateStr;
   if (!date || ! date.valueOf()) {
-    dateStr = "no date";
+    dateStr = "no date";
     date = new Date();
   }
   if (Date.now() - date > 11 * 30 * 24 * 60 * 60 * 1000) {
     dateStr = date.getFullYear();
   } else {
-    dateStr = `${months[date.getMonth()]} ${date.getDate()}`;
+    dateStr = `${months[date.getMonth()]} ${date.getDate()}`;
   }
 
   const [isOpen, setIsOpen] = useState(false);
@@ -32,9 +32,9 @@ function DateCompact({date, onChange}) {
   }
 
   return <>
-    <Typography onClick={handleDateClick} style={{margin: "1.5ch", cursor: 'pointer'}} title="Click to change date">
+    <Button variant="outlined" aria-haspopup="true" onClick={handleDateClick} sx={{m: "1.5ch", flexShrink: 1, cursor: 'pointer', color: 'black', borderColor: 'black'}} title="Change date">
       {dateStr}
-    </Typography>
+    </Button>
     <Dialog
         id="date-dialog"
         open={isOpen}

@@ -345,7 +345,7 @@ function App() {
         </AppBar>
         <div style={{height: '4px', flex: '0 0 auto', backgroundColor: 'white'}}></div>
         <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
-        <Fab onClick={addNote} color="primary" title="Add note"><AddIcon /></Fab>
+        <Fab onClick={addNote} color="primary" title="Create new note"><AddIcon /></Fab>
         <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
           <Alert onClose={handleSnackbarClose} severity="error">
             <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
