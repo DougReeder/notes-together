@@ -132,6 +132,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       Transforms.deselect(editor);
       setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
       setEditorValue(slateNodes);
+      editor.children = slateNodes;
       saveOnAstChangeRef.current = false;
       Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);

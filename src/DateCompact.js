@@ -9,7 +9,7 @@ const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-function DateCompact({date, onChange}) {
+function DateCompact({date, onChange}) { 
   let dateStr;
   if (!date || ! date.valueOf()) {
     dateStr = "no date";
