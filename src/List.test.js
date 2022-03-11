@@ -55,4 +55,70 @@ describe("List", () => {
 
     expect(screen.getByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
   });
+
+  it("should switch to displaying Details on first down arrow", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{ArrowDown}');
+    expect(mockHandleSelect).toHaveBeenCalledWith('0b6b89c8-8aca-43de-8c7b-72095380682b', 'DETAIL');
+  });
+
+  it("should switch to displaying Details on first up arrow", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{ArrowUp}');
+    expect(mockHandleSelect).toHaveBeenCalledWith('ca5a278b-1959-45da-9431-d3bd856c8733', 'DETAIL');
+  });
+
+  it("should not force display of Details on second down arrow", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='0b6b89c8-8aca-43de-8c7b-72095380682b'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{ArrowDown}');
+    expect(mockHandleSelect).toHaveBeenCalledWith('615df9ff-89ab-4d51-b64d-0e82b2dfc2b6', null);
+  });
+
+  it("should not force display of Details on second up arrow", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{ArrowUp}');
+    expect(mockHandleSelect).toHaveBeenCalledWith('cba4c6fd-abf4-4f68-91ab-979fdf233606', null);
+  });
 });

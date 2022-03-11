@@ -180,7 +180,8 @@ function List(props) {
       }
       const newId = notes[selectedInd]?.id;
       if (uuidValidate(newId)) {
-        handleSelect(newId, null);
+        const newPanel = selectedNoteId ? null : 'DETAIL'
+        handleSelect(newId, newPanel);
       }
     }
   }, [handleSelect, notes, selectedNoteId, itemButtonsIds]);
