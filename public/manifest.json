@@ -1,7 +1,7 @@
 {
   "short_name": "Notes Together",
   "name": "Notes Together",
-  "description": "Take notes (or copy text and pictures). Sync them to all your devices. Recall them by context: any words in them or the date. Runs offline.",
+  "description": "Take notes (or copy text and pictures). Sync them to all your devices. Recall them by context: any words in them or the date. Easy to use with keyboard or touchscreen. Runs offline.",
   "icons": [
     {
       "src": "icons/NotesTogether-Icon-36x36.png",

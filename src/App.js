@@ -130,6 +130,9 @@ function App() {
     });
    }, []);
 
+
+  const searchRef = useRef();
+
   const keyListener = useCallback(evt => {
     if (evt.isComposing || evt.keyCode === 229) {
       return;
@@ -139,6 +142,8 @@ function App() {
         evt.target.blur();
       } else if (window.innerWidth < 641 && 'LIST' !== mustShowPanel) {
         setMustShowPanel('LIST');
+      } else if (document.activeElement !== searchRef.current) {
+        searchRef.current?.focus();
       } else {
         setSearchParams(new URLSearchParams());
       }
@@ -147,6 +152,9 @@ function App() {
       return;
     }
     switch (evt.code) {   // eslint-disable-line default-case
+      case 'Enter':
+        searchRef.current?.blur();
+        break;
       case 'ArrowRight':
         if ('LIST' === mustShowPanel) {
           setMustShowPanel('DETAIL');
@@ -316,7 +324,7 @@ function App() {
           <Toolbar>
             <input type="search" placeholder="Enter search word(s)"
                    title="Enter the first several letters of one or more search words."
-                   value={searchStr} onChange={onSearchChange} role="search"/>
+                   value={searchStr} ref={searchRef} onChange={onSearchChange} role="search"/>
             <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
             <Menu
                 id="testMenu"

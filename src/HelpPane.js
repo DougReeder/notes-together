@@ -80,9 +80,15 @@ function HelpPane({setMustShowPanel}) {
         <table className="shortcuts">
           <caption>Anywhere</caption>
           <tbody>
-            <tr><td>escape ⎋</td><td>navigate out: close dialog, show list panel, then clear search</td></tr>
+            <tr><td>escape ⎋</td><td>navigate out: close dialog, exit editor, show list panel, focus search, then clear search</td></tr>
             <tr><td>ctrl+shift+plus or ​⇧⌘+</td><td>increase application text size</td></tr>
             <tr><td>ctrl+minus or ⌘-</td><td>decrease application text size</td></tr>
+          </tbody>
+        </table>
+        <table className="shortcuts">
+          <caption>Search field</caption>
+          <tbody>
+          <tr><td>enter/return ⏎</td><td>end search (On mobile, the on-screen keyboard is dismissed. On desktop, down- and up-arrow select a note)</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
