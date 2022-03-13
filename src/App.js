@@ -184,8 +184,8 @@ function App() {
     setAppMenuAnchorEl(evt.currentTarget);
   }
 
-  function showHelp() {
-    setMustShowPanel('HELP');
+  function showHideHelp() {
+    setMustShowPanel(window.innerWidth < 641 || mustShowPanel === 'DETAIL' ? 'HELP' : 'DETAIL');
     setAppMenuAnchorEl(null);
   }
 
@@ -342,7 +342,7 @@ function App() {
             </IconButton>
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                   onClose={setAppMenuAnchorEl.bind(this, null)}>
-              <MenuItem onClick={showHelp}>Help &nbsp; <Help/></MenuItem>
+              <MenuItem onClick={showHideHelp}>Help &nbsp; <Help/></MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               <MenuItem onClick={handleDeleteSelected}>Delete selected note &nbsp; <Delete/></MenuItem>
