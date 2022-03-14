@@ -1,6 +1,6 @@
 // idbNotes.js - IndexedDB code for Notes Together
 // Should only be called by storage abstraction, not from front end.
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import {v4 as uuidv4} from "uuid";
 import {extractUserMessage} from "./util/extractUserMessage";
@@ -18,7 +18,7 @@ function initDb(dbName = dbNameDefault) {
       return reject(err);
     }
 
-    const openRequest = indexedDB.open(dbName, 1);
+    const openRequest = indexedDB.open(dbName, 2);
     openRequest.onerror = function (evt) {
       console.error("IDB initDb:", evt.target.error || evt.target);
       const err = evt.target?.error || new Error(evt.target.toString());
@@ -42,6 +42,10 @@ function initDb(dbName = dbNameDefault) {
           const msg = "This browser does not support full-text search. Try the current version of Firefox or Chrome.";
           reject(new Error(msg));
         }
+      }
+      if (evt.oldVersion < 2) {
+        const searchStore = theDb.createObjectStore('search', {keyPath: 'str'});
+        searchStore.createIndex('byCount', 'count', {unique: false});
       }
     };
 
@@ -329,4 +333,75 @@ function findFillerNoteIds() {
 }
 
 
-export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds};
+function checkpointSearch(search) {
+  return dbPrms.then(db => {
+    return new Promise((resolve, reject) => {
+      if ('string' !== typeof search) {
+        return reject(new Error(`“${search}” is not a string`));
+      }
+      if ("" === search) {
+        return resolve(0);
+      }
+
+      const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
+      const searchStore = transaction.objectStore("search");
+      const getRequest = searchStore.get(search);
+      getRequest.onsuccess = function (evt) {
+        const newCount = (evt.target.result?.count || 0) + 1;
+        const putRequest = searchStore.put({str: search, count: newCount});
+        putRequest.onsuccess = function (evt) {
+          console.log("incremented", evt.target.result, newCount);
+          resolve(newCount);
+        }
+        putRequest.onerror = function (evt) {
+          console.error("IDB checkpointSearch put:", evt.target.error);
+          evt.stopPropagation();
+          reject(evt.target.error);
+        };
+      };
+      getRequest.onerror = function (evt) {
+        console.error("IDB checkpointSearch get:", evt.target.error);
+        evt.stopPropagation();
+        reject(evt.target.error);
+      };
+    });
+  });
+}
+
+function listSuggestions(max) {
+  return dbPrms.then(db => {
+    return new Promise((resolve, reject) => {
+      if ('number' !== typeof max) {
+        reject(new Error(`“${max}” is not a number`));
+      }
+      if (max < 1) {
+        resolve([]);
+      }
+
+      const suggestions = [];
+      const transaction = db.transaction('search', "readonly", {durability: "relaxed"});
+      const searchStore = transaction.objectStore("search");
+      const cursorRequest = searchStore.index('byCount').openCursor(null, "prev");
+      cursorRequest.onsuccess = function(evt) {
+        try {
+          const cursor = evt.target.result;
+          if (cursor) {
+						// console.log("suggestion:", cursor.key, cursor.value);
+            suggestions.push(cursor.value.str?.toLowerCase());
+            if (suggestions.length < max) {
+              cursor.continue();
+            } else {
+              resolve(suggestions);
+            }
+          } else {   // no more suggestions
+            resolve(suggestions);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+    });
+  });
+}
+
+export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds, checkpointSearch, listSuggestions};

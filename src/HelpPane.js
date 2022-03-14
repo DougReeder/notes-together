@@ -88,7 +88,7 @@ function HelpPane({setMustShowPanel}) {
         <table className="shortcuts">
           <caption>Search field</caption>
           <tbody>
-          <tr><td>enter/return ⏎</td><td>end search (On mobile, the on-screen keyboard is dismissed. On desktop, down- and up-arrow select a note)</td></tr>
+          <tr><td>enter/return ⏎</td><td>end search (On mobile, the on-screen keyboard is dismissed. On desktop, down- and up-arrow can then be used.)</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">

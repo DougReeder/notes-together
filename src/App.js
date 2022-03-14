@@ -1,6 +1,6 @@
 import {createMemoryNote} from './Note';
 import {init, upsertNote, parseWords, deleteNote} from './storage';
-import {findFillerNoteIds} from './idbNotes';
+import {checkpointSearch, findFillerNoteIds, listSuggestions} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams} from "react-router-dom";
 import List from './List';
@@ -26,6 +26,7 @@ import Widget from "remotestorage-widget";
 import {visualViewportMatters} from "./util";
 import HelpPane from "./HelpPane";
 import {Delete, Help} from "@mui/icons-material";
+import {setEquals} from "./util/setUtil";
 
 const useStyles = makeStyles((theme) => ({
   appbar: {
@@ -51,7 +52,7 @@ function App() {
     return {searchStr, searchWords: parseWords(searchStr)};
   }, [searchParams]);
   const onSearchChange = evt => {
-    setSearchParams(new URLSearchParams({words: evt.target.value}));
+    setSearchParams(new URLSearchParams({words: evt.target.value?.trimLeft()}));
   }
 
   const [count, setCount] = useState(" ");
@@ -62,6 +63,9 @@ function App() {
 
   const [selectedNoteId, setSelectedNoteId] = useState(null);
 
+  const searchRef = useRef();
+  const lastCheckpointRef = useRef(new Set());
+
   function handleSelect(id, newPanel) {
     if (id) {
       setSelectedNoteId(id);
@@ -71,6 +75,7 @@ function App() {
     } else if (id && 'HELP' === mustShowPanel) {
       setMustShowPanel('DETAIL');
     }
+    searchRef.current?.blur();
   }
 
   const focusOnLoad = useRef(false);   // no re-render when changed
@@ -122,16 +127,19 @@ function App() {
     };
   });
 
+  const [suggestions, setSuggestions] = useState([]);
+
   useEffect( () => {
     init().then(remoteStorage => {   // init is idempotent
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login
+      return listSuggestions(100);
+    }).then(initialSuggestions => {
+      setSuggestions(initialSuggestions);
     });
    }, []);
 
-
-  const searchRef = useRef();
 
   const keyListener = useCallback(evt => {
     if (evt.isComposing || evt.keyCode === 229) {
@@ -151,10 +159,13 @@ function App() {
     if (evt.target.dataset.slateEditor) {
       return;
     }
+    if ('Enter' === evt.code) {
+       searchRef.current?.blur();
+    }
+    if (document.activeElement && document.activeElement !== document.body) {
+      return;
+    }
     switch (evt.code) {   // eslint-disable-line default-case
-      case 'Enter':
-        searchRef.current?.blur();
-        break;
       case 'ArrowRight':
         if ('LIST' === mustShowPanel) {
           setMustShowPanel('DETAIL');
@@ -176,6 +187,19 @@ function App() {
       document.removeEventListener('keydown', keyListener);
     }
   }, [keyListener]);
+
+  async function handleSearchBlur() {
+    // console.log("handleSearchBlur", searchRef.current?.value);
+    if (! setEquals(searchWords, lastCheckpointRef.current)) {
+      console.log("checkpointing search", searchWords);
+      const normalizedSearchStr = Array.from(searchWords.values()).sort().join(' ');
+      await checkpointSearch(normalizedSearchStr);
+      const newSuggestions = await listSuggestions(100);
+      console.log("suggestions:", newSuggestions);
+      setSuggestions(newSuggestions);
+    }
+    lastCheckpointRef.current = searchWords;
+  }
 
 
   const [appMenuAnchorEl, setAppMenuAnchorEl] = useState(false);
@@ -323,8 +347,11 @@ function App() {
         <AppBar position="sticky" className={classes.appbar}>
           <Toolbar>
             <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words."
-                   value={searchStr} ref={searchRef} onChange={onSearchChange} role="search"/>
+                   title="Enter the first several letters of one or more search words." maxLength={100}
+                   value={searchStr} list="searchSuggestions" results={12} ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
+            <datalist id="searchSuggestions">
+              {suggestions.map(suggestion => (<option value={suggestion} key={suggestion}/>))}
+            </datalist>
             <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
             <Menu
                 id="testMenu"

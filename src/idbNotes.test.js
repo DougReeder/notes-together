@@ -1,11 +1,11 @@
 // idbNotes.test.js - automated tests for storage for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
 import { v4 as uuidv4 } from 'uuid';
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
-import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb} from "./idbNotes";
+import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, checkpointSearch, listSuggestions} from "./idbNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
 
@@ -27,6 +27,17 @@ function deleteTestNotes() {
     const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255];
     noteStore.delete(IDBKeyRange.upperBound(uuidv4({random}), false)).onsuccess = function (evt) {
       resolve(evt.target.result);
+    }
+  });
+}
+
+function deleteSearchCheckpoints() {
+  return new Promise(resolve => {
+    const clearTransaction = db.transaction('search', 'readwrite');
+    const searchStore = clearTransaction.objectStore("search");
+    const clearRequest = searchStore.clear();
+    clearRequest.onsuccess = function () {
+      resolve();
     }
   });
 }
@@ -271,6 +282,84 @@ describe("findStubs", () => {
         done(err2);
       }
     }
+  });
+});
+
+
+describe("checkPointSearch", () => {
+  beforeAll(deleteSearchCheckpoints);
+
+  it("should throw error when not passed a string", async () => {
+    await expect(checkpointSearch()).rejects.toThrow();
+  });
+
+  it("should return 0 if search is empty", async () => {
+    expect(await checkpointSearch("")).toEqual(0);
+  })
+
+  it("should create record if it doesn't exist", async () => {
+    expect(await checkpointSearch("DE NOVO")).toEqual(1);
+  });
+
+  it("should increment record if it exists", async () => {
+    expect(await checkpointSearch("EXISTING")).toEqual(1);
+    expect(await checkpointSearch("EXISTING")).toEqual(2);
+  });
+});
+
+describe("listSuggestions", () => {
+  beforeEach(deleteSearchCheckpoints);
+
+  it("should throw error when not passed a number", async () => {
+    await expect(listSuggestions("foo")).rejects.toThrow();
+  });
+
+  it("should return empty array when passed max 0", async () => {
+    const suggestions = await listSuggestions(0);
+    expect(suggestions).toEqual([]);
+  });
+
+  it("should return empty array when passed negative max", async () => {
+    const suggestions = await listSuggestions(-17);
+    expect(suggestions).toEqual([]);
+  });
+
+  it("should return an array of strings", async () => {
+    await checkpointSearch("ONCE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("TWICE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("TWICE");
+    await checkpointSearch("DOUBLE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("DOUBLE");
+
+    const suggestions = await listSuggestions(12);
+    expect(Array.isArray(suggestions)).toBeTruthy();
+    expect(suggestions[0]).toEqual("thrice");
+    expect(suggestions).toContain("twice");
+    expect(suggestions).toContain("double");
+    expect(suggestions[3]).toEqual("once");
+    expect(suggestions.length).toEqual(4);
+  });
+
+  it("should limit results to max", async () => {
+    await checkpointSearch("ONCE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("TWICE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("TWICE");
+    await checkpointSearch("DOUBLE");
+    await checkpointSearch("THRICE");
+    await checkpointSearch("DOUBLE");
+
+    const max = 3;
+    const suggestions = await listSuggestions(max);
+    expect(Array.isArray(suggestions)).toBeTruthy();
+    expect(suggestions[0]).toEqual("thrice");
+    expect(suggestions).toContain("twice");
+    expect(suggestions).toContain("double");
+    expect(suggestions.length).toEqual(max);
   });
 });
 

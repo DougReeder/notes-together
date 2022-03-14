@@ -115,6 +115,9 @@ function List(props) {
   }
 
   const keyListener = useCallback(evt => {
+    if (document.activeElement && document.activeElement !== document.body) {
+      return;
+    }
     if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
       return;
     }
