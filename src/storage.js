@@ -2,7 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import removeDiacritics from "./diacritics";
-import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs} from "./idbNotes";
+import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, checkpointSearch, listSuggestions} from "./idbNotes";
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
 import {sanitizeNote} from "./sanitizeNote";
@@ -257,4 +257,4 @@ function normalizeWord(word) {
   return word;
 }
 
-export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords};
+export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions};

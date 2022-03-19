@@ -1,6 +1,6 @@
 import {createMemoryNote} from './Note';
-import {init, upsertNote, parseWords, deleteNote} from './storage';
-import {checkpointSearch, findFillerNoteIds, listSuggestions} from './idbNotes';
+import {init, upsertNote, parseWords, deleteNote, checkpointSearch, listSuggestions } from './storage';
+import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams} from "react-router-dom";
 import List from './List';
@@ -49,7 +49,16 @@ function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const {searchStr, searchWords} = useMemo(() => {
     const searchStr = searchParams.get('words') || "";
-    return {searchStr, searchWords: parseWords(searchStr)};
+    if (searchStr.length > 1000) {
+      searchStr.length = 1000;
+    }
+    let searchWords = parseWords(searchStr);
+    if (searchWords.size > 10) {
+      const wordArr = Array.from(searchWords.values());
+      wordArr.sort((a,b) => b.length - a.length);
+      searchWords = new Set(wordArr.slice(0, 10));
+    }
+    return {searchStr, searchWords};
   }, [searchParams]);
   const onSearchChange = evt => {
     setSearchParams(new URLSearchParams({words: evt.target.value?.trimLeft()}));
@@ -136,7 +145,7 @@ function App() {
       widget.attach('panelMain');   // login
       return listSuggestions(100);
     }).then(initialSuggestions => {
-      setSuggestions(initialSuggestions);
+      setSuggestions(Array.from(initialSuggestions.keys()));
     });
    }, []);
 
@@ -189,14 +198,10 @@ function App() {
   }, [keyListener]);
 
   async function handleSearchBlur() {
-    // console.log("handleSearchBlur", searchRef.current?.value);
     if (! setEquals(searchWords, lastCheckpointRef.current)) {
-      console.log("checkpointing search", searchWords);
-      const normalizedSearchStr = Array.from(searchWords.values()).sort().join(' ');
-      await checkpointSearch(normalizedSearchStr);
+      await checkpointSearch(searchWords, searchStr);
       const newSuggestions = await listSuggestions(100);
-      console.log("suggestions:", newSuggestions);
-      setSuggestions(newSuggestions);
+      setSuggestions(Array.from(newSuggestions.keys()));
     }
     lastCheckpointRef.current = searchWords;
   }
@@ -347,7 +352,7 @@ function App() {
         <AppBar position="sticky" className={classes.appbar}>
           <Toolbar>
             <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words." maxLength={100}
+                   title="Enter the first several letters of one or more search words." maxLength={1000}
                    value={searchStr} list="searchSuggestions" results={12} ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
             <datalist id="searchSuggestions">
               {suggestions.map(suggestion => (<option value={suggestion} key={suggestion}/>))}

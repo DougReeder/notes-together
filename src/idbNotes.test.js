@@ -8,6 +8,7 @@ import auto from "fake-indexeddb/auto.js";
 import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, checkpointSearch, listSuggestions} from "./idbNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
+import {instanceOf} from "prop-types";
 
 
 let db;
@@ -289,21 +290,41 @@ describe("findStubs", () => {
 describe("checkPointSearch", () => {
   beforeAll(deleteSearchCheckpoints);
 
-  it("should throw error when not passed a string", async () => {
-    await expect(checkpointSearch()).rejects.toThrow();
+  it("should throw error when not passed a Set of words", async () => {
+    await expect(checkpointSearch(undefined, "foo")).rejects.toThrow(/not a Set/);
   });
 
-  it("should return 0 if search is empty", async () => {
-    expect(await checkpointSearch("")).toEqual(0);
-  })
-
-  it("should create record if it doesn't exist", async () => {
-    expect(await checkpointSearch("DE NOVO")).toEqual(1);
+  it("should throw error when not passed a search string", async () => {
+    await expect(checkpointSearch(new Set(['FOO']))).rejects.toThrow(/not a string/);
   });
 
-  it("should increment record if it exists", async () => {
-    expect(await checkpointSearch("EXISTING")).toEqual(1);
-    expect(await checkpointSearch("EXISTING")).toEqual(2);
+  it("should not create record if search is blank", async () => {
+    expect(await checkpointSearch(new Set(),"   ")).toEqual(0);
+  });
+
+  it("should not create record if search is one character", async () => {
+    expect(await checkpointSearch(new Set('A'),"a ")).toEqual(0);
+  });
+
+  it("should create record if it doesn't exist (2-letter word)", async () => {
+    const searchStr = "pg";
+    const searchWords = parseWords(searchStr);
+    expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
+  });
+
+  it("should create record if it doesn't exist (2 words)", async () => {
+    const searchStr = "a z";
+    const searchWords = parseWords(searchStr);
+    expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
+  });
+
+  it("should increment record if search matches existing", async () => {
+    const searchStr1 = "play group";
+    const searchWords1 = parseWords(searchStr1);
+    expect(await checkpointSearch(searchWords1, searchStr1)).toEqual(1);
+    const searchStr2 = "group play";
+    const searchWords2 = parseWords(searchStr2);
+    expect(await checkpointSearch(searchWords2, searchStr2)).toEqual(2);
   });
 });
 
@@ -311,55 +332,62 @@ describe("listSuggestions", () => {
   beforeEach(deleteSearchCheckpoints);
 
   it("should throw error when not passed a number", async () => {
-    await expect(listSuggestions("foo")).rejects.toThrow();
+    await expect(listSuggestions("foo")).rejects.toThrow(/not a number/);
   });
 
   it("should return empty array when passed max 0", async () => {
     const suggestions = await listSuggestions(0);
-    expect(suggestions).toEqual([]);
+    expect(suggestions).toEqual(new Map());
   });
 
-  it("should return empty array when passed negative max", async () => {
+  it("should return empty Map when passed negative max", async () => {
     const suggestions = await listSuggestions(-17);
-    expect(suggestions).toEqual([]);
+    expect(suggestions).toEqual(new Map());
   });
 
-  it("should return an array of strings", async () => {
-    await checkpointSearch("ONCE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("TWICE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("TWICE");
-    await checkpointSearch("DOUBLE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("DOUBLE");
+  it("should return an array of the last-used original search strings", async () => {
+    const onceSearchStr = "Once upon a time";
+    const onceSearchWords = parseWords(onceSearchStr);
+    const twiceSearchStr1 = "Twice lucky";
+    const twiceSearchWords1 = parseWords(twiceSearchStr1);
+    const twiceSearchStr2 = "Lucky twice";
+    const twiceSearchWords2 = parseWords(twiceSearchStr2);
+    const thriceSearchStr1 = "Dritte Straße";
+    const thriceSearchWords1 = parseWords(thriceSearchStr1);
+    const thriceSearchStr2 = "Dritte strasse";
+    const thriceSearchWords2 = parseWords(thriceSearchStr2);
+    const thriceSearchStr3 = "Straße Dritte";
+    const thriceSearchWords3 = parseWords(thriceSearchStr3);
+    const doubleSearchStr = "Double trouble";
+    const doubleSearchWords = parseWords(doubleSearchStr);
+    await checkpointSearch(onceSearchWords, onceSearchStr);
+    await checkpointSearch(thriceSearchWords1, thriceSearchStr1);
+    await checkpointSearch(twiceSearchWords1, twiceSearchStr1);
+    await checkpointSearch(thriceSearchWords2, thriceSearchStr2);
+    await checkpointSearch(twiceSearchWords2, twiceSearchStr2);
+    await checkpointSearch(doubleSearchWords, doubleSearchStr);
+    await checkpointSearch(thriceSearchWords3, thriceSearchStr3);
+    await checkpointSearch(doubleSearchWords, doubleSearchStr);
 
     const suggestions = await listSuggestions(12);
-    expect(Array.isArray(suggestions)).toBeTruthy();
-    expect(suggestions[0]).toEqual("thrice");
-    expect(suggestions).toContain("twice");
-    expect(suggestions).toContain("double");
-    expect(suggestions[3]).toEqual("once");
-    expect(suggestions.length).toEqual(4);
-  });
-
-  it("should limit results to max", async () => {
-    await checkpointSearch("ONCE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("TWICE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("TWICE");
-    await checkpointSearch("DOUBLE");
-    await checkpointSearch("THRICE");
-    await checkpointSearch("DOUBLE");
+    expect(suggestions).toBeInstanceOf(Map)
+    const suggestionArr = Array.from(suggestions.keys());
+    const suggestionsNormalized = Array.from(suggestions.values());
+    expect(suggestionArr[0]).toEqual(thriceSearchStr3);
+    expect(suggestionsNormalized[0]).toEqual(Array.from(thriceSearchWords1.values()).sort().join(' '));
+    expect(suggestionArr).toContain(twiceSearchStr2);
+    expect(suggestionArr).toContain(doubleSearchStr);
+    expect(suggestionArr[3]).toEqual(onceSearchStr);
+    expect(suggestionsNormalized[3]).toEqual(Array.from(onceSearchWords.values()).sort().join(' '));
+    expect(suggestions.size).toEqual(4);
 
     const max = 3;
-    const suggestions = await listSuggestions(max);
-    expect(Array.isArray(suggestions)).toBeTruthy();
-    expect(suggestions[0]).toEqual("thrice");
-    expect(suggestions).toContain("twice");
-    expect(suggestions).toContain("double");
-    expect(suggestions.length).toEqual(max);
+    const suggestions2 = await listSuggestions(max);
+    const suggestionArr2 = Array.from(suggestions2.keys());
+    expect(suggestionArr2[0]).toEqual(thriceSearchStr3);
+    expect(suggestionArr2).toContain(twiceSearchStr2);
+    expect(suggestionArr2).toContain(doubleSearchStr);
+    expect(suggestions2.size).toEqual(max);
   });
 });
 

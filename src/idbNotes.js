@@ -44,7 +44,7 @@ function initDb(dbName = dbNameDefault) {
         }
       }
       if (evt.oldVersion < 2) {
-        const searchStore = theDb.createObjectStore('search', {keyPath: 'str'});
+        const searchStore = theDb.createObjectStore('search', {keyPath: 'normalized'});
         searchStore.createIndex('byCount', 'count', {unique: false});
       }
     };
@@ -333,24 +333,32 @@ function findFillerNoteIds() {
 }
 
 
-function checkpointSearch(search) {
+function checkpointSearch(searchWords, searchStr) {
   return dbPrms.then(db => {
     return new Promise((resolve, reject) => {
-      if ('string' !== typeof search) {
-        return reject(new Error(`“${search}” is not a string`));
+      if (!(searchWords instanceof Set)) {
+        return reject(new Error(`“${searchWords}” is not a Set`));
       }
-      if ("" === search) {
+      if ('string' !== typeof searchStr) {
+        return reject(new Error(`“${searchStr}” is not a string`));
+      }
+      if (0 === searchWords.size) {
         return resolve(0);
       }
+      if (1 === searchWords.size) {
+        if (Array.from(searchWords).every(word => word.length < 2)) {
+          return resolve(0);
+        }
+      }
+      const normalized = Array.from(searchWords.values()).sort().join(' ');
 
       const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
       const searchStore = transaction.objectStore("search");
-      const getRequest = searchStore.get(search);
+      const getRequest = searchStore.get(normalized);
       getRequest.onsuccess = function (evt) {
         const newCount = (evt.target.result?.count || 0) + 1;
-        const putRequest = searchStore.put({str: search, count: newCount});
+        const putRequest = searchStore.put({normalized, original: searchStr, count: newCount});
         putRequest.onsuccess = function (evt) {
-          console.log("incremented", evt.target.result, newCount);
           resolve(newCount);
         }
         putRequest.onerror = function (evt) {
@@ -375,10 +383,10 @@ function listSuggestions(max) {
         reject(new Error(`“${max}” is not a number`));
       }
       if (max < 1) {
-        resolve([]);
+        resolve(new Map());
       }
 
-      const suggestions = [];
+      const suggestions = new Map();
       const transaction = db.transaction('search', "readonly", {durability: "relaxed"});
       const searchStore = transaction.objectStore("search");
       const cursorRequest = searchStore.index('byCount').openCursor(null, "prev");
@@ -386,9 +394,9 @@ function listSuggestions(max) {
         try {
           const cursor = evt.target.result;
           if (cursor) {
-						// console.log("suggestion:", cursor.key, cursor.value);
-            suggestions.push(cursor.value.str?.toLowerCase());
-            if (suggestions.length < max) {
+						// console.log("suggestion:", cursor.primaryKey, cursor.value);
+            suggestions.set(cursor.value.original, cursor.value.normalized);
+            if (suggestions.size < max) {
               cursor.continue();
             } else {
               resolve(suggestions);
