@@ -1,5 +1,11 @@
 import {createMemoryNote} from './Note';
-import {init, upsertNote, parseWords, deleteNote, checkpointSearch, listSuggestions } from './storage';
+import {
+  init,
+  upsertNote, deleteNote,
+  parseWords,
+  checkpointSearch, listSuggestions,
+  saveSearch, deleteSavedSearch, listSavedSearches
+} from './storage';
 import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams} from "react-router-dom";
@@ -25,8 +31,9 @@ import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import {visualViewportMatters} from "./util";
 import HelpPane from "./HelpPane";
-import {Delete, Help} from "@mui/icons-material";
+import {Delete, Help, SavedSearch, SearchOff} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 const useStyles = makeStyles((theme) => ({
   appbar: {
@@ -118,6 +125,9 @@ function App() {
           setSelectedNoteId(null);
         }
         break;
+      case 'SAVED_SEARCH_CHANGE':
+        combineSavedSearchesWithSuggestions();
+        break;
       case 'TRANSIENT_MSG':
         enqueueSnackbar(evt.data?.message || "Restart your device", {
           anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
@@ -136,18 +146,32 @@ function App() {
     };
   });
 
-  const [suggestions, setSuggestions] = useState([]);
+  const [predefinedSearches, setPredefinedSearches] = useState([]);
+
+  const combineSavedSearchesWithSuggestions = useCallback(async () => {
+    const {originalSearches, normalizedSearches} = await listSavedSearches();
+
+    const suggestions = await listSuggestions(100);
+    for (const [original, normalized] of suggestions) {
+      if (! normalizedSearches.has(normalized)) {
+        originalSearches.push(original);
+      }
+    }
+    // console.log("predefined searches:", originalSearches)
+    setPredefinedSearches(originalSearches);
+  }, []);
 
   useEffect( () => {
-    init().then(remoteStorage => {   // init is idempotent
+    startup();
+    async function startup() {
+      const remoteStorage = await init();   // init is idempotent
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login
-      return listSuggestions(100);
-    }).then(initialSuggestions => {
-      setSuggestions(Array.from(initialSuggestions.keys()));
-    });
-   }, []);
+
+      await combineSavedSearchesWithSuggestions();
+     }
+   }, [combineSavedSearchesWithSuggestions]);
 
 
   const keyListener = useCallback(evt => {
@@ -197,11 +221,11 @@ function App() {
     }
   }, [keyListener]);
 
+
   async function handleSearchBlur() {
     if (! setEquals(searchWords, lastCheckpointRef.current)) {
       await checkpointSearch(searchWords, searchStr);
-      const newSuggestions = await listSuggestions(100);
-      setSuggestions(Array.from(newSuggestions.keys()));
+      await combineSavedSearchesWithSuggestions();
     }
     lastCheckpointRef.current = searchWords;
   }
@@ -279,6 +303,28 @@ function App() {
     }
   }
 
+  async function handleSaveSearch() {
+    try {
+      setAppMenuAnchorEl(null);
+      await saveSearch(searchWords, searchStr);
+      await combineSavedSearchesWithSuggestions();
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved “${searchStr}”`, severity: 'info'}, window?.location?.origin);
+    } catch (err) {
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
+    }
+  }
+
+  async function handleDeleteSavedSearch() {
+    try {
+      setAppMenuAnchorEl(null);
+      await deleteSavedSearch(searchWords);
+      await combineSavedSearchesWithSuggestions();
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted “${searchStr}”`, severity: 'info'}, window?.location?.origin);
+    } catch (err) {
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
+    }
+  }
+
   function handleDeleteSelected(evt) {
     if (selectedNoteId) {
       deleteNote(selectedNoteId);
@@ -353,9 +399,9 @@ function App() {
           <Toolbar>
             <input type="search" placeholder="Enter search word(s)"
                    title="Enter the first several letters of one or more search words." maxLength={1000}
-                   value={searchStr} list="searchSuggestions" results={12} ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
+                   value={searchStr} list="searchSuggestions" results={15} ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
             <datalist id="searchSuggestions">
-              {suggestions.map(suggestion => (<option value={suggestion} key={suggestion}/>))}
+              {predefinedSearches.map(search => (<option value={search} key={search}/>))}
             </datalist>
             <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
             <Menu
@@ -374,10 +420,12 @@ function App() {
             </IconButton>
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                   onClose={setAppMenuAnchorEl.bind(this, null)}>
-              <MenuItem onClick={showHideHelp}>Help &nbsp; <Help/></MenuItem>
+              <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
-              <MenuItem onClick={handleDeleteSelected}>Delete selected note &nbsp; <Delete/></MenuItem>
+              <MenuItem onClick={handleSaveSearch}>Save search <SavedSearch/></MenuItem>
+              <MenuItem onClick={handleDeleteSavedSearch}>Delete saved search <SearchOff/></MenuItem>
+              <MenuItem onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                    accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>

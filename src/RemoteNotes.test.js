@@ -202,4 +202,72 @@ describe("RemoteNotes", () => {
       expect(() => {remoteStorage.documents.subscribe(undefined)}).toThrow("undefined");
     });
   });
+
+  describe("upsertSavedSearch", () => {
+    it("should reject a normalized search that is not a string", async () => {
+      await expect(remoteStorage.documents.upsertSavedSearch(undefined, "foo")).rejects.toThrow(/normalized/);
+    });
+
+    it("should reject a normalized search with no characters", async () => {
+      const original = '%%';
+      const normalized = '';
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+    });
+
+    it("should reject a normalized search with one character", async () => {
+      const original = '"a"';
+      const normalized = 'A';
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+    });
+
+    it("should reject an original search that is not a string", async () => {
+      await expect(remoteStorage.documents.upsertSavedSearch('FOO', undefined)).rejects.toThrow(/original/);
+    });
+
+    it("should accept a good normalized & original and allow overwriting", async () => {
+      const original = "play  group ";
+      const normalized = "GROUP PLAY"
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, "Group Play")).resolves.toEqual(normalized);
+    });
+  });
+
+  describe("getAllSavedSearches", () => {
+    it("should return an array of original searches & a Set of normalized searches", async () => {
+      const original = "play  group ";
+      const normalized = "GROUP PLAY"
+      await remoteStorage.documents.upsertSavedSearch(normalized, original);
+
+      const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
+      expect(originalSearches).toBeInstanceOf(Array);
+      expect(originalSearches).toEqual([original.trim()]);
+      expect(normalizedSearches).toBeInstanceOf(Set);
+      expect(normalizedSearches).toEqual(new Set([normalized]));
+    })
+  });
+
+  describe("deleteSavedSearch", () => {
+    it("should reject a normalized search that is not a string", async () => {
+      await expect(remoteStorage.documents.deleteSavedSearch(undefined)).rejects.toThrow(/normalized/);
+    });
+
+    it("should reject a normalized search with no characters", async () => {
+      const normalized = '';
+      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).rejects.toThrow(Error);
+    });
+
+    it("should remove the indicated saved search and do nothing if it doesn't exist", async () => {
+      const original = "play  group ";
+      const normalized = "GROUP PLAY"
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).resolves.toEqual(normalized);
+
+      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).resolves.toEqual(normalized);
+
+      const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
+      expect(originalSearches).toEqual([]);
+      expect(normalizedSearches).toEqual(new Set());
+
+      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).resolves.toEqual(normalized);
+    });
+  });
 });

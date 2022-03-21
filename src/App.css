@@ -116,6 +116,7 @@ body {
 
 .MuiMenuItem-root {
   white-space: normal !important;
+  justify-content: space-between;
 }
 
 

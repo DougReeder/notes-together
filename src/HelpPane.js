@@ -30,6 +30,39 @@ function HelpPane({setMustShowPanel}) {
         <h4>Can I search for notes containing either of two words?</h4>
         <p>No, but you can quickly search one word. If you don’t find the note you’re looking for, then search for the other word.</p>
 
+        <h4>Can I create categories or tags?</h4>
+        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search</b>.</p>
+        <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
+        <p>You can add multiple tag words to your notes, if they don't already contain them. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
+        <p>Categories and tags are awkward to get rid of when they become obsolete.  Saved searches can be temporary. While you're working on a project, save a search topic for it. When you're done with the project, delete the Saved search, and the obsolete search won't clutter the interface or your mind. If you need the project again, just type the topic into the search field!</p>
+
+        <h4>How can I organize large amounts of text?</h4>
+        <p>Pick a distinctive 1–3 word topic. Save the topic as a Saved search. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
+        <p>Split long notes into several short notes. Append the topic to each.</p>
+        {/*<p>You can export all your notes on a topic with the menu command <strong>Export matching notes to*/}
+        {/*  file</strong>. Moving these files off a phone may require creative use of Wi-Fi Direct, Bluetooth, Air*/}
+        {/*  Drop, a cloud storage service like Dropbox, messaging or email. When you import one of these exported*/}
+        {/*  files, select <strong>Markdown</strong> when asked</p>*/}
+
+        <h4>How do I undo mistakes?</h4>
+        <p>From the editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
+        <p>On MacOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
+
+        <h4>How do I use voice dictation/voice typing on a phone or tablet?</h4>
+        <ol>
+          <li>Tap in the note editor to open the on-screen keyboard.</li>
+          <li>Tap the microphone button. <KeyboardVoice style={{position: 'relative', bottom: '-0.5ex'}}/></li>
+          <p><i>On Android, you may first need to enable voice dictation in the keyboard Settings.</i> <Settings style={{position: 'relative', bottom: '-0.5ex'}}/></p>
+        </ol>
+
+        <h4>How do I back up my notes, or sync between devices?</h4>
+        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">RemoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then use the widget in the lower-left of the list panel to connect to it.</p>
+        <svg style={{position: 'relative', bottom: '1.2ex'}}
+             className="rs-main-logo" id="rs-main-logo-remotestorage" version="1.1" width="0.739008in" height="0.853339in"
+             viewBox="0 0 739 853"> <g> <polygon className="rs-logo-shape"
+                                                 points="370,754 0,542 0,640 185,747 370,853 554,747 739,640 739,525 739,525 739,476 739,427 739,378 653,427 370,589 86,427 86,427 86,361 185,418 370,524 554,418 653,361 739,311 739,213 739,213 554,107 370,0 185,107 58,180 144,230 228,181 370,100 511,181 652,263 370,425 87,263 87,263 0,213 0,213 0,311 0,378 0,427 0,476 86,525 185,582 370,689 554,582 653,525 653,590 653,592 "></polygon> </g> </svg>
+        <p>You can use this RemoteStorage account with <a href="https://remotestorage.io/apps/" target="_blank"  rel="noreferrer">multiple apps</a>.</p>
+
         <h4>How closely must search words match the text?</h4>
         <ul>
           <li>Upper- and lower-case don’t matter, so “scuba” matches “SCUBA”.</li>
@@ -52,29 +85,6 @@ function HelpPane({setMustShowPanel}) {
           <li>Synonyms do <strong>not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
         </ul>
 
-        <h4>How do I undo mistakes?</h4>
-        <p>From the editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
-        <p>On MacOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
-
-        <h4>How do I use voice dictation/voice typing on a phone or tablet?</h4>
-        <ol>
-          <li>Tap in the note editor to open the on-screen keyboard.</li>
-          <li>Tap the microphone button. <KeyboardVoice style={{position: 'relative', bottom: '-0.5ex'}}/></li>
-          <p><i>On Android, you may first need to enable voice dictation in the keyboard Settings.</i> <Settings style={{position: 'relative', bottom: '-0.5ex'}}/></p>
-        </ol>
-
-        <h4>How do I back up my notes, or sync between devices?</h4>
-        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">RemoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then use the widget in the lower-left of the list panel to connect to it.</p>
-        <svg style={{position: 'relative', bottom: '1.2ex'}}
-            className="rs-main-logo" id="rs-main-logo-remotestorage" version="1.1" width="0.739008in" height="0.853339in"
-            viewBox="0 0 739 853"> <g> <polygon className="rs-logo-shape"
-                                                points="370,754 0,542 0,640 185,747 370,853 554,747 739,640 739,525 739,525 739,476 739,427 739,378 653,427 370,589 86,427 86,427 86,361 185,418 370,524 554,418 653,361 739,311 739,213 739,213 554,107 370,0 185,107 58,180 144,230 228,181 370,100 511,181 652,263 370,425 87,263 87,263 0,213 0,213 0,311 0,378 0,427 0,476 86,525 185,582 370,689 554,582 653,525 653,590 653,592 "></polygon> </g> </svg>
-        <p>You can use this RemoteStorage account with <a href="https://remotestorage.io/apps/" target="_blank"  rel="noreferrer">multiple apps</a>.</p>
-
-        <h4>Can I create categories of notes?</h4>
-        <p>Your notes are already tagged with all of the words in them! In the search field, enter the first 3–6 letters of one or more words. Notes Together will show you all notes that contain those words.</p>
-        <p>You can add tag or category words to your notes, if they don't already contain them. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for “movie” or “review”.</p>
-
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
         <table className="shortcuts">
@@ -88,7 +98,7 @@ function HelpPane({setMustShowPanel}) {
         <table className="shortcuts">
           <caption>Search field</caption>
           <tbody>
-          <tr><td>enter/return ⏎</td><td>end search (On mobile, the on-screen keyboard is dismissed. On desktop, down- and up-arrow can then be used.)</td></tr>
+          <tr><td>enter/return ⏎</td><td>finish search (On phone or tablet, the on-screen keyboard is dismissed. On desktop, down- and up-arrow can then be used.)</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
@@ -141,13 +151,6 @@ function HelpPane({setMustShowPanel}) {
 
         <h4>Can I change the order of notes?</h4>
         <p>Click the date in the upper left of the editing panel and set the date earlier or later.</p>
-
-        <h4>How can I organize large amounts of text?</h4>
-        <p>Think of yourself as working with a set of notes on a 1–3 word topic. Split long notes into several short notes. Append the topic to each. Enter the topic in the search field. New notes will be tagged with this topic.</p>
-        {/*<p>You can export all your notes on a topic with the menu command <strong>Export matching notes to*/}
-        {/*  file</strong>. Moving these files off a phone may require creative use of Wi-Fi Direct, Bluetooth, Air*/}
-        {/*  Drop, a cloud storage service like Dropbox, messaging or email. When you import one of these exported*/}
-        {/*  files, select <strong>Markdown</strong> when asked</p>*/}
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>

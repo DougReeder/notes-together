@@ -394,7 +394,7 @@ function listSuggestions(max) {
         try {
           const cursor = evt.target.result;
           if (cursor) {
-						// console.log("suggestion:", cursor.primaryKey, cursor.value);
+            // console.log("suggestion:", cursor.primaryKey, cursor.value);
             suggestions.set(cursor.value.original, cursor.value.normalized);
             if (suggestions.size < max) {
               cursor.continue();

@@ -4,7 +4,17 @@
 import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
-import {init, parseWords, upsertNote, getNote, deleteNote, findStubs, changeHandler} from "./storage";
+import {
+  init,
+  parseWords,
+  upsertNote,
+  getNote,
+  deleteNote,
+  findStubs,
+  changeHandler,
+  saveSearch,
+  listSavedSearches, deleteSavedSearch
+} from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL, v4 as uuidv4} from "uuid";
@@ -440,7 +450,8 @@ describe("storage", () => {
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `Itaque earum rerum hic tenetur a sapiente delectus`,
         date: new Date(1600, 2, 15),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'remote', oldValue: false, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -463,7 +474,8 @@ describe("storage", () => {
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.`,
         date: new Date(1918, 10, 11),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await upsertNote(localNote);
       await changeHandler({origin: 'remote', oldValue: localNote, newValue: false});
@@ -484,7 +496,8 @@ describe("storage", () => {
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `Lorem ipsum dolor sit amet`,
         date: new Date(1500, 0, 1),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: false});
       await new Promise((resolve) => {
@@ -506,6 +519,7 @@ describe("storage", () => {
         id: id,
         content: ` Ut enim ad minim veniam `,
         title: `Ut enim ad minim veniam`,
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: false, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -528,14 +542,16 @@ describe("storage", () => {
         content: `<p><em>My Day</em></p><p>It was dull.</p>`,
         title: `My Day\nIt was dull.`,
         date: new Date(2021, 8, 1),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = {
         id: id,
         content: `<p><i>My Day</i></p><p>It was great!</p>`,
         title: `My Day\nIt was great!`,
         date: new Date(2021, 9, 1),
-        mimeType: 'text/html'
+        mimeType: 'text/html',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -558,14 +574,16 @@ describe("storage", () => {
         content: `The movie was well-acted.`,
         title: `The movie was well-acted.`,
         date: new Date(2020, 3, 1),
-        mimeType: 'text/markdown;hint=COMMONMARK'
+        mimeType: 'text/markdown;hint=COMMONMARK',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = {
         id: id,
         content: `The movie has good costuming.`,
         title: `The movie has good costuming.`,
         date: new Date(2020, 0, 1),
-        mimeType: 'text/plain;charset=UTF-8'
+        mimeType: 'text/plain;charset=UTF-8',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -588,7 +606,8 @@ describe("storage", () => {
         content: `<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>`,
         title: `Staff Meeting\nMary: let's do it!`,
         date: new Date(2021, 8, 2),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = {
         id: id,
@@ -622,14 +641,16 @@ Finance: we can't afford it.`);
         content: ` my notes on\n# Therapods `,
         title: `my notes on\n# Therapods`,
         date: new Date(2010, 1, 14),
-        mimeType: 'text/markdown;hint=COMMONMARK'
+        mimeType: 'text/markdown;hint=COMMONMARK',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = {
         id: id,
         content: `<p>my notes on</p><h2>Therapods</h2>`,
         title: `Therapods\nmy notes on`,
         date: new Date(2010, 0, 1),
-        mimeType: 'text/html;hint=SEMANTIC'
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -644,6 +665,58 @@ Finance: we can't afford it.`);
       expect(retrieved.title).toEqual(`Therapods\nmy notes on`);
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+    });
+
+    it("should create a savedSearch from incoming upsert", async () => {
+      window.postMessage = jest.fn();
+
+      const original = "Man Cave ";
+      const remoteSavedSearch = {
+        original,
+        '@context': "http://remotestorage.io/spec/modules/documents/savedSearch"
+      };
+      await changeHandler({
+        origin: 'remote',
+        oldValue: false,
+        newValue: remoteSavedSearch}
+      );
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      expect(window.postMessage).toHaveBeenCalledTimes(1);
+      expect(window.postMessage).toHaveBeenCalledWith({kind: 'SAVED_SEARCH_CHANGE'}, expect.anything());
+    });
+
+    it("should create a savedSearch from incoming conflict", async () => {
+      window.postMessage = jest.fn();
+
+      const original = "Man Cave ";
+      const remoteSavedSearch = {
+        original,
+        '@context': "http://remotestorage.io/spec/modules/documents/savedSearch"
+      };
+      await changeHandler({
+        origin: 'conflict',
+        oldValue: false,
+        newValue: remoteSavedSearch}
+      );
+      await new Promise((resolve) => {
+        requestIdleCallback(() => {
+          setTimeout(() => {
+            resolve();
+          }, 10);
+        });
+      });
+
+      const {originalSearches, normalizedSearches} = await listSavedSearches();
+      expect(originalSearches[0]).toEqual(original.trim());
+      expect(originalSearches.length).toEqual(1);
+      expect(normalizedSearches.values().next().value).toEqual(Array.from(parseWords(original)).sort().join(' '))
+      expect(window.postMessage).toHaveBeenCalledTimes(1);
+      expect(window.postMessage).toHaveBeenCalledWith({kind: 'SAVED_SEARCH_CHANGE'}, expect.anything());
     });
   });
 
@@ -1014,6 +1087,107 @@ Finance: we can't afford it.`);
           done(err2);
         }
       }
+    });
+  });
+
+
+  describe("saveSearch", () => {
+    it("should reject searchWords that aren't a Set", async () => {
+      await expect(saveSearch(undefined, "foo")).rejects.toThrow(Error);
+    });
+
+    it("should reject searchWords with zero words", async () => {
+      await expect(saveSearch(new Set(), "foo")).rejects.toThrow(Error);
+    });
+
+    it("should reject a non-string search", async () => {
+      await expect(saveSearch(new Set(["BAR"]))).rejects.toThrow(Error);
+    });
+
+    it("should reject a blank search", async () => {
+      await expect(saveSearch(new Set(), '   ')).rejects.toThrow(/\b2\b/);
+    });
+
+    it("should reject a search with no letters", async () => {
+      const searchStr = "%% ";
+      const searchWords = parseWords(searchStr);
+      await expect(saveSearch(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
+    });
+
+    it("should reject a search with one letter", async () => {
+      const searchStr = '"a"';
+      const searchWords = parseWords(searchStr);
+      await expect(saveSearch(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
+    });
+
+    it("should reject a 1-character search", async () => {
+      await expect(saveSearch(new Set(["X"]), 'x')).rejects.toThrow(/\b2\b/);
+    });
+    it("should reject a 101-character search", async () => {
+      const searchStr = '12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901';
+      await expect(saveSearch(new Set([searchStr]), searchStr)).rejects.toThrow(/\b100\b/);
+    });
+
+    it("should accept a 2-character search", async () => {
+      const searchStr = "iq";
+      const searchWords = parseWords(searchStr);
+      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("IQ");
+    });
+
+    it("should accept a 2-word search", async () => {
+      const searchStr = "H v";
+      const searchWords = parseWords(searchStr);
+      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("H V");
+    });
+
+    it("should return normalized search", async () => {
+      const searchStr = "  Man Cave  ";
+      const searchWords = parseWords(searchStr);
+      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("CAVE MAN");
+    });
+  });
+
+  describe("deleteSavedSearch", () => {
+    it("should reject searchWords that aren't a Set", async () => {
+      await expect(deleteSavedSearch(undefined)).rejects.toThrow(Error);
+    });
+
+    it("should reject empty set of searchWords", async () => {
+      await expect(deleteSavedSearch(new Set())).rejects.toThrow(Error);
+    });
+
+    it("should reject searchWords with no letters", async () => {
+      await expect(deleteSavedSearch(new Set(['']))).rejects.toThrow(Error);
+    });
+
+    it("should return normalized search", async () => {
+      const searchStr = "  Man Cave  ";
+      const searchWords = parseWords(searchStr);
+      await expect(deleteSavedSearch(searchWords)).resolves.toEqual("CAVE MAN");
+    });
+  });
+
+  describe("listSavedSearches", () => {
+    it("should return a sorted array of original searches and a Set of normalized searches", async () => {
+      const searchStr1 = "iq ";
+      const searchWords1 = parseWords(searchStr1);
+      await saveSearch(searchWords1, searchStr1);
+      const searchStr2 = "H v ";
+      const searchWords2 = parseWords(searchStr2);
+      await saveSearch(searchWords2, searchStr2);
+      const searchStr3 = "  Man Cave  ";
+      const searchWords3 = parseWords(searchStr3);
+      await saveSearch(searchWords3, searchStr3);
+
+      const {originalSearches, normalizedSearches} = await listSavedSearches();
+      expect(originalSearches).toBeInstanceOf(Array);
+      expect(originalSearches).toEqual([searchStr2.trim(), searchStr1.trim(), searchStr3.trim()]);
+      expect(normalizedSearches).toBeInstanceOf(Set);
+      expect(normalizedSearches).toEqual(new Set([
+        Array.from(searchWords3).sort().join(' '),
+        Array.from(searchWords2).sort().join(' '),
+        Array.from(searchWords1).sort().join(' ')
+      ]));
     });
   });
 });

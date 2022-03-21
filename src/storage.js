@@ -24,94 +24,119 @@ function init(dbName) {
 /** exposed only for testing */
 async function changeHandler(evt) {
   try {
-    switch (evt.origin) {   // eslint-disable-line default-case
-      case 'remote':
-        if (evt.newValue) {   // create or update
-          console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
-          await upsertNote(evt.newValue, 'REMOTE');
-        } else {   // delete
-          console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
-          await deleteNoteDb(evt.oldValue.id);
+    const context = evt.newValue?.['@context'] || evt.oldValue?.['@context'] || evt.lastCommonValue?.['@context'] || '';
+    const dataType = /[^/]+$/.exec(context)?.[0];
+    switch (dataType) {
+      case 'note':   // saved by Notes Together
+      case 'text':   // saved by Litewrite
+        switch (evt.origin) {   // eslint-disable-line default-case
+          case 'remote':
+            if (evt.newValue) {   // create or update
+              console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
+              await upsertNote(evt.newValue, 'REMOTE');
+            } else {   // delete
+              console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
+              await deleteNoteDb(evt.oldValue.id);
+            }
+            break;
+          case 'conflict':
+            if (!evt.oldValue && !evt.newValue) {
+              console.log("remoteStorage deleted on both", evt.relativePath);
+              // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
+            } else if (evt.oldValue && !evt.newValue) {
+              console.warn("remoteStorage local change, remote delete:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+              requestIdleCallback(async () => {
+                try {
+                  const title = evt.oldValue?.title || evt.lastCommonValue?.title || "⛏";
+                  const message = `Retaining “${title?.split('\n')[0]}”, which was deleted on another device`;
+                  window.postMessage({
+                    kind: 'TRANSIENT_MSG',
+                    severity: 'warning',
+                    message: message,
+                    key: evt.oldValue.id
+                  }, window?.location?.origin);
+                  // initiator is **not** 'REMOTE' for this purpose
+                  await upsertNote(evt.oldValue);
+                } catch (err) {
+                  console.error("while handling local change, remote delete:", err);
+                }
+              });
+            } else if (!evt.oldValue && evt.newValue) {
+              console.warn("remoteStorage local delete, remote change:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+              requestIdleCallback(async () => {
+                try {
+                  const title = evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+                  const message = `Restoring “${title?.split('\n')[0]}”, which was edited on another device`;
+                  window.postMessage({
+                    kind: 'TRANSIENT_MSG',
+                    severity: 'warning',
+                    message: message,
+                    key: evt.newValue.id
+                  }, window?.location?.origin);
+                  // initiator is **not** 'REMOTE' for this purpose
+                  await upsertNote(evt.newValue);
+                } catch (err) {
+                  console.error("while handling local delete, remote change:", err);
+                }
+              });
+            } else {
+              console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+              requestIdleCallback(async () => {
+                let cleanNote;
+                try {
+                  const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content);
+                  const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+                  let mergedMimeType;
+                  if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
+                    mergedMimeType = evt.oldValue.mimeType;
+                  } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
+                    mergedMimeType = evt.newValue.mimeType;
+                  } else {
+                    mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
+                  }
+                  // initiator is **not** 'REMOTE' for this purpose
+                  cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
+                } catch (err) {
+                  console.error("while handling conflict:", err);
+                } finally {
+                  const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+                  const message = `Conflict in “${title?.split('\n')[0]}”`;
+                  window.postMessage({
+                    kind: 'TRANSIENT_MSG',
+                    severity: 'warning',
+                    message: message,
+                    key: evt.oldValue?.id || evt.newValue?.id
+                  }, window?.location?.origin);
+                }
+              });
+            }
+            break;
+            // case 'local':
+            //   console.log("remoteStorage local record:", evt.newValue);
+            //   break;
         }
         break;
-      case 'conflict':
-        if (!evt.oldValue && !evt.newValue) {
-          console.log("remoteStorage deleted on both", evt.relativePath);
-          // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
-        } else if (evt.oldValue && !evt.newValue) {
-          console.warn("remoteStorage local change, remote delete:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-          requestIdleCallback(async () => {
-            try {
-              const title = evt.oldValue?.title || evt.lastCommonValue?.title || "⛏";
-              const message = `Retaining “${title?.split('\n')[0]}”, which was deleted on another device`;
-              window.postMessage({
-                kind: 'TRANSIENT_MSG',
-                severity: 'warning',
-                message: message,
-                key: evt.oldValue.id
-              }, window?.location?.origin);
-              // initiator is **not** 'REMOTE' for this purpose
-              await upsertNote(evt.oldValue);
-            } catch (err) {
-              console.error("while handling local change, remote delete:", err);
-            }
-          });
-        } else if (!evt.oldValue && evt.newValue) {
-          console.warn("remoteStorage local delete, remote change:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-          requestIdleCallback(async () => {
-            try {
-              const title = evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
-              const message = `Restoring “${title?.split('\n')[0]}”, which was edited on another device`;
-              window.postMessage({
-                kind: 'TRANSIENT_MSG',
-                severity: 'warning',
-                message: message,
-                key: evt.newValue.id
-              }, window?.location?.origin);
-              // initiator is **not** 'REMOTE' for this purpose
-              await upsertNote(evt.newValue);
-            } catch (err) {
-              console.error("while handling local delete, remote change:", err);
-            }
-          });
-        } else {
-          console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-          requestIdleCallback(async () => {
-            let cleanNote;
-            try {
-              const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content);
-              const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
-              let mergedMimeType;
-              if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
-                mergedMimeType = evt.oldValue.mimeType;
-              } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
-                mergedMimeType = evt.newValue.mimeType;
-              } else {
-                mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
-              }
-              // initiator is **not** 'REMOTE' for this purpose
-              cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
-            } catch (err) {
-              console.error("while handling conflict:", err);
-            } finally {
-              const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
-              const message = `Conflict in “${title?.split('\n')[0]}”`;
-              window.postMessage({
-                kind: 'TRANSIENT_MSG',
-                severity: 'warning',
-                message: message,
-                key: evt.oldValue?.id || evt.newValue?.id
-              }, window?.location?.origin);
-            }
-          });
+      case 'savedSearch':
+        switch (evt.origin) {   // eslint-disable-line default-case
+          case 'remote':
+            console.info("remoteStorage incoming savedSearch", evt.relativePath, evt.oldValue, evt.newValue);
+            window.postMessage({kind: 'SAVED_SEARCH_CHANGE'}, window?.location?.origin);
+            break;
+          case 'conflict':
+            console.warn("remoteStorage incoming savedSearch conflict", evt.relativePath, evt.lastCommonValue, evt.oldValue, evt.newValue);
+            requestIdleCallback(async () => {
+              await saveSearch(parseWords(evt.newValue.original), evt.newValue.original);
+              window.postMessage({kind: 'SAVED_SEARCH_CHANGE'}, window?.location?.origin);
+            });
+            break;
         }
         break;
-        // case 'local':
-        //   console.log("remoteStorage local record:", evt.newValue);
-        //   break;
+      default:
+        // unknown dataType
+        console.warn(dataType, evt);
     }
   } catch (err) {
-    console.error("remoteStorage documents subscribe:", err);
+    console.error("remoteStorage documents subscribe:", err, evt);
     window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), key: evt.oldValue?.id || evt.newValue?.id}, window?.location?.origin);
   }
 }
@@ -257,4 +282,27 @@ function normalizeWord(word) {
   return word;
 }
 
-export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions};
+
+async function saveSearch(searchWords, searchStr) {
+  searchStr = searchStr.trim();
+
+  const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
+
+  const remoteStorage = await remotePrms;
+  return await remoteStorage.documents.upsertSavedSearch(normalizedSearchStr, searchStr);
+}
+
+async function deleteSavedSearch(searchWords) {
+  const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
+  const remoteStorage = await remotePrms;
+  return await remoteStorage.documents.deleteSavedSearch(normalizedSearchStr);
+}
+
+async function listSavedSearches() {
+  const remoteStorage = await remotePrms;
+  const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
+  originalSearches.sort( (a, b) => a.localeCompare(b));
+  return {originalSearches, normalizedSearches};
+}
+
+export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveSearch, deleteSavedSearch, listSavedSearches};

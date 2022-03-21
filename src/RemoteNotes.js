@@ -6,6 +6,7 @@ import {sanitizeNote} from "./sanitizeNote";
 import {extractUserMessage} from "./util/extractUserMessage";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
+const SAVED_SEARCH_PATH = 'notes/savedSearches/';
 
 const subscriptions = new Set();
 
@@ -40,6 +41,14 @@ const RemoteNotes = {
         },
       },
       "required": ["id", "content", "title", "date" ]
+    });
+
+    privateClient.declareType('savedSearch', {
+      "type": "object",
+      "properties": {
+        "original": {type: "string", maxLength: 100},
+      },
+      "required": ["original" ]
     });
 
     privateClient.on('change', evt => {
@@ -158,6 +167,57 @@ const RemoteNotes = {
 
         unsubscribe: function (callback) {
           subscriptions.delete(callback);
+        },
+
+        // available as remoteStorage.documents.upsertSavedSearch();
+        upsertSavedSearch: async function (normalized, original) {
+          console.debug("documents.upsertSavedSearch", normalized, original);
+          if ('string' !== typeof normalized) {
+            throw new Error("normalized must be string");
+          }
+          if (normalized.length < 2 || normalized.length > 100) {
+            throw Object.assign(new Error("Saved Search must be between 2 and 100 characters"), {severity: 'warning'});
+          }
+          if ('string' !== typeof original) {
+            throw new Error("original must be string");
+          }
+          const path = SAVED_SEARCH_PATH + normalized;
+          await privateClient.storeObject("savedSearch", path, {original});
+          return normalized;
+        },
+
+        deleteSavedSearch: async function (normalized) {
+          if ('string' !== typeof normalized) {
+            throw new Error("normalized must be string");
+          }
+          if (0 === normalized.length) {
+            throw Object.assign(new Error("First, select the Saved search"), {severity: 'warning'});
+          }
+          const path = SAVED_SEARCH_PATH + normalized;
+          await privateClient.remove(path);
+          return normalized;
+        },
+
+        getAllSavedSearches: async function () {
+          const originalSearches = [];
+          const normalizedSearches = new Set();
+          try {
+            const savedSearches = await privateClient.getAll(SAVED_SEARCH_PATH);
+            for (const normalized in savedSearches) {
+              normalizedSearches.add(normalized);
+              try {
+                const original = savedSearches[normalized].original.trim();
+                originalSearches.push(original || normalized);
+              } catch (err) {
+                console.error(`while extracting saved search “${normalized}”:`, err);
+                originalSearches.push(normalized);
+              }
+            }
+          } catch (err) {
+            console.error("while retrieving saved searches:", err);
+            window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't retrieve saved searches", severity: 'error'}, window?.location?.origin);
+          }
+          return {originalSearches, normalizedSearches};
         },
       }
     }
