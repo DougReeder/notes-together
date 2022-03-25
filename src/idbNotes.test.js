@@ -8,7 +8,25 @@ import auto from "fake-indexeddb/auto.js";
 import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, checkpointSearch, listSuggestions} from "./idbNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
-import {instanceOf} from "prop-types";
+
+if (!global.requestIdleCallback) {
+  global.requestIdleCallback = function (callback, options) {
+    options = options || {};
+    const relaxation = 1;
+    const timeout = options.timeout || relaxation;
+    const start = performance.now();
+    return setTimeout(function () {
+      callback({
+        get didTimeout() {
+          return options.timeout ? false : (performance.now() - start) - relaxation > timeout;
+        },
+        timeRemaining: function () {
+          return Math.max(0, relaxation + (performance.now() - start));
+        },
+      });
+    }, relaxation);
+  };
+}
 
 
 let db;
@@ -288,7 +306,7 @@ describe("findStubs", () => {
 
 
 describe("checkPointSearch", () => {
-  beforeAll(deleteSearchCheckpoints);
+  beforeEach(deleteSearchCheckpoints);
 
   it("should throw error when not passed a Set of words", async () => {
     await expect(checkpointSearch(undefined, "foo")).rejects.toThrow(/not a Set/);
@@ -303,7 +321,7 @@ describe("checkPointSearch", () => {
   });
 
   it("should not create record if search is one character", async () => {
-    expect(await checkpointSearch(new Set('A'),"a ")).toEqual(0);
+    expect(await checkpointSearch(new Set(['A']),"a ")).toEqual(0);
   });
 
   it("should create record if it doesn't exist (2-letter word)", async () => {
@@ -312,7 +330,7 @@ describe("checkPointSearch", () => {
     expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
   });
 
-  it("should create record if it doesn't exist (2 words)", async () => {
+  it("should create record if it doesn't exist (2 1-letter words)", async () => {
     const searchStr = "a z";
     const searchWords = parseWords(searchStr);
     expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
@@ -322,9 +340,50 @@ describe("checkPointSearch", () => {
     const searchStr1 = "play group";
     const searchWords1 = parseWords(searchStr1);
     expect(await checkpointSearch(searchWords1, searchStr1)).toEqual(1);
+
+    await new Promise(resolve => setTimeout(resolve, 1));
     const searchStr2 = "group play";
     const searchWords2 = parseWords(searchStr2);
-    expect(await checkpointSearch(searchWords2, searchStr2)).toEqual(2);
+    const count = await checkpointSearch(searchWords2, searchStr2);
+    expect(count).toBeGreaterThan(1.999);
+    expect(count).toBeLessThan(2);
+  });
+
+  it("should only save the last 100 searches, when last search is new)", async () => {
+    for (let i=1; i<=105; ++i) {
+      const searchStr = "search " + i;
+      const searchWords = parseWords(searchStr);
+      expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
+      // TODO: figure out why this delay makes the deletions happen as expected
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+
+    const suggestions = await listSuggestions(110);
+    const suggestionArr = Array.from(suggestions.keys());
+    expect(suggestionArr[0]).toEqual("search 105");
+    expect(suggestionArr[99]).toEqual("search 6");
+    expect(suggestionArr.length).toEqual(100);
+  });
+
+  it("should only save the last 100 searches, when the last is a repeat", async () => {
+    for (let i=1; i<=105; ++i) {
+      const searchStr = "search " + i;
+      const searchWords = parseWords(searchStr);
+      expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
+      // TODO: figure out why this delay makes the deletions happen as expected
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    const searchStr = "search " + 69;
+    const searchWords = parseWords(searchStr);
+    const count69 = await checkpointSearch(searchWords, searchStr);
+    expect(count69).toBeGreaterThan(1.999);
+    expect(count69).toBeLessThan(2);
+
+    const suggestions = await listSuggestions(110);
+    const suggestionArr = Array.from(suggestions.keys());
+    expect(suggestionArr[0]).toEqual("search 69");
+    expect(suggestionArr[99]).toEqual("search 6");
+    expect(suggestionArr.length).toEqual(100);
   });
 });
 
@@ -375,8 +434,8 @@ describe("listSuggestions", () => {
     const suggestionsNormalized = Array.from(suggestions.values());
     expect(suggestionArr[0]).toEqual(thriceSearchStr3);
     expect(suggestionsNormalized[0]).toEqual(Array.from(thriceSearchWords1.values()).sort().join(' '));
-    expect(suggestionArr).toContain(twiceSearchStr2);
-    expect(suggestionArr).toContain(doubleSearchStr);
+    expect(suggestionArr[1]).toEqual(doubleSearchStr);   // later comes before earlier
+    expect(suggestionArr[2]).toEqual(twiceSearchStr2);
     expect(suggestionArr[3]).toEqual(onceSearchStr);
     expect(suggestionsNormalized[3]).toEqual(Array.from(onceSearchWords.values()).sort().join(' '));
     expect(suggestions.size).toEqual(4);
@@ -385,8 +444,8 @@ describe("listSuggestions", () => {
     const suggestions2 = await listSuggestions(max);
     const suggestionArr2 = Array.from(suggestions2.keys());
     expect(suggestionArr2[0]).toEqual(thriceSearchStr3);
-    expect(suggestionArr2).toContain(twiceSearchStr2);
-    expect(suggestionArr2).toContain(doubleSearchStr);
+    expect(suggestionArr2[1]).toEqual(doubleSearchStr);
+    expect(suggestionArr2[2]).toEqual(twiceSearchStr2);
     expect(suggestions2.size).toEqual(max);
   });
 });

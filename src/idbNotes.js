@@ -45,7 +45,7 @@ function initDb(dbName = dbNameDefault) {
       }
       if (evt.oldVersion < 2) {
         const searchStore = theDb.createObjectStore('search', {keyPath: 'normalized'});
-        searchStore.createIndex('byCount', 'count', {unique: false});
+        searchStore.createIndex('byScore', 'score', {unique: false});
       }
     };
 
@@ -333,46 +333,150 @@ function findFillerNoteIds() {
 }
 
 
-function checkpointSearch(searchWords, searchStr) {
-  return dbPrms.then(db => {
-    return new Promise((resolve, reject) => {
-      if (!(searchWords instanceof Set)) {
-        return reject(new Error(`“${searchWords}” is not a Set`));
-      }
-      if ('string' !== typeof searchStr) {
-        return reject(new Error(`“${searchStr}” is not a string`));
-      }
-      if (0 === searchWords.size) {
-        return resolve(0);
-      }
-      if (1 === searchWords.size) {
-        if (Array.from(searchWords).every(word => word.length < 2)) {
-          return resolve(0);
-        }
-      }
-      const normalized = Array.from(searchWords.values()).sort().join(' ');
+const MAX_SEARCHES = 100;   // perhaps a month's or year's worth
 
-      const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
-      const searchStore = transaction.objectStore("search");
-      const getRequest = searchStore.get(normalized);
-      getRequest.onsuccess = function (evt) {
-        const newCount = (evt.target.result?.count || 0) + 1;
-        const putRequest = searchStore.put({normalized, original: searchStr, count: newCount});
-        putRequest.onsuccess = function (evt) {
-          resolve(newCount);
+async function checkpointSearch(searchWords, searchStr) {
+  if (!(searchWords instanceof Set)) {
+    throw new Error(`“${searchWords}” is not a Set`);
+  }
+  if ('string' !== typeof searchStr) {
+    throw new Error(`“${searchStr}” is not a string`);
+  }
+  if (0 === searchWords.size) {
+    return 0;
+  }
+  if (1 === searchWords.size) {
+    if (Array.from(searchWords).every(word => word.length < 2)) {
+      return 0;
+    }
+  }
+
+  await new Promise(resolve => {
+    requestIdleCallback(resolve);
+  });
+
+  const now = Date.now();
+  const newCount = await incrementCount(searchWords, searchStr, now);
+
+  const numRecalculated = await recalculateScores(now);
+
+  if (numRecalculated > MAX_SEARCHES) {
+    await deleteExtraSearches(numRecalculated - MAX_SEARCHES);
+  }
+
+  return newCount;
+}
+
+async function incrementCount(searchWords, searchStr, now) {
+  const db = await dbPrms;
+  return new Promise((resolve, reject) => {
+    const normalized = Array.from(searchWords.values()).sort().join(' ');
+
+    const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
+    const searchStore = transaction.objectStore("search");
+    const getRequest = searchStore.get(normalized);
+    getRequest.onsuccess = function (evt) {
+      const oldCount = evt.target.result?.count || 0;
+      const oldDate = evt.target.result?.date || 0;
+      const doubleDaysOld = (now - oldDate) / (2 * 24 * 60 * 60 * 1000);
+      const newCount = (oldCount / (1 + doubleDaysOld)) + 1;
+      const putRequest = searchStore.put({
+        normalized,
+        original: searchStr,
+        count: newCount,
+        date: now
+      });
+      putRequest.onsuccess = function () {
+        resolve(newCount);
+      }
+      putRequest.onerror = handleError;
+    };
+    getRequest.onerror = handleError;
+    function handleError(evt) {
+      console.error("IDB incrementCount:", evt.target.error);
+      evt.stopPropagation();
+      reject(evt.target.error);
+    }
+  });
+}
+
+/**
+ * A search used twice yesterday scores like a search used once today,
+ * but a search used thrice yesterday is ahead.  Two days on, the search
+ * used twice will score higher than the search scored once
+ *
+ * @return {Promise<unknown>}
+ */
+async function recalculateScores(now) {
+  const db = await dbPrms;
+  return new Promise((resolve, reject) => {
+    let numRecalculated = 0;
+    const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
+    const searchStore = transaction.objectStore("search");
+    const cursorRequest = searchStore.openCursor();
+    cursorRequest.onsuccess = function(evt) {
+      try {
+        const cursor = evt.target.result;
+        if (cursor) {
+          const oldDate = cursor.value?.date || 0;
+          const daysOld = (now - oldDate) / (24 * 60 * 60 * 1000);
+          const count = cursor.value?.count || 0;
+          const score = count / (1 + daysOld);
+          cursor.value.score = score;
+          const updateRequest = cursor.update(cursor.value);
+          updateRequest.onsuccess = function () {
+            // console.log(`updated search “${cursor.value?.original}” (count ${cursor.value?.count}) score to ${cursor.value?.score}`)
+            ++numRecalculated;
+            cursor.continue();
+          }
+          updateRequest.onerror = (evt) => {
+            console.error("IDB recalculateScores error:", evt.target.error);
+            evt.stopPropagation();
+            cursor.continue();
+          }
+        } else {   // no more searches
+          // console.log(`recalculated scores on ${numRecalculated} searches`);
+          resolve(numRecalculated);
         }
-        putRequest.onerror = function (evt) {
-          console.error("IDB checkpointSearch put:", evt.target.error);
-          evt.stopPropagation();
-          reject(evt.target.error);
-        };
-      };
-      getRequest.onerror = function (evt) {
-        console.error("IDB checkpointSearch get:", evt.target.error);
-        evt.stopPropagation();
-        reject(evt.target.error);
-      };
-    });
+      } catch (err) {
+        reject(err);
+      }
+    };
+  });
+}
+
+async function deleteExtraSearches(numToDelete) {
+  const db = await dbPrms;
+  return new Promise((resolve, reject) => {
+    let numDeleted = 0;
+    const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
+    const searchStore = transaction.objectStore("search");
+    const cursorRequest = searchStore.index('byScore').openCursor();
+    cursorRequest.onsuccess = function(evt) {
+      try {
+        const cursor = evt.target.result;
+        if (cursor) {
+          console.info(`discarding search “${cursor.value?.original}” ${cursor.value?.count} ${cursor.value?.score}`);
+          const deleteRequest = cursor.delete();
+          deleteRequest.onsuccess = function () {
+            if (++numDeleted >= numToDelete) {
+              resolve(numDeleted);   // and abandon cursor, ending transaction
+            } else {
+              cursor.continue();
+            }
+          }
+          deleteRequest.onerror = (evt) => {
+            console.error("IDB deleteExtraSearches error:", evt.target.error);
+            evt.stopPropagation();
+            cursor.continue();
+          }
+        } else {   // no more searches
+          resolve(numDeleted);
+        }
+      } catch (err) {
+        reject(err);
+      }
+    }
   });
 }
 
@@ -389,7 +493,7 @@ function listSuggestions(max) {
       const suggestions = new Map();
       const transaction = db.transaction('search', "readonly", {durability: "relaxed"});
       const searchStore = transaction.objectStore("search");
-      const cursorRequest = searchStore.index('byCount').openCursor(null, "prev");
+      const cursorRequest = searchStore.index('byScore').openCursor(null, "prev");
       cursorRequest.onsuccess = function(evt) {
         try {
           const cursor = evt.target.result;
