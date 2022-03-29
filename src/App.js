@@ -132,6 +132,7 @@ function App() {
         enqueueSnackbar(evt.data?.message || "Restart your device", {
           anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
+          autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 3000 : 8000,
           key: evt.data?.key,
           TransitionComponent: Slide,
         });
@@ -308,7 +309,7 @@ function App() {
       setAppMenuAnchorEl(null);
       await saveSearch(searchWords, searchStr);
       await combineSavedSearchesWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved “${searchStr}”`, severity: 'info'}, window?.location?.origin);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved “${searchStr}”`, severity: 'success'}, window?.location?.origin);
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
     }
@@ -319,7 +320,8 @@ function App() {
       setAppMenuAnchorEl(null);
       await deleteSavedSearch(searchWords);
       await combineSavedSearchesWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted “${searchStr}”`, severity: 'info'}, window?.location?.origin);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted “${searchStr}”`, severity: 'success'}, window?.location?.origin);
+      setSearchParams(new URLSearchParams());
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
     }
@@ -399,7 +401,7 @@ function App() {
           <Toolbar>
             <input type="search" placeholder="Enter search word(s)"
                    title="Enter the first several letters of one or more search words." maxLength={1000}
-                   value={searchStr} list="searchSuggestions" results={15} ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
+                   value={searchStr} list="searchSuggestions" enterKeyHint="Search" ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
             <datalist id="searchSuggestions">
               {predefinedSearches.map(search => (<option value={search} key={search}/>))}
             </datalist>

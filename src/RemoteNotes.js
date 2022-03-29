@@ -175,8 +175,11 @@ const RemoteNotes = {
           if ('string' !== typeof normalized) {
             throw new Error("normalized must be string");
           }
-          if (normalized.length < 2 || normalized.length > 100) {
-            throw Object.assign(new Error("Saved Search must be between 2 and 100 characters"), {severity: 'warning'});
+          if (normalized.length < 2) {
+            throw Object.assign(new Error("Saved Search must be 2 or more characters"), {severity: 'info'});
+          }
+          if (normalized.length > 100) {
+            throw Object.assign(new Error("Saved Search must be 100 or less characters"), {severity: 'warning'});
           }
           if ('string' !== typeof original) {
             throw new Error("original must be string");
@@ -191,7 +194,7 @@ const RemoteNotes = {
             throw new Error("normalized must be string");
           }
           if (0 === normalized.length) {
-            throw Object.assign(new Error("First, select the Saved search"), {severity: 'warning'});
+            throw Object.assign(new Error("First, select the Saved search"), {severity: 'info'});
           }
           const path = SAVED_SEARCH_PATH + normalized;
           await privateClient.remove(path);

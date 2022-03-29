@@ -7,6 +7,7 @@ import auto from "fake-indexeddb/auto.js";
 import RemoteStorage from "remotestoragejs";
 import RemoteNotes from "./RemoteNotes";
 import {NIL, validate as uuidValidate} from "uuid";
+import {parseWords} from "./storage";
 
 
 describe("RemoteNotes", () => {
@@ -217,6 +218,12 @@ describe("RemoteNotes", () => {
     it("should reject a normalized search with one character", async () => {
       const original = '"a"';
       const normalized = 'A';
+      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+    });
+
+    it("should reject a normalized search with 101 characters", async () => {
+      const original = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890z";
+      const normalized = Array.from(parseWords(original)).sort().join(' ');
       await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
     });
 
