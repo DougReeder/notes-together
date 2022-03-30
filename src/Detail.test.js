@@ -283,7 +283,7 @@ it('renders error if note missing', async () => {
 
     // waits for content type button to be visible
     await waitFor(() => expect(screen.getByRole('button', {name: "plain text"})).toBeVisible());
-    const detailsMenuBtn = screen.getByRole('button', {name: "Open editor menu"});
+    const detailsMenuBtn = screen.getByRole('button', {name: "Open Editor menu"});
     expect(detailsMenuBtn).toBeVisible();
     // format controls are not present
     expect(screen.queryByRole('button', {name: "(n/a)"})).toBeFalsy();

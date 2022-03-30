@@ -345,7 +345,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           case '':
             window.postMessage({
               kind: 'TRANSIENT_MSG',
-              severity: 'warning',
+              severity: 'info',
               message: "That wouldn't make sense."
             }, window?.location?.origin);
             return;
@@ -378,7 +378,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           case '':
             window.postMessage({
               kind: 'TRANSIENT_MSG',
-              severity: 'warning',
+              severity: 'info',
               message: "Can't insert that!"
             }, window?.location?.origin);
             return;
@@ -541,7 +541,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     noteControls = (<>
       {dateControl}
       <IconButton aria-controls="details-menu" aria-haspopup="true"
-          title="Open editor menu" size="large"
+          title="Open Editor menu" size="large"
           onClick={handleDetailsMenuClick}>
         <MoreVert/>
       </IconButton>

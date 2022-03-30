@@ -34,7 +34,7 @@ function HelpPane({setMustShowPanel}) {
         <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search</b>.</p>
         <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
         <p>You can add multiple tag words to your notes, if they don't already contain them. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
-        <p>Categories and tags are awkward to get rid of when they become obsolete.  Saved searches can be temporary. While you're working on a project, save a search topic for it. When you're done with the project, delete the Saved search, and the obsolete search won't clutter the interface or your mind. If you need the project again, just type the topic into the search field!</p>
+        <p>Deleting formal categories and tags requires you to spend time re-organizing.  Saved searches can be temporary. While you're working on a project, save a search topic for it. When you're done with the project, delete the Saved search, and the obsolete search won't clutter the interface. If you need the project notes again, just type the topic into the search field!</p>
 
         <h4>How can I organize large amounts of text?</h4>
         <p>Pick a distinctive 1–3 word topic. Save the topic as a Saved search. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
@@ -45,7 +45,7 @@ function HelpPane({setMustShowPanel}) {
         {/*  files, select <strong>Markdown</strong> when asked</p>*/}
 
         <h4>How do I undo mistakes?</h4>
-        <p>From the editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
+        <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
         <p>On MacOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
 
         <h4>How do I use voice dictation/voice typing on a phone or tablet?</h4>
@@ -56,7 +56,7 @@ function HelpPane({setMustShowPanel}) {
         </ol>
 
         <h4>How do I back up my notes, or sync between devices?</h4>
-        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">RemoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then use the widget in the lower-left of the list panel to connect to it.</p>
+        <p>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a> with a third-party provider (not unlike DropBox or Google Drive), then use the widget in the lower-left of the list panel to connect to it.</p>
         <svg style={{position: 'relative', bottom: '1.2ex'}}
              className="rs-main-logo" id="rs-main-logo-remotestorage" version="1.1" width="0.739008in" height="0.853339in"
              viewBox="0 0 739 853"> <g> <polygon className="rs-logo-shape"
@@ -154,16 +154,13 @@ function HelpPane({setMustShowPanel}) {
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
-          <li>To create new notes with graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel.</li>
+          <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel.</p>
+            <p>If you don't add text related to the graphic, at least add several keywords, so you can search for it.  But you don't have to do that right away!</p>
+          </li>
           <li><p>To add graphics to an existing note, drag the files to the editor, or copy and paste them.</p>
-            <p>On a phone or tablet, from the editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste Files...</b></p>
+            <p>On a phone or tablet, from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste Files...</b>. That's also how you insert a picture with the camera.</p>
           </li>
         </ul>
-
-        <h4>What formatting is supported for imported files and pasted text?</h4>
-        <p>Headings, paragraphs, lists, {/*tables,*/} graphics and other semantic HTML are imported, but not the styles.</p>
-        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a>, is supported in files with the extension <code>.md</code> or (optionally) text files.</p>
-        <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
         <h4>How do I import text or graphics from PDF or office documents?</h4>
         <ol>
@@ -176,6 +173,11 @@ function HelpPane({setMustShowPanel}) {
         <h4>How many graphics can I add to a note?</h4>
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>
 
+        <h4>What formatting is supported for imported files and pasted text?</h4>
+        <p>Headings, paragraphs, lists, {/*tables,*/} graphics and other semantic HTML are imported, but not the styles.</p>
+        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a>, is supported in files with the extension <code>.md</code> or (optionally) text files.</p>
+        <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
+
         <h4>How do I add a link?</h4>
         <p>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor.</p>
 
@@ -183,7 +185,7 @@ function HelpPane({setMustShowPanel}) {
         <p>Right-click the link, then select <b>Open link in new tab</b>.</p>
 
         <h4>Does the editor behave differently when editing a Markdown note?</h4>
-        <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated.</p>
+        <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
       </div>
     </Box>
   </>;
