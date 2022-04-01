@@ -26,7 +26,7 @@ import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
-import {MoreVert, Redo, StrikethroughS, TextFormat, Undo} from "@mui/icons-material";
+import {MoreVert, Photo, Redo, StrikethroughS, TextFormat, Undo} from "@mui/icons-material";
 import {Alert, AlertTitle} from '@mui/material';
 import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
@@ -57,12 +57,12 @@ const BLOCK_TYPE = {
   'heading-two': <h2>Heading</h2>,
   'heading-three': <h3>Subheading</h3>,
   'paragraph': "Body",
-  'bulleted-list': "Bulleted List",
+  'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
-  'quote': "Block Quote",
+  'quote': <><span/><span>Block Quote</span></>,
   'code': <code>Monospaced</code>,
-  'image': "(Graphic)",
-  // 'thematic-break': "Horizontal Rule",
+  'thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
+  'image': <><span>Graphic </span><Photo/></>,
   'multiple': "(Multiple)",
   'n/a': "(n/a)"
 }
@@ -326,17 +326,26 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       previousSelection.current = null;
       if (editor.selection) {
         // changes block type
-        if (['image', 'link'].indexOf(getRelevantBlockType(editor)) > -1) {
+        const relevantBlockType = getRelevantBlockType(editor);
+        if (['image', 'link'].indexOf(relevantBlockType) > -1) {
           window.postMessage({
             kind: 'TRANSIENT_MSG',
-            severity: 'warning',
-            message: "Only text blocks can be changed."
+            severity: 'info',
+            message: "That can't be changed."
           }, window?.location?.origin);
           return;
         }
         switch (targetType) {
           default:
             changeBlockType(editor, targetType);
+            return;
+          // A void block is inserted, rather than changing a text block to it.
+          case 'thematic-break':
+            if ('thematic-break' !== relevantBlockType) {
+              Transforms.insertNodes(editor,
+                  {type: targetType, children: [{text: ""}]},
+              );
+            }
             return;
           case 'multiple':
           case 'list-item':
@@ -351,7 +360,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             return;
         }
       } else {
-        // appends block
+        // appends block at end
         let path = [editor.children.length];
         switch (targetType) {
           default:
@@ -823,8 +832,9 @@ function ErrorFallback({error, resetErrorBoundary}) {
   return (
       <div role="alert">
         <details>
-          <summary><strong>Sorry, this note can't be displayed.</strong>
-            <p>If you get this error repeatedly, this note is corrupt and should be deleted.</p>
+          <summary><strong>Sorry, there was an error displaying this note.</strong>
+            <p>Select another note or click the Clear button, and carry on.</p>
+            <p>If you repeatedly get an error on this note, it is corrupt and should be deleted.</p>
             <Button variant="outlined" onClick={resetErrorBoundary}>Clear</Button>
           </summary>
           <p>{error.message}</p>

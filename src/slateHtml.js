@@ -576,7 +576,10 @@ const RenderingElement = props => {
     case 'image':
       return <ImageElement {...props} />
     case 'thematic-break':
-      return <hr />
+      return <div {...attributes} contentEditable={false}>
+        {children}
+        <hr />
+      </div>
   }
 }
 

@@ -46,7 +46,7 @@ function HelpPane({setMustShowPanel}) {
 
         <h4>How do I undo mistakes?</h4>
         <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Undo &nbsp;<Undo/></b>.</p>
-        <p>On MacOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
+        <p>On MacOS and iOS, you can type ⌘Z. On other operating systems, you can type ctrl+Z.</p>
 
         <h4>How do I use voice dictation/voice typing on a phone or tablet?</h4>
         <ol>

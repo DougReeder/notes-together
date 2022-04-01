@@ -326,9 +326,9 @@ async function importHtml(html, fileDateValue, coda) {
       }
 
       if (endPos >= 0) {
-        html = html.slice(0, endPos) + '<p><em>' + coda + '</em></p>' + html.slice(endPos);
+        html = html.slice(0, endPos) + '<hr /><p><em>' + coda + '</em></p>' + html.slice(endPos);
       } else {
-        html += '<p><em>' + coda + '</em></p>';
+        html += '<hr /><p><em>' + coda + '</em></p>';
       }
     }
 
@@ -445,7 +445,7 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   let content;
   content = lines.join('\n');
   if (coda) {
-    content += '\n\n' + (isMarkdown ? '*' : '') + coda + (isMarkdown ? '*' : '');
+    content += '\n\n' + (isMarkdown ? '------------------------------\n*' : '') + coda + (isMarkdown ? '*' : '');
   } else {
     content += '\n';
   }
@@ -458,7 +458,11 @@ async function importText(text, fileDateValue, coda, parseType) {
       return {noteIds: [], messages: []};
     }
     if (coda) {
-      text += '\n\n' + coda;
+      if ('text/markdown' === parseType) {
+        text += '\n\n------------------------------\n' + coda;
+      } else {
+        text += '\n\n' + coda;
+      }
     }
     const newNote = createMemoryNote(null, text, fileDateValue, parseType);
 

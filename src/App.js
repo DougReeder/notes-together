@@ -97,7 +97,7 @@ function App() {
   const focusOnLoad = useRef(false);   // no re-render when changed
   async function addNote() {
     try {
-      const initialText = searchStr.trim() ? `<h1></h1><p></p><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
+      const initialText = searchStr.trim() ? `<h1></h1><p></p><hr /><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
       const newNote = createMemoryNote(null, initialText, null, 'text/html;hint=SEMANTIC');
       // console.log("adding note:", newNote);
       await upsertNote(newNote);
