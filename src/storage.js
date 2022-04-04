@@ -13,10 +13,16 @@ import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 
 let initPrms;
+let isFirstLaunch;
+let persistenceAttempted = false;
 
 function init(dbName) {
   if (!initPrms) {
-    initPrms = initDb(dbName).then(initRemote);
+    initPrms = initDb(dbName).then(async ({indexedDb, isFirstLaunch: isFirstLaunchArg}) => {
+      isFirstLaunch = isFirstLaunchArg;
+      const remoteStorage = await initRemote();
+      return {indexedDb, isFirstLaunch, remoteStorage};
+    });
   }
   return initPrms;
 }
@@ -151,7 +157,7 @@ function initRemote() {
     remoteStorage.caching.enable('/documents/notes/');
 
     remoteStorage.on('ready', function () {
-      console.log("remoteStorage ready");
+      console.info("remoteStorage ready");
       resolve(remoteStorage);
 
       remoteStorage.documents.subscribe(changeHandler);
@@ -217,6 +223,13 @@ function initRemote() {
  * @return {Promise<{date: Date, id: number, content: string, title: string}>}
  */
 async function upsertNote(memoryNote, initiator) {
+  if (!persistenceAttempted && 'REMOTE' !== initiator && !isFirstLaunch && navigator.storage?.persist) {
+    persistenceAttempted = true;
+    navigator.storage.persist().then(persistent => {
+      console.info(persistent ? "Storage will persist until explicit user clear." : "Storage may be cleared by the UA under storage pressure.");
+    });
+  }
+
   const wordSet = new Set();
   const textFilter = function (text) {
     for (const word of parseWords(text)) {

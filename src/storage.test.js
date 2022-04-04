@@ -410,7 +410,7 @@ describe("storage", () => {
       expect(retrieved.wordArr.length).toEqual(1);
       expect(retrieved.mimeType).toEqual(original.mimeType);
 
-      const remoteStorage = await init();
+      const {remoteStorage} = await init();
       await expect(remoteStorage.documents.get(originalId)).resolves.toBeUndefined();
     });
   });

@@ -32,8 +32,8 @@ if (!global.requestIdleCallback) {
 let db;
 
 beforeAll(done => {
-  initDb("testDb").then(theDb => {
-    db = theDb;
+  initDb("testDb").then(({indexedDb}) => {
+    db = indexedDb;
     // console.log("fake db:", db.name, db.version, db.objectStoreNames);
     done();
   });

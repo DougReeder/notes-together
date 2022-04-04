@@ -165,7 +165,7 @@ function App() {
   useEffect( () => {
     startup();
     async function startup() {
-      const remoteStorage = await init();   // init is idempotent
+      const {remoteStorage} = await init();   // init is idempotent
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login

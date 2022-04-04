@@ -37,8 +37,9 @@ if (!('requestIdleCallback' in window)) {
   }
 }
 
-init().then(remoteStorage => {   // init is idempotent
-  // console.log("remoteStorage initialized:", remoteStorage);
+// init is idempotent
+init().then((/*{indexedDb, isFirstLaunch, remoteStorage}*/) => {
+  // console.log(`indexedDB: ${indexedDb}, remoteStorage initialized: ${remoteStorage} isFirstLaunch: ${isFirstLaunch}`);
 });
 
 const theme = createTheme({

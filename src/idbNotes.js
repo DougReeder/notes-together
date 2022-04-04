@@ -31,10 +31,14 @@ function initDb(dbName = dbNameDefault) {
       reject(err);
     };
 
+    let isFirstLaunch = false;
+
     openRequest.onupgradeneeded = function (evt) {
-      console.log(`IDB: upgrading version ${evt.oldVersion} to ${evt.newVersion}`);
+      console.info(`IDB: upgrading version ${evt.oldVersion} to ${evt.newVersion}`);
       const theDb = evt.target.result;
       if (evt.oldVersion < 1) {
+        isFirstLaunch = true;
+
         const objectStore = theDb.createObjectStore('note', {keyPath: 'id', autoIncrement: false});
         objectStore.createIndex('byDate', 'date', {});
         const wordsInd = objectStore.createIndex('byWords', 'wordArr', {unique: false, multiEntry: true});
@@ -53,7 +57,7 @@ function initDb(dbName = dbNameDefault) {
       }
     };
 
-    openRequest.onsuccess = function (evt) {
+    openRequest.onsuccess = function () {
       // console.log('IDB: open succeeded:', openRequest.result.name, openRequest.result.version, openRequest.result.objectStoreNames);
       openRequest.result.onerror = function (evt2) {
         // This handles errors not caught at the transaction or above.
@@ -61,7 +65,7 @@ function initDb(dbName = dbNameDefault) {
         const msg = evt2.target.errorMessage || evt2.target.error.name || evt2.target.error.toString() || evt2.target.errorCode;
         alert(msg);
       };
-      resolve(openRequest.result)
+      resolve({indexedDb: openRequest.result, isFirstLaunch});
     };
   });
 
@@ -93,7 +97,7 @@ function createWelcomeNotes(transaction) {
 <li>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a>.</li>
 <li>Use the widget in the lower left of the list pane to connect.</li>
 </ol>
-<p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatability with an older note-taking app called Litewrite.</p>
+<p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with an older note-taking app called Litewrite.</p>
 <hr>
 <p>You can delete this note whenever you like.</p>
 <p><em>remote storage</em></p>`;
@@ -166,7 +170,7 @@ let findStubsTransaction;
  * @param callback may be called *multiple* times; isPartial means there are more results; isFinal means no more results will be returned; *both* will be true when there are more than MAX_NOTES_FOUND matching notes
  */
 function findStubs(searchWords, callback) {
-  dbPrms.then(db => {
+  dbPrms.then(({indexedDb: db}) => {
     if (findStubsTransaction) {
       // aborts any pending call in favor of this call
       // console.warn(`Aborting previous fetchNotes transaction. New searchStr: "${searchStr}"`);
@@ -309,7 +313,7 @@ function compareByDate(itemA, itemB) {
 
 
 function getNoteDb(id) {
-  return dbPrms.then(db => {
+  return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', "readonly");
       const itemStore = transaction.objectStore("note");
@@ -327,7 +331,7 @@ function getNoteDb(id) {
 }
 
 function upsertNoteDb(cleanNote, initiator) {
-  return dbPrms.then(db => {
+  return dbPrms.then(({indexedDb: db}) => {
     if (!('wordArr' in cleanNote)) {
       throw new Error("wordArr required for full-text search");
     }
@@ -359,7 +363,7 @@ function upsertNoteDb(cleanNote, initiator) {
 }
 
 function deleteNoteDb(id) {
-  return dbPrms.then(db => {
+  return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', "readwrite");
       const itemStore = transaction.objectStore("note");
@@ -393,7 +397,7 @@ function deleteNoteDb(id) {
 
 
 function findFillerNoteIds() {
-  return dbPrms.then(db => {
+  return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('note', 'readonly');
       transaction.onerror = function (evt) {
@@ -457,7 +461,7 @@ async function checkpointSearch(searchWords, searchStr) {
 }
 
 async function incrementCount(searchWords, searchStr, now) {
-  const db = await dbPrms;
+  const {indexedDb: db} = await dbPrms;
   return new Promise((resolve, reject) => {
     const normalized = Array.from(searchWords.values()).sort().join(' ');
 
@@ -497,7 +501,7 @@ async function incrementCount(searchWords, searchStr, now) {
  * @return {Promise<unknown>}
  */
 async function recalculateScores(now) {
-  const db = await dbPrms;
+  const {indexedDb: db} = await dbPrms;
   return new Promise((resolve, reject) => {
     let numRecalculated = 0;
     const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
@@ -535,7 +539,7 @@ async function recalculateScores(now) {
 }
 
 async function deleteExtraSearches(numToDelete) {
-  const db = await dbPrms;
+  const {indexedDb: db} = await dbPrms;
   return new Promise((resolve, reject) => {
     let numDeleted = 0;
     const transaction = db.transaction('search', "readwrite", {durability: "relaxed"});
@@ -570,7 +574,7 @@ async function deleteExtraSearches(numToDelete) {
 }
 
 function listSuggestions(max) {
-  return dbPrms.then(db => {
+  return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
       if ('number' !== typeof max) {
         reject(new Error(`“${max}” is not a number`));
