@@ -147,6 +147,8 @@ function App() {
     };
   });
 
+  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+
   const [predefinedSearches, setPredefinedSearches] = useState([]);
 
   const combineSavedSearchesWithSuggestions = useCallback(async () => {
@@ -165,7 +167,9 @@ function App() {
   useEffect( () => {
     startup();
     async function startup() {
-      const {remoteStorage} = await init();   // init is idempotent
+      const {remoteStorage, isFirstLaunch} = await init();   // init is idempotent
+      setIsFirstLaunch(isFirstLaunch);
+
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login
@@ -446,7 +450,7 @@ function App() {
       </div>
       <div className="separator"></div>
       <div className="panel panelDetail">
-        {'DETAIL' === mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
+        {(isFirstLaunch ? 'DETAIL' === mustShowPanel : 'HELP' !== mustShowPanel) ? <Detail noteId={selectedNoteId} searchStr={searchStr}
                                              focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
                                              setMustShowPanel={setMustShowPanel}></Detail> :
             <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
