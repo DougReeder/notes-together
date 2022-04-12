@@ -3,10 +3,11 @@
 
 import {
   render,
-  screen,
+  screen, waitForElementToBeRemoved,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
+import {deleteNote} from './storage';
 import List from "./List";
 import React from "react";
 
@@ -17,7 +18,8 @@ jest.mock('./storage', () => ({
     setTimeout(() => {
       callback(null, mockStubList, {isPartial: false, isFinal: false});
     }, 4);
-  }
+  },
+  deleteNote: jest.fn().mockResolvedValue([undefined, 42]),
 }));
 
 describe("List", () => {
@@ -120,5 +122,156 @@ describe("List", () => {
 
     userEvent.keyboard('{ArrowUp}');
     expect(mockHandleSelect).toHaveBeenCalledWith('cba4c6fd-abf4-4f68-91ab-979fdf233606', null);
+  });
+
+  it("should not show item buttons on Backspace when no note selected", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId={null}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Backspace}');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show item buttons on Backspace then hide on Cancel click", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Backspace}');
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    const cancelBtn = screen.getByRole('button', {name: "Cancel"});
+    expect(cancelBtn).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+    expect(deleteNote).not.toHaveBeenCalled();
+
+    userEvent.click(cancelBtn);
+    expect(deleteNote).not.toHaveBeenCalled();
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show item buttons on Delete key then delete note on Delete click", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+    const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId={someNoteId}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Delete}');
+    const deleteBtn = screen.getByRole('button', {name: "Delete"});
+    expect(deleteBtn).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    userEvent.click(deleteBtn);
+    expect(deleteNote).toHaveBeenCalledWith(someNoteId);
+    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show item buttons on Backspace then delete on Enter", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+    const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId={someNoteId}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Backspace}');
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+    expect(deleteNote).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{Enter}');
+    expect(deleteNote).toHaveBeenCalledWith(someNoteId);
+    // mock deleteNote can't call postMessage
+  });
+
+  it("should show item buttons on Delete key then delete on Space key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+    const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId={someNoteId}
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Delete}');
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+    expect(deleteNote).not.toHaveBeenCalled();
+
+    userEvent.keyboard(' ');
+    expect(deleteNote).toHaveBeenCalledWith(someNoteId);
+    // mock deleteNote can't call postMessage
+  });
+
+  it("should show item buttons on Backspace key then close on Escape key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.keyboard('{Backspace}');
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(deleteNote).not.toHaveBeenCalled();
+
+    userEvent.keyboard('{Escape}');
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(deleteNote).not.toHaveBeenCalled();
   });
 });

@@ -200,7 +200,8 @@ function App() {
     if ('Enter' === evt.code) {
        searchRef.current?.blur();
     }
-    if (document.activeElement && document.activeElement !== document.body) {
+    if (document.activeElement && document.activeElement !== document.body &&
+        'OL' !== document.activeElement.tagName) {
       return;
     }
     switch (evt.code) {   // eslint-disable-line default-case

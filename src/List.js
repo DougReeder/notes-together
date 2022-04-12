@@ -9,7 +9,8 @@ import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
-import {Button} from "@mui/material";
+import {Button, IconButton} from "@mui/material";
+import {Cancel} from "@mui/icons-material";
 
 
 function List(props) {
@@ -19,7 +20,7 @@ function List(props) {
   const [notes, setNotes] = useState([]);
   // console.log("List props:", props, "   notes:", notes);
 
-  const [itemButtonsIds, setItemButtonIds] = useState({});
+  const [itemButtonsIds, setItemButtonsIds] = useState({});
 
   useEffect(() => {
     // console.log("launching search")
@@ -71,7 +72,7 @@ function List(props) {
 
   function handlePointerDown(evt) {
     try {
-      if (evt.target.closest("button")) {
+      if (1 !== evt.buttons || evt.target.closest("button")) {
         return;
       }
       evt.preventDefault();
@@ -83,6 +84,23 @@ function List(props) {
       setTransientErr(err);
     }
   }
+
+  const list = useRef();
+
+  const inactivateAndActivateItemButtons = useCallback(
+      (evt, newActiveId) => {
+    const newItemButtonIds = {};
+    for (const [id, isActive] of Object.entries(itemButtonsIds)) {
+      newItemButtonIds[id] = false;
+      if (isActive) { evt?.stopPropagation(); }   // Escape key handled
+    }
+    if (newActiveId) {
+      evt?.stopPropagation();
+      newItemButtonIds[newActiveId] = true;
+      list.current?.focus();
+    }
+    setItemButtonsIds(newItemButtonIds);
+  }, [itemButtonsIds]);
 
   function handlePointerUp(evt) {
     try {
@@ -99,23 +117,20 @@ function List(props) {
             handleSelect(id, 'DETAIL');
           }
         } else {   // long-press
-          const newItemButtonIds = {};
-          for (let currentId in itemButtonsIds) {
-            newItemButtonIds[currentId] = false;   // dismiss existing
-          }
-          if (!(id in newItemButtonIds)) {
-            newItemButtonIds[id] = true;
-          }
-          setItemButtonIds(newItemButtonIds);
+          inactivateAndActivateItemButtons(evt, id);
         }
       }
     } catch (err) {
       setTransientErr(err);
+    } finally {
+      pointerRef.current = {};
     }
   }
 
-  const keyListener = useCallback(evt => {
-    if (document.activeElement && document.activeElement !== document.body) {
+  const actionToConfirm = useRef('');
+
+  const documentKeyListener = useCallback(async evt => {
+    if (![document.body, list.current].includes(document.activeElement) ) {
       return;
     }
     if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
@@ -156,20 +171,28 @@ function List(props) {
       case 'Home':
         incrementSelectedNote(+1000000);
         break;
+      case 'Backspace':
+      case 'Delete':
+        actionToConfirm.current = 'DELETE';
+        // eslint-disable-next-line no-fallthrough
       case 'ContextMenu':
         if (selectedNoteId) {
-          const newItemButtonIds = {};
-          for (let currentId in itemButtonsIds) {
-            newItemButtonIds[currentId] = false;   // dismiss existing
+          inactivateAndActivateItemButtons(evt, selectedNoteId);
+        }
+        break;
+      case 'Enter':   // The App key handler also handles this - that's ok.
+      case 'Space':
+        if (itemButtonsIds[selectedNoteId]) {
+          switch (actionToConfirm.current) {   // eslint-disable-line default-case
+            case 'DELETE':
+              await deleteNote(selectedNoteId);
+              break;
           }
-          if (!(selectedNoteId in newItemButtonIds)) {
-            newItemButtonIds[selectedNoteId] = true;
-          }
-          setItemButtonIds(newItemButtonIds);
+          actionToConfirm.current = '';
         }
         break;
       // default:
-      //   console.log("List keyListener:", evt.code, evt)
+      //   console.log("List documentKeyListener:", evt.code, evt)
     }
 
     function incrementSelectedNote(increment) {
@@ -187,14 +210,56 @@ function List(props) {
         handleSelect(newId, newPanel);
       }
     }
-  }, [handleSelect, notes, selectedNoteId, itemButtonsIds]);
+  }, [handleSelect, notes, selectedNoteId, itemButtonsIds, inactivateAndActivateItemButtons]);
   useEffect(() => {
-    document.addEventListener('keydown', keyListener);
+    document.addEventListener('keydown', documentKeyListener);
 
     return function removeKeyListener(){
-      document.removeEventListener('keydown', keyListener);
+      document.removeEventListener('keydown', documentKeyListener);
     }
-  }, [keyListener]);
+  }, [documentKeyListener]);
+
+  const listKeyListener = useCallback(evt => {
+    if (evt.isComposing || evt.keyCode === 229) {
+      return;
+    }
+    switch (evt.code) {   // eslint-disable-line default-case
+      case 'Escape':
+        inactivateAndActivateItemButtons(evt, null);
+        break;
+    }
+    // return true;
+  }, [inactivateAndActivateItemButtons]);
+
+  useEffect(() => {
+    const currentList = list.current;
+    currentList?.addEventListener('keydown', listKeyListener);
+
+    return function removeListListener(){
+      currentList?.removeEventListener('keydown', listKeyListener);
+    }
+  }, [listKeyListener]);
+
+  const deleteBtn = useRef();
+  const cancelItemButtonsBtn = useRef();
+
+  const blurHandler = useCallback(evt => {
+    if ([deleteBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
+      return;
+    }
+
+    inactivateAndActivateItemButtons(evt, null);
+  }, [inactivateAndActivateItemButtons]);
+
+  useEffect(() => {
+    const currentList = list.current;
+    currentList?.addEventListener('blur', blurHandler);
+
+    return function removeListListener(){
+      currentList?.removeEventListener('blur', blurHandler);
+    }
+  }, [blurHandler])
+
 
   const selectedElmntRef = useRef(null);
 
@@ -206,7 +271,7 @@ function List(props) {
     try {
       const newItemButtonIds = Object.assign({}, itemButtonsIds);
       delete newItemButtonIds[id];
-      setItemButtonIds(newItemButtonIds);
+      setItemButtonsIds(newItemButtonIds);
     } catch (err) {
       setTransientErr(err);
     }
@@ -268,8 +333,11 @@ function List(props) {
             itemButtons = (
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
-                    <Button variant="contained" onClick={deleteItem}>Delete</Button>
+                    <Button ref={deleteBtn} variant="contained" onClick={deleteItem}>Delete</Button>
                     {/*<Button type="button">Share</Button>*/}
+                    <IconButton ref={cancelItemButtonsBtn} title="Cancel" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
+                      <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
+                    </IconButton>
                   </div>
                 </CSSTransition>);
           }
@@ -302,7 +370,7 @@ function List(props) {
     }
   }
   return (
-      <ol className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
         {listItems}
       </ol>
   );
