@@ -12,6 +12,7 @@ import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
 import {Cancel} from "@mui/icons-material";
 
+const LONG_PRESS_DURATION = 500;   // ms
 
 function List(props) {
   const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
@@ -68,23 +69,6 @@ function List(props) {
     };
   });
 
-  const pointerRef = useRef({});
-
-  function handlePointerDown(evt) {
-    try {
-      if (1 !== evt.buttons || evt.target.closest("button")) {
-        return;
-      }
-      evt.preventDefault();
-      evt.stopPropagation();
-      const noteEl = evt.target.closest("li.summary");
-      const id = noteEl?.dataset?.id;
-      pointerRef.current = {downId: id, downStamp: Date.now()};
-    } catch (err) {
-      setTransientErr(err);
-    }
-  }
-
   const list = useRef();
 
   const inactivateAndActivateItemButtons = useCallback(
@@ -102,23 +86,49 @@ function List(props) {
     setItemButtonsIds(newItemButtonIds);
   }, [itemButtonsIds]);
 
-  function handlePointerUp(evt) {
+  const pointerRef = useRef({});
+
+  function handlePointerDown(evt) {
     try {
-      if (evt.target.closest("button")) {
+      if (pointerRef.current.longPressTimeoutId) {   // long-press in progress
+        clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
+      }
+      if (1 !== evt.buttons || evt.target.closest("button")) {
         return;
       }
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
-      if (uuidValidate(id) && id === pointerRef.current.downId) {
-        if (Date.now() - pointerRef.current.downStamp < 500) {   // click
-          if (! evt.target.closest("div.itemButtons")) {
-            handleSelect(id, 'DETAIL');
-          }
-        } else {   // long-press
-          inactivateAndActivateItemButtons(evt, id);
-        }
+      pointerRef.current = uuidValidate(id) ?
+          {
+            downId: id,
+            longPressTimeoutId: setTimeout(longPress, LONG_PRESS_DURATION)
+          } :
+          {};
+      function longPress() {
+        pointerRef.current = {};
+        inactivateAndActivateItemButtons(evt, id);
+      }
+    } catch (err) {
+      setTransientErr(err);
+    }
+  }
+
+  function handlePointerUp(evt) {
+    try {
+      if (pointerRef.current.longPressTimeoutId) {   // long-press hasn't happened
+        clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
+      } else {   // long-press has happened, so this event is ignored
+        return;
+      }
+      if (evt.target.closest("button")) {
+        return;
+      }
+      evt.preventDefault();
+      evt.stopPropagation();
+      if (! evt.target.closest("div.itemButtons")) {
+        handleSelect(pointerRef.current.downId, 'DETAIL');
       }
     } catch (err) {
       setTransientErr(err);
@@ -126,6 +136,7 @@ function List(props) {
       pointerRef.current = {};
     }
   }
+
 
   const actionToConfirm = useRef('');
 
