@@ -274,4 +274,23 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
   });
+
+  it("should show item buttons on double-click", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = jest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    userEvent.dblClick(items[1]);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+  });
 });

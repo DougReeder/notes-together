@@ -137,6 +137,15 @@ function List(props) {
     }
   }
 
+  function handleClick(evt) {
+    if (2 === evt.detail) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const noteEl = evt.target.closest("li.summary");
+      const id = noteEl?.dataset?.id;
+      inactivateAndActivateItemButtons(evt, id);
+    }
+  }
 
   const actionToConfirm = useRef('');
 
@@ -381,7 +390,7 @@ function List(props) {
     }
   }
   return (
-      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
         {listItems}
       </ol>
   );
