@@ -103,12 +103,15 @@ function List(props) {
       pointerRef.current = uuidValidate(id) ?
           {
             downId: id,
-            longPressTimeoutId: setTimeout(longPress, LONG_PRESS_DURATION)
+            longPressTimeoutId: setTimeout(longPress, LONG_PRESS_DURATION),
+            downScroll: list.current?.scrollTop
           } :
           {};
       function longPress() {
+        if (Math.abs(list.current?.scrollTop - pointerRef.current?.downScroll) < 63) {
+          inactivateAndActivateItemButtons(evt, id);
+        }
         pointerRef.current = {};
-        inactivateAndActivateItemButtons(evt, id);
       }
     } catch (err) {
       setTransientErr(err);
