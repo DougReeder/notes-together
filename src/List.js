@@ -11,6 +11,7 @@ import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
 import {Cancel} from "@mui/icons-material";
+import CloseIcon from "@mui/icons-material/Close";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
@@ -312,8 +313,20 @@ function List(props) {
     }
   }
 
+  const [gettingStartedDisplayed, setGettingStartedDisplayed] = useState(true);
+
+  function hideGettingStarted(evt) {
+    evt.stopPropagation();
+    setGettingStartedDisplayed(false);
+  }
+
   const adviceGettingStarted = <>
-    <h2>Write, import or sync some notes!</h2>
+    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
+      <h2>Write, import or sync some notes!</h2>
+      <IconButton title="Close" aria-label="Close" onClick={hideGettingStarted}>
+        <CloseIcon/>
+      </IconButton>
+    </div>
     <p>To create a new note, tap the add button in the lower right of this pane. ➘
       You can paste or drag rich text and pictures into the editor pane.</p>
     <p>Drag text, Markdown, HTML or graphic files to this pane. Or from the application menu in the upper right of this pane ➚, select <b>Import ...</b></p>
@@ -379,7 +392,7 @@ function List(props) {
               </li>
       );
     }
-    if (notes.length < 16 && 0 === searchWords.size) {
+    if (notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
       listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>);
     }
   } else {
@@ -389,7 +402,9 @@ function List(props) {
         Try just the first few letters of your search word(s), or synonyms of them.
       </div>
     } else {
-      listItems = <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>;
+      listItems = gettingStartedDisplayed ?
+          <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div> :
+          null;
     }
   }
   return (

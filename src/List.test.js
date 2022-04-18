@@ -23,13 +23,35 @@ jest.mock('./storage', () => ({
 }));
 
 describe("List", () => {
-  it("should render advice when no stubs returned", async () => {
+  it("should render advice when no stubs returned, and close the advice when button clicked", async () => {
     mockStubList = [];
 
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findByRole('list');
     expect(await screen.findByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeVisible();
+
+    userEvent.click(closeBtn);
+    expect(screen.queryByRole('heading', {name: "Write, import or sync some notes!"})).toBeFalsy();
+  });
+
+
+  it("should render advice when few stubs returned, and close the advice when button clicked", async () => {
+    mockStubList = mockStubs.slice(0, 2).map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+
+    await screen.findAllByRole('listitem');
+    expect(await screen.findByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+    const closeBtn = screen.getByRole('button', {name: "Close"});
+    expect(closeBtn).toBeVisible();
+
+    userEvent.click(closeBtn);
+    expect(screen.queryByRole('heading', {name: "Write, import or sync some notes!"})).toBeFalsy();
   });
 
   it("should render note summaries & advice", async () => {
