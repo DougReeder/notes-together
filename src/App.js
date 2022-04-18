@@ -244,7 +244,7 @@ function App() {
   }
 
   function showHideHelp() {
-    setMustShowPanel(window.innerWidth < 641 || mustShowPanel === 'DETAIL' ? 'HELP' : 'DETAIL');
+    setMustShowPanel(window.innerWidth < 641 || mustShowPanel !== 'HELP' ? 'HELP' : 'DETAIL');
     setAppMenuAnchorEl(null);
   }
 
@@ -451,7 +451,7 @@ function App() {
       </div>
       <div className="separator"></div>
       <div className="panel panelDetail">
-        {(isFirstLaunch ? 'DETAIL' === mustShowPanel : 'HELP' !== mustShowPanel) ? <Detail noteId={selectedNoteId} searchStr={searchStr}
+        {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
                                              focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
                                              setMustShowPanel={setMustShowPanel}></Detail> :
             <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
