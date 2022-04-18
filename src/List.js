@@ -322,15 +322,15 @@ function List(props) {
 
   const adviceGettingStarted = <>
     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
-      <h2>Write, import or sync some notes!</h2>
+      <h2>Get routine info out of your head!</h2>
       <IconButton title="Close" aria-label="Close" onClick={hideGettingStarted}>
         <CloseIcon/>
       </IconButton>
     </div>
-    <p>To create a new note, tap the add button in the lower right of this pane. ➘
-      You can paste or drag rich text and pictures into the editor pane.</p>
-    <p>Drag text, Markdown, HTML or graphic files to this pane. Or from the application menu in the upper right of this pane ➚, select <b>Import ...</b></p>
-    <p>Tap <b>Connect Your Storage</b> below ⬇︎ to back up your notes, and sync them between devices.</p>
+    <p><b>Toss in text and pictures</b> — take a photo or use voice dictation. Paste or drag a message or article (with its pictures) into the editor pane. Drag files into the list pane.</p>
+    <p><b>Find any note</b> on any device — type any words in the note, or tap to select a saved tag.</p>
+    <p><b>Connect Your Storage</b> below︎ to take back control of your data.</p>
+    <p><b>Never spend time tidying up</b> — unless you want to!</p>
   </>;
 
   let listItems;

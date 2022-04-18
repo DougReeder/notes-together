@@ -1,7 +1,7 @@
 {
   "short_name": "Notes Together",
   "name": "Notes Together",
-  "description": "Toss text and pictures in, and get back to real life! Be confident you can find any note (out of thousands) on any device. Never spend time tidying them up — until you want to!",
+  "description": "Get routine info out of your head! Toss in text and pictures. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!",
   "icons": [
     {
       "src": "icons/NotesTogether-Icon-36x36.png",

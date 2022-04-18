@@ -439,7 +439,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       </AppBar>
       <div style={{width: '100%', height: '100%', backgroundImage: 'url(' + process.env.PUBLIC_URL + '/icons/NotesTogether-icon-gray.svg)',
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
-      <div style={{position: 'absolute', bottom: '2em', left: '0', right: '0', textAlign: 'center', color: '#616161' }}>Select a note on the left to display it in full.</div>
     </>);
   } else {
     const dateControl = editor.subtype?.startsWith('html') ?

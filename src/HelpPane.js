@@ -85,6 +85,9 @@ function HelpPane({setMustShowPanel}) {
           <li>Synonyms do <strong>not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
         </ul>
 
+        <h4>Can I change the order of notes?</h4>
+        <p>Click the date in the upper left of the editing panel and set the date earlier or later.  The date can be anything that helps you find the note.</p>
+
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
         <table className="shortcuts">
@@ -148,9 +151,6 @@ function HelpPane({setMustShowPanel}) {
             <tr><td>ctrl+' or shift+ctrl+' or ⌘' or ⇧⌘'</td><td>block quote</td></tr>
           </tbody>
         </table>
-
-        <h4>Can I change the order of notes?</h4>
-        <p>Click the date in the upper left of the editing panel and set the date earlier or later.</p>
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>

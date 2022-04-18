@@ -29,12 +29,12 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findByRole('list');
-    expect(await screen.findByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+    expect(await screen.findByRole('heading', {name: "Get routine info out of your head!"})).toBeVisible();
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Write, import or sync some notes!"})).toBeFalsy();
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).toBeFalsy();
   });
 
 
@@ -46,12 +46,12 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findAllByRole('listitem');
-    expect(await screen.findByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+    expect(await screen.findByRole('heading', {name: "Get routine info out of your head!"})).toBeVisible();
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Write, import or sync some notes!"})).toBeFalsy();
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).toBeFalsy();
   });
 
   it("should render note summaries & advice", async () => {
@@ -77,7 +77,7 @@ describe("List", () => {
     expect(items[6].className).toEqual("divider");
     expect(items[6].textContent).toEqual("August 2020");
 
-    expect(screen.getByRole('heading', {name: "Write, import or sync some notes!"})).toBeVisible();
+    expect(screen.getByRole('heading', {name: "Get routine info out of your head!"})).toBeVisible();
   });
 
   it("should switch to displaying Details on first down arrow", async () => {
