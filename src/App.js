@@ -147,8 +147,6 @@ function App() {
     };
   });
 
-  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
-
   const [predefinedSearches, setPredefinedSearches] = useState([]);
 
   const combineSavedSearchesWithSuggestions = useCallback(async () => {
@@ -167,8 +165,7 @@ function App() {
   useEffect( () => {
     startup();
     async function startup() {
-      const {remoteStorage, isFirstLaunch} = await init();   // init is idempotent
-      setIsFirstLaunch(isFirstLaunch);
+      const {remoteStorage} = await init();   // init is idempotent
 
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);

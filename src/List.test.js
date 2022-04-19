@@ -7,13 +7,16 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
+import auto from "fake-indexeddb/auto.js";
 import {deleteNote} from './storage';
 import List from "./List";
 import React from "react";
 
 let mockStubList = [];
+let mockIsFirstLaunch = false;
 
 jest.mock('./storage', () => ({
+  init: () => {return Promise.resolve({isFirstLaunch: mockIsFirstLaunch})},
   findStubs: (searchWords, callback) => {
     setTimeout(() => {
       callback(null, mockStubList, {isPartial: false, isFinal: false});
@@ -23,7 +26,8 @@ jest.mock('./storage', () => ({
 }));
 
 describe("List", () => {
-  it("should render advice when no stubs returned, and close the advice when button clicked", async () => {
+  it("should render advice when no stubs returned on first launch, and close the advice when button clicked", async () => {
+    mockIsFirstLaunch = true;
     mockStubList = [];
 
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
@@ -34,11 +38,12 @@ describe("List", () => {
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).toBeFalsy();
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).not.toBeInTheDocument();
   });
 
 
-  it("should render advice when few stubs returned, and close the advice when button clicked", async () => {
+  it("should render advice when few stubs returned on first launch, and close the advice when button clicked", async () => {
+    mockIsFirstLaunch = true;
     mockStubList = mockStubs.slice(0, 2).map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -51,7 +56,32 @@ describe("List", () => {
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).toBeFalsy();
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).not.toBeInTheDocument();
+  });
+
+  it("should not render advice when no stubs returned on later launch", async () => {
+    mockIsFirstLaunch = false;
+    mockStubList = [];
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+
+    await screen.findByRole('list');
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: "Close"})).not.toBeInTheDocument();
+  });
+
+
+  it("should not render advice when few stubs returned on later launch", async () => {
+    mockIsFirstLaunch = false;
+    mockStubList = mockStubs.slice(0, 2).map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+
+    await screen.findByRole('list');
+    expect(screen.queryByRole('heading', {name: "Get routine info out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: "Close"})).not.toBeInTheDocument();
   });
 
   it("should render note summaries & advice", async () => {
@@ -76,8 +106,6 @@ describe("List", () => {
     expect(items[5].textContent).toEqual("A shallow cash-grab.  More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world. The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.");
     expect(items[6].className).toEqual("divider");
     expect(items[6].textContent).toEqual("August 2020");
-
-    expect(screen.getByRole('heading', {name: "Get routine info out of your head!"})).toBeVisible();
   });
 
   it("should switch to displaying Details on first down arrow", async () => {

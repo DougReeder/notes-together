@@ -3,7 +3,7 @@
 
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
-import {findStubs, deleteNote} from "./storage";
+import {findStubs, deleteNote, init} from "./storage";
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
@@ -313,6 +313,16 @@ function List(props) {
     }
   }
 
+  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+
+  useEffect( () => {
+    checkFirstLaunch();
+    async function checkFirstLaunch() {
+      const {isFirstLaunch} = await init();   // init is idempotent
+      setIsFirstLaunch(isFirstLaunch);
+    }
+  }, []);
+
   const [gettingStartedDisplayed, setGettingStartedDisplayed] = useState(true);
 
   function hideGettingStarted(evt) {
@@ -392,7 +402,7 @@ function List(props) {
               </li>
       );
     }
-    if (notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
+    if (isFirstLaunch && notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
       listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>);
     }
   } else {
@@ -402,7 +412,7 @@ function List(props) {
         Try just the first few letters of your search word(s), or synonyms of them.
       </div>
     } else {
-      listItems = gettingStartedDisplayed ?
+      listItems = isFirstLaunch && gettingStartedDisplayed ?
           <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div> :
           null;
     }
