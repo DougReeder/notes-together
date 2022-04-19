@@ -613,7 +613,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
             key={editableKey}   // change the key to restart editor w/ new editorValue
             renderElement={renderElement}
             renderLeaf={renderLeaf}
-            placeholder="Type, or paste some rich text or a graphic."
+            placeholder="Type, or paste or drag some text or a picture."
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               switch (evt.key) {   // eslint-disable-line default-case

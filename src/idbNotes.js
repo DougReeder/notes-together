@@ -53,7 +53,7 @@ function initDb(dbName = dbNameDefault) {
         searchStore.createIndex('byScore', 'score', {unique: false});
       }
       if (evt.oldVersion < 3) {
-        createWelcomeNotes(evt.target.transaction);
+        createWelcomeNote(evt.target.transaction);
       }
     };
 
@@ -76,85 +76,72 @@ function initDb(dbName = dbNameDefault) {
   return dbPrms;
 }
 
-function createWelcomeNotes(transaction) {
-  const now = Date.now();
+function createWelcomeNote(transaction) {
   let random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256)];
-  const idRS = uuidv4({random});
-  const rsContent = `
+  const idTut = uuidv4({random});
+
+  const tutorialContent = `
+<h1>Welcome to Notes Together!</h1>
+<p>Create <b>headings</b>, <b>lists</b>, and <b>block quotes</b> using the <i>Block Type</i> menu above. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
+<p>To start typing <b>bold</b> or <i>italic</i> text, select from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</p>
+<p><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</p>
+<p>To <b>Undo</b> or <b>Redo</b>, use the <i>Editor menu</i> <b>⋮</b>︎. <b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste Files...</i>.</p>
+<p><b>Insert links</b> by dragging the URL (or the icon next to it) from a browser. Right-click to follow links.</p>
+<p><b>Keyboard shortcuts</b> are listed in <i>Help</i> in the Application menu ☰.</p>
+<p><i>Try out the editor features with this note, and delete it when you're finished.</i></p>
+<hr>
+
 <h1>Why remoteStorage?</h1>
 <p><a href="https://remotestorage.io/" target="_blank"  rel="noreferrer">remoteStorage</a> is a protocol that puts you in control of your data.</p>
 <ul>
 <li>If you stop using an app, your data won't be deleted.  Whenever you like, you can start using the app again, and your data will be there.</li>
 <li>If an app shuts down, your data won't be deleted. If an app changes in ways you don't like, you can deny permission for it to use your data. If there's a successor app (from the same or a different organization) you can choose whether to let it use your data.</li>
-<li>The data from one app can be used by other apps (with <b>your</b> permission). The other apps <b>don't</b> need permission from the first app.</li>
+<li>The data from one app can be used by other apps, with <b>your</b> permission. The other apps <b>don't</b> need permission from the first app.</li>
 <li>Your data is available on any OS or device - you're not locked in.</li>
-<li>You choose which provider stores your data online, and can move to another provider at any time. You (or a friend) could set up your own server.</li>
+<li>You choose which provider stores your data online, and can move to another provider at any time. You (or a friend) could even set up your own server.</li>
 <li>You can use one remoteStorage account with many apps, so you have fewer passwords to remember.</li>
 </ul>
-<p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, your data will be synced.</p>
+<p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
 <ol>
 <li>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a>.</li>
 <li>Use the widget in the lower left of the list pane to connect.</li>
 </ol>
-<p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with an older note-taking app called Litewrite.</p>
+<p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>
 <hr>
-<p>You can delete this note whenever you like.</p>
 <p><em>remote storage</em></p>`;
 
-  const rsNote = createMemoryNote(idRS, rsContent, new Date(now - 1_000), 'text/html;hint=SEMANTIC');
-  rsNote.title = "Why remoteStorage?";
-  rsNote.wordArr = [ "WHY", "REMOTESTORAGE", "PROTOCOL", "IN", "CONTROL",
+  const tutorialNote = createMemoryNote(idTut, tutorialContent, new Date('2013-07-01T12:00Z'), 'text/html;hint=SEMANTIC');
+  tutorialNote.title = "Welcome to Notes Together!\nWhy remoteStorage?";
+  tutorialNote.wordArr = ["WELCOME", "NOTES", "TOGETHER", "TYPE", "MENU",
+    "CREATE", "HEADINGS", "LISTS", "QUOTES", "BLOCKS", "SELECTING",
+    "EXISTING", "TEXT", "STYLE", "BOLD", "ITALIC", "DATE", "CHANGE",
+    "FIND", "ORDER", "EDITOR", "PERMISSION",
+    "UNDO", "REDO", "PASTE", "FILES", "PLAIN", "MARKUP", "MARKDOWN",
+    "IMPORTING", "RICH", "WYSIWYG", "CHANGING", "CONVERT", "COMMONMARK",
+    "RIGHTCLICK", "FOLLOW", "LINKS", "PREVIOUS", "PARAGRAPH",
+    "KEYBOARD", "SHORTCUTS", "COMMANDS", "HELP", "APPLICATION",
+    "FEATURES", "DELETE", "FINISHED", "TUTORIAL",
+
+    "WHY", "REMOTESTORAGE", "PROTOCOL", "IN", "CONTROL",
     "YOUR", "DATA", "ONE", "ACCOUNT", "APPS", "FEWER", "PASSWORDS", "REMEMBER",
     "KINDS", "REVOKE", "ACCESS", "AT", "ANY", "TIME", "STILL", "AVAILABLE",
     "STOP", "USING", "SHUT", "DOWN", "START", "AGAIN", "DEFUNCT", "SUCCESSORS",
     "OS", "LOCKED",
     "CHOOSE", "PROVIDER", "STORES", "ONLINE", "FRIEND", "SET", "UP",
     "OWN", "SERVER", "AUTOMATICALLY", "SYNCS", "BETWEEN", "DEVICES",
-    "WORK", "OFFLINE", "BACK", "SYNCED", "NOTES", "TOGETHER", "CREATE",
-    "WIDGET", "LOWER", "LEFT", "LIST", "PANE", "CONNECT",
+    "WORK", "OFFLINE", "BACK", "SYNCED",
+    "WIDGET", "LOWER", "LEFT", "PANE", "CONNECT",
     "DOCUMENTS", "DIRECTORY", "COMPATABILITY", "OLDER", "NOTETAKING",
-    "LITEWRITE", "DELETE", "WHENEVER", "LIKE", "STORAGE", "CHOICE"
-  ];
-
-  random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256)];
-  const idTut = uuidv4({random});
-
-  const tutorialContent = `
-<h1>Welcome to Notes Together!</h1>
-<p>Select from the <i>Block Type</i> menu ⬆︎ to create headings, lists, block quotes and monospaced blocks. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
-<p>Select from the <i>Text Style</i> menu ➚ to start typing bold or italic text. Or select text, then select from the Text Style menu.</p>
-<p>Click on the date ↖ to change the associated date and re-order your notes.</p>
-<p>Select from the <i>Editor menu</i> <b>⋮</b>︎ to <b>Undo</b>, <b>Redo</b>, <b>Paste files</b> into the editor (that's how you insert a picture or diagram), or <b>Change note type</b>.</p>
-<p><i>Plain Text</i> notes have no markup. <i>Markdown</i> notes are available for those who are more productive with it, and for importing Markdown files. <i>Rich Text</i> notes are What You See Is What You Get (WYSIWYG). Changing the note type will convert the markup to the closest available. Markdown is interpreted as <a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">CommonMark 1.0</a>.</p>
-<p>Right-click to follow links, like the one in the previous paragraph.</p>
-<p>There are keyboard shortcuts for most of the above commands. To see them, select <b>Help</b> from the Application menu ☰ and scroll down.</p>
-<hr>
-<p>You can try out the editor features with this note, and delete it when you're finished!</p>
-<p><em>tutorial</em></p>`;
-
-  const tutorialNote = createMemoryNote(idTut, tutorialContent, new Date(now), 'text/html;hint=SEMANTIC');
-  tutorialNote.title = "Welcome to Notes Together!";
-  tutorialNote.wordArr = ["WELCOME", "NOTES", "TOGETHER", "TYPE", "MENU",
-    "CREATE", "HEADINGS", "LISTS", "QUOTES", "BLOCKS", "SELECTING",
-    "TEXT", "STYLE", "BOLD", "ITALIC", "DATE", "CHANGE",
-    "UNDO", "REDO", "PASTE", "FILES", "PLAIN", "MARKUP", "MARKDOWN",
-    "IMPORTING", "RICH", "WYSIWYG", "CHANGING", "CONVERT", "COMMONMARK",
-    "RIGHTCLICK", "FOLLOW", "LINKS", "PREVIOUS", "PARAGRAPH",
-    "KEYBOARD", "SHORTCUTS", "COMMANDS", "HELP", "APPLICATION",
-    "FEATURES", "DELETE", "FINISHED", "TUTORIAL"
+    "LITEWRITE", "WHENEVER", "LIKE", "STORAGE", "CHOICE"
   ];
 
   const noteStore = transaction.objectStore("note");
-  const putRequestRs = noteStore.put(rsNote);
-  putRequestRs.onsuccess = function () {
     const putRequestTut = noteStore.put(tutorialNote);
-    putRequestTut.onsuccess = function (evt) {
-      console.info("Orientation notes created");
+    putRequestTut.onsuccess = function () {
+      console.info("Orientation note created");
     };
     putRequestTut.onerror = orientationNoteFail;
-  };
-  putRequestRs.onerror = orientationNoteFail;
   function orientationNoteFail(evt) {
     console.error("IDB create orientation note:", evt.target.error);
   }
