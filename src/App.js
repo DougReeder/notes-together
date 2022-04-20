@@ -95,7 +95,7 @@ function App() {
   }
 
   const focusOnLoad = useRef(false);   // no re-render when changed
-  async function addNote() {
+  const addNote = useCallback(async () => {
     try {
       const initialText = searchStr.trim() ? `<h1></h1><p></p><hr /><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
       const newNote = createMemoryNote(null, initialText, null, 'text/html;hint=SEMANTIC');
@@ -107,7 +107,8 @@ function App() {
     } catch (err) {
       setTransientErr(err);
     }
-  }
+  }, [searchStr]);
+
   const clearFocusOnLoad = useCallback(() => {
     focusOnLoad.current = false;   // reference, so doesn't cause re-render
   }, []);
@@ -165,7 +166,12 @@ function App() {
   useEffect( () => {
     startup();
     async function startup() {
-      const {remoteStorage} = await init();   // init is idempotent
+      const {remoteStorage, isFirstLaunch} = await init();   // init is idempotent
+      if (isFirstLaunch && window.innerWidth >= 641) {
+        requestIdleCallback(async () => {
+          await addNote();
+        });
+      }
 
       console.log("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
@@ -173,7 +179,7 @@ function App() {
 
       await combineSavedSearchesWithSuggestions();
      }
-   }, [combineSavedSearchesWithSuggestions]);
+   }, [combineSavedSearchesWithSuggestions, addNote]);
 
 
   const keyListener = useCallback(evt => {
