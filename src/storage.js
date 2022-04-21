@@ -126,13 +126,13 @@ async function changeHandler(evt) {
         switch (evt.origin) {   // eslint-disable-line default-case
           case 'remote':
             console.info("remoteStorage incoming savedSearch", evt.relativePath, evt.oldValue, evt.newValue);
-            window.postMessage({kind: 'SAVED_SEARCH_CHANGE'}, window?.location?.origin);
+            window.postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
             break;
           case 'conflict':
             console.warn("remoteStorage incoming savedSearch conflict", evt.relativePath, evt.lastCommonValue, evt.oldValue, evt.newValue);
             requestIdleCallback(async () => {
-              await saveSearch(parseWords(evt.newValue.original), evt.newValue.original);
-              window.postMessage({kind: 'SAVED_SEARCH_CHANGE'}, window?.location?.origin);
+              await saveTag(parseWords(evt.newValue.original), evt.newValue.original);
+              window.postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
             });
             break;
         }
@@ -296,26 +296,26 @@ function normalizeWord(word) {
 }
 
 
-async function saveSearch(searchWords, searchStr) {
+async function saveTag(searchWords, searchStr) {
   searchStr = searchStr.trim();
 
   const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
 
   const remoteStorage = await remotePrms;
-  return await remoteStorage.documents.upsertSavedSearch(normalizedSearchStr, searchStr);
+  return await remoteStorage.documents.upsertTag(normalizedSearchStr, searchStr);
 }
 
-async function deleteSavedSearch(searchWords) {
+async function deleteTag(searchWords) {
   const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
   const remoteStorage = await remotePrms;
-  return await remoteStorage.documents.deleteSavedSearch(normalizedSearchStr);
+  return await remoteStorage.documents.deleteTag(normalizedSearchStr);
 }
 
-async function listSavedSearches() {
+async function listTags() {
   const remoteStorage = await remotePrms;
-  const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
-  originalSearches.sort( (a, b) => a.localeCompare(b));
-  return {originalSearches, normalizedSearches};
+  const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
+  originalTags.sort( (a, b) => a.localeCompare(b));
+  return {originalTags, normalizedTags};
 }
 
-export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveSearch, deleteSavedSearch, listSavedSearches};
+export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};

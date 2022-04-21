@@ -204,77 +204,77 @@ describe("RemoteNotes", () => {
     });
   });
 
-  describe("upsertSavedSearch", () => {
+  describe("upsertTag", () => {
     it("should reject a normalized search that is not a string", async () => {
-      await expect(remoteStorage.documents.upsertSavedSearch(undefined, "foo")).rejects.toThrow(/normalized/);
+      await expect(remoteStorage.documents.upsertTag(undefined, "foo")).rejects.toThrow(/normalized/);
     });
 
     it("should reject a normalized search with no characters", async () => {
       const original = '%%';
       const normalized = '';
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
     });
 
     it("should reject a normalized search with one character", async () => {
       const original = '"a"';
       const normalized = 'A';
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
     });
 
     it("should reject a normalized search with 101 characters", async () => {
       const original = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890z";
       const normalized = Array.from(parseWords(original)).sort().join(' ');
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).rejects.toThrow(Error);
+      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
     });
 
     it("should reject an original search that is not a string", async () => {
-      await expect(remoteStorage.documents.upsertSavedSearch('FOO', undefined)).rejects.toThrow(/original/);
+      await expect(remoteStorage.documents.upsertTag('FOO', undefined)).rejects.toThrow(/original/);
     });
 
     it("should accept a good normalized & original and allow overwriting", async () => {
       const original = "play  group ";
       const normalized = "GROUP PLAY"
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).resolves.toEqual(normalized);
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, "Group Play")).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(normalized, original)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(normalized, "Group Play")).resolves.toEqual(normalized);
     });
   });
 
-  describe("getAllSavedSearches", () => {
-    it("should return an array of original searches & a Set of normalized searches", async () => {
+  describe("getAllTags", () => {
+    it("should return an array of original tags & a Set of normalized tags", async () => {
       const original = "play  group ";
       const normalized = "GROUP PLAY"
-      await remoteStorage.documents.upsertSavedSearch(normalized, original);
+      await remoteStorage.documents.upsertTag(normalized, original);
 
-      const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
-      expect(originalSearches).toBeInstanceOf(Array);
-      expect(originalSearches).toEqual([original.trim()]);
-      expect(normalizedSearches).toBeInstanceOf(Set);
-      expect(normalizedSearches).toEqual(new Set([normalized]));
+      const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
+      expect(originalTags).toBeInstanceOf(Array);
+      expect(originalTags).toEqual([original.trim()]);
+      expect(normalizedTags).toBeInstanceOf(Set);
+      expect(normalizedTags).toEqual(new Set([normalized]));
     })
   });
 
-  describe("deleteSavedSearch", () => {
+  describe("deleteTag", () => {
     it("should reject a normalized search that is not a string", async () => {
-      await expect(remoteStorage.documents.deleteSavedSearch(undefined)).rejects.toThrow(/normalized/);
+      await expect(remoteStorage.documents.deleteTag(undefined)).rejects.toThrow(/normalized/);
     });
 
     it("should reject a normalized search with no characters", async () => {
       const normalized = '';
-      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).rejects.toThrow(Error);
+      await expect(remoteStorage.documents.deleteTag(normalized)).rejects.toThrow(Error);
     });
 
-    it("should remove the indicated saved search and do nothing if it doesn't exist", async () => {
+    it("should remove the indicated tag and do nothing if it doesn't exist", async () => {
       const original = "play  group ";
       const normalized = "GROUP PLAY"
-      await expect(remoteStorage.documents.upsertSavedSearch(normalized, original)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(normalized, original)).resolves.toEqual(normalized);
 
-      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(normalized)).resolves.toEqual(normalized);
 
-      const {originalSearches, normalizedSearches} = await remoteStorage.documents.getAllSavedSearches();
-      expect(originalSearches).toEqual([]);
-      expect(normalizedSearches).toEqual(new Set());
+      const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
+      expect(originalTags).toEqual([]);
+      expect(normalizedTags).toEqual(new Set());
 
-      await expect(remoteStorage.documents.deleteSavedSearch(normalized)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(normalized)).resolves.toEqual(normalized);
     });
   });
 });

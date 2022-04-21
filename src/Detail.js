@@ -428,7 +428,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         <Toolbar>{outBtn}</Toolbar>
       </AppBar>
       <Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
-        <AlertTitle>{noteErr?.userMsg || "Restart your device"}</AlertTitle>
+        <AlertTitle>{noteErr?.userMsg || "Restart your browser"}</AlertTitle>
         {noteErr?.message || noteErr?.name || noteErr?.toString()}
       </Alert>
     </>;

@@ -9,6 +9,6 @@ export function extractUserMessage(err) {
   } else if (err?.message) {
     return err.message;
   } else {
-    return "Restart your device";
+    return "Restart your browser";
   }
 }

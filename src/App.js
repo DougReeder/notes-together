@@ -4,7 +4,7 @@ import {
   upsertNote, deleteNote,
   parseWords,
   checkpointSearch, listSuggestions,
-  saveSearch, deleteSavedSearch, listSavedSearches
+  saveTag, deleteTag, listTags
 } from './storage';
 import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
@@ -31,7 +31,7 @@ import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import {visualViewportMatters} from "./util";
 import HelpPane from "./HelpPane";
-import {Delete, Help, SavedSearch, SearchOff} from "@mui/icons-material";
+import {Delete, DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
 
@@ -68,7 +68,11 @@ function App() {
     return {searchStr, searchWords};
   }, [searchParams]);
   const onSearchChange = evt => {
-    setSearchParams(new URLSearchParams({words: evt.target.value?.trimLeft()}));
+    let words = evt.target.value?.trimLeft();
+    if (words.startsWith("━━━━━━━")) {
+      words = "";
+    }
+    setSearchParams(new URLSearchParams({words}));
   }
 
   const [count, setCount] = useState(" ");
@@ -126,11 +130,11 @@ function App() {
           setSelectedNoteId(null);
         }
         break;
-      case 'SAVED_SEARCH_CHANGE':
-        combineSavedSearchesWithSuggestions();
+      case 'TAG_CHANGE':
+        combineTagsWithSuggestions();
         break;
       case 'TRANSIENT_MSG':
-        enqueueSnackbar(evt.data?.message || "Restart your device", {
+        enqueueSnackbar(evt.data?.message || "Restart your browser", {
           anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
           autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 3000 : 8000,
@@ -150,17 +154,20 @@ function App() {
 
   const [predefinedSearches, setPredefinedSearches] = useState([]);
 
-  const combineSavedSearchesWithSuggestions = useCallback(async () => {
-    const {originalSearches, normalizedSearches} = await listSavedSearches();
+  const combineTagsWithSuggestions = useCallback(async () => {
+    const {originalTags, normalizedTags} = await listTags();
+    if (originalTags.length > 0) {
+      originalTags.push("━━━━━━━━━━━━");
+    }
 
     const suggestions = await listSuggestions(100);
     for (const [original, normalized] of suggestions) {
-      if (! normalizedSearches.has(normalized)) {
-        originalSearches.push(original);
+      if (! normalizedTags.has(normalized)) {
+        originalTags.push(original);
       }
     }
-    // console.log("predefined searches:", originalSearches)
-    setPredefinedSearches(originalSearches);
+    // console.log("predefined searches:", originalTags)
+    setPredefinedSearches(originalTags);
   }, []);
 
   useEffect( () => {
@@ -177,9 +184,9 @@ function App() {
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login
 
-      await combineSavedSearchesWithSuggestions();
+      await combineTagsWithSuggestions();
      }
-   }, [combineSavedSearchesWithSuggestions, addNote]);
+   }, [combineTagsWithSuggestions, addNote]);
 
 
   const keyListener = useCallback(evt => {
@@ -234,7 +241,7 @@ function App() {
   async function handleSearchBlur() {
     if (! setEquals(searchWords, lastCheckpointRef.current)) {
       await checkpointSearch(searchWords, searchStr);
-      await combineSavedSearchesWithSuggestions();
+      await combineTagsWithSuggestions();
     }
     lastCheckpointRef.current = searchWords;
   }
@@ -312,23 +319,23 @@ function App() {
     }
   }
 
-  async function handleSaveSearch() {
+  async function handleSaveTag() {
     try {
       setAppMenuAnchorEl(null);
-      await saveSearch(searchWords, searchStr);
-      await combineSavedSearchesWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved “${searchStr}”`, severity: 'success'}, window?.location?.origin);
+      await saveTag(searchWords, searchStr);
+      await combineTagsWithSuggestions();
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved tag “${searchStr}”`, severity: 'success'}, window?.location?.origin);
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
     }
   }
 
-  async function handleDeleteSavedSearch() {
+  async function handleDeleteTag() {
     try {
       setAppMenuAnchorEl(null);
-      await deleteSavedSearch(searchWords);
-      await combineSavedSearchesWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted “${searchStr}”`, severity: 'success'}, window?.location?.origin);
+      await deleteTag(searchWords);
+      await combineTagsWithSuggestions();
+      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted tag “${searchStr}”`, severity: 'success'}, window?.location?.origin);
       setSearchParams(new URLSearchParams());
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
@@ -407,8 +414,7 @@ function App() {
       <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
         <AppBar position="sticky" className={classes.appbar}>
           <Toolbar>
-            <input type="search" placeholder="Enter search word(s)"
-                   title="Enter the first several letters of one or more search words." maxLength={1000}
+            <input type="search" placeholder="Enter search or select tag" maxLength={1000}
                    value={searchStr} list="searchSuggestions" enterKeyHint="Search" ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
             <datalist id="searchSuggestions">
               {predefinedSearches.map(search => (<option value={search} key={search}/>))}
@@ -433,8 +439,8 @@ function App() {
               <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
-              <MenuItem onClick={handleSaveSearch}>Save search <SavedSearch/></MenuItem>
-              <MenuItem onClick={handleDeleteSavedSearch}>Delete saved search <SearchOff/></MenuItem>
+              <MenuItem onClick={handleSaveTag}>Save tag (category)<Label/></MenuItem>
+              <MenuItem onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
               <MenuItem onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
@@ -446,7 +452,7 @@ function App() {
         <Fab onClick={addNote} color="primary" title="Create new note"><AddIcon /></Fab>
         <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
           <Alert onClose={handleSnackbarClose} severity="error">
-            <AlertTitle>{transientErr?.userMsg || "Restart your device"}</AlertTitle>
+            <AlertTitle>{transientErr?.userMsg || "Restart your browser"}</AlertTitle>
             {transientErr?.message || transientErr?.name || transientErr?.toString()}
           </Alert>
         </Snackbar>

@@ -169,17 +169,17 @@ const RemoteNotes = {
           subscriptions.delete(callback);
         },
 
-        // available as remoteStorage.documents.upsertSavedSearch();
-        upsertSavedSearch: async function (normalized, original) {
-          console.debug("documents.upsertSavedSearch", normalized, original);
+        // available as remoteStorage.documents.upsertTag();
+        upsertTag: async function (normalized, original) {
+          console.debug("documents.upsertTag", normalized, original);
           if ('string' !== typeof normalized) {
             throw new Error("normalized must be string");
           }
           if (normalized.length < 2) {
-            throw Object.assign(new Error("Saved Search must be 2 or more characters"), {severity: 'info'});
+            throw Object.assign(new Error("Tag must be 2 or more characters"), {severity: 'info'});
           }
           if (normalized.length > 100) {
-            throw Object.assign(new Error("Saved Search must be 100 or less characters"), {severity: 'warning'});
+            throw Object.assign(new Error("Tag must be 100 or less characters"), {severity: 'warning'});
           }
           if ('string' !== typeof original) {
             throw new Error("original must be string");
@@ -189,38 +189,38 @@ const RemoteNotes = {
           return normalized;
         },
 
-        deleteSavedSearch: async function (normalized) {
+        deleteTag: async function (normalized) {
           if ('string' !== typeof normalized) {
             throw new Error("normalized must be string");
           }
           if (0 === normalized.length) {
-            throw Object.assign(new Error("First, select the Saved search"), {severity: 'info'});
+            throw Object.assign(new Error("First, select the tag"), {severity: 'info'});
           }
           const path = SAVED_SEARCH_PATH + normalized;
           await privateClient.remove(path);
           return normalized;
         },
 
-        getAllSavedSearches: async function () {
-          const originalSearches = [];
-          const normalizedSearches = new Set();
+        getAllTags: async function () {
+          const originalTags = [];
+          const normalizedTags = new Set();
           try {
-            const savedSearches = await privateClient.getAll(SAVED_SEARCH_PATH);
-            for (const normalized in savedSearches) {
-              normalizedSearches.add(normalized);
+            const tags = await privateClient.getAll(SAVED_SEARCH_PATH);
+            for (const normalized in tags) {
+              normalizedTags.add(normalized);
               try {
-                const original = savedSearches[normalized].original.trim();
-                originalSearches.push(original || normalized);
+                const original = tags[normalized].original.trim();
+                originalTags.push(original || normalized);
               } catch (err) {
-                console.error(`while extracting saved search “${normalized}”:`, err);
-                originalSearches.push(normalized);
+                console.error(`while extracting tag “${normalized}”:`, err);
+                originalTags.push(normalized);
               }
             }
           } catch (err) {
-            console.error("while retrieving saved searches:", err);
-            window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't retrieve saved searches", severity: 'error'}, window?.location?.origin);
+            console.error("while retrieving tags:", err);
+            window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't retrieve tags", severity: 'error'}, window?.location?.origin);
           }
-          return {originalSearches, normalizedSearches};
+          return {originalTags: originalTags, normalizedTags: normalizedTags};
         },
       }
     }

@@ -26,7 +26,7 @@ function initDb(dbName = dbNameDefault) {
       if (evt.target.error?.name === 'InvalidStateError') {
         err.userMsg = "Private Browsing mode prohibits storing anything.  Run Notes Together in a non-private window.";
       } else {
-        err.userMsg = "Restart your device. Can't open database.";
+        err.userMsg = "Restart your browser. Can't open database.";
       }
       reject(err);
     };

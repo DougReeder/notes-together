@@ -12,8 +12,8 @@ import {
   deleteNote,
   findStubs,
   changeHandler,
-  saveSearch,
-  listSavedSearches, deleteSavedSearch
+  saveTag,
+  listTags, deleteTag
 } from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
@@ -687,7 +687,7 @@ Finance: we can't afford it.`);
       });
 
       expect(window.postMessage).toHaveBeenCalledTimes(1);
-      expect(window.postMessage).toHaveBeenCalledWith({kind: 'SAVED_SEARCH_CHANGE'}, expect.anything());
+      expect(window.postMessage).toHaveBeenCalledWith({kind: 'TAG_CHANGE'}, expect.anything());
     });
 
     it("should create a savedSearch from incoming conflict", async () => {
@@ -711,12 +711,12 @@ Finance: we can't afford it.`);
         });
       });
 
-      const {originalSearches, normalizedSearches} = await listSavedSearches();
-      expect(originalSearches[0]).toEqual(original.trim());
-      expect(originalSearches.length).toEqual(1);
-      expect(normalizedSearches.values().next().value).toEqual(Array.from(parseWords(original)).sort().join(' '))
+      const {originalTags, normalizedTags} = await listTags();
+      expect(originalTags[0]).toEqual(original.trim());
+      expect(originalTags.length).toEqual(1);
+      expect(normalizedTags.values().next().value).toEqual(Array.from(parseWords(original)).sort().join(' '))
       expect(window.postMessage).toHaveBeenCalledTimes(1);
-      expect(window.postMessage).toHaveBeenCalledWith({kind: 'SAVED_SEARCH_CHANGE'}, expect.anything());
+      expect(window.postMessage).toHaveBeenCalledWith({kind: 'TAG_CHANGE'}, expect.anything());
     });
   });
 
@@ -1091,99 +1091,99 @@ Finance: we can't afford it.`);
   });
 
 
-  describe("saveSearch", () => {
+  describe("saveTag", () => {
     it("should reject searchWords that aren't a Set", async () => {
-      await expect(saveSearch(undefined, "foo")).rejects.toThrow(Error);
+      await expect(saveTag(undefined, "foo")).rejects.toThrow(Error);
     });
 
     it("should reject searchWords with zero words", async () => {
-      await expect(saveSearch(new Set(), "foo")).rejects.toThrow(Error);
+      await expect(saveTag(new Set(), "foo")).rejects.toThrow(Error);
     });
 
     it("should reject a non-string search", async () => {
-      await expect(saveSearch(new Set(["BAR"]))).rejects.toThrow(Error);
+      await expect(saveTag(new Set(["BAR"]))).rejects.toThrow(Error);
     });
 
     it("should reject a blank search", async () => {
-      await expect(saveSearch(new Set(), '   ')).rejects.toThrow(/\b2\b/);
+      await expect(saveTag(new Set(), '   ')).rejects.toThrow(/\b2\b/);
     });
 
     it("should reject a search with no letters", async () => {
       const searchStr = "%% ";
       const searchWords = parseWords(searchStr);
-      await expect(saveSearch(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
+      await expect(saveTag(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
     });
 
     it("should reject a search with one letter", async () => {
       const searchStr = '"a"';
       const searchWords = parseWords(searchStr);
-      await expect(saveSearch(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
+      await expect(saveTag(searchWords, searchStr)).rejects.toThrow(/\b2\b/);
     });
 
     it("should reject a 1-character search", async () => {
-      await expect(saveSearch(new Set(["X"]), 'x')).rejects.toThrow(/\b2\b/);
+      await expect(saveTag(new Set(["X"]), 'x')).rejects.toThrow(/\b2\b/);
     });
     it("should reject a 101-character search", async () => {
       const searchStr = '12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901';
-      await expect(saveSearch(new Set([searchStr]), searchStr)).rejects.toThrow(/\b100\b/);
+      await expect(saveTag(new Set([searchStr]), searchStr)).rejects.toThrow(/\b100\b/);
     });
 
     it("should accept a 2-character search", async () => {
       const searchStr = "iq";
       const searchWords = parseWords(searchStr);
-      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("IQ");
+      await expect(saveTag(searchWords, searchStr)).resolves.toEqual("IQ");
     });
 
     it("should accept a 2-word search", async () => {
       const searchStr = "H v";
       const searchWords = parseWords(searchStr);
-      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("H V");
+      await expect(saveTag(searchWords, searchStr)).resolves.toEqual("H V");
     });
 
     it("should return normalized search", async () => {
       const searchStr = "  Man Cave  ";
       const searchWords = parseWords(searchStr);
-      await expect(saveSearch(searchWords, searchStr)).resolves.toEqual("CAVE MAN");
+      await expect(saveTag(searchWords, searchStr)).resolves.toEqual("CAVE MAN");
     });
   });
 
-  describe("deleteSavedSearch", () => {
+  describe("deleteTag", () => {
     it("should reject searchWords that aren't a Set", async () => {
-      await expect(deleteSavedSearch(undefined)).rejects.toThrow(Error);
+      await expect(deleteTag(undefined)).rejects.toThrow(Error);
     });
 
     it("should reject empty set of searchWords", async () => {
-      await expect(deleteSavedSearch(new Set())).rejects.toThrow(Error);
+      await expect(deleteTag(new Set())).rejects.toThrow(Error);
     });
 
     it("should reject searchWords with no letters", async () => {
-      await expect(deleteSavedSearch(new Set(['']))).rejects.toThrow(Error);
+      await expect(deleteTag(new Set(['']))).rejects.toThrow(Error);
     });
 
     it("should return normalized search", async () => {
       const searchStr = "  Man Cave  ";
       const searchWords = parseWords(searchStr);
-      await expect(deleteSavedSearch(searchWords)).resolves.toEqual("CAVE MAN");
+      await expect(deleteTag(searchWords)).resolves.toEqual("CAVE MAN");
     });
   });
 
-  describe("listSavedSearches", () => {
+  describe("listTags", () => {
     it("should return a sorted array of original searches and a Set of normalized searches", async () => {
       const searchStr1 = "iq ";
       const searchWords1 = parseWords(searchStr1);
-      await saveSearch(searchWords1, searchStr1);
+      await saveTag(searchWords1, searchStr1);
       const searchStr2 = "H v ";
       const searchWords2 = parseWords(searchStr2);
-      await saveSearch(searchWords2, searchStr2);
+      await saveTag(searchWords2, searchStr2);
       const searchStr3 = "  Man Cave  ";
       const searchWords3 = parseWords(searchStr3);
-      await saveSearch(searchWords3, searchStr3);
+      await saveTag(searchWords3, searchStr3);
 
-      const {originalSearches, normalizedSearches} = await listSavedSearches();
-      expect(originalSearches).toBeInstanceOf(Array);
-      expect(originalSearches).toEqual([searchStr2.trim(), searchStr1.trim(), searchStr3.trim()]);
-      expect(normalizedSearches).toBeInstanceOf(Set);
-      expect(normalizedSearches).toEqual(new Set([
+      const {originalTags, normalizedTags} = await listTags();
+      expect(originalTags).toBeInstanceOf(Array);
+      expect(originalTags).toEqual([searchStr2.trim(), searchStr1.trim(), searchStr3.trim()]);
+      expect(normalizedTags).toBeInstanceOf(Set);
+      expect(normalizedTags).toEqual(new Set([
         Array.from(searchWords3).sort().join(' '),
         Array.from(searchWords2).sort().join(' '),
         Array.from(searchWords1).sort().join(' ')

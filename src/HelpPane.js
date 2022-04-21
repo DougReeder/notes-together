@@ -31,13 +31,13 @@ function HelpPane({setMustShowPanel}) {
         <p>No, but you can quickly search one word. If you don’t find the note you’re looking for, then search for the other word.</p>
 
         <h4>Can I create categories or tags?</h4>
-        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search</b>.</p>
+        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save tag (category)</b>. Tags are listed before search suggestions in the search dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
         <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
-        <p>You can add multiple tag words to your notes, if they don't already contain them. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
-        <p>Deleting formal categories and tags requires you to spend time re-organizing.  Saved searches can be temporary. While you're working on a project, save a search topic for it. When you're done with the project, delete the Saved search, and the obsolete search won't clutter the interface. If you need the project notes again, just type the topic into the search field!</p>
+        <p>If a note doesn't contain the tag word or words you need, just add them to the bottom of the note. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
+        <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't clutter the interface. If you need the project notes again, just type the topic into the search field!</p>
 
         <h4>How can I organize large amounts of text?</h4>
-        <p>Pick a distinctive 1–3 word topic. Save the topic as a Saved search. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
+        <p>Pick a distinctive 1–3 word topic. Save the topic as a tag. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
         <p>Split long notes into several short notes. Append the topic to each.</p>
         {/*<p>You can export all your notes on a topic with the menu command <strong>Export matching notes to*/}
         {/*  file</strong>. Moving these files off a phone may require creative use of Wi-Fi Direct, Bluetooth, Air*/}
