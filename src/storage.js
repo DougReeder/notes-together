@@ -297,25 +297,18 @@ function normalizeWord(word) {
 
 
 async function saveTag(searchWords, searchStr) {
-  searchStr = searchStr.trim();
-
-  const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
-
   const remoteStorage = await remotePrms;
-  return await remoteStorage.documents.upsertTag(normalizedSearchStr, searchStr);
+  return await remoteStorage.documents.upsertTag(searchWords, searchStr);
 }
 
 async function deleteTag(searchWords) {
-  const normalizedSearchStr = Array.from(searchWords).sort().join(' ');
   const remoteStorage = await remotePrms;
-  return await remoteStorage.documents.deleteTag(normalizedSearchStr);
+  return await remoteStorage.documents.deleteTag(searchWords);
 }
 
 async function listTags() {
   const remoteStorage = await remotePrms;
-  const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
-  originalTags.sort( (a, b) => a.localeCompare(b));
-  return {originalTags, normalizedTags};
+  return await remoteStorage.documents.getAllTags();
 }
 
 export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};

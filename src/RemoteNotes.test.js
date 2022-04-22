@@ -205,76 +205,86 @@ describe("RemoteNotes", () => {
   });
 
   describe("upsertTag", () => {
-    it("should reject a normalized search that is not a string", async () => {
-      await expect(remoteStorage.documents.upsertTag(undefined, "foo")).rejects.toThrow(/normalized/);
+    it("should reject a searchWords that is not a Set", async () => {
+      await expect(remoteStorage.documents.upsertTag(undefined, "foo")).rejects.toThrow(/searchWords/);
     });
 
-    it("should reject a normalized search with no characters", async () => {
+    it("should reject a search that normalizes to 0 characters", async () => {
       const original = '%%';
-      const normalized = '';
-      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
+      const searchWords = parseWords(original);
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(Error);
     });
 
-    it("should reject a normalized search with one character", async () => {
+    it("should reject a search that normalizes to 1 character", async () => {
       const original = '"a"';
-      const normalized = 'A';
-      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
+      const searchWords = parseWords(original);
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(Error);
     });
 
     it("should reject a normalized search with 101 characters", async () => {
       const original = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890z";
-      const normalized = Array.from(parseWords(original)).sort().join(' ');
-      await expect(remoteStorage.documents.upsertTag(normalized, original)).rejects.toThrow(Error);
+      const searchWords = parseWords(original);
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(Error);
     });
 
-    it("should reject an original search that is not a string", async () => {
-      await expect(remoteStorage.documents.upsertTag('FOO', undefined)).rejects.toThrow(/original/);
+    it("should reject a searchStr that is not a string", async () => {
+      await expect(remoteStorage.documents.upsertTag(new Set(['FOO']), undefined)).rejects.toThrow(/searchStr/);
     });
 
     it("should accept a good normalized & original and allow overwriting", async () => {
       const original = "play  group ";
-      const normalized = "GROUP PLAY"
-      await expect(remoteStorage.documents.upsertTag(normalized, original)).resolves.toEqual(normalized);
-      await expect(remoteStorage.documents.upsertTag(normalized, "Group Play")).resolves.toEqual(normalized);
+      const searchWords = parseWords(original);
+      const normalized = Array.from(searchWords).sort().join(' ');
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(searchWords, "Group Play")).resolves.toEqual(normalized);
     });
   });
 
   describe("getAllTags", () => {
     it("should return an array of original tags & a Set of normalized tags", async () => {
       const original = "play  group ";
-      const normalized = "GROUP PLAY"
-      await remoteStorage.documents.upsertTag(normalized, original);
+      const searchWords = parseWords(original);
+      const normalized = Array.from(searchWords).sort().join(' ');
+      await remoteStorage.documents.upsertTag(searchWords, original);
 
       const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
       expect(originalTags).toBeInstanceOf(Array);
       expect(originalTags).toEqual([original.trim()]);
       expect(normalizedTags).toBeInstanceOf(Set);
       expect(normalizedTags).toEqual(new Set([normalized]));
+
+      const original2 = "Group Play ";
+      const searchWords2 = parseWords(original2);
+      await remoteStorage.documents.upsertTag(searchWords2, original2);
+
+      const {originalTags: originalTags2, normalizedTags: normalizedTags2} = await remoteStorage.documents.getAllTags();
+      expect(originalTags2).toEqual([original2.trim()]);
+      expect(normalizedTags2).toEqual(new Set([normalized]));
     })
   });
 
   describe("deleteTag", () => {
-    it("should reject a normalized search that is not a string", async () => {
-      await expect(remoteStorage.documents.deleteTag(undefined)).rejects.toThrow(/normalized/);
+    it("should reject searchWords that are not a Set", async () => {
+      await expect(remoteStorage.documents.deleteTag(undefined)).rejects.toThrow(/searchWords/);
     });
 
-    it("should reject a normalized search with no characters", async () => {
-      const normalized = '';
-      await expect(remoteStorage.documents.deleteTag(normalized)).rejects.toThrow(Error);
+    it("should reject a searchWords with no words", async () => {
+      await expect(remoteStorage.documents.deleteTag(new Set())).rejects.toThrow(Error);
     });
 
     it("should remove the indicated tag and do nothing if it doesn't exist", async () => {
       const original = "play  group ";
-      const normalized = "GROUP PLAY"
-      await expect(remoteStorage.documents.upsertTag(normalized, original)).resolves.toEqual(normalized);
+      const searchWords = parseWords(original);
+      const normalized = Array.from(searchWords).sort().join(' ');
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).resolves.toEqual(normalized);
 
-      await expect(remoteStorage.documents.deleteTag(normalized)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(searchWords)).resolves.toEqual(normalized);
 
       const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
       expect(originalTags).toEqual([]);
       expect(normalizedTags).toEqual(new Set());
 
-      await expect(remoteStorage.documents.deleteTag(normalized)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(searchWords)).resolves.toEqual(normalized);
     });
   });
 });

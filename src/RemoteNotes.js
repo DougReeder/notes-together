@@ -170,29 +170,33 @@ const RemoteNotes = {
         },
 
         // available as remoteStorage.documents.upsertTag();
-        upsertTag: async function (normalized, original) {
-          console.debug("documents.upsertTag", normalized, original);
-          if ('string' !== typeof normalized) {
-            throw new Error("normalized must be string");
+        upsertTag: async function (searchWords, searchStr) {
+          if (!(searchWords instanceof Set)) {
+            throw new Error("searchWords must be Set");
           }
+          const normalized = Array.from(searchWords).sort().join(' ');
           if (normalized.length < 2) {
             throw Object.assign(new Error("Tag must be 2 or more characters"), {severity: 'info'});
           }
           if (normalized.length > 100) {
             throw Object.assign(new Error("Tag must be 100 or less characters"), {severity: 'warning'});
           }
-          if ('string' !== typeof original) {
-            throw new Error("original must be string");
+
+          if ('string' !== typeof searchStr) {
+            throw new Error("searchStr must be string");
           }
+          searchStr = searchStr.trim();
+
           const path = SAVED_SEARCH_PATH + normalized;
-          await privateClient.storeObject("savedSearch", path, {original});
+          await privateClient.storeObject("savedSearch", path, {original: searchStr});
           return normalized;
         },
 
-        deleteTag: async function (normalized) {
-          if ('string' !== typeof normalized) {
-            throw new Error("normalized must be string");
+        deleteTag: async function (searchWords) {
+          if (!(searchWords instanceof Set)) {
+            throw new Error("searchWords must be Set");
           }
+          const normalized = Array.from(searchWords).sort().join(' ');
           if (0 === normalized.length) {
             throw Object.assign(new Error("First, select the tag"), {severity: 'info'});
           }
@@ -220,7 +224,8 @@ const RemoteNotes = {
             console.error("while retrieving tags:", err);
             window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't retrieve tags", severity: 'error'}, window?.location?.origin);
           }
-          return {originalTags: originalTags, normalizedTags: normalizedTags};
+          originalTags.sort( (a, b) => a.localeCompare(b));
+          return {originalTags, normalizedTags};
         },
       }
     }
