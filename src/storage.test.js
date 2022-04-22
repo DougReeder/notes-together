@@ -1141,9 +1141,9 @@ Finance: we can't afford it.`);
     });
 
     it("should return normalized search", async () => {
-      const searchStr = "  Man Cave  ";
+      const searchStr = "  house cat  ";
       const searchWords = parseWords(searchStr);
-      await expect(saveTag(searchWords, searchStr)).resolves.toEqual("CAVE MAN");
+      await expect(saveTag(searchWords, searchStr)).resolves.toEqual("CAT HOUSE");
     });
   });
 
@@ -1168,6 +1168,15 @@ Finance: we can't afford it.`);
   });
 
   describe("listTags", () => {
+    beforeEach(async () => {
+      for (const searchStr of ["house cat", "iq ", "H v ", "  Star Wars Trek  "]) {
+        try {
+          await deleteTag(parseWords(searchStr), searchStr);
+        } catch (err) {
+        }
+      }
+    });
+
     it("should return a sorted array of original searches and a Set of normalized searches", async () => {
       const searchStr1 = "iq ";
       const searchWords1 = parseWords(searchStr1);
@@ -1175,7 +1184,7 @@ Finance: we can't afford it.`);
       const searchStr2 = "H v ";
       const searchWords2 = parseWords(searchStr2);
       await saveTag(searchWords2, searchStr2);
-      const searchStr3 = "  Man Cave  ";
+      const searchStr3 = "  Star Wars Trek  ";
       const searchWords3 = parseWords(searchStr3);
       await saveTag(searchWords3, searchStr3);
 

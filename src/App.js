@@ -322,9 +322,12 @@ function App() {
   async function handleSaveTag() {
     try {
       setAppMenuAnchorEl(null);
-      await saveTag(searchWords, searchStr);
+      const saveResult = await saveTag(searchWords, searchStr);
       await combineTagsWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Saved tag “${searchStr}”`, severity: 'success'}, window?.location?.origin);
+      const message = 'string' === typeof saveResult ?
+          `Saved tag “${searchStr}”` :
+          `Updated tag “${saveResult?.original}” to “${searchStr}”`
+      window.postMessage({kind: 'TRANSIENT_MSG', message, severity: 'success'}, window?.location?.origin);
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
     }
@@ -333,7 +336,7 @@ function App() {
   async function handleDeleteTag() {
     try {
       setAppMenuAnchorEl(null);
-      await deleteTag(searchWords);
+      await deleteTag(searchWords, searchStr);
       await combineTagsWithSuggestions();
       window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted tag “${searchStr}”`, severity: 'success'}, window?.location?.origin);
       setSearchParams(new URLSearchParams());

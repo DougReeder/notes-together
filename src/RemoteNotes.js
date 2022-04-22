@@ -188,11 +188,16 @@ const RemoteNotes = {
           searchStr = searchStr.trim();
 
           const path = SAVED_SEARCH_PATH + normalized;
+          const existing = await privateClient.getObject(path);
           await privateClient.storeObject("savedSearch", path, {original: searchStr});
-          return normalized;
+          if (existing) {
+            return {normalized, original: existing.original};
+          } else {
+            return normalized;
+          }
         },
 
-        deleteTag: async function (searchWords) {
+        deleteTag: async function (searchWords, searchStr) {
           if (!(searchWords instanceof Set)) {
             throw new Error("searchWords must be Set");
           }
@@ -201,6 +206,9 @@ const RemoteNotes = {
             throw Object.assign(new Error("First, select the tag"), {severity: 'info'});
           }
           const path = SAVED_SEARCH_PATH + normalized;
+          if (! (await privateClient.getObject(path))) {
+            throw Object.assign(new Error(`No such tag “${searchStr}”`), {severity: 'info'});
+          }
           await privateClient.remove(path);
           return normalized;
         },
@@ -211,6 +219,9 @@ const RemoteNotes = {
           try {
             const tags = await privateClient.getAll(SAVED_SEARCH_PATH);
             for (const normalized in tags) {
+              if (!(tags[normalized] instanceof Object)) {
+                continue;
+              }
               normalizedTags.add(normalized);
               try {
                 const original = tags[normalized].original.trim();

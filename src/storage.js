@@ -301,9 +301,9 @@ async function saveTag(searchWords, searchStr) {
   return await remoteStorage.documents.upsertTag(searchWords, searchStr);
 }
 
-async function deleteTag(searchWords) {
+async function deleteTag(searchWords, searchStr) {
   const remoteStorage = await remotePrms;
-  return await remoteStorage.documents.deleteTag(searchWords);
+  return await remoteStorage.documents.deleteTag(searchWords, searchStr);
 }
 
 async function listTags() {

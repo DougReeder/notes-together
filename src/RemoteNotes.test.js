@@ -236,7 +236,7 @@ describe("RemoteNotes", () => {
       const searchWords = parseWords(original);
       const normalized = Array.from(searchWords).sort().join(' ');
       await expect(remoteStorage.documents.upsertTag(searchWords, original)).resolves.toEqual(normalized);
-      await expect(remoteStorage.documents.upsertTag(searchWords, "Group Play")).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(searchWords, "Group Play")).resolves.toEqual({normalized, original: "play  group"});
     });
   });
 
@@ -272,19 +272,19 @@ describe("RemoteNotes", () => {
       await expect(remoteStorage.documents.deleteTag(new Set())).rejects.toThrow(Error);
     });
 
-    it("should remove the indicated tag and do nothing if it doesn't exist", async () => {
+    it("should remove the indicated tag and throw error if it doesn't exist", async () => {
       const original = "play  group ";
       const searchWords = parseWords(original);
       const normalized = Array.from(searchWords).sort().join(' ');
-      await expect(remoteStorage.documents.upsertTag(searchWords, original)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).resolves.toBeTruthy();
 
-      await expect(remoteStorage.documents.deleteTag(searchWords)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(searchWords, original)).resolves.toEqual(normalized);
 
       const {originalTags, normalizedTags} = await remoteStorage.documents.getAllTags();
       expect(originalTags).toEqual([]);
       expect(normalizedTags).toEqual(new Set());
 
-      await expect(remoteStorage.documents.deleteTag(searchWords)).resolves.toEqual(normalized);
+      await expect(remoteStorage.documents.deleteTag(searchWords, original)).rejects.toThrow(/No such tag “play  group ”/);
     });
   });
 });
