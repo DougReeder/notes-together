@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
 import CloseIcon from '@mui/icons-material/Close';
 import {isLikelyMarkdown} from "./util";
@@ -116,6 +116,26 @@ function FileImport({files, isMultiple, doCloseImport}) {
     setImports([...imports]);   // forces render
   }
 
+  const keyListener = useCallback(evt => {
+    if (evt.isComposing || evt.keyCode === 229) {
+      return;
+    }
+    if ('Escape' === evt.code) {
+      doCloseImport(lastSuccessfulFileName.current);
+    }
+  }, [doCloseImport]);
+
+  const fileDlgRef = useRef();
+  useEffect(() => {
+    const fileDlg = fileDlgRef.current;
+    fileDlg?.addEventListener('keydown', keyListener);
+
+    return function removeKeyListener() {
+      fileDlg?.removeEventListener('keydown', keyListener);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileDlgRef.current, keyListener]); // eslint-disable-line react-hooks/exhaustive-deps
+
   let dialogTitle;
   if ('DONE' === importPhase.current) {
     dialogTitle = 1 === numNotesCreated.current ?
@@ -140,7 +160,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
   }
 
   return (
-    <Dialog fullScreen open={files.length > 0} aria-labelledby="import-title">
+    <Dialog ref={fileDlgRef} fullScreen open={files.length > 0} aria-labelledby="import-title">
       <AppBar>
         <Toolbar>
           <IconButton edge="start" color="inherit"
