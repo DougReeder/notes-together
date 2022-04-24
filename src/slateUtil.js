@@ -106,7 +106,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
   }
   editor.subtype = newSubtype;
   Transforms.setNodes(editor, {noteSubtype: newSubtype}, {at: [0]});
-  console.log(`${oldSubtype} => ${newSubtype}`)
+  console.info(`${oldSubtype} => ${newSubtype}`)
 }
 
 function coerceToPlainText(editor) {

@@ -7,7 +7,7 @@ import {upsertNote} from './storage';
 
 
 async function seedNotes() {
-  console.log("IDB seeding notes");
+  console.info("IDB seeding notes");
   const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   random[15] = 2;
   await upsertNote({id: uuidv4({random}), content: "<h1>The rain in Spain</h1><p>stays mainly in the plain</p>", mimeType: 'text/html;hint=SEMANTIC'});

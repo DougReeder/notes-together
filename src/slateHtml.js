@@ -216,9 +216,9 @@ function withHtml(editor) {   // defines Slate plugin
 
   function pasteHtmlToRichText(html) {
     html = sanitizeHtml(html, semanticOnly);
-    console.log("sanitized HTML", html.slice(0, 1024));
+    // console.log("sanitized HTML", html.slice(0, 1024));
     const slateNodes = deserializeHtml(html, editor);
-    console.log("HTML -> slateNodes:", slateNodes);
+    // console.log("HTML -> slateNodes:", slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
 
@@ -246,12 +246,12 @@ function withHtml(editor) {   // defines Slate plugin
 
   function pasteMarkdownToRichText(text) {
     const slateNodes = deserializeMarkdown(text);
-    console.log("MD -> slateNodes:", slateNodes);
+    // console.log("MD -> slateNodes:", slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
 
   function pasteText(text) {
-    console.log("pasting text:", text);
+    // console.log("pasting text:", text);
     Editor.insertText(editor, text);
   }
 
@@ -324,7 +324,7 @@ function withHtml(editor) {   // defines Slate plugin
 
 
   function pasteHtmlToPlainText(html) {
-    console.log("HTML -> slateNodes -> coerceToPlainText");
+    // console.log("HTML -> slateNodes -> coerceToPlainText");
     html = sanitizeHtml(html, semanticOnly);
     const slateNodes = deserializeHtml(html, editor);
     Editor.withoutNormalizing(editor, () => {

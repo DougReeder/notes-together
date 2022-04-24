@@ -165,9 +165,8 @@ function findStubs(searchWords, callback) {
     }
     findStubsTransaction = db.transaction('note', "readonly");
     findStubsTransaction.onerror = function (evt) {
-      const msg = evt.target.errorMessage || evt.target.error.message || evt.target.error.name || evt.target.error.toString() || evt.target.errorCode;
       if (evt.target.error?.name === 'AbortError') {
-        console.log("IDB:", evt.target.error?.name, msg);
+        // console.log("IDB:", evt.target.error?.name, extractUserMessage(evt.target.error));
       } else {
         console.error("IDB findStubs:", evt.target.error);
         findStubsTransaction = null;

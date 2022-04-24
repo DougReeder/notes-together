@@ -35,7 +35,7 @@ function List(props) {
         } else {
           setListErr(null);
         }
-        console.log(`search returned with ${notes?.length} notes`);
+        // console.log(`search returned with ${notes?.length} notes`);
 
         setNotes(notes);
         changeCount(notes.length, isPartial);
@@ -53,7 +53,7 @@ function List(props) {
 
       const {isChanged, newNotes} = updateListWithChanges(notes, notesChanged, notesDeleted, searchWords);
 
-      console.log("List externalChange", isChanged, notesChanged, notesDeleted);
+      // console.log("List externalChange", isChanged, notesChanged, notesDeleted);
       if (isChanged) {
         setNotes(newNotes);
         changeCount(newNotes.length);

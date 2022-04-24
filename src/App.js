@@ -126,7 +126,7 @@ function App() {
       case 'NOTE_CHANGE':
         const notesDeleted = evt.data?.notesDeleted || {};
         if (notesDeleted.hasOwnProperty(selectedNoteId)) {
-          console.log("selected note deleted", notesDeleted);
+          console.info("selected note deleted", notesDeleted);
           setSelectedNoteId(null);
         }
         break;
@@ -176,11 +176,12 @@ function App() {
       const {remoteStorage, isFirstLaunch} = await init();   // init is idempotent
       if (isFirstLaunch && window.innerWidth >= 641) {
         requestIdleCallback(async () => {
+          console.info("creating blank starter note");
           await addNote();
         });
       }
 
-      console.log("remoteStorage displaying login widget");
+      // console.info("remoteStorage displaying login widget");
       const widget = new Widget(remoteStorage);
       widget.attach('panelMain');   // login
 

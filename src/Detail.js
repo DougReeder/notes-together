@@ -112,7 +112,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       if (hasTagsLikeHtml(theNote.mimeType)) {
         editor.subtype = 'html;hint=SEMANTIC';
         const html = sanitizeHtml(theNote.content, semanticOnly);
-        console.log("sanitized HTML:", html.slice(0, 1024));
+        // console.log("sanitized HTML:", html.slice(0, 1024));
         slateNodes = deserializeHtml(html, editor);
       } else if (!theNote.mimeType || /^text\//.test(theNote.mimeType)) {
         editor.subtype = /\/(.+)/.exec(theNote.mimeType)?.[1];
@@ -120,7 +120,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       } else {
         throw new Error("Can't display this type of note");
       }
-      console.log("initializing slateNodes:", slateNodes);
+      // console.log("initializing slateNodes:", slateNodes);
 
       // Editor can't be empty (though pasted content can be).
       // Does this here (rather than normalizeNode) so noteSubtype can be set.
@@ -209,13 +209,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
       const isAstChange = editor.operations.some(op => 'set_selection' !== op.type);
       if (isAstChange) {
-        console.log(`AST change ${noteId}:`, editor.operations, newValue);
+        // console.log(`AST change ${noteId}:`, editor.operations, newValue);
         if (saveOnAstChangeRef.current) {
           await save(noteDate);
         }
       } else {
         forceUpdate();   // updates the mark indicators
-        console.log("selection change:", editor.operations);
+        // console.log("selection change:", editor.operations);
       }
     } catch (err) {
       console.error("handleSlateChange:", err);
@@ -234,7 +234,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       const day = parseInt(evt.target.value.slice(8, 10), 10);
       const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
       setNoteDate(newDate);
-      console.log('handleDateChange:', newDate);
+      // console.log('handleDateChange:', newDate);
       await save(newDate);
     } catch (err) {
       console.error("Detail handleDateChange:", err);
@@ -246,10 +246,10 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     let content;
     if (editor.subtype?.startsWith('html')) {
       content = serializeHtml(editor.children, await currentSubstitutions());
-      console.log('save HTML:', noteId, editor.children, content.slice(0, 1024), date);
+      // console.log('save HTML:', noteId, editor.children, content.slice(0, 1024), date);
     } else {
       content = editor.children.map(node => SlateNode.string(node)).join('\n')
-      console.log('save text:', noteId, editor.children, content, date);
+      // console.log('save text:', noteId, editor.children, content, date);
     }
     await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined), 'DETAIL');
   }
@@ -267,7 +267,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           'DETAIL' === evt.data?.initiator) return;
       const notesChanged = evt.data?.notesChanged || {};
       if (! notesChanged.hasOwnProperty(noteId)) return;
-      console.log("Detail externalChange", notesChanged);
+      // console.log("Detail externalChange", notesChanged);
 
       setNoteErr(null);
       replaceNote(notesChanged[noteId]);

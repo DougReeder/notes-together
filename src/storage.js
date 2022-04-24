@@ -38,16 +38,16 @@ async function changeHandler(evt) {
         switch (evt.origin) {   // eslint-disable-line default-case
           case 'remote':
             if (evt.newValue) {   // create or update
-              console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
+              // console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
               await upsertNote(evt.newValue, 'REMOTE');
             } else {   // delete
-              console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
+              // console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
               await deleteNoteDb(evt.oldValue.id);
             }
             break;
           case 'conflict':
             if (!evt.oldValue && !evt.newValue) {
-              console.log("remoteStorage deleted on both", evt.relativePath);
+              console.warn("remoteStorage deleted on both", evt.relativePath);
               // window.postMessage({kind: 'TRANSIENT_MSG', message: "Deleted on both"}, window?.location?.origin);
             } else if (evt.oldValue && !evt.newValue) {
               console.warn("remoteStorage local change, remote delete:", evt.lastCommonValue, evt.oldValue, evt.newValue);
@@ -165,15 +165,15 @@ function initRemote() {
 
     remoteStorage.on('connected', async () => {
       const userAddress = remoteStorage.remote.userAddress;
-      console.log(`remoteStorage connected to “${userAddress}”`);
+      console.info(`remoteStorage connected to “${userAddress}”`);
     });
 
     remoteStorage.on('not-connected', function () {
-      console.log("remoteStorage not-connected (anonymous mode)", remoteStorage.remote?.token);
+      console.info("remoteStorage not-connected (anonymous mode)", remoteStorage.remote?.token);
     });
 
     remoteStorage.on('disconnected', function () {
-      console.log("remoteStorage disconnected", arguments);
+      console.info("remoteStorage disconnected", arguments);
     });
 
     let lastNotificationTime = 0;
