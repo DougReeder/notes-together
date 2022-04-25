@@ -243,12 +243,35 @@ function sanitizeAndExtractTitle(memoryText, semanticExtractKeywords) {
   semanticExtractKeywords.exclusiveFilter = extractTitles;
   const sanitizedText = sanitizeHtml(memoryText, semanticExtractKeywords);
 
-  let title = [...titles.h1, ...titles.h2, ...titles.h3, ...titles.h4, ...titles.h5, ...titles.h6, ...titles.highValue, ...titles.ordinary].slice(0, 2).join("\n").slice(0, TITLE_MAX);
-  if (!title) {
-    title = titles.lowValue.join("\n").slice(0, TITLE_MAX);
+  let relevantTitles;
+  if (titles.h1.length) {
+    relevantTitles = titles.h1;
+  } else if (titles.h2.length) {
+    relevantTitles = titles.h2;
+  } else if (titles.h3.length) {
+    relevantTitles = titles.h3;
+  } else if (titles.h4.length) {
+    relevantTitles = titles.h4;
+  } else if (titles.h5.length) {
+    relevantTitles = titles.h5;
+  } else if (titles.h6.length) {
+    relevantTitles = titles.h6;
+  } else if (titles.highValue.length) {
+    relevantTitles = titles.highValue;
+  } else if (titles.ordinary.length) {
+    relevantTitles = titles.ordinary;
+  } else if (titles.lowValue.length) {
+    relevantTitles = titles.lowValue;
+  } else {
+    relevantTitles = [];
   }
-  if (!title && !/<\/?[a-zA-Z][^<>]*>/.test(sanitizedText)) {
-    title = sanitizedText.trim().slice(0, TITLE_MAX);
+  let title = relevantTitles.slice(0, 2).join("\n").slice(0, TITLE_MAX);
+
+  if (!title) {
+    const incipit = sanitizedText.trim().slice(0, TITLE_MAX);
+    if (!/<\/?[a-zA-Z][^<>]*>/.test(incipit)) {
+      title = incipit;
+    }
   }
 
   return {sanitizedText, title};

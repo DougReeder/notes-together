@@ -1,5 +1,5 @@
 // storage.test.js - automated tests for storage abstraction for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
@@ -629,7 +629,7 @@ Finance: we can't afford it.`,
       expect(retrieved.content).toEqual(`<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>Staff Meeting
 John: let's be cautious
 Finance: we can't afford it.`);
-      expect(retrieved.title).toEqual("Staff Meeting\nMary: let's do it!");
+      expect(retrieved.title).toEqual("Staff Meeting");
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
@@ -662,7 +662,7 @@ Finance: we can't afford it.`);
       const retrieved = await getNote(id);
       // TODO: parse text notes into paragraphs
       expect(retrieved.content).toEqual(` my notes on\n# Therapods <p>my notes on</p><h2>Therapods</h2>`);
-      expect(retrieved.title).toEqual(`Therapods\nmy notes on`);
+      expect(retrieved.title).toEqual(`Therapods`);
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
     });

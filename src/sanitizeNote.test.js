@@ -1,5 +1,5 @@
 // sanitizeNote.test.js - automated tests for subroutine for Notes module for RemoteStorage
-// Copyright © 2021 Doug Reeder under the MIT license
+// Copyright © 2021-2022 Doug Reeder under the MIT license
 
 import generateTestId from "./util/generateTestId";
 import {sanitizeNote} from "./sanitizeNote";
@@ -175,7 +175,7 @@ unstyled text small red text unstyled text`);
     expect(titleLines[1]).toMatch(/^bold and italic/);
   });
 
-  it("should extract remove markup when extracting title from Markdown note",  () => {
+  it("should remove markup when extracting title from Markdown note",  () => {
     const originalText = `   Some Pretentious Title
 =================
 > Some famous quote`;
@@ -213,7 +213,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.title).toEqual("Subheading\nminor heading");
+    expect(cleanNote.title).toEqual("Subheading");
     expect(cleanNote.content).toEqual(`  <hr /><h3>trivial heading</h3>
   <h3>minor heading</h3>
 <h3>Subheading</h3>`);
@@ -231,7 +231,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.title).toEqual("minor heading\nfirst real paragraph");
+    expect(cleanNote.title).toEqual("minor heading");
     expect(cleanNote.content).toEqual(`  <p> </p><a href="https://www.npr.org/programs/" title="null">click me</a>
   <del>some old stuff</del>
   <sup>12</sup><sub>6</sub>C
@@ -288,7 +288,7 @@ unstyled text small red text unstyled text`);
 
     const cleanNote = sanitizeNote(original);
 
-    expect(cleanNote.title).toEqual("Grapefruit are healthy.\nGrapefruit slice atop a pile of other slices");
+    expect(cleanNote.title).toEqual("Grapefruit are healthy.");
     expect(cleanNote.content).toEqual(`  <img src="/media/cc0-images/grapefruit-slice-332-332.jpg" alt="Grapefruit slice atop a pile of other slices" /> <p> Grapefruit are healthy. </p>  `);
   });
 
@@ -390,6 +390,32 @@ unstyled text small red text unstyled text`);
     expect(cleanNote.content).toEqual(`  <p>  </p>  <div>  </div>`);
   });
 
+  it("should use the incipit as title if there's no useful tags and the incipit doesn't contain tags", () => {
+    const originalText = `
+some bare text in an HTML note`;
+    const original = createMemoryNote(null, originalText, null, 'text/html;hint=SEMANTIC');
+
+    const cleanNote = sanitizeNote(original);
+
+    expect(cleanNote.title).toEqual("some bare text in an HTML note");
+    expect(cleanNote.content).toEqual(`
+some bare text in an HTML note`);
+  });
+
+  it("should return an empty title if there's no useful tags and the incipit contains tags", () => {
+    const originalText = `<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="150" cy="100" r="80" fill="green"></circle>
+</svg>`;
+    const original = createMemoryNote(null, originalText, null, 'text/html;hint=SEMANTIC');
+
+    const cleanNote = sanitizeNote(original);
+
+    expect(cleanNote.title).toEqual("");
+    expect(cleanNote.content).toEqual(`<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="150" cy="100" r="80" fill="green"></circle>
+</svg>`);
+  });
+
   it("should extract a title from raw text without tags if necessary", () => {
     const originalId = generateTestId();
     const originalText = `  
@@ -454,7 +480,7 @@ unstyled text small red text unstyled text`);
     expect(wordArr).not.toContain("H1");
     expect(wordArr).not.toContain("P");
     expect(wordArr.length).toEqual(10);
-    expect(cleanNote.title).toMatch(/^The Actual Title\nTable of Contents/);
+    expect(cleanNote.title).toEqual("The Actual Title");
   });
 
   it("should not parse tags nor entities in plain text", () => {

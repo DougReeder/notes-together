@@ -68,8 +68,7 @@ describe("importFromFile", () => {
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
-    expect(retrievedNote.title).toEqual(`Some Topic
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`);
+    expect(retrievedNote.title).toEqual(`Some Topic`);
     expect(retrievedNote.content).toEqual(fileContent + "<hr /><p><em>Lipsum.html</em></p>");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
