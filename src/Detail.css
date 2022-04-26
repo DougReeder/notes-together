@@ -58,21 +58,24 @@ details {
 
 
 h1 {
-    font-size: 1.5em;
+    font-size: 1.4em;
     text-align: center;
     text-transform: capitalize;
+    text-transform: none;
 }
 
 h2 {
-    font-size: 1.25em;
+    font-size: 1.2em;
     text-align: center;
     text-transform: capitalize;
+    text-transform: none;
 }
 
 h3 {
     font-size: 1em;
     text-align: center;
     text-transform: capitalize;
+    text-transform: none;
 }
 
 [role=textbox] pre {
