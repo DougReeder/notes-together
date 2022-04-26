@@ -176,7 +176,7 @@ const RemoteNotes = {
           }
           const normalized = Array.from(searchWords).sort().join(' ');
           if (normalized.length < 2) {
-            throw Object.assign(new Error("Tag must be 2 or more characters"), {severity: 'info'});
+            throw Object.assign(new Error("Enter 2 or more characters in the search field"), {severity: 'info'});
           }
           if (normalized.length > 100) {
             throw Object.assign(new Error("Tag must be 100 or less characters"), {severity: 'warning'});

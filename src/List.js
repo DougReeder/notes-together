@@ -338,7 +338,7 @@ function List(props) {
       </IconButton>
     </div>
     <p><b>Toss in text and pictures</b> — take a photo or use voice dictation. Paste or drag a message or article (with its pictures) into the editor pane. Drag files into the list pane.</p>
-    <p><b>Find any note</b> on any device — type any words in the note, or tap to select a saved tag.</p>
+    <p><b>Find any note</b> on any device — type to search for any words in the note, or tap to select a saved tag.</p>
     <p><b>Connect Your Storage</b> below︎ to take control of your data.</p>
     <p><b>Never spend time tidying up</b> — unless you want to!</p>
   </>;

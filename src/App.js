@@ -187,7 +187,8 @@ function App() {
 
       await combineTagsWithSuggestions();
      }
-   }, [combineTagsWithSuggestions, addNote]);
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
 
   const keyListener = useCallback(evt => {
