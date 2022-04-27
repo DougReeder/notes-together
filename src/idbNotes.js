@@ -98,13 +98,13 @@ function createWelcomeNote(transaction) {
 <li>If an app shuts down, your data won't be deleted. If an app changes in ways you don't like, you can deny permission for it to use your data. If there's a successor app (from the same or a different organization) you can choose whether to let it use your data.</li>
 <li>The data from one app can be used by other apps, with <b>your</b> permission. The other apps <b>don't</b> need permission from the first app.</li>
 <li>Your data is available on any OS or device - you're not locked in.</li>
-<li>You choose which provider stores your data online, and can move to another provider at any time. You (or a friend) could even set up your own server.</li>
+<li>You choose which provider stores your data online, and can move to another provider at any time. (If you have a Dropbox or Google Drive account, you can use that, with some limitations.) You (or a friend) could even set up your own server.</li>
 <li>You can use one remoteStorage account with many apps, so you have fewer passwords to remember.</li>
 </ul>
 <p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
 <ol>
-<li>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a> (or use an existing Google Drive account).</li>
+<li>Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations).</li>
 <li>Use the widget in the lower left of the list pane to connect.</li>
 </ol>
 <p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>

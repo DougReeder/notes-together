@@ -153,7 +153,8 @@ function initRemote() {
   remotePrms = new Promise((resolve) => {
     const remoteStorage = new RemoteStorage({modules: [RemoteNotes], cache: true});
     remoteStorage.setApiKeys({
-      googledrive: '1058652152054-bqj3aev2b7ik8mc2k9co7k4p0f5rvuv2.apps.googleusercontent.com'
+      googledrive: '1058652152054-bqj3aev2b7ik8mc2k9co7k4p0f5rvuv2.apps.googleusercontent.com',
+      dropbox: 'swcj8jbc9i1jf1m',
     });
     remoteStorage.access.claim('documents', 'rw');
 
