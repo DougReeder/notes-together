@@ -104,7 +104,7 @@ function createWelcomeNote(transaction) {
 <p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
 <ol>
-<li>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a>.</li>
+<li>Create a <a href="https://remotestorage.io/get/" target="_blank"  rel="noreferrer">remoteStorage account</a> (or use an existing Google Drive account).</li>
 <li>Use the widget in the lower left of the list pane to connect.</li>
 </ol>
 <p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>
