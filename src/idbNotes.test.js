@@ -306,6 +306,7 @@ describe("findStubs", () => {
 
 
 describe("checkPointSearch", () => {
+  jest.setTimeout(30000);
   beforeEach(deleteSearchCheckpoints);
 
   it("should throw error when not passed a Set of words", async () => {
@@ -355,7 +356,7 @@ describe("checkPointSearch", () => {
       const searchWords = parseWords(searchStr);
       expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
       // TODO: figure out why this delay makes the deletions happen as expected
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise(resolve => setTimeout(resolve, 15));
     }
 
     const suggestions = await listSuggestions(110);
@@ -371,7 +372,7 @@ describe("checkPointSearch", () => {
       const searchWords = parseWords(searchStr);
       expect(await checkpointSearch(searchWords, searchStr)).toEqual(1);
       // TODO: figure out why this delay makes the deletions happen as expected
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise(resolve => setTimeout(resolve, 15));
     }
     const searchStr = "search " + 69;
     const searchWords = parseWords(searchStr);

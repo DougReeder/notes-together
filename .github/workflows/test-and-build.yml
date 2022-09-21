@@ -3,12 +3,12 @@ on: [push, pull_request]
 jobs:
   build:
     name: test & build - node.js
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
       matrix:
         # Support LTS versions based on https://nodejs.org/en/about/releases/
-        node-version: ['14', '16', '18']
+        node-version: ['14', '16']
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}

@@ -572,6 +572,7 @@ const pngFile = dataURItoFile(dataUrlDot, 'dot.png', fileDatePng);
 const fiveFiles = [htmlFile, binaryFile, markdownFile, markDownInTextFile, textFile];
 
 describe("FileImport", () => {
+  jest.setTimeout(30_000);
   beforeAll(() => {
     return init("testStorageDb");
   });

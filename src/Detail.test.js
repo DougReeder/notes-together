@@ -12,6 +12,7 @@ import {upsertNote, getNote} from './storage';
 import Detail, {saveFn} from "./Detail";
 
 jest.mock('./storage.js');
+window.postMessage = jest.fn();
 
 global.queueMicrotask = function (f) {
   setTimeout(f, 0);

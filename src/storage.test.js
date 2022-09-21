@@ -503,7 +503,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 30);
       });
 
       const retrieved = await getNote(id);
