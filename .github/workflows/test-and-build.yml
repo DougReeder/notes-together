@@ -1,0 +1,23 @@
+name: test-and-build
+on: [push, pull_request]
+jobs:
+  build:
+    name: test & build - node.js
+    runs-on: macos-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        # Support LTS versions based on https://nodejs.org/en/about/releases/
+        node-version: ['14', '16', '18']
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Jest tests
+        run: npm test
+      - name: Run webpack
+        run: npm run build

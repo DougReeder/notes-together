@@ -67,7 +67,7 @@
     "react-refresh": "^0.11.0",
     "react-router-dom": "^6.2.2",
     "react-transition-group": "^4.4.2",
-    "remotestorage-widget": "^1.5.4",
+    "remotestorage-widget": "^1.5.5",
     "remotestoragejs": "^2.0.0-beta.3",
     "resolve": "^1.22.0",
     "resolve-url-loader": "^3.1.4",
@@ -140,7 +140,7 @@
       "<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}"
     ],
     "testEnvironment": "jsdom",
-    "testRunner": "/Users/doug/git/notes-together/node_modules/jest-circus/runner.js",
+    "testRunner": "<rootDir>/node_modules/jest-circus/runner.js",
     "transform": {
       "^.+\\.(js|jsx|mjs|cjs|ts|tsx)$": "<rootDir>/config/jest/babelTransform.js",
       "^.+\\.css$": "<rootDir>/config/jest/cssTransform.js",
