@@ -31,7 +31,7 @@ function HelpPane({setMustShowPanel}) {
         <p>No, but you can quickly search one word. If you don’t find the note you’re looking for, then search for the other word.</p>
 
         <h4>Can I create categories or tags?</h4>
-        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save tag (category)</b>. Tags are listed before search suggestions in the search dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
+        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search as tag</b>. Tags are listed before search suggestions in the search dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
         <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
         <p>If a note doesn't contain the tag word or words you need, just add them to the bottom of the note. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
         <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't clutter the interface. If you need the project notes again, just type the topic into the search field!</p>

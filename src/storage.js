@@ -138,8 +138,8 @@ async function changeHandler(evt) {
         }
         break;
       default:
-        // unknown dataType
-        console.warn(dataType, evt);
+        // unknown or undefined dataType
+        console.warn(`foreign document amid notes, of type “${dataType}”`, evt);
     }
   } catch (err) {
     console.error("remoteStorage documents subscribe:", err, evt);
@@ -192,7 +192,7 @@ function initRemote() {
       if ("SyncError" === err?.name) {
         const timeDiff = Date.now() - lastNotificationTime;
         if (timeDiff > notificationTimeout - 5000) {
-          window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+          window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: 'warning'}, window?.location?.origin);
           lastNotificationTime = Date.now();
 
           if (Date.now() - lastSyncErrTime > TEN_MINUTES) {

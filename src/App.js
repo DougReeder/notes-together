@@ -448,7 +448,7 @@ function App() {
               <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
-              <MenuItem onClick={handleSaveTag}>Save tag (category)<Label/></MenuItem>
+              <MenuItem onClick={handleSaveTag}>Save search as tag<Label/></MenuItem>
               <MenuItem onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
               <MenuItem onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
             </Menu>
