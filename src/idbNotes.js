@@ -59,13 +59,26 @@ function initDb(dbName = dbNameDefault) {
 
     openRequest.onsuccess = function () {
       // console.log('IDB: open succeeded:', openRequest.result.name, openRequest.result.version, openRequest.result.objectStoreNames);
-      openRequest.result.onerror = function (evt2) {
+      const noteDb = openRequest.result;
+      noteDb.onerror = function (evt2) {
         // This handles errors not caught at the transaction or above.
         console.error("IDB: db.onerror:", evt2.target?.error || evt2.target);
-        const msg = evt2.target.errorMessage || evt2.target.error.name || evt2.target.error.toString() || evt2.target.errorCode;
-        alert(msg);
+        window.postMessage({kind: 'TRANSIENT_MSG', message: "Database error - restart your browser"}, window?.location?.origin);
       };
-      resolve({indexedDb: openRequest.result, isFirstLaunch});
+      // if the browser is closing, the user won't see this
+      // maybe store something in localStorage?
+      noteDb.onclose = function (evt) {
+        console.error("unexpected IDB close:", evt);
+        window.postMessage({kind: 'TRANSIENT_MSG', message: "Access to database lost - restart your browser"}, window?.location?.origin);
+      }
+      resolve({indexedDb: noteDb, isFirstLaunch});
+    };
+
+    // If some other tab is loaded with the database, then it needs to be closed
+    // before we can proceed.
+    openRequest.onblocked = (evt) => {
+      console.warn("IDB open blocked:", evt);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: "Close all other tabs with this webapp open"}, window?.location?.origin);
     };
   });
 
@@ -143,6 +156,8 @@ function createWelcomeNote(transaction) {
     };
     putRequestTut.onerror = orientationNoteFail;
   function orientationNoteFail(evt) {
+    evt.preventDefault();   // Doesn't bubble & thus fail open transaction
+    evt.stopPropagation();
     console.error("IDB create orientation note:", evt.target.error);
   }
   // Coding or transient errors here don't fail database creation.
@@ -172,6 +187,7 @@ function findStubs(searchWords, callback) {
         findStubsTransaction = null;
         callback(evt.target.error);
       }
+      evt.preventDefault();
       evt.stopPropagation();
     };
     // findStubsTransaction.onabort = function (evt) {
@@ -309,6 +325,7 @@ function getNoteDb(id) {
       };
       getRequest.onerror = function (evt) {
         console.error("IDB getNoteDb:", evt.target.error);
+        evt.preventDefault();
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -341,6 +358,7 @@ function upsertNoteDb(cleanNote, initiator) {
       };
       putRequest.onerror = function (evt) {
         console.error("IDB upsertNoteDb:", evt.target.error);
+        evt.preventDefault();
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -374,6 +392,7 @@ function deleteNoteDb(id) {
       };
       deleteRequest.onerror = function (evt) {
         console.error("IDB deleteNoteDb 2:", evt.target.error);
+        evt.preventDefault();
         evt.stopPropagation();
         reject(evt.target.error);
       };
@@ -473,6 +492,7 @@ async function incrementCount(searchWords, searchStr, now) {
     getRequest.onerror = handleError;
     function handleError(evt) {
       console.error("IDB incrementCount:", evt.target.error);
+      evt.preventDefault();
       evt.stopPropagation();
       reject(evt.target.error);
     }
@@ -510,6 +530,7 @@ async function recalculateScores(now) {
           }
           updateRequest.onerror = (evt) => {
             console.error("IDB recalculateScores error:", evt.target.error);
+            evt.preventDefault();
             evt.stopPropagation();
             cursor.continue();
           }
@@ -546,6 +567,7 @@ async function deleteExtraSearches(numToDelete) {
           }
           deleteRequest.onerror = (evt) => {
             console.error("IDB deleteExtraSearches error:", evt.target.error);
+            evt.preventDefault();
             evt.stopPropagation();
             cursor.continue();
           }

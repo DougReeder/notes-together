@@ -1,5 +1,5 @@
 // DateCompact.js - small date display with dialog to change
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import PropTypes from 'prop-types';
 import {Button, Dialog, DialogActions, DialogContent, Input} from "@mui/material";
@@ -9,13 +9,12 @@ const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-function DateCompact({date, onChange}) { 
+function DateCompact({date, onChange}) {
   let dateStr;
   if (!date || ! date.valueOf()) {
     dateStr = "no date";
     date = new Date();
-  }
-  if (Date.now() - date > 11 * 30 * 24 * 60 * 60 * 1000) {
+  } else if (Date.now() - date > 11 * 30 * 24 * 60 * 60 * 1000) {
     dateStr = date.getFullYear();
   } else {
     dateStr = `${months[date.getMonth()]} ${date.getDate()}`;

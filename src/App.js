@@ -56,10 +56,7 @@ function App() {
   // TODO: replace string with set of normalized search terms
   const [searchParams, setSearchParams] = useSearchParams();
   const {searchStr, searchWords} = useMemo(() => {
-    const searchStr = searchParams.get('words') || "";
-    if (searchStr.length > 1000) {
-      searchStr.length = 1000;
-    }
+    const searchStr = (searchParams.get('words') || "").slice(0, 1000);
     let searchWords = parseWords(searchStr);
     if (searchWords.size > 10) {
       const wordArr = Array.from(searchWords.values());
@@ -132,7 +129,11 @@ function App() {
         }
         break;
       case 'TAG_CHANGE':
-        combineTagsWithSuggestions();
+        combineTagsWithSuggestions().catch(err => {
+          console.error("while combining tags:", err);
+          window.postMessage({ kind: "Can't retrieve tags - restart your browser", severity: 'error',
+            message: extractUserMessage(err)}, window?.location?.origin);
+        });
         break;
       case 'TRANSIENT_MSG':
         enqueueSnackbar(evt.data?.message || "Restart your browser", {
@@ -172,7 +173,6 @@ function App() {
   }, []);
 
   useEffect( () => {
-    startup();
     async function startup() {
       const {remoteStorage, isFirstLaunch} = await init();   // init is idempotent
       if (isFirstLaunch && window.innerWidth >= 641) {
@@ -188,6 +188,11 @@ function App() {
 
       await combineTagsWithSuggestions();
      }
+    startup().catch(err => {
+      console.error("during startup:", err);
+      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
+        message: "Error starting up - restart your browser"}, window?.location?.origin);
+    });
      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 

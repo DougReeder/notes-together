@@ -786,7 +786,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   const pasteFileInput = useRef(null);
 
-  function pasteFileChange(evt) {
+  async function pasteFileChange(evt) {
     try {
       // console.log("paste files:", evt.target.files)
       ReactEditor.focus(editor);
@@ -794,10 +794,10 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       for (const file of evt.target.files) {
         dataTransfer.items.add(file);
       }
-      editor.insertData(dataTransfer);
+      await editor.insertData(dataTransfer);
     } catch (err) {
       console.error("while pasting files:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: "Switch to another note, then back."}, window?.location?.origin);
     } finally {
       pasteFileInput.current.value = "";
     }

@@ -68,7 +68,11 @@ function FileImport({files, isMultiple, doCloseImport}) {
         importBtnRef.current?.click();
       }
     }
-    determineParseTypes(files)
+    determineParseTypes(files).catch(err => {
+      console.error("while determining parse types:", err);
+      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
+        message: "Import those files one by one."}, window?.location?.origin);
+    })
   }, [files]);
 
   function handleToggleMarkdown(i, evt, isMarkdown) {

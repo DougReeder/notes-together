@@ -1,5 +1,5 @@
 // List.js - List component for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
@@ -316,11 +316,14 @@ function List(props) {
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
   useEffect( () => {
-    checkFirstLaunch();
     async function checkFirstLaunch() {
       const {isFirstLaunch} = await init();   // init is idempotent
       setIsFirstLaunch(isFirstLaunch);
     }
+    checkFirstLaunch().catch(err => {
+      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
+        message: "Error launching - restart your browser."}, window?.location?.origin);
+    });
   }, []);
 
   const [gettingStartedDisplayed, setGettingStartedDisplayed] = useState(true);
