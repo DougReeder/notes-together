@@ -10,6 +10,8 @@ const SAVED_SEARCH_PATH = 'notes/savedSearches/';
 
 const subscriptions = new Set();
 
+let previousStoreObjectPrms = Promise.resolve();
+
 const RemoteNotes = {
   name: 'documents',
   builder: function (privateClient, publicClient) {
@@ -68,57 +70,6 @@ const RemoteNotes = {
       }
     });
 
-    let working = false;
-    const queue = [];
-    const recent = new Set();
-    function enqueueStoreObject(remoteNote) {
-      return new Promise((resolve, reject) => {
-        // console.log("enqueueing upsert", working, recent.size, queue.length);
-        const prevSameInd = queue.findIndex(entry => {
-          return entry.remoteNote.id === remoteNote.id;
-        });
-        if (prevSameInd > -1) {
-          queue[prevSameInd]?.resolve();
-          queue.splice(prevSameInd, 1, {remoteNote, resolve, reject});
-        } else {
-          queue.push({remoteNote, resolve, reject});
-        }
-        dequeueStoreObject();
-      });
-    }
-    async function dequeueStoreObject() {
-      if (working) { return; }
-      // find the next item in the queue, with an ID not recently used
-      const nextCleanInd = queue.findIndex(entry => {
-        return ! recent.has(entry?.remoteNote?.id);
-      });
-      if (-1 === nextCleanInd) {
-        return;
-      }
-      const [item] = queue.splice(nextCleanInd, 1);
-      // console.log("next clean item:", nextCleanInd, item?.remoteNote);
-      try {
-        working = true;
-        const {remoteNote, resolve} = item;
-        recent.add(remoteNote.id);
-        const path = 'notes/' + remoteNote.id;
-        const value = await privateClient.storeObject("note", path, remoteNote);
-        resolve(value);
-      } catch (err) {
-        item.reject(err);
-      } finally {
-        working = false;
-        // console.log("dequeueing upsert", queue.length);
-        dequeueStoreObject();
-        // remotestorage.js can't keep up; timeout is an ugly hack
-        setTimeout(() => {
-          // console.log("(delayed) dequeueing upsert", queue.length);
-          recent.delete(item?.remoteNote?.id);
-          dequeueStoreObject();
-        }, 1000);
-      }
-    }
-
     return {
       exports: {
         // available as remoteStorage.documents.upsert();
@@ -132,9 +83,11 @@ const RemoteNotes = {
 
           } else {
             remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), lastEdited: Date.now()};
-
           }
-          await enqueueStoreObject(remoteNote);
+          const path = 'notes/' + remoteNote.id;
+          await Promise.allSettled([previousStoreObjectPrms]);
+          previousStoreObjectPrms = privateClient.storeObject("note", path, remoteNote);
+          await previousStoreObjectPrms;
           return cleanNote;
         },
 

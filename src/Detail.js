@@ -187,6 +187,9 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }, [noteId, replaceNote, focusOnLoadCB, editor]);
 
 
+  const canSave = useRef(true);
+  const shouldSave = useRef(false);
+
   async function handleSlateChange(newValue) {
     try {
       setNoteErr(null);
@@ -211,7 +214,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       if (isAstChange) {
         // console.log(`AST change ${noteId}:`, editor.operations, newValue);
         if (saveOnAstChangeRef.current) {
-          await save(noteDate);
+          if (canSave.current) {
+            await save(noteDate);
+          } else {
+            shouldSave.current = true;
+          }
         }
       }
     } catch (err) {
@@ -232,7 +239,11 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
       setNoteDate(newDate);
       // console.log('handleDateChange:', newDate);
-      await save(newDate);
+      if (canSave.current) {
+        await save(newDate);
+      } else {
+        shouldSave.current = true;
+      }
     } catch (err) {
       console.error("Detail handleDateChange:", err);
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
@@ -240,6 +251,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   }
 
   async function save(date) {
+    canSave.current = false;
     let content;
     if (editor.subtype?.startsWith('html')) {
       content = serializeHtml(editor.children, await currentSubstitutions());
@@ -249,6 +261,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
       // console.log('save text:', noteId, editor.children, content, date);
     }
     await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined), 'DETAIL');
+    setTimeout(async () => {
+      canSave.current = true;
+      if (shouldSave.current) {
+        shouldSave.current = false;
+        await save(noteDate);
+      }
+    }, 1500);
   }
   saveFn = save;
 
