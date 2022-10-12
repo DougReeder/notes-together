@@ -1,7 +1,7 @@
 import {validate as uuidValidate} from 'uuid';
 import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
-import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
 import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
@@ -213,9 +213,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
         if (saveOnAstChangeRef.current) {
           await save(noteDate);
         }
-      } else {
-        forceUpdate();   // updates the mark indicators
-        // console.log("selection change:", editor.operations);
       }
     } catch (err) {
       console.error("handleSlateChange:", err);
@@ -298,8 +295,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
 
   const previousSelection = useRef(null);
 
-  const [, forceUpdate] = useReducer(x => x + 1, 0);
-
   // Defines our own custom set of helpers.
   function isMarkActive(editor, format) {
     const marks = Editor.marks(editor);
@@ -314,7 +309,6 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     } else {
       Editor.addMark(editor, format, true)
     }
-    forceUpdate();   // so buttons can change colors
   }
 
   function handleSelectedBlockTypeChange(targetType) {
