@@ -98,7 +98,7 @@ function createWelcomeNote(transaction) {
 <p>Create <b>headings</b>, <b>lists</b>, and <b>block quotes</b> using the <i>Block Type</i> menu above. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
 <p>To start typing <b>bold</b> or <i>italic</i> text, select from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</p>
 <p><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</p>
-<p>To <b>Undo</b> or <b>Redo</b>, use the <i>Editor menu</i> <b>⋮</b>︎. <b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste Files...</i>.</p>
+<p>To <b>Undo</b> or <b>Redo</b>, use the <i>Editor menu</i> <b>⋮</b>︎. <b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste files...</i>.</p>
 <p><b>Insert links</b> by dragging the URL (or the icon next to it) from a browser. Right-click to follow links.</p>
 <p><b>Keyboard shortcuts</b> are listed in <i>Help</i> in the Application menu ☰.</p>
 <p><i>Try out the editor features with this note, and delete it when you're finished.</i></p>

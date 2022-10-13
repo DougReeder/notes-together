@@ -45,6 +45,11 @@ function withHtml(editor) {   // defines Slate plugin
     const [node, path] = entry;
     // console.log("normalizeNode:", path, path.length > 0 ? node : 'editor')
 
+    if (Text.isText(node) && node.deleted && node.inserted) {
+      Transforms.unsetNodes(editor, 'deleted', {at: path, mode: "highest"});
+      return;
+    }
+
     if (Element.isElement(node) && ! editor.isInline(node.type)) {
       const parentPath = Path.parent(path);
       const parent = SlateNode.get(editor, parentPath);
@@ -384,7 +389,8 @@ const TEXT_TAGS = {
   KBD: () => ({ code: true }),
   SAMP: () => ({ code: true }),
   TT: () => ({ code: true }),
-  DEL: () => ({ strikethrough: true }),
+  DEL: () => ({ deleted: true }),
+  INS: () => ({ inserted: true }),
   EM: () => ({ italic: true }),
   I: () => ({ italic: true }),
   Q: () => ({ italic: true }),
@@ -628,6 +634,14 @@ const Leaf = ({ attributes, children, leaf }) => {
     children = <s>{children}</s>
   }
 
+  if (leaf.deleted) {
+    children = <del>{children}</del>
+  }
+
+  if (leaf.inserted) {
+    children = <ins>{children}</ins>
+  }
+
   return <span {...attributes}>{children}</span>
 }
 
@@ -660,6 +674,12 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         }
         if (slateNode.strikethrough) {
           html = `<s>${html}</s>`;
+        }
+        if (slateNode.deleted) {
+          html = `<del>${html}</del>`;
+        }
+        if (slateNode.inserted) {
+          html = `<ins>${html}</ins>`;
         }
         if (inCodeBlock) {
           return html;

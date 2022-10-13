@@ -1,5 +1,5 @@
 // mergeConflicts.js - merging two notes for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import htmlparser from "htmlparser2";
 import {extractUserMessage} from "./util/extractUserMessage";
@@ -54,9 +54,15 @@ function equals(o1, o2) {
   }
 }
 
-function mergeConflicts(markup1, markup2) {
-  const tokens1 = tokenize(markup1);
-  const tokens2 = tokenize(markup2);
+function mergeConflicts(markup1, markup2, documentHasTags = true) {
+  let tokens1, tokens2;
+  if (documentHasTags) {
+    tokens1 = tokenize(markup1);
+    tokens2 = tokenize(markup2);
+  } else {
+    tokens1 = markup1.split('\n');
+    tokens2 = markup2.split('\n');
+  }
 
   const mergedTokens = [];
   let matchedInd1 = 0, matchedInd2 = 0;
@@ -70,15 +76,13 @@ function mergeConflicts(markup1, markup2) {
     }
     if (areTokensAvailable &&
         equals(tokens1[matchedInd1 + searchInd1], tokens2[matchedInd2 + diagonal - searchInd1])) {
-      for (let i = 0; i < searchInd1; ++i) {
-        checkPreviousAndPush(tokens1[matchedInd1+i]);
-      }
-      for (let i = 0; i < diagonal - searchInd1; ++i) {
-        checkPreviousAndPush(tokens2[matchedInd2+i]);
-      }
+      pushConflictTokens(tokens1, matchedInd1, matchedInd1 + searchInd1, 'del');
+
+      pushConflictTokens(tokens2, matchedInd2, matchedInd2 + diagonal - searchInd1, 'ins');
+
       matchedInd1 += searchInd1;
       matchedInd2 += diagonal - searchInd1;
-      checkPreviousAndPush(tokens1[matchedInd1]);
+      checkPreviousAndPush(tokens1[matchedInd1]);   // matched token
       ++matchedInd1;
       ++matchedInd2;
       diagonal = 0;
@@ -98,12 +102,9 @@ function mergeConflicts(markup1, markup2) {
     }
   }
 
-  for (let i = matchedInd1; i < tokens1.length; ++i) {
-    checkPreviousAndPush(tokens1[i]);
-  }
-  for (let i = matchedInd2; i < tokens2.length; ++i) {
-    checkPreviousAndPush(tokens2[i]);
-  }
+  pushConflictTokens(tokens1, matchedInd1, tokens1.length, 'del');
+
+  pushConflictTokens(tokens2, matchedInd2, tokens2.length, 'ins');
 
   const mergedMarkup = mergedTokens.map(token => {
     if ('string' === typeof token) {
@@ -124,10 +125,40 @@ function mergeConflicts(markup1, markup2) {
 
   return mergedMarkup;
 
+  function pushConflictTokens(source, start, end, conflictTagName) {
+    if (end === start) {
+      return;
+    }
+
+    let chunkHasContent = false;
+    for (let i = start; i < end; ++i) {
+      if ('string' === typeof source[i] || ['img', 'hr'].includes(source[i]?.tagName)) {
+        chunkHasContent = true;
+        break;
+      }
+    }
+
+    if (chunkHasContent) {
+      if (documentHasTags) {
+        mergedTokens.push({tagName: conflictTagName, attributes: {}});
+      } else {
+        if ('del' === conflictTagName) {   // is there a better way to do this?
+          mergedTokens.push('\n');
+        }
+      }
+    }
+    for (let i = start; i < end; ++i) {
+      checkPreviousAndPush(source[i]);
+    }
+    if (chunkHasContent) {
+      mergedTokens.push(documentHasTags ? {tagName: conflictTagName} : '\n');
+    }
+  }
+
   function checkPreviousAndPush(token) {
     if ('string' === typeof token &&
         mergedTokens.length > 0 && 'string' === typeof mergedTokens[mergedTokens.length-1]) {
-      mergedTokens.push(' ');
+      mergedTokens.push(documentHasTags ? ' ' : '\n');
     }
     mergedTokens.push(token);
   }

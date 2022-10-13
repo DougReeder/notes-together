@@ -93,23 +93,26 @@ async function changeHandler(evt) {
               requestIdleCallback(async () => {
                 let cleanNote;
                 try {
-                  const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content);
                   const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
-                  let mergedMimeType;
+                  let mergedMimeType, documentHasTags;
                   if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
                     mergedMimeType = evt.oldValue.mimeType;
+                    documentHasTags = true;
                   } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
                     mergedMimeType = evt.newValue.mimeType;
+                    documentHasTags = true;
                   } else {
                     mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
+                    documentHasTags = false;
                   }
+                  const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content, documentHasTags);
                   // initiator is **not** 'REMOTE' for this purpose
                   cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
                 } catch (err) {
                   console.error("while handling conflict:", err);
                 } finally {
                   const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
-                  const message = `Conflict in “${title?.split('\n')[0]}”`;
+                  const message = `Edit “${title?.split('\n')[0]}” then select ‘Clear Deleted & Inserted styles’`;
                   window.postMessage({
                     kind: 'TRANSIENT_MSG',
                     severity: 'warning',

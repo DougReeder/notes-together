@@ -293,7 +293,7 @@ it('renders error if note missing', async () => {
     // expect(screen.getByRole('menu', {name: "Details menu"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: /Undo/})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: /Redo/})).toBeVisible();
-    expect(screen.getByRole('menuitem', {name: /Paste Files/})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: /Paste files/})).toBeVisible();
     const changeNoteType = screen.getByRole('menuitem', {name: /Change note type/});
     expect(changeNoteType).toBeVisible();
 

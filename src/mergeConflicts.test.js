@@ -1,5 +1,5 @@
 // mergeConflicts.test.js - automated tests for merging two notes for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021-2022 Doug Reeder
 
 import {tokenize, mergeConflicts} from "./mergeConflicts";
 
@@ -74,6 +74,28 @@ describe("tokenize", () => {
 });
 
 describe("mergeConflicts", () => {
+  it("should merge text line-by-line", () => {
+    const oldText = `The Dao that is seen
+is not the true Dao
+until you bring fresh toner
+-- anonymous`;
+    const newText = `The Dao that is seen
+is not the true Dao, until
+you bring fresh toner
+-- anonymous`;
+
+    const mergedText = mergeConflicts(oldText, newText, false);
+    expect(mergedText).toEqual(`The Dao that is seen
+
+is not the true Dao
+until you bring fresh toner
+
+is not the true Dao, until
+you bring fresh toner
+
+-- anonymous`);
+  });
+
   it("should normalize markup when both versions are equal", () => {
     const mergedMarkup = mergeConflicts(markup1, markup1);
     expect(mergedMarkup).toEqual(`
@@ -95,53 +117,53 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
 
   it("should handle different beginnings", () => {
     const mergedMarkup = mergeConflicts('foo<b>bold</b>end', 'bar<i>italic</i>end');
-    expect(mergedMarkup).toEqual('foo<b>bold</b>bar<i>italic</i>end');
+    expect(mergedMarkup).toEqual('<del>foo<b>bold</b></del><ins>bar<i>italic</i></ins>end');
   });
 
   it("should handle delete at beginning of markup 1", () => {
     const mergedMarkup = mergeConflicts('end', '<h1>title</h1>end');
-    expect(mergedMarkup).toEqual('<h1>title</h1>end');
+    expect(mergedMarkup).toEqual('<ins><h1>title</h1></ins>end');
   });
 
   it("should handle delete at beginning of markup 2", () => {
     const mergedMarkup = mergeConflicts('<h1>title</h1>end', 'end');
-    expect(mergedMarkup).toEqual('<h1>title</h1>end');
+    expect(mergedMarkup).toEqual('<del><h1>title</h1></del>end');
   });
 
   it("should handle delete at end of markup 1", () => {
     const mergedMarkup = mergeConflicts('start<p>something</p>', 'start');
-    expect(mergedMarkup).toEqual('start<p>something</p>');
+    expect(mergedMarkup).toEqual('start<del><p>something</p></del>');
   });
 
   it("should handle delete at end of markup 2", () => {
     const mergedMarkup = mergeConflicts('start', 'start<p>something</p>');
-    expect(mergedMarkup).toEqual('start<p>something</p>');
+    expect(mergedMarkup).toEqual('start<ins><p>something</p></ins>');
   });
 
   it("should handle different ends", () => {
     const mergedMarkup = mergeConflicts('start<b>bold</b>foo', 'start<i>italic</i>bar');
-    expect(mergedMarkup).toEqual('start<b>bold</b>foo<i>italic</i>bar');
+    expect(mergedMarkup).toEqual('start<del><b>bold</b>foo</del><ins><i>italic</i>bar</ins>');
 
     const mergedMarkup2 = mergeConflicts('<hr>alpha', '<hr>beta');
-    expect(mergedMarkup2).toEqual('<hr />alpha beta');
+    expect(mergedMarkup2).toEqual('<hr /><del>alpha</del><ins>beta</ins>');
   });
 
   it("should include all of totally different markups", () => {
     const mergedMarkup = mergeConflicts('<h2>title</h2><blockquote>first</blockquote>', '<p>first paragraph</p><p>second paragraph</p>');
-    expect(mergedMarkup).toEqual('<h2>title</h2><blockquote>first</blockquote><p>first paragraph</p><p>second paragraph</p>');
+    expect(mergedMarkup).toEqual('<del><h2>title</h2><blockquote>first</blockquote></del><ins><p>first paragraph</p><p>second paragraph</p></ins>');
 
     const mergedMarkup2 = mergeConflicts('first', 'second');
-    expect(mergedMarkup2).toEqual('first second');
+    expect(mergedMarkup2).toEqual('<del>first</del><ins>second</ins>');
   });
 
-  it("should insert a space between alternate text (to avoid joining words)", () => {
-    const mergedMarkup = mergeConflicts('<h3>one way</h3>', '<h3>point forward</h3>');
-    expect(mergedMarkup).toEqual('<h3>one way point forward</h3>');
-  });
+  // it("should insert a space between alternate text (to avoid joining words)", () => {
+  //   const mergedMarkup = mergeConflicts('<h3>one way</h3>', '<h3>point forward</h3>');
+  //   expect(mergedMarkup).toEqual('<h3><del>one way</del><ins>point forward</ins></h3>');
+  // });
 
   it("should handle text replaced by tag", () => {
     const mergedMarkup = mergeConflicts('Figure 1: (image goes here)', 'Figure 1: <img src="fig1.jpg">');
-    expect(mergedMarkup).toEqual('Figure 1: (image goes here) Figure 1: <img src="fig1.jpg" />');
+    expect(mergedMarkup).toEqual('<del>Figure 1: (image goes here)</del><ins>Figure 1: <img src="fig1.jpg" /></ins>');
   });
 
   it("should include both versions of differing markup", () => {
@@ -164,15 +186,15 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
 <body bgcolor="#FFFFFF">
 <table border="0" cellpadding="3" cellspacing="0"><tr><td id="smez">
 <a href="manual.html">Back To Manual Contents</a><br />
-<a name="n0"></a><h1>1 Introduction 1 Intro</h1><p>
+<a name="n0"></a><h1><del>1 Introduction</del><ins>1 Intro</ins></h1><p>
 <a name="n1"></a></p><h2> What is Nutshell?</h2>
 Nutshell allows developers to distribute a single PRC file instead of multiple files.  Beyond the obvious advantage of eliminating customer support surrounding missing files, Nutshell provides many other major advantages over a basic installation procedure:
 <ul>
 <li>Cross-platform.
 </li><li>Control <b><i>which files</b></i> get installed.
 </li><li>Instant over-the-air (OTA) delivery solution.
-</li><li>Trusted by major software companies for stability and reliability.
-</li></ul>
+</li><del><li>Trusted by major software companies for stability and reliability.
+</li></del></ul>
 <hr />
 </td></tr></table></body>`);
   });
@@ -217,17 +239,17 @@ Nutshell allows developers to distribute a single PRC file instead of multiple f
         <stop offset="50%" stop-color="black" stop-opacity="0" /><stop offset="60%" stop-color="black" stop-opacity="0" />
         <stop offset="100%" stop-color="blue" />
       </lineargradient>
-      <style type="text/css"><![CDATA[
+      <style type="text/css"><del><![CDATA[
         #rect1 { fill: url(#Gradient1); }
         .stop1 { stop-color: red; }
         .stop2 { stop-color: black; stop-opacity: 0; }
         .stop3 { stop-color: blue; }
-      ]]> <![CDATA[
+      ]]></del><ins><![CDATA[
         #rect1 { fill: url(#Gradient1); }
         .stop1 { stop-color: red; }
         .stop2 { stop-color: green; stop-opacity: 0.2; }
         .stop3 { stop-color: blue; }
-      ]]></style>
+      ]]></ins></style>
   </defs>
 
   <rect id="rect1" x="10" y="10" rx="15" ry="15" width="100" height="100" />

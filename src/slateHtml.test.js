@@ -278,6 +278,24 @@ describe("HTML plugin normalizer", () => {
       ]},
     ]);
   });
+
+  it("should change text nodes marked both 'deleted' and 'inserted' to just 'inserted'", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [{children: [
+      {text: "Lorem ipsum", deleted: true},
+      {text: "dolor sit amet,", deleted: true, inserted: true},
+      {text: "consectetur adipiscing elit,", inserted: true},
+    ]}];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([{type: "paragraph", children: [
+        {text: "Lorem ipsum", deleted: true},
+        {text: "dolor sit amet,consectetur adipiscing elit,", inserted: true},
+      ]}]);
+  });
 });
 
 describe("HTML plugin insertData", () => {
@@ -1149,6 +1167,15 @@ describe("serializeHtml", () => {
     ])).toEqual("<strong>bold text </strong><em><strong>bold and italic</strong></em><em>only italic</em>");
   });
 
+  it("should encode deletion and insertion", () => {
+    expect(serializeHtml([
+      {text: "bow "},
+      {text: "deleted text", deleted: true},
+      {text: "inserted text", inserted: true},
+      {text: " stern"},
+    ])).toEqual("bow <del>deleted text</del><ins>inserted text</ins> stern");
+  });
+
   it("should encode inline code", () => {
     expect(serializeHtml([
       {text: "assign using "},
@@ -1339,8 +1366,8 @@ describe("deserializeHtml", () => {
     expect(slateNodes.length).toEqual(4);
   });
 
-  it("should parse <s> <strike> and <del> tags as strikethrough marks", () => {
-    const html = `leading text <s>struck text</s> interquel1 <strike>more struck text</strike> interquel2 <del>deleted text</del> trailing text`;
+  it("should parse <s> and <strike> tags as strikethrough marks", () => {
+    const html = `leading text <s>struck text</s> interquel1 <strike>more struck text</strike> trailing text`;
 
     const slateNodes = deserializeHtml(html, editor);
 
@@ -1348,10 +1375,20 @@ describe("deserializeHtml", () => {
     expect(slateNodes[1]).toEqual({text: "struck text", strikethrough: true});
     expect(slateNodes[2]).toEqual({text: " interquel1 "});
     expect(slateNodes[3]).toEqual({text: "more struck text", strikethrough: true});
-    expect(slateNodes[4]).toEqual({text: " interquel2 "});
-    expect(slateNodes[5]).toEqual({text: "deleted text", strikethrough: true});
-    expect(slateNodes[6]).toEqual({text: " trailing text"});
-    expect(slateNodes.length).toEqual(7);
+    expect(slateNodes[4]).toEqual({text: " trailing text"});
+    expect(slateNodes.length).toEqual(5);
+  });
+
+  it("should parse <del> and <ins> tags", () => {
+    const html = `prolog <del>local text</del><ins>remote text</ins> epilogue`
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0]).toEqual({text: "prolog "});
+    expect(slateNodes[1]).toEqual({text: "local text", deleted: true});
+    expect(slateNodes[2]).toEqual({text: "remote text", inserted: true});
+    expect(slateNodes[3]).toEqual({text: " epilogue"});
+    expect(slateNodes.length).toEqual(4);
   });
 
   it("should parse <p> <figure> <details> <dt> and <dd> tags as paragraphs", () => {

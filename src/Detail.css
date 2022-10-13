@@ -78,6 +78,22 @@ h3 {
     text-transform: none;
 }
 
+del {
+    text-decoration: none;
+    background-color: #f4e0ff;
+    border-style: solid;
+    border-width: 1px 2px 1px 2px;
+    border-color: #f4e0ff;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d6ffef;
+    border-style: solid;
+    border-width: 1px 2px 1px 2px;
+    border-color: #d6ffef;
+}
+
 [role=textbox] pre {
     white-space: pre-wrap;
 }

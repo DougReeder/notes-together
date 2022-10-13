@@ -158,7 +158,7 @@ function HelpPane({setMustShowPanel}) {
             <p>If you don't add text related to the graphic, at least add several keywords, so you can search for it.  But you don't have to do that right away!</p>
           </li>
           <li><p>To add graphics to an existing note, drag the files to the editor, or copy and paste them.</p>
-            <p>On a phone or tablet, from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste Files...</b>. That's also how you insert a picture with the camera.</p>
+            <p>On a phone or tablet, from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste files...</b>. That's also how you insert a picture with the camera.</p>
           </li>
         </ul>
 

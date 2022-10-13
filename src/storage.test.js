@@ -570,8 +570,8 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`<p><em><em>My Day</em></em></p><p>It was dull. It was great!</p>`);
-      expect(retrieved.title).toEqual("My Day\nIt was dull. It was great!");
+      expect(retrieved.content).toEqual(`<p><em><em>My Day</em></em></p><p><del>It was dull.</del><ins>It was great!</ins></p>`);
+      expect(retrieved.title).toMatch(/My Day\nIt was dull\. ?It was great!/);
       expect(retrieved.date).toEqual(remoteNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
@@ -602,8 +602,8 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`The movie was well-acted. The movie has good costuming.`);
-      expect(retrieved.title).toEqual("The movie was well-acted. The movie has good costuming.");
+      expect(retrieved.content).toEqual(`\n\nThe movie was well-acted.\n\nThe movie has good costuming.\n`);
+      expect(retrieved.title).toEqual("The movie was well-acted.\nThe movie has good costuming.");
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
@@ -635,9 +635,9 @@ Finance: we can't afford it.`,
 
       const retrieved = await getNote(id);
       // TODO: parse text notes into paragraphs
-      expect(retrieved.content).toEqual(`<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>Staff Meeting
+      expect(retrieved.content).toEqual(`<del><h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p></del><ins>Staff Meeting
 John: let's be cautious
-Finance: we can't afford it.`);
+Finance: we can't afford it.</ins>`);
       expect(retrieved.title).toEqual("Staff Meeting");
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
@@ -670,7 +670,7 @@ Finance: we can't afford it.`);
 
       const retrieved = await getNote(id);
       // TODO: parse text notes into paragraphs
-      expect(retrieved.content).toEqual(` my notes on\n# Therapods <p>my notes on</p><h2>Therapods</h2>`);
+      expect(retrieved.content).toEqual(`<del> my notes on\n# Therapods </del><ins><p>my notes on</p><h2>Therapods</h2></ins>`);
       expect(retrieved.title).toEqual(`Therapods`);
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);

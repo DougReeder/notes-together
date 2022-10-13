@@ -26,9 +26,18 @@ import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
-import {MoreVert, Photo, Redo, StrikethroughS, TextFormat, Undo} from "@mui/icons-material";
+import {
+  AddCircleOutline,
+  MoreVert,
+  Photo,
+  Redo,
+  RemoveCircleOutline,
+  StrikethroughS,
+  TextFormat,
+  Undo
+} from "@mui/icons-material";
 import {Alert, AlertTitle} from '@mui/material';
-import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange} from 'slate'
+import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -323,6 +332,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
   function toggleMark(editor, format) {
     const isActive = isMarkActive(editor, format)
 
+    if ('deleted' === format && isMarkActive(editor, 'inserted')) {
+      Editor.removeMark(editor, 'inserted');
+    }
+    if ('inserted' === format && isMarkActive(editor, 'deleted')) {
+      Editor.removeMark(editor, 'deleted');
+    }
+
     if (isActive) {
       Editor.removeMark(editor, format)
     } else {
@@ -544,6 +560,12 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'strikethrough')}>
             Strikethrough &nbsp;<StrikethroughS color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'inherit'}/>
           </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'deleted')}>
+            Deleted &nbsp;<RemoveCircleOutline color={isMarkActive(editor, 'deleted') ? 'primary' : 'inherit'}/>
+          </MenuItem>
+          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'inserted')}>
+            Inserted &nbsp;<AddCircleOutline color={isMarkActive(editor, 'inserted') ? 'primary' : 'inherit'}/>
+          </MenuItem>
         </Menu>
       </>);
     } else {
@@ -600,7 +622,13 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
           pasteFileInput.current.click();
           setDetailsMenuAnchorEl(null);
         }}>
-          Paste Files...
+          Paste files...
+        </MenuItem>
+        <MenuItem onClick={evt => {
+          Transforms.unsetNodes(editor, ['deleted', 'inserted'], {at: [], match: node => Text.isText(node), mode: 'all'});
+          setDetailsMenuAnchorEl(null);
+        }}>
+          Clear Deleted &amp; Inserted styles
         </MenuItem>
         <MenuItem onClick={evt => {
           previousSelection.current = null;
