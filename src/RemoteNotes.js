@@ -4,6 +4,7 @@
 import {validate as uuidValidate} from 'uuid';
 import {sanitizeNote} from "./sanitizeNote";
 import {extractUserMessage} from "./util/extractUserMessage";
+import {TAG_LENGTH_MAX} from "./storage";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
 const SAVED_SEARCH_PATH = 'notes/savedSearches/';
@@ -48,7 +49,7 @@ const RemoteNotes = {
     privateClient.declareType('savedSearch', {
       "type": "object",
       "properties": {
-        "original": {type: "string", maxLength: 100},
+        "original": {type: "string", maxLength: Math.round(TAG_LENGTH_MAX * 1.5)},
       },
       "required": ["original" ]
     });
@@ -129,10 +130,10 @@ const RemoteNotes = {
           }
           const normalized = Array.from(searchWords).sort().join(' ');
           if (normalized.length < 2) {
-            throw Object.assign(new Error("Enter 2 or more characters in the search field"), {severity: 'info'});
+            throw Object.assign(new Error("Enter 2 or more letters or digits in the search field"), {severity: 'info'});
           }
-          if (normalized.length > 100) {
-            throw Object.assign(new Error("Tag must be 100 or less characters"), {severity: 'warning'});
+          if (normalized.length > TAG_LENGTH_MAX) {
+            throw Object.assign(new Error(`Tag must have ${TAG_LENGTH_MAX} or fewer letters and digits`), {severity: 'warning'});
           }
 
           if ('string' !== typeof searchStr) {

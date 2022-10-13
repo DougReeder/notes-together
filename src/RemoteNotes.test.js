@@ -7,7 +7,7 @@ import auto from "fake-indexeddb/auto.js";
 import RemoteStorage from "remotestoragejs";
 import RemoteNotes from "./RemoteNotes";
 import {NIL, validate as uuidValidate} from "uuid";
-import {parseWords} from "./storage";
+import {parseWords, TAG_LENGTH_MAX} from "./storage";
 
 
 describe("RemoteNotes", () => {
@@ -221,10 +221,12 @@ describe("RemoteNotes", () => {
       await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(Error);
     });
 
-    it("should reject a normalized search with 101 characters", async () => {
-      const original = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890z";
+    it(`should reject a normalized search with ${TAG_LENGTH_MAX+1} characters`, async () => {
+      const characters = new Array(TAG_LENGTH_MAX+1).fill('a').fill('z', Math.floor(TAG_LENGTH_MAX/2));
+      characters[Math.floor(TAG_LENGTH_MAX/2)] = ' ';
+      const original = characters.join('');
       const searchWords = parseWords(original);
-      await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(Error);
+      await expect(remoteStorage.documents.upsertTag(searchWords, original)).rejects.toThrow(new RegExp('\\b' + TAG_LENGTH_MAX + '\\b'));
     });
 
     it("should reject a searchStr that is not a string", async () => {

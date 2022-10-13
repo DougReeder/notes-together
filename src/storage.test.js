@@ -13,11 +13,11 @@ import {
   findStubs,
   changeHandler,
   saveTag,
-  listTags, deleteTag
+  listTags, deleteTag, WORD_LENGTH_MAX, TAG_LENGTH_MAX
 } from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
-import {NIL, v4 as uuidv4} from "uuid";
+import {NIL} from "uuid";
 
 
 if (!global.requestIdleCallback) {
@@ -47,7 +47,7 @@ describe("storage", () => {
 
   describe("parseWords", () => {
     it("should retain internal, but not external apostrophes and single quotes", async () => {
-      const wordArr = Array.from(parseWords("I'll fix 'John's & F'lar's' boat. F'lar’s|`f'larʼsʼ"))
+      const wordArr = Array.from(parseWords("I'll fix 'John's & F'lar's' boat. F'lar’s|`f'larʼsʼ .'oddword.'-"))
 
       expect(wordArr).toContain("I'LL");
       expect(wordArr).toContain("FIX");
@@ -55,7 +55,8 @@ describe("storage", () => {
       expect(wordArr).toContain("F'LAR'S");
       expect(wordArr).not.toContain("F'LAR’S")
       expect(wordArr).toContain("BOAT");
-      expect(wordArr.length).toEqual(5);
+      expect(wordArr).toContain("ODDWORD");
+      expect(wordArr.length).toEqual(6);
     });
 
     it("forms words with ASCII apostrophe in place of right-single-quote and modifier-letter-apostrophe", function () {
@@ -133,15 +134,16 @@ describe("storage", () => {
     });
 
     it("forms words using periods, then drops them, but allows decimal points in numbers", async () => {
-      const wordArr = Array.from(parseWords("C.A.T. scan, 1.3.1.2 P.T.A. ...42...69..."));
+      const wordArr = Array.from(parseWords("C.A.T. scan, 1.3.1.2 P.T.A. ...42...69... '....' .......010.......020.......030......."));
 
       expect(wordArr).toContain("CAT");
       expect(wordArr).toContain("SCAN");
       expect(wordArr).toContain("1.3.1.2");
       expect(wordArr).not.toContain("1312");
       expect(wordArr).toContain("PTA");
-      expect(wordArr).toContain("42...69");
-      expect(wordArr.length).toEqual(5);
+      expect(wordArr).toContain("42..69");
+      expect(wordArr).toContain("010..020..030");
+      expect(wordArr.length).toEqual(6);
     });
 
     it('tokenizes "Það á sér langan aðdraganda." to "THATH", "A", "SER", "LANGAN", "ATHDRAGANDA"', async () => {
@@ -289,6 +291,13 @@ describe("storage", () => {
     //
     //   expect(wordArr).toContain("RX2901");
     // });
+
+    it("should limit index words to first 60 characters", () => {
+      const wordArr = Array.from(parseWords("~~~Incomprehensibilities234567890abcdefghijklmnopqrstuvwxyz⑦⑧⑨ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁ'''"));
+
+      expect(wordArr).toContain("INCOMPREHENSIBILITIES234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ789A");
+      expect(wordArr.length).toEqual(1);
+    });
   });
 
   describe("upsertNote", () => {
@@ -1123,9 +1132,12 @@ Finance: we can't afford it.`);
     it("should reject a 1-character search", async () => {
       await expect(saveTag(new Set(["X"]), 'x')).rejects.toThrow(/\b2\b/);
     });
-    it("should reject a 101-character search", async () => {
-      const searchStr = '12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901';
-      await expect(saveTag(new Set([searchStr]), searchStr)).rejects.toThrow(/\b100\b/);
+    it(`should reject a ${TAG_LENGTH_MAX+1}-character search`, async () => {
+      const characters = new Array(TAG_LENGTH_MAX+1).fill('a').fill('z', Math.floor(TAG_LENGTH_MAX/2));
+      characters[Math.floor(TAG_LENGTH_MAX/2)] = ' ';
+      const searchStr = characters.join('');
+      const searchWords = parseWords(searchStr);
+      await expect(saveTag(searchWords, searchStr)).rejects.toThrow(new RegExp('\\b' + TAG_LENGTH_MAX + '\\b'));
     });
 
     it("should accept a 2-character search", async () => {

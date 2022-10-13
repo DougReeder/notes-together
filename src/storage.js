@@ -12,6 +12,9 @@ import decodeEntities from "./util/decodeEntities";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 
+const WORD_LENGTH_MAX = 60;
+const TAG_LENGTH_MAX = 100;
+
 let initPrms;
 let isFirstLaunch;
 let persistenceAttempted = false;
@@ -291,12 +294,13 @@ function parseWords(text) {
 
 function normalizeWord(word) {
   // ASCII, Unicode, no-break & soft hyphens
-  word = word.toUpperCase().replace(/-|‐|‑|­|_| |^'+|'+$|^\.+|\.+$|\^/g, "");
-  // not a word containing only digits and decimal points
-  if (! /^[\d.]+$/.test(word)) {
+  word = word.toUpperCase().replace(/^[-‐‑­_ '.^]+|[-‐‑­_ '.^]+$|-|‐|‑|­|_| |\^/g, "");
+  if (/^[\d.]+$/.test(word)) {   // word containing only digits and decimal points
+    word = word.replace(/\.{3,}/g, "..");
+  } else {
     word = word.replace(/\./g, "");
   }
-  return word;
+  return word.slice(0, WORD_LENGTH_MAX);
 }
 
 
@@ -315,4 +319,4 @@ async function listTags() {
   return await remoteStorage.documents.getAllTags();
 }
 
-export {init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};
+export {WORD_LENGTH_MAX, TAG_LENGTH_MAX, init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};
