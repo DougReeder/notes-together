@@ -158,11 +158,27 @@ describe("HTML plugin normalizer", () => {
       {type: 'quote', children: [
           {type: 'numbered-list', children: [
             {type: 'heading-one', children: [{text: "\t"}]},
+            {type: 'heading-one', children: [
+                {text: "elvis"},
+                {text: "lives!", superscript: true}
+            ]},
             {type: 'paragraph', children: [{text: "hut one"}]},
             {type: 'code', children: [{text: "\n"}]},
             {type: 'list-item', children: [{text: "hut two"}]},
             {type: 'list-item', children: [{text: ""}]},
-            {text: 'hike!'}
+            {text: 'hike!'},
+            {type: 'image',
+              url: 'https://mozilla.org/?x=шеллы',
+              title: "Slice of grapefruit",
+              children: [
+                {text: "Grapefruit slice", bold: true},
+                {text: " atop a pile of other slices"}
+              ]
+            },
+            {type: 'link', url: 'https://example.org/', children: [
+                {text: "description of", strikethrough: true},
+                {text: "contents"}
+            ]},
           ]},
       ]},
     ];
@@ -173,10 +189,32 @@ describe("HTML plugin normalizer", () => {
     expect(editor.children).toEqual([
       {type: 'quote', children: [
           {type: 'numbered-list', children: [
+              {type: 'list-item', children: [
+                {text: "elvis"},
+                {text: "lives!", superscript: true}
+              ]},
               {type: 'list-item', children: [{text: "hut one"}]},
               {type: 'list-item', children: [{text: "hut two"}]},
               {type: 'list-item', children: [{text: ""}]},
               {type: 'list-item', children: [{text: 'hike!'}]},
+              {type: 'list-item', children: [
+                {type: 'image',
+                  url: 'https://mozilla.org/?x=шеллы',
+                  title: "Slice of grapefruit",
+                  children: [
+                    {text: "Grapefruit slice", bold: true},
+                    {text: " atop a pile of other slices"}
+                  ]
+                },
+              ]},
+              {type: 'list-item', children: [
+                {text: ""},
+                {type: 'link', url: 'https://example.org/', children: [
+                    {text: "description of", strikethrough: true},
+                    {text: "contents"}
+                ]},
+                {text: ""}
+              ]},
             ]},
         ]},
     ]);

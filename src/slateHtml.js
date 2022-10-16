@@ -16,7 +16,19 @@ import {determineParseType} from "./FileImport";
 import {coerceToPlainText} from "./slateUtil";
 
 function isBlank(node) {
-  return /^\s*$/.test(SlateNode.string(node));
+  if (Text.isText(node)) {
+    return /^\s*$/.test(SlateNode.string(node));   // contains non-space character
+  } else if (Element.isElement(node)) {
+    switch (node.type) {
+      case 'image':
+      case 'thematic-break':
+        return false;
+      case 'link':
+        return /^\s*$/.test(SlateNode.string(node));
+      default:
+        return ! node.children.some(child => ! isBlank(child));
+    }
+  }
 }
 
 function withHtml(editor) {   // defines Slate plugin
@@ -107,6 +119,7 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
+    // ensure all children of lists are list-items
     if (['bulleted-list', 'numbered-list'].includes(node.type)) {
       let changed = false;
       for (let i=node.children.length-1; i>=0; --i) {
@@ -117,10 +130,14 @@ function withHtml(editor) {   // defines Slate plugin
             Transforms.removeNodes(editor, {at: childPath});
             changed = true;
           } else {
-            Transforms.unwrapNodes(editor, {at: childPath});
-            const item = {type: 'list-item', children: []};
-            Transforms.wrapNodes(editor, item, {at: childPath});
-            changed = true;
+            if (['paragraph','heading-one','heading-two','heading-three'].includes(child.type)) {
+              Transforms.setNodes(editor, {type: 'list-item'}, {at: childPath});
+              changed = true;
+            } else {
+              const item = {type: 'list-item', children: []};
+              Transforms.wrapNodes(editor, item, {at: childPath});
+              changed = true;
+            }
           }
         }
       }
