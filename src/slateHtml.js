@@ -626,43 +626,49 @@ const ImageElement = ({ attributes, children, element }) => {
 }
 
 const Leaf = ({ attributes, children, leaf }) => {
+  let markup = <span {...attributes}
+                     {...(leaf.highlight && {'className': 'highlight'})}
+  >
+    {children}
+  </span>
+
   if (leaf.bold) {
-    children = <strong>{children}</strong>
+    markup = <strong>{markup}</strong>
   }
 
   if (leaf.code) {
-    children = <code>{children}</code>
+    markup = <code>{markup}</code>
   }
 
   if (leaf.italic) {
-    children = <em>{children}</em>
+    markup = <em>{markup}</em>
   }
 
   if (leaf.superscript) {
-    children = <sup>{children}</sup>
+    markup = <sup>{markup}</sup>
   }
 
   if (leaf.subscript) {
-    children = <sub>{children}</sub>
+    markup = <sub>{markup}</sub>
   }
 
   if (leaf.underline) {
-    children = <u>{children}</u>
+    markup = <u>{markup}</u>
   }
 
   if (leaf.strikethrough) {
-    children = <s>{children}</s>
+    markup = <s>{markup}</s>
   }
 
   if (leaf.deleted) {
-    children = <del>{children}</del>
+    markup = <del>{markup}</del>
   }
 
   if (leaf.inserted) {
-    children = <ins>{children}</ins>
+    markup = <ins>{markup}</ins>
   }
 
-  return <span {...attributes}>{children}</span>
+  return markup;
 }
 
 

@@ -66,7 +66,7 @@ function HelpPane({setMustShowPanel}) {
         <h4>How closely must search words match the text?</h4>
         <ul>
           <li>Upper- and lower-case don’t matter, so “scuba” matches “SCUBA”.</li>
-          <li>Dashes, periods and underscores are dropped, so “playgroup” matches “play-group” and “phd” matches “Ph.D.”</li>
+          <li>Dashes, periods, underscores and carets are dropped, so “playgroup” matches “play-group” and “phd” matches “Ph.D.”</li>
           <li>Decimal points in numbers are <i>not</i> dropped, so “25” doesn't match “2.5”.</li>
           <li>“Words” consist only of letters, digits and apostrophes, so
             <ul>
@@ -81,7 +81,7 @@ function HelpPane({setMustShowPanel}) {
           </li>
           <li>“strasse” matches “Straße”, “thath” matches “Það”, “aelfred” matches “Ælfred” and so forth.</li>
           {/*<li>Superscript and subscript digits match normal digits, so “h2o” matches “H₂O”</li>*/}
-          {/*<li>If there’s a latin letter that doesn’t match the way it should, please send a support e-mail (see below).</li>*/}
+          <li>If there’s a latin letter that doesn’t match the way it should, please send a support e-mail (see below).</li>
           <li>Synonyms do <strong>not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
         </ul>
 

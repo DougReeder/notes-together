@@ -11,6 +11,7 @@ import {createMemoryNote} from "./Note";
 import decodeEntities from "./util/decodeEntities";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
+import {globalWordRE} from "./util";
 
 const WORD_LENGTH_MAX = 60;
 const TAG_LENGTH_MAX = 100;
@@ -278,17 +279,17 @@ function deleteNote(id) {
 
 
 function parseWords(text) {
-  text = removeDiacritics(decodeEntities(text));
+  text = decodeEntities(text);
 
   const wordSet = new Set();
   // initializes regexp and its lastIndex property outside the loop
   // ASCII, Unicode, no-break & soft hyphens
   // ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
-  const wordRE = /[-‐‑­'’ʼ. ^\wÑñ]+/g;
+  const wordRE = new RegExp(globalWordRE);
   let result, normalizedWord;
 
   while ((result = wordRE.exec(text)) !== null) {
-    if ((normalizedWord = normalizeWord(result[0]))) {
+    if ((normalizedWord = normalizeWord(removeDiacritics(result[0])))) {
       wordSet.add(normalizedWord);
     }
   }
@@ -322,4 +323,4 @@ async function listTags() {
   return await remoteStorage.documents.getAllTags();
 }
 
-export {WORD_LENGTH_MAX, TAG_LENGTH_MAX, init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};
+export {WORD_LENGTH_MAX, TAG_LENGTH_MAX, init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, normalizeWord, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};

@@ -248,19 +248,19 @@ describe("storage", () => {
       expect(wordArr.length).toEqual(1);
     });
 
-    it('in the default locale, tokenizes φίλοι οίκος σεισμός χημεία λαμπάς Αλέξανδρος Μακεδών Ἰωάννης Άγιος Νικόλαος to PHILOI OIKOS SEISMOS CHEMEIA LAMPAS ALEXANDROS MAKEDON IOANNES AGIOS NIKOLAOS', async () => {
+    it('tokenizes Greek to upper-case', async () => {
       const wordArr = Array.from(parseWords("φίλοι οίκος σεισμός χημεία λαμπάς Αλέξανδρος Μακεδών Ἰωάννης Άγιος Νικόλαος"));
 
-      expect(wordArr).toContain("PHILOI");
-      expect(wordArr).toContain("OIKOS");
-      expect(wordArr).toContain("SEISMOS");
-      expect(wordArr).toContain("CHEMEIA");
-      expect(wordArr).toContain("LAMPAS");
-      expect(wordArr).toContain("ALEXANDROS");
-      expect(wordArr).toContain("MAKEDON");
-      expect(wordArr).toContain("IOANNES");
-      expect(wordArr).toContain("AGIOS");
-      expect(wordArr).toContain("NIKOLAOS");
+      expect(wordArr).toContain("ΦΙΛΟΙ");
+      expect(wordArr).toContain("ΟΙΚΟΣ");
+      expect(wordArr).toContain("ΣΕΙΣΜΟΣ");
+      expect(wordArr).toContain("ΧΗΜΕΙΑ");
+      expect(wordArr).toContain("ΛΑΜΠΑΣ");
+      expect(wordArr).toContain("ΑΛΕΞΑΝΔΡΟΣ");
+      expect(wordArr).toContain("ΜΑΚΕΔΩΝ");
+      expect(wordArr).toContain("ΙΩΑΝΝΗΣ");
+      expect(wordArr).toContain("ΑΓΙΟΣ");
+      expect(wordArr).toContain("ΝΙΚΟΛΑΟΣ");
     });
 
     it("should allow Greek text to be searchable in any locale", () => {
@@ -272,28 +272,51 @@ describe("storage", () => {
       expect(wordSet2).toEqual(wordSet);
     });
 
-    // it('should parse "℥" symbol as OZ', () => {
-    //   const wordArr = Array.from(parseWords("23℥ brimstone"));
-    //
-    //   expect(wordArr).toContain("23OZ");
-    //   expect(wordArr).toContain("BRIMSTONE");
-    // });
-    //
-    // it('should parse "℻" symbol as FAX', () => {
-    //   const wordArr = Array.from(parseWords("order ℻614-555-1212"));
-    //
-    //   expect(wordArr).toContain("ORDER");
-    //   expect(wordArr).toContain("FAX6145551212");
-    // });
-    //
-    // it('should parse "℞" symbol as Rx', () => {
-    //   const wordArr = Array.from(parseWords("℞2901"));
-    //
-    //   expect(wordArr).toContain("RX2901");
-    // });
+    it("should handle common Modern Greek phrases", () => {
+      const wordArr = Array.from(parseWords("Γειά σου! Καλημέρα! Καληνύχτα! Ευχαριστώ. Παρακαλώ. Δε μιλάω ελληνικά. Μπορειτε να με βοηθησετε?"));
+      // There are so many more accented greek letters to be transliterated.
+
+      expect(wordArr).toContain("ΓΕΙΑ");
+      expect(wordArr).toContain("ΣΟΥ");
+      expect(wordArr).toContain("ΚΑΛΗΜΕΡΑ");
+      expect(wordArr).toContain("ΚΑΛΗΝΥΧΤΑ");
+      expect(wordArr).toContain("ΕΥΧΑΡΙΣΤΩ");
+      expect(wordArr).toContain("ΠΑΡΑΚΑΛΩ");
+      expect(wordArr).toContain("ΔΕ");
+      expect(wordArr).toContain("ΜΙΛΑΩ");
+      expect(wordArr).toContain("ΕΛΛΗΝΙΚΑ");
+      expect(wordArr).toContain("ΜΠΟΡΕΙΤΕ");
+      expect(wordArr).toContain("ΝΑ");
+      expect(wordArr).toContain("ΜΕ");
+      expect(wordArr).toContain("ΒΟΗΘΗΣΕΤΕ");
+
+      expect(wordArr.length).toEqual(13);
+    });
+
+    it("should handle common Ancient Greek phrases", () => {
+      const wordArr = Array.from(parseWords("Ἀσπάζομαι! Χαῖρε! Τί πράττεις? Πάντ' ἀγαθὰ πράττω, ὦ φίλε. Ὄνομα σοι τί ἐστιν? Ποδαπὸς εἶ?"));
+      // There are so many more greek letters with diacritics.
+
+      expect(wordArr).toContain("ΑΣΠΑΖΟΜΑΙ");
+      expect(wordArr).toContain("ΧΑΙΡΕ");
+      expect(wordArr).toContain("ΤΙ");
+      expect(wordArr).toContain("ΠΡΑΤΤΕΙΣ");
+      expect(wordArr).toContain("ΠΑΝΤ");
+      expect(wordArr).toContain("ΑΓΑΘΑ");
+      expect(wordArr).toContain("ΠΡΑΤΤΩ");
+      expect(wordArr).toContain("Ω");
+      expect(wordArr).toContain("ΦΙΛΕ");
+      expect(wordArr).toContain("ΟΝΟΜΑ");
+      expect(wordArr).toContain("ΣΟΙ");
+      expect(wordArr).toContain("ΕΣΤΙΝ");
+      expect(wordArr).toContain("ΠΟΔΑΠΟΣ");
+      expect(wordArr).toContain("ΕΙ");
+
+      expect(wordArr.length).toEqual(14);
+    });
 
     it("should limit index words to first 60 characters", () => {
-      const wordArr = Array.from(parseWords("~~~Incomprehensibilities234567890abcdefghijklmnopqrstuvwxyz⑦⑧⑨ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁ'''"));
+      const wordArr = Array.from(parseWords("~~~Incomprehensibilities234567890abcdefghijklmnopqrstuvwxyz789ABCDEFGHIJKL'''"));
 
       expect(wordArr).toContain("INCOMPREHENSIBILITIES234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ789A");
       expect(wordArr.length).toEqual(1);
@@ -566,7 +589,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 11);
+        }, 25);
       });
 
       const retrieved = await getNote(id);

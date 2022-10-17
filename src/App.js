@@ -474,7 +474,7 @@ function App() {
       </div>
       <div className="separator"></div>
       <div className="panel panelDetail">
-        {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchStr={searchStr}
+        {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchWords={searchWords}
                                              focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
                                              setMustShowPanel={setMustShowPanel}></Detail> :
             <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>

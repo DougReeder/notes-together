@@ -5,7 +5,7 @@ import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} fr
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
 import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
-import {getNote, upsertNote} from './storage';
+import {getNote, upsertNote, normalizeWord} from './storage';
 import sanitizeHtml from 'sanitize-html';
 import "./Detail.css";
 import {
@@ -43,13 +43,15 @@ import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
 import {getRelevantBlockType, changeBlockType, changeContentType} from "./slateUtil";
-import {isLikelyMarkdown, visualViewportMatters} from "./util";
+import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
 import makeStyles from '@mui/styles/makeStyles';
 import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
+import decodeEntities from "./util/decodeEntities";
+import removeDiacritics from "./diacritics";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -58,8 +60,6 @@ const useStyles = makeStyles((theme) => ({
     marginRight: '1.5ch',
   },
 }));
-
-// const semanticAddMark = JSON.parse(JSON.stringify(semanticOnly));
 
 const BLOCK_TYPE = {
   'heading-one': <h1>Title</h1>,
@@ -78,28 +78,10 @@ const BLOCK_TYPE = {
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
-function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
+function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel}) {
   const classes = useStyles();
 
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
-
-  // useEffect(() => {
-  //   try {
-  //     if (/\S/.test(searchStr)) {
-  //       semanticAddMark.textFilter = function (text, tagName) {
-  //         const re = new RegExp('\\b(' + searchStr + ')', 'ig');
-  //         const highlighted = '<mark>$1</mark>';
-  //         const newText = text.replace(re, highlighted);
-  //         return newText;
-  //       }
-  //     } else {
-  //       delete semanticAddMark.textFilter;
-  //     }
-  //   } catch (err) {
-  //     console.error("Detail set textFilter:", err);
-  //     window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
-  //   }
-  // }, [searchStr]);
 
   const loadingIdRef = useRef(NaN);
   const [editorValue, setEditorValue] = useState([{
@@ -195,6 +177,33 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
     }
   }, [noteId, replaceNote, focusOnLoadCB, editor]);
 
+
+  const decorate = useCallback(([node, path]) => {
+    const ranges = [];
+    if (searchWords.size > 0 && Text.isText(node)) {
+      const text = decodeEntities(node.text);
+      const wordRE = new RegExp(globalWordRE);
+
+      let wordMatch, normalizedWord;
+      while ((wordMatch = wordRE.exec(text)) !== null) {
+        if ((normalizedWord = normalizeWord(removeDiacritics(wordMatch[0])))) {
+          for (const searchWord of searchWords) {
+            if (normalizedWord.startsWith(searchWord)) {
+              const range = {
+                anchor: {path, offset: wordMatch.index},
+                // The offset will be off by 1 at most. [shrug]
+                focus: {path, offset: wordMatch.index + Math.round(searchWord.length / normalizedWord.length * wordMatch[0].length)},
+                highlight: true,
+              };
+              ranges.push(range);
+              break;
+            }
+          }
+        }
+      }
+    }
+    return ranges;
+  }, [searchWords]);
 
   const canSave = useRef(true);
   const shouldSave = useRef(false);
@@ -767,6 +776,7 @@ function Detail({noteId, searchStr = "", focusOnLoadCB, setMustShowPanel}) {
                   break;
               }
             }}
+            decorate={decorate}
         />
       </Slate>
       <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">
@@ -891,7 +901,7 @@ function ErrorFallback({error, resetErrorBoundary}) {
 
 Detail.propTypes = {
   noteId: PropTypes.string,
-  searchStr: PropTypes.string,
+  searchWords: PropTypes.instanceOf(Set),
   focusOnLoadCB: PropTypes.func,
   setMustShowPanel: PropTypes.func,
 };

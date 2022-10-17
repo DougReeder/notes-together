@@ -14,7 +14,7 @@ const diacritics = {
     // "\u00B0": "degrees",
     "\u00B2": "2",   // SUPERSCRIPT TWO
     "\u00B3": "3",
-    // "\u00B5": "u",   // micro sign
+    "\u00B5": "u",   // micro sign
     "\u00B9": "1",
     "\u00BA": "o",   // MASCULINE ORDINAL INDICATOR
     "\u00C0": "A",   // LATIN CAPITAL LETTER A WITH GRAVE
@@ -374,136 +374,146 @@ const diacritics = {
     "\u024D": "r",
     "\u024E": "Y",
     "\u024F": "y",
-    // Greek - this doesn't handle diphthongs properly,
-    // so is not a proper transliteration.
-    // It can be useful, however.
-    "\u037A": "i",   // iota subscript
+    // Greek
+    "\u037A": "ι",   // iota subscript
+    "\u037F": "Ι",   // Yot [usually written as iota with a diacritic]
 
-    "\u0386": "A",   // Alpha w/ tonos
-    "\u0388": "E",   // Epsilon w/ tonos
-    "\u0389": "E",   // Eta w/ tonos
-    "\u038A": "I",   // Iota w/ tonos
-    "\u038C": "O",   // Omicron w/ tonos
-    "\u038E": "Y",   // Upsilon w/ tonos
-    "\u038F": "O",   // Omega w/ tonos
-    "\u0390": "i",   // iota w/ dialytika & tonos
+    "\u0386": "Α",   // Alpha w/ tonos
+    "\u0388": "Ε",   // Epsilon w/ tonos
+    "\u0389": "Η",   // Eta w/ tonos
+    "\u038A": "Ι",   // Iota w/ tonos
+    "\u038C": "Ο",   // Omicron w/ tonos
+    "\u038E": "Υ",   // Upsilon w/ tonos
+    "\u038F": "Ω",   // Omega w/ tonos
+    "\u0390": "ι",   // iota w/ dialytika & tonos
 
-    "\u0391": "A",   // Alpha
-    "\u0392": "B",   // Beta
-    "\u0393": "G",   // Gamma
-    "\u0394": "D",   // Delta
-    "\u0395": "E",   // Epsilon
-    "\u0396": "Z",   // Zeta
-    "\u0397": "E",   // Eta
-    "\u0398": "Th",  // Theta
-    "\u0399": "I",   // Iota
-    "\u039A": "K",   // Kappa
-    "\u039B": "L",   // Lambda
-    "\u039C": "M",   // Mu
-    "\u039D": "N",   // Nu
-    "\u039E": "X",   // Xi
-    "\u039F": "O",   // Omicron
-    "\u03A0": "P",   // Pi
-    "\u03A1": "R",   // Rho
-    "\u03A3": "S",   // Sigma
-    "\u03A4": "T",   // Tau
-    "\u03A5": "Y",   // Upsilon
-    "\u03A6": "Ph",  // Phi
-    "\u03A7": "Ch",  // Chi
-    "\u03A8": "Ps",  // Psi
-    "\u03A9": "O",   // Omega
+    // "\u0391": "A",   // Alpha
+    // "\u0392": "B",   // Beta
+    // "\u0393": "G",   // Gamma
+    // "\u0394": "D",   // Delta
+    // "\u0395": "E",   // Epsilon
+    // "\u0396": "Z",   // Zeta
+    // "\u0397": "E",   // Eta
+    // "\u0398": "Th",  // Theta
+    // "\u0399": "I",   // Iota
+    // "\u039A": "K",   // Kappa
+    // "\u039B": "L",   // Lambda
+    // "\u039C": "M",   // Mu
+    // "\u039D": "N",   // Nu
+    // "\u039E": "X",   // Xi
+    // "\u039F": "O",   // Omicron
+    // "\u03A0": "P",   // Pi
+    // "\u03A1": "R",   // Rho
+    // "\u03A3": "S",   // Sigma
+    // "\u03A4": "T",   // Tau
+    // "\u03A5": "Y",   // Upsilon
+    // "\u03A6": "Ph",  // Phi
+    // "\u03A7": "Ch",  // Chi
+    // "\u03A8": "Ps",  // Psi
+    // "\u03A9": "O",   // Omega
 
-    "\u03AA": "I",   // Capital Iota with Dialytika
-    "\u03AB": "Y",   // Capital Upsilon with Dialytika
+    "\u03AA": "Ι",   // Capital Iota with Dialytika
+    "\u03AB": "Υ",   // Capital Upsilon with Dialytika
 
-    "\u03AC": "a",   // small alpha w/ tonos
-    "\u03AD": "e",   // small epsilon w/ tonos
-    "\u03AE": "e",   // small eta w/ tonos
-    "\u03AF": "i",   // small iota w/ tonos
-    "\u03B0": "y",   // small upsilon w/ dialytika & tonos
+    "\u03AC": "α",   // small alpha w/ tonos
+    "\u03AD": "ε",   // small epsilon w/ tonos
+    "\u03AE": "η",   // small eta w/ tonos
+    "\u03AF": "ι",   // small iota w/ tonos
+    "\u03B0": "υ",   // small upsilon w/ dialytika & tonos
 
-    "\u03B1": "a",   // alpha
-    "\u03B2": "b",   // beta
-    "\u03B3": "g",   // gamma
-    "\u03B4": "d",   // delta
-    "\u03B5": "e",   // epsilon
-    "\u03B6": "z",   // zeta
-    "\u03B7": "e",   // eta
-    "\u03B8": "th",  // theta
-    "\u03B9": "i",   // iota
-    "\u03BA": "k",   // kappa
-    "\u03BB": "l",   // lambda
-    "\u03BC": "m",   // mu
-    "\u03BD": "n",   // nu
-    "\u03BE": "x",   // xi
-    "\u03BF": "o",   // omicron
-    "\u03C0": "p",   // pi
-    "\u03C1": "r",   // rho
-    "\u03C2": "s",   // sigma (final)
-    "\u03C3": "s",   // sigma
-    "\u03C4": "t",   // tau
-    "\u03C5": "y",   // upsilon
-    "\u03C6": "ph",  // phi
-    "\u03C7": "ch",  // chi
-    "\u03C8": "ps",  // psi
-    "\u03C9": "o",   // omega
+    // "\u03B1": "a",   // alpha
+    // "\u03B2": "b",   // beta
+    // "\u03B3": "g",   // gamma
+    // "\u03B4": "d",   // delta
+    // "\u03B5": "e",   // epsilon
+    // "\u03B6": "z",   // zeta
+    // "\u03B7": "e",   // eta
+    // "\u03B8": "th",  // theta
+    // "\u03B9": "i",   // iota
+    // "\u03BA": "k",   // kappa
+    // "\u03BB": "l",   // lambda
+    // "\u03BC": "m",   // mu
+    // "\u03BD": "n",   // nu
+    // "\u03BE": "x",   // xi
+    // "\u03BF": "o",   // omicron
+    // "\u03C0": "p",   // pi
+    // "\u03C1": "r",   // rho
+    "\u03C2": "σ",   // sigma (final)
+    // "\u03C3": "s",   // sigma
+    // "\u03C4": "t",   // tau
+    // "\u03C5": "y",   // upsilon
+    // "\u03C6": "ph",  // phi
+    // "\u03C7": "ch",  // chi
+    // "\u03C8": "ps",  // psi
+    // "\u03C9": "o",   // omega
 
-    "\u03CA": "i",   // iota w/ dialytika
-    "\u03CB": "y",   // upsilon w/ dialytika
-    "\u03CC": "o",   // omicron w/ tonos
-    "\u03CD": "y",   // upsilon w/ tonos
-    "\u03CE": "o",   // omega w/ tonos
+    "\u03CA": "ι",   // iota w/ dialytika
+    "\u03CB": "υ",   // upsilon w/ dialytika
+    "\u03CC": "ο",   // omicron w/ tonos
+    "\u03CD": "υ",   // upsilon w/ tonos
+    "\u03CE": "ω",   // omega w/ tonos
 
-    // TODO: Extended Greek
-    "\u1F38": "I",   // iota w/ psili
+    "\u03D0": "β",   // curled beta
+    "\u03D1": "θ",   // script theta
+    "\u03D2": "υ",   // Upsilon with hook
+    "\u03D3": "υ",   // UPSILON WITH ACUTE AND HOOK
+    "\u03D4": "υ",   // UPSILON WITH DIAERESIS AND HOOK
+    "\u03D5": "φ",   // phi symbol
+    "\u03D6": "π",   // pi looking like omega
+    "\u03DA": "ΣΤ",  // Stigma
+    "\u03DB": "στ",  // stigma
+    "\u03E0": "ΣΣ",  // Sampi
+    "\u03E1": "σσ",  // sampi
+
+    "\u03F3": "ι",   // yot  [usually written as iota with a diacritic]
 // IPA Extensions
-    "\u0250": "a",   // LATIN SMALL LETTER TURNED A
-    "\u0253": "b",
-    "\u0254": "o",
-    "\u0256": "d",
-    "\u0257": "d",
-    "\u025B": "e",
-    "\u0260": "g",
-    "\u0262": "G",   // LATIN LETTER SMALL CAPITAL G
-    "\u0265": "h",
-    "\u0268": "i",
-    "\u026A": "I",   // LATIN LETTER SMALL CAPITAL I
-    "\u026B": "l",
-    "\u026F": "m",
-    "\u0271": "m",
-    "\u0272": "n",
-    "\u0274": "N",   // LATIN LETTER SMALL CAPITAL N
-    "\u0275": "o",
-    "\u0276": "oe",
-    "\u027D": "r",
-    "\u0280": "R",   // LATIN LETTER SMALL CAPITAL R
-    "\u0288": "t",
-    "\u0289": "u",
-    "\u028B": "v",
-    "\u028C": "v",
-    "\u028F": "Y",   // LATIN LETTER SMALL CAPITAL Y
-    "\u0299": "B",   // LATIN LETTER SMALL CAPITAL B
-    "\u029C": "H",   // LATIN LETTER SMALL CAPITAL H
-    "\u029F": "L",   // LATIN LETTER SMALL CAPITAL L
+//     "\u0250": "a",   // LATIN SMALL LETTER TURNED A
+//     "\u0253": "b",
+//     "\u0254": "o",
+//     "\u0256": "d",
+//     "\u0257": "d",
+//     "\u025B": "e",
+//     "\u0260": "g",
+//     "\u0262": "G",   // LATIN LETTER SMALL CAPITAL G
+//     "\u0265": "h",
+//     "\u0268": "i",
+//     "\u026A": "I",   // LATIN LETTER SMALL CAPITAL I
+//     "\u026B": "l",
+//     "\u026F": "m",
+//     "\u0271": "m",
+//     "\u0272": "n",
+//     "\u0274": "N",   // LATIN LETTER SMALL CAPITAL N
+//     "\u0275": "o",
+//     "\u0276": "oe",
+//     "\u027D": "r",
+//     "\u0280": "R",   // LATIN LETTER SMALL CAPITAL R
+//     "\u0288": "t",
+//     "\u0289": "u",
+//     "\u028B": "v",
+//     "\u028C": "v",
+//     "\u028F": "Y",   // LATIN LETTER SMALL CAPITAL Y
+//     "\u0299": "B",   // LATIN LETTER SMALL CAPITAL B
+//     "\u029C": "H",   // LATIN LETTER SMALL CAPITAL H
+//     "\u029F": "L",   // LATIN LETTER SMALL CAPITAL L
     // Letter, Modifier
     "\u02BC": "'",   // MODIFIER LETTER APOSTROPHE
     // Phonetic Extensions
-    "\u1D00": "A",   // LATIN LETTER SMALL CAPITAL A
-    "\u1D04": "C",
-    "\u1D05": "D",
-    "\u1D07": "E",
-    "\u1D0A": "J",
-    "\u1D0B": "K",
-    "\u1D0D": "M",
-    "\u1D0F": "O",
-    "\u1D18": "P",
-    "\u1D1B": "T",
-    "\u1D1C": "U",
-    "\u1D20": "V",
-    "\u1D21": "W",
-    "\u1D22": "Z",
-    "\u1D79": "g",   // LATIN SMALL LETTER INSULAR G
-    "\u1D7D": "p",
+    // "\u1D00": "A",   // LATIN LETTER SMALL CAPITAL A
+    // "\u1D04": "C",
+    // "\u1D05": "D",
+    // "\u1D07": "E",
+    // "\u1D0A": "J",
+    // "\u1D0B": "K",
+    // "\u1D0D": "M",
+    // "\u1D0F": "O",
+    // "\u1D18": "P",
+    // "\u1D1B": "T",
+    // "\u1D1C": "U",
+    // "\u1D20": "V",
+    // "\u1D21": "W",
+    // "\u1D22": "Z",
+    // "\u1D79": "g",   // LATIN SMALL LETTER INSULAR G
+    // "\u1D7D": "p",
 // Latin Extended Additional
     "\u1E00": "A",   // LATIN CAPITAL LETTER A WITH RING BELOW
     "\u1E01": "a",
@@ -754,6 +764,67 @@ const diacritics = {
     "\u1EF9": "y",
     "\u1EFE": "Y",
     "\u1EFF": "y",
+    // Greek Extended (for Ancient Greek)
+    // TODO: all those accented letters!
+    "\u1F00": "α",
+    "\u1F01": "α",
+    "\u1F02": "α",
+    "\u1F03": "α",
+    "\u1F04": "α",
+    "\u1F05": "α",
+    "\u1F06": "α",
+    "\u1F07": "α",
+    "\u1F08": "Α",   // Alpha with psili
+    "\u1F09": "Α",   // Alpha with
+    "\u1F0A": "Α",   // Alpha with
+    "\u1F0B": "Α",   // Alpha with
+    "\u1F0C": "Α",   // Alpha with
+    "\u1F0D": "Α",   // Alpha with
+    "\u1F0E": "Α",   // Alpha with
+    "\u1F0F": "Α",   // Alpha with
+    "\u1F10": "ε",   // epsilon with psili
+    "\u1F11": "ε",   // epsilon with
+    "\u1F12": "ε",   // epsilon with
+    "\u1F13": "ε",   // epsilon with
+    "\u1F14": "ε",   // epsilon with
+    "\u1F15": "ε",   // epsilon with
+    "\u1F18": "Ε",   // Epsilon with
+    "\u1F19": "Ε",   // Epsilon with
+    "\u1F1A": "Ε",   // Epsilon with
+    "\u1F1B": "Ε",   // Epsilon with
+    "\u1F1C": "Ε",   // Epsilon with
+    "\u1F1D": "Ε",   // Epsilon with
+    "\u1F20": "η",   // eta with
+    "\u1F21": "η",   // eta with
+    "\u1F22": "η",   // eta with
+    "\u1F23": "η",   // eta with
+    "\u1F24": "η",   // eta with
+    "\u1F25": "η",   // eta with
+    "\u1F26": "η",   // eta with
+    "\u1F27": "η",   // eta with
+    "\u1F28": "Η",   // Eta with
+    "\u1F29": "Η",   // Eta with
+    "\u1F2A": "Η",   // Eta with
+    "\u1F2B": "Η",   // Eta with
+    "\u1F2C": "Η",   // Eta with
+    "\u1F2D": "Η",   // Eta with
+    "\u1F2E": "Η",   // Eta with
+    "\u1F2F": "Η",   // Eta with
+    "\u1F30": "ι",   // iota with
+    "\u1F31": "ι",   // iota with
+    "\u1F32": "ι",   // iota with
+    "\u1F33": "ι",   // iota with
+    "\u1F34": "ι",   // iota with
+    "\u1F35": "ι",   // iota with
+    "\u1F36": "ι",   // iota with psili & perispomeni
+    "\u1F37": "ι",   // iota with
+    "\u1F38": "Ι",   // iota w/ psili
+    "\u1F4C": "ο",   // omicron with psili & oxia
+    "\u1F66": "ω",   // omega with psili & perispomeni
+    "\u1FBA": "Α",   // Alpha with varia
+    "\u1FD6": "ι",   //  IOTA WITH PERISPOMENI
+    "\u1F70": "α",
+    "\u1F78": "ο",   //  OMICRON WITH VARIA
     // General Punctuation
     "\u2019": "'",   // RIGHT SINGLE QUOTATION MARK
     // Superscripts and Subscripts
@@ -783,14 +854,14 @@ const diacritics = {
     // Letterlike Symbols
     // "\u2114": "LB",   // L B BAR SYMBOL
     // "\u2116": "Number",
-    // "\u211E": "Rx",
+    "\u211E": "Rx",
     // "\u2121": "Telephone",
     // "\u2125": "oz",
     // "\u2126": "Ohms",   // Ohm sign (omega)
     "\u212B": "A",   // Ångström
     // "\u213B": "Fax",
     // Number Forms
-    "\u2184": "c",   // LATIN SMALL LETTER REVERSED C
+    "\u2184": "c",   // LATIN SMALL LETTER REVERSED C (Claudian)
     // Enclosed Alphanumerics
     "\u2460": "1",
     "\u2461": "2",

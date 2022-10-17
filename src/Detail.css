@@ -60,21 +60,18 @@ details {
 h1 {
     font-size: 1.4em;
     text-align: center;
-    text-transform: capitalize;
     text-transform: none;
 }
 
 h2 {
     font-size: 1.2em;
     text-align: center;
-    text-transform: capitalize;
     text-transform: none;
 }
 
 h3 {
     font-size: 1em;
     text-align: center;
-    text-transform: capitalize;
     text-transform: none;
 }
 
@@ -82,7 +79,7 @@ del {
     text-decoration: none;
     background-color: #f4e0ff;
     border-style: solid;
-    border-width: 1px 2px 1px 2px;
+    border-width: 1px;
     border-color: #f4e0ff;
 }
 
@@ -90,8 +87,15 @@ ins {
     text-decoration: none;
     background-color: #d6ffef;
     border-style: solid;
-    border-width: 1px 2px 1px 2px;
+    border-width: 1px;
     border-color: #d6ffef;
+}
+
+.highlight {
+    background-color: #fffaad;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #fffaad;
 }
 
 [role=textbox] pre {
