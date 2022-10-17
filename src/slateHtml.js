@@ -76,8 +76,10 @@ function withHtml(editor) {   // defines Slate plugin
           }
           const nodeRef = Editor.pathRef(editor, path);
           Transforms.moveNodes(editor, {at: childPath, to: newPath});
-          if (1 === node.children.length) {   // the moved node was the only child
-            Transforms.insertNodes(editor, {text: ""}, {at: [...nodeRef.current, 0]});
+          if ('link' === node.type && 1 === node.children.length) {
+            // the moved node was the only child
+            const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
+            Transforms.insertNodes(editor, {text: linkText}, {at: [...nodeRef.current, 0]});
           }
           nodeRef.unref();
           return;
@@ -86,13 +88,8 @@ function withHtml(editor) {   // defines Slate plugin
     }
 
     if ('link' === node.type && isBlank(node)) {
-      try {
-        const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
-        Transforms.insertText(editor, linkText, {at: path});
-        return;
-      } catch (err) {
-        console.error("while adding text to normalize link:", err);
-      }
+      Transforms.removeNodes(editor, {at: path});
+      return;
     }
 
     // Text & links at the top level are wrapped in a paragraph.

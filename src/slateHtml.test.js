@@ -220,7 +220,7 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
-  it("should ensure all links have non-blank text", () => {
+  it("should remove all blank links", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -243,14 +243,6 @@ describe("HTML plugin normalizer", () => {
     expect(editor.children).toEqual([
       {type: 'quote', children: [
           {text: ""},
-          {type: "link", url: "https://example.com/user/jdoe#profile",
-            children: [{text: "jdoe#profile"}]
-          },
-          {text: ""},
-          {type: "link", url: "https://example.com/",
-            children: [{text: "example.com"}]
-          },
-          {text: ""},
       ]},
     ]);
   });
@@ -272,6 +264,20 @@ describe("HTML plugin normalizer", () => {
           },
           {text: ""},
       ]},
+      {type: 'paragraph', children: [
+          {text: ""},
+          {type: "link", url: "https://alpha.com/link",
+            children: [
+              {text: "some text inside the link"},
+              { type: 'image',
+                url: 'https://alpha.com/image',
+                title: "Some title",
+                children: [
+                  {text: "Some label"}]
+              }]
+          },
+          {text: ""},
+      ]},
       {type: "link", url: "https://example.com/foo",
         children: [{
           type: 'image',
@@ -281,6 +287,17 @@ describe("HTML plugin normalizer", () => {
             {text: "Some sort of thing"}]
         }]
       },
+      {type: "link", url: "https://beta.org/spam",
+        children: [
+          { type: 'image',
+            url: 'https://beta.org/frotz',
+            title: "Etwas",
+            children: [
+              {text: "Description of spam or frotz"}]
+          },
+          {text: "more about spam"}
+        ]
+      },
     ];
     editor.selection = null;
 
@@ -288,11 +305,11 @@ describe("HTML plugin normalizer", () => {
 
     expect(editor.children).toEqual([
       {type: 'quote', children: [
-          {text: ""},
-          {type: "link", url: "https://example.com/grapefruit-img",
-            children: [{text: "grapefruit-img"}]
-          },
-          {text: ""},
+        {text: ""},
+        {type: "link", url: "https://example.com/grapefruit-img",
+          children: [{text: "grapefruit-img"}]
+        },
+        {text: ""},
       ]},
       {type: 'image',
         url: 'https://mozilla.org/?x=шеллы',
@@ -302,17 +319,46 @@ describe("HTML plugin normalizer", () => {
       },
       {type: 'paragraph', children: [
           {text: ""},
-          {type: "link", url: "https://example.com/foo",
-            children: [{text: "foo"}]
+          {type: "link", url: "https://alpha.com/link",
+            children: [{text: "some text inside the link"}]
           },
           {text: ""},
-        ]},
+      ]},
+      {
+        type: 'image',
+        url: 'https://alpha.com/image',
+        title: "Some title",
+        children: [
+          {text: "Some label"}]
+      },
+      {type: 'paragraph', children: [
+        {text: ""},
+        {type: "link", url: "https://example.com/foo",
+          children: [{text: "foo"}]
+        },
+        {text: ""},
+      ]},
       {
         type: 'image',
         url: 'https://example.org',
         title: "Something",
         children: [
           {text: "Some sort of thing"}]
+      },
+      { type: 'paragraph', children: [
+          {text: ""},
+          { type: "link", url: "https://beta.org/spam",
+            children: [
+              {text: "more about spam"}
+            ]
+          },
+          {text: ""},
+      ]},
+      { type: 'image',
+        url: 'https://beta.org/frotz',
+        title: "Etwas",
+        children: [
+          {text: "Description of spam or frotz"}]
       },
     ]);
   });
