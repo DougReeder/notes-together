@@ -287,12 +287,6 @@ describe("HTML plugin normalizer", () => {
     Editor.normalize(editor, {force: true});
 
     expect(editor.children).toEqual([
-      {type: 'image',
-        url: 'https://mozilla.org/?x=шеллы',
-        title: "Slice of grapefruit",
-        children: [
-          {text: "Grapefruit slice atop a pile of other slices"}]
-      },
       {type: 'quote', children: [
           {text: ""},
           {type: "link", url: "https://example.com/grapefruit-img",
@@ -300,12 +294,11 @@ describe("HTML plugin normalizer", () => {
           },
           {text: ""},
       ]},
-      {
-        type: 'image',
-        url: 'https://example.org',
-        title: "Something",
+      {type: 'image',
+        url: 'https://mozilla.org/?x=шеллы',
+        title: "Slice of grapefruit",
         children: [
-          {text: "Some sort of thing"}]
+          {text: "Grapefruit slice atop a pile of other slices"}]
       },
       {type: 'paragraph', children: [
           {text: ""},
@@ -313,7 +306,14 @@ describe("HTML plugin normalizer", () => {
             children: [{text: "foo"}]
           },
           {text: ""},
-      ]},
+        ]},
+      {
+        type: 'image',
+        url: 'https://example.org',
+        title: "Something",
+        children: [
+          {text: "Some sort of thing"}]
+      },
     ]);
   });
 

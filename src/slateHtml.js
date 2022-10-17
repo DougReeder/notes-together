@@ -62,23 +62,26 @@ function withHtml(editor) {   // defines Slate plugin
       return;
     }
 
-    if (Element.isElement(node) && ! editor.isInline(node.type)) {
-      const parentPath = Path.parent(path);
-      const parent = SlateNode.get(editor, parentPath);
-      if (editor.isInline(parent)) {
-        let newPath;
-        if (path.length > 2) {
-          newPath = path.slice(0, -2);
-        } else {
-          newPath = path.slice(0, -1);
+    // moves blocks (e.g images) out of inlines (e.g. links)
+    if (Element.isElement(node) && editor.isInline(node)) {
+      for (let i=node.children.length-1; i>=0; --i) {
+        const child = node.children[i];
+        const childPath = [...path, i];
+        if (Element.isElement(child) && !editor.isInline(child)) {
+          let newPath;
+          if (path.length > 1) {
+            newPath = [...path.slice(0, -2), path[path.length - 2] + 1];
+          } else {
+            newPath = [path[0] + 1];
+          }
+          const nodeRef = Editor.pathRef(editor, path);
+          Transforms.moveNodes(editor, {at: childPath, to: newPath});
+          if (1 === node.children.length) {   // the moved node was the only child
+            Transforms.insertNodes(editor, {text: ""}, {at: [...nodeRef.current, 0]});
+          }
+          nodeRef.unref();
+          return;
         }
-        const parentRef = Editor.pathRef(editor, parentPath);
-        Transforms.moveNodes(editor, {at: path, to: newPath});
-        if (1 === parent.children.length) {   // the moved node was the only child
-          Transforms.insertNodes(editor, {text: ""}, {at: [...parentRef.current, 0]});
-        }
-        parentRef.unref();
-        return;
       }
     }
 
@@ -92,6 +95,8 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
+    // Text & links at the top level are wrapped in a paragraph.
+    // Typeless elements are converted to paragraphs.
     if (1 === path.length) {
       if (!Element.isElement(node) || editor.isInline(node)) {
         const block = {type: 'paragraph', children: []}
@@ -102,6 +107,7 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
+    // deletes or wraps list items outside a list
     if ('list-item' === node.type) {
       let parent = undefined;
       if (path.length > 1) {
