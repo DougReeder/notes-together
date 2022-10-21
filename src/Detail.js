@@ -83,6 +83,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
+  const [isLoading, setIsLoading] = useState(false);
   const loadingIdRef = useRef(NaN);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
@@ -132,6 +133,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       console.error(`while replacing note ${theNote?.id}:`, err);
       setNoteErr(err);
     } finally {
+      setIsLoading(false);
       queueMicrotask(() => {
         saveOnAstChangeRef.current = true;
       });
@@ -144,6 +146,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (noteId === loadingIdRef.current) {
         return;
       }
+      setIsLoading(true);
       loadingIdRef.current = noteId;
       getNote(noteId).then(theNote => {
         loadingIdRef.current = NaN;
@@ -191,7 +194,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             if (normalizedWord.startsWith(searchWord)) {
               const range = {
                 anchor: {path, offset: wordMatch.index},
-                // The offset will be off by 1 at most. [shrug]
+                // The offset will sometimes but rarely be off. [shrug]
                 focus: {path, offset: wordMatch.index + Math.round(searchWord.length / normalizedWord.length * wordMatch[0].length)},
                 highlight: true,
               };
@@ -306,6 +309,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (! notesChanged.hasOwnProperty(noteId)) return;
       // console.log("Detail externalChange", notesChanged);
 
+      setIsLoading(true);
       setNoteErr(null);
       replaceNote(notesChanged[noteId]);
     } catch (err) {
@@ -448,7 +452,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   }
 
   async function handleChangeContentType(newSubtype) {
+    setIsLoading(true);
     await changeContentType(editor, effectiveSubtype, newSubtype);
+    setIsLoading(false);
     setIsContentTypeDialogOpen(false);
   }
 
@@ -665,6 +671,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             {Boolean(noteDate) && ! noteErr ? noteControls : null}
           </Toolbar>
         </AppBar>
+        {isLoading ? <Box sx={{position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'rgba(128,128,128,50%)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center'}}>
+          <progress style={{marginTop: '4ch'}}/>
+        </Box> : null}
         <Editable
             key={editableKey}   // change the key to restart editor w/ new editorValue
             renderElement={renderElement}
@@ -880,7 +889,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       </Box>
       <input id="pasteFileInput" type="file" hidden={true} ref={pasteFileInput} onChange={pasteFileChange} multiple={true}
            accept={"image/*,text/plain,text/markdown,text/html,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
-
   </>);
 }
 
