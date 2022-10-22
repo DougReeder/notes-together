@@ -1,14 +1,14 @@
 Notes Together
 ==============
 
-Get routine info out of your head! Toss in text and pictures. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!
+Get mundane details out of your head! Toss in text and pictures. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!
 
 A web app for taking notes (or copied snippets of text or pictures) and recalling them by context:
 any words in them, or the date.
 It applies the same styles to typed and pasted text, so your notes look professional.
 It really shines when you have hundreds or thousands of notes.
 
-Data is backed-up and synced with other devices using the [remoteStorage](https://remotestorage.io) protocol, so you control where your data is stored.
+Data is synced with other devices using the [remoteStorage](https://remotestorage.io) protocol, so you control where your data is stored.
 
 
 Using
