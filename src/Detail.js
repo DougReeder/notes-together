@@ -151,6 +151,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       getNote(noteId).then(theNote => {
         loadingIdRef.current = NaN;
         if ('object' === typeof theNote) {
+          boxRef.current.scrollTop = 0;
           replaceNote(theNote);
 
           if ('function' === typeof focusOnLoadCB) {
