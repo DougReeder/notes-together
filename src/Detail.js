@@ -18,7 +18,7 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Toolbar, Menu
+  Toolbar, Menu, Divider
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -61,19 +61,36 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const BLOCK_TYPE = {
+const BLOCK_TYPE_DISPLAY = {
   'heading-one': <h1>Title</h1>,
   'heading-two': <h2>Heading</h2>,
   'heading-three': <h3>Subheading</h3>,
   'paragraph': "Body",
   'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
+  'table': "Table",
   'quote': <><span/><span>Block Quote</span></>,
   'code': <code>Monospaced</code>,
   'thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
   'image': <><span>Graphic </span><Photo/></>,
   'multiple': "(Multiple)",
   'n/a': "(n/a)"
+}
+
+const BLOCK_TYPE_LIST = {
+  'heading-one': <h1>Title</h1>,
+  'heading-two': <h2>Heading</h2>,
+  'heading-three': <h3>Subheading</h3>,
+  'paragraph': "Body",
+  'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
+  'numbered-list': "Numbered List",
+  'table': "Table",
+  'quote': <><span/><span>Block Quote</span></>,
+  'code': <code>Monospaced</code>,
+  '': "Add",   // divider
+  'add-table-row': "Table Row",
+  'add-table-column': "Table Column",
+  'add-thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
 }
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
@@ -376,26 +393,76 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (editor.selection) {
         // changes block type
         const relevantBlockType = getRelevantBlockType(editor);
-        if (['image', 'link'].indexOf(relevantBlockType) > -1) {
-          window.postMessage({
-            kind: 'TRANSIENT_MSG',
-            severity: 'info',
-            message: "That can't be changed."
-          }, window?.location?.origin);
-          return;
-        }
-        switch (targetType) {
+         switch (targetType) {
           default:
+            if (['image', 'link'].indexOf(relevantBlockType) > -1) {
+              window.postMessage({
+                kind: 'TRANSIENT_MSG',
+                severity: 'info',
+                message: "That can't be changed."
+              }, window?.location?.origin);
+              return;
+            }
             changeBlockType(editor, targetType);
             return;
           // A void block is inserted, rather than changing a text block to it.
-          case 'thematic-break':
+          case 'add-thematic-break':
             if ('thematic-break' !== relevantBlockType) {
               Transforms.insertNodes(editor,
-                  {type: targetType, children: [{text: ""}]},
+                  {type: 'thematic-break', children: [{text: ""}]},
               );
             }
             return;
+          case 'add-table-row':
+            for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
+              if ('table-row' === ancestor.type) {
+                const insertPath = [...ancestorPath.slice(0, -1), ancestorPath[ancestorPath.length-1] + 1];
+                Transforms.insertNodes(editor,
+                    {type: 'table-row', children: [
+                        {type: 'table-cell', children: [{text: ""}]},
+                      ]},
+                    {at: insertPath, select: true}
+                );
+                return;
+              }
+            }
+            window.postMessage({
+              kind: 'TRANSIENT_MSG',
+              severity: 'info',
+              message: "Place the cursor in a table"
+            }, window?.location?.origin);
+            return;
+          case 'add-table-column':
+            let insertIndex = 0, tablePath;
+            for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
+              if ('table-cell' === ancestor.type) {
+                insertIndex = ancestorPath[ancestorPath.length-1] + 1;
+              } else if ('table' === ancestor.type) {
+                tablePath = ancestorPath;
+                break;
+              }
+            }
+            if (tablePath) {
+              Editor.withoutNormalizing(editor, () => {
+                for (const [, rowPath] of SlateNode.children(editor, tablePath)) {
+                  const insertPath = [...rowPath, insertIndex];
+                  Transforms.insertNodes(editor,
+                    {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                    {at: insertPath, select: true}
+                  );
+                }
+              });
+              return;
+            } else {
+              window.postMessage({
+                kind: 'TRANSIENT_MSG',
+                severity: 'info',
+                message: "Place the cursor in a table"
+              }, window?.location?.origin);
+              return;
+            }
+          case 'table-row':
+          case 'table-cell':
           case 'multiple':
           case 'list-item':
           case 'image':
@@ -410,9 +477,16 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         }
       } else {
         // appends block at end
+        if ('add-thematic-break' === targetType) { targetType = 'thematic-break'}
         let path = [editor.children.length];
         switch (targetType) {
-          default:
+          case 'paragraph':
+          case 'heading-one':
+          case 'heading-two':
+          case 'heading-three':
+          case 'quote':
+          case 'code':
+          case 'thematic-break':
             Transforms.insertNodes(editor,
                 {type: targetType, children: [{text: ""}]},
                 {at: path}
@@ -429,11 +503,35 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             );
             Transforms.select(editor, path);
             return;
-          case 'multiple':
-          case 'list-item':   // shouldn't happen
-          case 'image':
-          case 'n/a':
-          case '':
+          case 'table':
+            Transforms.insertNodes(editor, [
+                {type: targetType, children: [
+                    {type: 'table-row', children: [
+                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                    ]},
+                    {type: 'table-row', children: [
+                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                    ]},
+                ]},
+                { type: 'paragraph', children: [   // TODO: handle via normalization
+                  {text: ""}
+                ]}
+              ],
+              {at: path}
+            );
+            Transforms.select(editor, [...path, 0, 0]);
+            return;
+          case 'add-table-row':
+          case 'add-table-column':
+            window.postMessage({
+              kind: 'TRANSIENT_MSG',
+              severity: 'info',
+              message: "Place the cursor in a table"
+            }, window?.location?.origin);
+            return;
+          default:
             window.postMessage({
               kind: 'TRANSIENT_MSG',
               severity: 'info',
@@ -517,7 +615,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               previousSelection.current = JSON.parse(JSON.stringify(editor.selection));
               setBlockTypeMenuAnchorEl(evt.currentTarget);
             }}>
-          {BLOCK_TYPE[getRelevantBlockType(editor)]}
+          {BLOCK_TYPE_DISPLAY[getRelevantBlockType(editor)]}
         </Button>
         <Menu
             id="block-type-menu"
@@ -534,8 +632,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               });
             }}
         >
-          {Object.entries(BLOCK_TYPE).map(([key, label]) =>
-              <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, key)} key={key}>{label}</MenuItem>
+          {Object.entries(BLOCK_TYPE_LIST).map(([key, label]) =>
+              key ?
+                <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, key)} key={key}>{label}</MenuItem> :
+                <Divider key={key}>{label}</Divider>
           )}
         </Menu>
 

@@ -46,8 +46,8 @@ describe("getRelevantBlockType", () => {
       ]},
     ];
     editor.selection = {
-      anchor: { path: [0, 1], offset: 6 },
-      focus:  { path: [0, 1], offset: 6 },
+      anchor: { path: [0, 1], offset: 3 },
+      focus:  { path: [0, 1], offset: 8 },
     };
 
     const type = getRelevantBlockType(editor);
@@ -55,32 +55,200 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('numbered-list');
   });
 
-  // it("should return numbered-list for a list-item in a list in a block quote", () => {
-  //   const editor = withHtml(withReact(createEditor()));
-  //   editor.children = [
-  //     { type: "quote", children: [
-  //         { type: "numbered-list", children: [
-  //             {type: "list-item", children: [
-  //                 {text: "first item"}
-  //               ]},
-  //             {type: "list-item", children: [
-  //                 {text: "second item"}
-  //               ]},
-  //             {type: "list-item", children: [
-  //                 {text: "third item"}
-  //               ]},
-  //           ]},
-  //       ]},
-  //   ];
-  //   editor.selection = {
-  //     anchor: { path: [0, 0, 1], offset: 6 },
-  //     focus:  { path: [0, 0, 1], offset: 6 },
-  //   };
-  //
-  //   const type = getRelevantBlockType(editor);
-  //
-  //   expect(type).toEqual('numbered-list');
-  // });
+  it("should return bulleted-list for a list-item in a list in a block quote", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "quote", children: [
+          { type: "bulleted-list", children: [
+              {type: "list-item", children: [
+                  {text: "first item"}
+                ]},
+              {type: "list-item", children: [
+                  {text: "second item"}
+                ]},
+              {type: "list-item", children: [
+                  {text: "third item"}
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 1], offset: 2 },
+      focus:  { path: [0, 0, 1], offset: 9 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('bulleted-list');
+  });
+
+  it("should return image when selection wholly in image in table cell", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "quote", children: [
+        {type: 'table', children: [
+          {type: 'table-row', children: [
+            {type: 'table-cell', isHeader: true, children: [
+                {text: "Lorem ipsum dolor"},
+              ]},
+            {type: 'table-cell', isHeader: true, children: [
+                {text: "sit amet, consectetur"},
+              ]},
+          ]},
+          {type: 'table-row', children: [
+            {type: 'table-cell', isHeader: true, children: [
+                {text: "adipiscing elit"},
+              ]},
+            {type: 'table-cell', isHeader: false, children: [
+                {type: 'image', url: 'https://storage.org/?q=cat',
+                  title: "Cat of the day",
+                  children: [{text: "a sleeping Persian"}]
+                }
+              ]},
+          ]},
+        ]},
+      ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 1, 1, 0, 0], offset: 1 },
+      focus:  { path: [0, 0, 1, 1, 0, 0], offset: 14 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('image');
+  });
+
+  it("should return table when selection wholly in cell text", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "paragraph", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "Lorem ipsum dolor"},
+                    ]},
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "sit amet, consectetur"},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "adipiscing elit"},
+                    ]},
+                  {type: 'table-cell', isHeader: false, children: [
+                      {type: 'image', url: 'https://storage.org/?q=cat',
+                        title: "Cat of the day",
+                        children: [{text: "a sleeping Persian"}]
+                      }
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 1, 0], offset: 1 },
+      focus:  { path: [0, 0, 1, 0], offset: 12 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('table');
+  });
+
+  it("should return table when selection crosses from cell to cell", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "quote", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "Lorem ipsum dolor"},
+                    ]},
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "sit amet, consectetur"},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "adipiscing elit"},
+                    ]},
+                  {type: 'table-cell', isHeader: false, children: [
+                      {type: 'image', url: 'https://storage.org/?q=cat',
+                        title: "Cat of the day",
+                        children: [{text: "a sleeping Persian"}]
+                      }
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 0, 0], offset: 5 },
+      focus:  { path: [0, 0, 0, 1], offset: 10 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('table');
+  });
+
+  it("should return table when selection crosses from row to row", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "paragraph", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "Lorem ipsum dolor"},
+                    ]},
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "sit amet, consectetur"},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [
+                      {text: "adipiscing elit"},
+                    ]},
+                  {type: 'table-cell', isHeader: false, children: [
+                      {type: 'image', url: 'https://storage.org/?q=cat',
+                        title: "Cat of the day",
+                        children: [{text: "a sleeping Persian"}]
+                      }
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 0, 1], offset: 15 },
+      focus:  { path: [0, 0, 1, 0], offset: 4 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('table');
+  });
+
+  it("should return multiple when selection crosses from top-level heading to quote", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "heading-one", children: [
+        {text: "Declaration of Independence"}
+      ]},
+      { type: "quote", children: [
+        {text: "When, in the course of human events..."}
+      ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0], offset: 11 },
+      focus:  { path: [1, 0], offset: 5 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('multiple');
+  });
 });
 
 describe("changeBlockType", () => {

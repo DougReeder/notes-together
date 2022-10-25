@@ -348,6 +348,16 @@ function serializeMarkdown(slateNodes) {
           }
           break;
 
+        case 'table':
+          str += `${childrenText}`
+          break;
+        case 'table-row':
+          str += `${childrenText}`
+          break;
+        case 'table-cell':
+          str += `| ${childrenText} `
+          break;
+
         case 'link':
           const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
           return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
@@ -355,7 +365,7 @@ function serializeMarkdown(slateNodes) {
           const titleMarkup2 = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
           return `![${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup2})`;
       }
-      if (['paragraph', 'bulleted-list', 'numbered-list'].includes(slateNode.type) && i < slateNodes.length-1) {
+      if (['paragraph', 'bulleted-list', 'numbered-list', 'table-row'].includes(slateNode.type) && i < slateNodes.length-1) {
         str += "\n";
       }
       return str;

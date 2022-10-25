@@ -1,5 +1,5 @@
 // slateHtml.js - constants & functions to customize Slate for HTML/JSX
-// Copyright © 2021 Doug Reeder under the MIT License
+// Copyright © 2021-2022 Doug Reeder under the MIT License
 
 import React from "react";
 import { jsx } from 'slate-hyperscript';
@@ -8,7 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element, Path, Transforms, Editor} from "slate";
+import {Text, Node as SlateNode, Element as SlateElement, Path, Transforms, Editor, Range as SlateRange, Point} from "slate";
 import {useSelected, useFocused} from 'slate-react'
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
@@ -18,7 +18,7 @@ import {coerceToPlainText} from "./slateUtil";
 function isBlank(node) {
   if (Text.isText(node)) {
     return /^\s*$/.test(SlateNode.string(node));   // contains non-space character
-  } else if (Element.isElement(node)) {
+  } else if (SlateElement.isElement(node)) {
     switch (node.type) {
       case 'image':
       case 'thematic-break':
@@ -32,7 +32,7 @@ function isBlank(node) {
 }
 
 function withHtml(editor) {   // defines Slate plugin
-  const {isInline, isVoid, normalizeNode, insertData} = editor
+  const {isInline, isVoid, normalizeNode, deleteBackward, deleteForward, insertBreak, insertData} = editor
 
   editor.isInline = element => {
     switch (element?.type) {
@@ -63,26 +63,53 @@ function withHtml(editor) {   // defines Slate plugin
     }
 
     // moves blocks (e.g images) out of inlines (e.g. links)
-    if (Element.isElement(node) && editor.isInline(node)) {
-      for (let i=node.children.length-1; i>=0; --i) {
-        const child = node.children[i];
-        const childPath = [...path, i];
-        if (Element.isElement(child) && !editor.isInline(child)) {
-          let newPath;
-          if (path.length > 1) {
-            newPath = [...path.slice(0, -2), path[path.length - 2] + 1];
-          } else {
-            newPath = [path[0] + 1];
+    if (SlateElement.isElement(node) && editor.isInline(node)) {
+      if (node.children.some(child => SlateElement.isElement(child) && !editor.isInline(child))) {
+        const nodeRef = Editor.pathRef(editor, path);
+
+        let wrapBlock;
+        // eslint-disable-next-line default-case
+        switch (SlateNode.get(editor, Path.parent(path))?.type) {
+          case 'list-item':
+          case 'table-cell':
+          case 'quote':
+          case undefined:   // parent is editor
+            wrapBlock = {type: 'paragraph', children: []};
+            break;
+          case 'bulleted-list':   // an inline shouldn't be a child of this, but...
+          case 'numbered-list':   // an inline shouldn't be a child of this, but...
+            wrapBlock = {type: 'list-item', children: []};
+            break;
+          case 'table-row':   // an inline shouldn't be a child of this, but...
+            wrapBlock = {type: 'table-cell', isHeader: false, children: []};
+            break;
+        }
+        if (wrapBlock) {
+          Transforms.wrapNodes(editor, wrapBlock, {
+            at: path.slice(0, -1),
+            match: (n, p) => p.length === path.length && (Text.isText(n) || SlateElement.isElement(n) && editor.isInline(n))
+          });
+        }
+
+        for (let i=node.children.length-1; i>=0; --i) {
+          const child = node.children[i];
+          const childPath = [...nodeRef.current, i];
+          if (SlateElement.isElement(child) && !editor.isInline(child)) {
+            let newPath;
+            if (nodeRef.current.length > 1) {
+              newPath = [...nodeRef.current.slice(0, -2), nodeRef.current[nodeRef.current.length - 2] + 1];
+            } else {
+              newPath = [nodeRef.current[0] + 1];
+            }
+            Transforms.moveNodes(editor, {at: childPath, to: newPath});
+            if ('link' === node.type && 1 === node.children.length) {
+              // the moved node was the only child
+              const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
+              Transforms.insertNodes(editor, {text: linkText}, {at: [...nodeRef.current, 0]});
+            }
+            nodeRef.unref();
+            return;
           }
-          const nodeRef = Editor.pathRef(editor, path);
-          Transforms.moveNodes(editor, {at: childPath, to: newPath});
-          if ('link' === node.type && 1 === node.children.length) {
-            // the moved node was the only child
-            const linkText = /([^/]+)\/?$/.exec(node.url)?.[1]?.slice(0, 52) || 'link';
-            Transforms.insertNodes(editor, {text: linkText}, {at: [...nodeRef.current, 0]});
-          }
-          nodeRef.unref();
-          return;
         }
       }
     }
@@ -95,7 +122,7 @@ function withHtml(editor) {   // defines Slate plugin
     // Text & links at the top level are wrapped in a paragraph.
     // Typeless elements are converted to paragraphs.
     if (1 === path.length) {
-      if (!Element.isElement(node) || editor.isInline(node)) {
+      if (!SlateElement.isElement(node) || editor.isInline(node)) {
         const block = {type: 'paragraph', children: []}
         Transforms.wrapNodes(editor, block, {at: path});
         return;
@@ -149,7 +176,110 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
+    // ensures tables are normalized
+    if ('table' === node.type) {
+      let maxWidth = 1;
+      for (let r=0; r < node.children.length; ++r) {
+        const child = node.children[r];
+        if ('table-row' !== child.type) {
+          Transforms.wrapNodes(editor, {type: 'table-row', children: []},
+              {at: [...path, r]});
+          return;
+        }
+        for (let c=0; c < child.children.length; ++c) {
+          const grandchild = child.children[c];
+          if ('table-cell' !== grandchild.type) {
+            Transforms.wrapNodes(editor,
+                {type: 'table-cell', isHeader: false, children: []},
+                {at: [...path, r, c]});
+            return;
+          }
+        }
+        if (child.children.length > maxWidth) {
+          maxWidth = child.children.length;
+        }
+      }
+
+      let isChanged = false;
+      for (let r=0; r < node.children.length; ++r) {
+        const row = node.children[r];
+        const isHeader = 0 === r ? Boolean(row.children[row.children.length-1].isHeader) : false;
+        isChanged = isChanged || row.children.length < maxWidth;
+        for (let c = row.children.length; c < maxWidth; ++c) {
+          Transforms.insertNodes(editor, {type: 'table-cell', isHeader, children: [{text: ""}]}, {at: [...path, r, c]});
+        }
+      }
+      if (isChanged) { return; }
+    }
+
     normalizeNode(entry);
+  }
+
+  editor.deleteBackward = unit => {
+    const { selection } = editor
+
+    if (selection && SlateRange.isCollapsed(selection)) {
+      const [cell] = Editor.nodes(editor, {
+        match: n =>
+            !Editor.isEditor(n) &&
+            SlateElement.isElement(n) &&
+            'table-cell' === n.type,
+      });
+
+      if (cell) {
+        const [, cellPath] = cell
+        const start = Editor.start(editor, cellPath);
+
+        if (Point.equals(selection.anchor, start)) {
+          return;   // doesn't delete cell
+        }
+      }
+    }
+
+    deleteBackward(unit);
+  }
+
+  editor.deleteForward = unit => {
+    const { selection } = editor
+
+    if (selection && SlateRange.isCollapsed(selection)) {
+      const [cell] = Editor.nodes(editor, {
+        match: n =>
+            !Editor.isEditor(n) &&
+            SlateElement.isElement(n) &&
+            'table-cell' === n.type,   // doesn't delete cell
+      });
+
+      if (cell) {
+        const [, cellPath] = cell
+        const end = Editor.end(editor, cellPath);
+
+        if (Point.equals(selection.anchor, end)) {
+          return;
+        }
+      }
+    }
+
+    deleteForward(unit);
+  }
+
+  editor.insertBreak = () => {
+    const { selection } = editor
+
+    if (selection) {
+      const [table] = Editor.nodes(editor, {
+        match: n =>
+            !Editor.isEditor(n) &&
+            SlateElement.isElement(n) &&
+            n.type === 'table',
+      })
+
+      if (table) {
+        return
+      }
+    }
+
+    insertBreak()
   }
 
   // paste or drag & drop
@@ -396,6 +526,10 @@ const ELEMENT_TAGS = {
   UL: () => ({ type: 'bulleted-list' }),
   P: () => ({ type: 'paragraph' }),
   PRE: () => ({ type: 'code' }),
+  TABLE: () => ({ type: 'table' }),   // presumes it contains a tbody
+  TR: () => ({ type: 'table-row' }),
+  TD: () => ({ type: 'table-cell', isHeader: false }),
+  TH: () => ({ type: 'table-cell', isHeader: true }),
 
   // DIV: () => ({ }),
   FIGURE: () => ({ type: 'paragraph' }),
@@ -488,14 +622,14 @@ function deserializeHtml(html, editor) {
           .flat();
 
       const shouldChildrenBeBlocks = children.some(
-          child => Element.isElement(child) && !editor.isInline(child)
+          child => SlateElement.isElement(child) && !editor.isInline(child)
       );
       if (shouldChildrenBeBlocks) {
         // drops blank leaves between blocks
         children = children.filter(child => {
           if ('string' === typeof child) {
             return /\S/.test(child);
-          } else if (! Element.isElement(child) && Text.isText(child)) {
+          } else if (! SlateElement.isElement(child) && Text.isText(child)) {
             return /\S/.test(child.text);
           } else {
             return true;
@@ -503,7 +637,7 @@ function deserializeHtml(html, editor) {
         });
         // creates blocks to contain Leaves
         children = children.map(child => {
-          if (Element.isElement(child)) {
+          if (SlateElement.isElement(child)) {
             if (editor.isInline(child)) {
               return {children: [child]};
             } else {
@@ -514,7 +648,7 @@ function deserializeHtml(html, editor) {
           } else if ('string' === typeof child) {
             return {children: [{text: child}]};
           } else {
-            console.error("child not Element, Text, nor string:", child);
+            console.error("child not SlateElement, Text, nor string:", child);
             return {children: [{text: '\ufffd'}]};
           }
         });
@@ -566,7 +700,6 @@ const RenderingElement = props => {
   const { attributes, children, element } = props
 
   switch (element.type) {
-    default:
     case 'paragraph':
       return <p {...attributes}>{children}</p>
     case 'quote':
@@ -606,6 +739,22 @@ const RenderingElement = props => {
         {children}
         <hr />
       </div>
+    case 'table':
+      return (
+          <table>
+            <tbody {...attributes}>{children}</tbody>
+          </table>
+      )
+    case 'table-row':
+      return <tr {...attributes}>{children}</tr>
+    case 'table-cell':
+      if (element.isHeader) {
+        return <th {...attributes}>{children}</th>
+      } else {
+        return <td {...attributes}>{children}</td>
+      }
+    default:
+      return children;
   }
 }
 
@@ -758,6 +907,16 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
             }
           } else {
             return `<img src="${encodeURI(slateNode.url)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
+          }
+        case 'table':
+          return `<table><tbody>${children}</tbody></table>`;
+        case 'table-row':
+          return `<tr>${children}</tr>`;
+        case 'table-cell':
+          if (slateNode.isHeader) {
+            return `<th>${children}</th>`;
+          } else {
+            return `<td>${children}</td>`;
           }
         default:
           return children

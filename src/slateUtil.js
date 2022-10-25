@@ -11,32 +11,41 @@ function getRelevantBlockType(editor) {
     return 'n/a';
   }
 
-  const topLevelBlockNodesInSelection = Editor.nodes(editor, {
-    at: editor.selection,
-    mode: "highest",
-    match: (n) => Editor.isBlock(editor, n),
-  });
-
-  let blockType = 'n/a';
-  let nodeEntry = topLevelBlockNodesInSelection.next();
-  while (!nodeEntry.done) {
-    const [node] = nodeEntry.value;
-    if ('n/a' === blockType) {
-      blockType = node.type || 'n/a';
-      // console.log(`relevant block type ${node.type}`)
-    } else if (blockType !== node.type) {
-      // console.log(`multiple block types ${node.type}`)
-      if (node.type === 'image') {
-        return 'image';   // here meaning 'multiple including image'
-      } else {
-        return "multiple";
-      }
-    }
-
-    nodeEntry = topLevelBlockNodesInSelection.next();
+  let [common, path] = SlateNode.common(editor, selection.anchor.path, selection.focus.path);
+  while (!Editor.isEditor(common) && !Editor.isBlock(editor, common)) {
+    path = path.slice(0, -1);
+    common = SlateNode.get(editor, path);
   }
 
-  return blockType;
+  if (Editor.isEditor(common)) {
+    return 'multiple';
+  } else {
+    switch (common.type) {
+      case 'list-item':
+        if (path.length >= 2) {
+          const parent = SlateNode.parent(editor, path);
+          return parent.type;
+        } else {
+          return 'multiple';   // no list parent
+        }
+      case 'table-cell':
+        if (path.length >= 3) {
+          const grandparent = SlateNode.get(editor, path.slice(0, -2))
+          return grandparent.type;
+        } else {
+          return 'multiple';   // no table parent
+        }
+      case 'table-row':
+        if (path.length >= 2) {
+          const parent = SlateNode.parent(editor, path);
+          return parent.type;
+        } else {
+          return 'multiple';   // no table parent
+        }
+      default:
+        return common.type;
+    }
+  }
 }
 
 
@@ -50,27 +59,48 @@ function isBlockActive(editor, format) {
 
 
 const LIST_TYPES = ['numbered-list', 'bulleted-list'];
+const TABLE_TYPES = ['table', 'table-row'];
+const COMPOUND_TYPES = [...LIST_TYPES, ...TABLE_TYPES];
 
 function changeBlockType(editor, type) {
   Editor.withoutNormalizing(editor, () => {
     const isActive = isBlockActive(editor, type);
     const isList = LIST_TYPES.includes(type);
+    const isTable = TABLE_TYPES.includes(type);
 
     Transforms.unwrapNodes(editor, {
       match: n =>
-          LIST_TYPES.includes(
+          COMPOUND_TYPES.includes(
+              !Editor.isEditor(n) && SlateElement.isElement(n) && n.type
+          ),
+      split: true,
+    });
+    Transforms.unwrapNodes(editor, {
+      match: n =>
+          TABLE_TYPES.includes(
               !Editor.isEditor(n) && SlateElement.isElement(n) && n.type
           ),
       split: true,
     });
     const newProperties = {
-      type: isActive ? 'paragraph' : isList ? 'list-item' : type,
+      type: isActive ? 'paragraph' : isList ? 'list-item' : isTable ? 'table-cell' : type,
+    }
+    if (isTable) {
+      newProperties.isHeader = false;
     }
     Transforms.setNodes(editor, newProperties, {split: SlateRange.isExpanded(editor.selection)});
 
-    if (!isActive && isList) {
-      const block = {type: type, children: []}
-      Transforms.wrapNodes(editor, block);
+    if (!isActive) {
+      if (isList) {
+        const block = {type: type, children: []}
+        Transforms.wrapNodes(editor, block);
+      } else if (isTable) {
+        Transforms.wrapNodes(editor, {type: 'table', children: []});
+        const [, tablePath] = Editor.above(editor, {at: editor.selection.focus.path, match: n => 'table' === n.type});
+        for (const [, cellPath] of SlateNode.children(editor, tablePath)) {
+          Transforms.wrapNodes(editor, {type: 'table-row', children: []}, {at: cellPath});
+        }
+      }
     }
   });
 }

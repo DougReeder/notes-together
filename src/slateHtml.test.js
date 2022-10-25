@@ -305,18 +305,20 @@ describe("HTML plugin normalizer", () => {
 
     expect(editor.children).toEqual([
       {type: 'quote', children: [
-        {text: ""},
-        {type: "link", url: "https://example.com/grapefruit-img",
-          children: [{text: "grapefruit-img"}]
+        {type: 'paragraph', children: [
+          {text: ""},
+          {type: "link", url: "https://example.com/grapefruit-img",
+            children: [{text: "grapefruit-img"}]
+          },
+          {text: ""},
+        ]},
+        {type: 'image',
+          url: 'https://mozilla.org/?x=шеллы',
+          title: "Slice of grapefruit",
+          children: [
+            {text: "Grapefruit slice atop a pile of other slices"}]
         },
-        {text: ""},
       ]},
-      {type: 'image',
-        url: 'https://mozilla.org/?x=шеллы',
-        title: "Slice of grapefruit",
-        children: [
-          {text: "Grapefruit slice atop a pile of other slices"}]
-      },
       {type: 'paragraph', children: [
           {text: ""},
           {type: "link", url: "https://alpha.com/link",
@@ -337,6 +339,10 @@ describe("HTML plugin normalizer", () => {
           children: [{text: "foo"}]
         },
         {text: ""},
+        { type: "link", url: "https://beta.org/spam",
+          children: [{text: "more about spam"}]
+        },
+        {text: ""},
       ]},
       {
         type: 'image',
@@ -345,15 +351,6 @@ describe("HTML plugin normalizer", () => {
         children: [
           {text: "Some sort of thing"}]
       },
-      { type: 'paragraph', children: [
-          {text: ""},
-          { type: "link", url: "https://beta.org/spam",
-            children: [
-              {text: "more about spam"}
-            ]
-          },
-          {text: ""},
-      ]},
       { type: 'image',
         url: 'https://beta.org/frotz',
         title: "Etwas",
@@ -378,6 +375,83 @@ describe("HTML plugin normalizer", () => {
     expect(editor.children).toEqual([{type: "paragraph", children: [
         {text: "Lorem ipsum", deleted: true},
         {text: "dolor sit amet,consectetur adipiscing elit,", inserted: true},
+      ]}]);
+  });
+
+  it("should normalise tables", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+          {type: 'table', children: [
+            {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: true, children: [
+                {text: "Lorem ipsum dolor"},
+              ]},
+            ]},
+            {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: true, children: [
+                {text: "sit amet, consectetur"},
+              ]},
+              {type: 'table-cell', isHeader: false, children: [
+                {text: "adipiscing elit"},
+              ]},
+              {type: 'image', url: 'https://storage.org/?q=cat',
+                title: "Cat of the day",
+                children: [{text: "a sleeping Persian"}]
+              },
+            ]},
+            {type: 'paragraph', children: [{text: "And another thing..."}]},
+          ]},
+        ]},
+        {type: 'list-item', children: [{text: "second"}]},
+      ]}];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+          {type: 'table', children: [
+            {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: true, children: [
+                {text: "Lorem ipsum dolor"},
+              ]},
+              {type: 'table-cell', isHeader: true, children: [
+                {text: ""},
+              ]},
+              {type: 'table-cell', isHeader: true, children: [
+                {text: ""},
+              ]},
+            ]},
+            {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: true, children: [
+                {text: "sit amet, consectetur"},
+              ]},
+              {type: 'table-cell', isHeader: false, children: [
+                {text: "adipiscing elit"},
+              ]},
+              {type: 'table-cell', isHeader: false, children: [
+                {type: 'image', url: 'https://storage.org/?q=cat',
+                  title: "Cat of the day",
+                  children: [{text: "a sleeping Persian"}]
+                }
+              ]},
+            ]},
+              {type: 'table-row', children: [
+                {type: 'table-cell', isHeader: false, children: [
+                  {type: 'paragraph', children: [{text: "And another thing..."}]},
+                ]},
+                {type: 'table-cell', isHeader: false, children: [
+                  {text: ""},
+                ]},
+                {type: 'table-cell', isHeader: false, children: [
+                  {text: ""},
+                ]},
+              ]},
+          ]},
+        ]},
+        {type: 'list-item', children: [{text: "second"}]},
       ]}]);
   });
 });
@@ -1968,7 +2042,7 @@ describe("serializeHtml and deserializeHtml", () => {
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [
               {text: " first "},
-          ]},
+            ]},
           {type: 'list-item', children: [
             {type: 'bulleted-list', children: [
               {type: 'list-item', children: [
@@ -1979,6 +2053,28 @@ describe("serializeHtml and deserializeHtml", () => {
               ]},
             ]},
           ]},
+        ]
+      },
+    ];
+
+    let html = serializeHtml(original);
+    html = sanitizeHtml(html, semanticOnly);
+    const reloaded = deserializeHtml(html, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip hierarchies of tables", () => {
+    const original = [
+      {type: 'table', children: [
+        {type: 'table-row', children: [
+            {type: 'table-cell', isHeader: true, children: [{text: " A1 "}]},
+            {type: 'table-cell', isHeader: true, children: [{text: " A2 "}]},
+        ]},
+        {type: 'table-row', children: [
+            {type: 'table-cell', isHeader: true, children: [{text: " B1 "}]},
+            {type: 'table-cell', isHeader: false, children: [{text: " B2 "}]},
+        ]},
         ]
       },
     ];

@@ -75,6 +75,18 @@ h3 {
     text-transform: none;
 }
 
+table {
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+}
+
+td, th {
+    min-width: 2ch;
+    border: 2px solid #cccccc;
+    padding: 0.5ch;
+}
+
 del {
     text-decoration: none;
     background-color: #f4e0ff;
