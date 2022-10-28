@@ -11,90 +11,107 @@ function getRelevantBlockType(editor) {
     return 'n/a';
   }
 
-  let [common, path] = SlateNode.common(editor, selection.anchor.path, selection.focus.path);
-  while (!Editor.isEditor(common) && !Editor.isBlock(editor, common)) {
-    path = path.slice(0, -1);
-    common = SlateNode.get(editor, path);
-  }
+  const {block, blockPath} = getCommonBlock(editor);
 
-  if (Editor.isEditor(common)) {
+  if (Editor.isEditor(block)) {
     return 'multiple';
   } else {
-    switch (common.type) {
-      case 'list-item':
-        if (path.length >= 2) {
-          const parent = SlateNode.parent(editor, path);
-          return parent.type;
-        } else {
-          return 'multiple';   // no list parent
-        }
-      case 'table-cell':
-        if (path.length >= 3) {
-          const grandparent = SlateNode.get(editor, path.slice(0, -2))
-          return grandparent.type;
-        } else {
-          return 'multiple';   // no table parent
-        }
+    switch (block.type) {
       case 'table-row':
-        if (path.length >= 2) {
-          const parent = SlateNode.parent(editor, path);
+        if (blockPath.length >= 2) {
+          const parent = SlateNode.parent(editor, blockPath);
           return parent.type;
         } else {
           return 'multiple';   // no table parent
         }
       default:
-        return common.type;
+        return block.type;
     }
   }
 }
 
-
-function isBlockActive(editor, format) {
-  const [match] = Editor.nodes(editor, {
-    match: n =>
-        !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === format,
-  });
-  return Boolean(match);
-}
-
-
-const LIST_TYPES = ['numbered-list', 'bulleted-list'];
-const TABLE_TYPES = ['table', 'table-row'];
+const LIST_TYPES = ['numbered-list', 'bulleted-list', 'list-item'];
+const TABLE_TYPES = ['table', 'table-row', 'table-cell'];
 const COMPOUND_TYPES = [...LIST_TYPES, ...TABLE_TYPES];
+// wrapping with compound type is handled by other code
+const IMAGE_WRAP_TYPES = ['quote', 'list-item', 'table-cell'];
 
-function changeBlockType(editor, type) {
+function changeBlockType(editor, newType) {
   Editor.withoutNormalizing(editor, () => {
-    const isActive = isBlockActive(editor, type);
-    const isList = LIST_TYPES.includes(type);
-    const isTable = TABLE_TYPES.includes(type);
+    Transforms.setSelection(editor, Editor.unhangRange(editor, editor.selection, {voids: true}))
 
+    const newIsList = LIST_TYPES.includes(newType);
+    const newIsTable = TABLE_TYPES.includes(newType);
+
+    let {block, blockPath} = getCommonBlock(editor);
+    let changePathLength = Editor.isEditor(block) ? 1 : blockPath.length;
+    const allowSplit = SlateRange.isExpanded(editor.selection) && 'image' !== block.type;
+
+    // if needed, adjusts block & changePathLength & inserts blocks to be changed
+    if ('image' === block.type && IMAGE_WRAP_TYPES.includes(newType)) {
+      // wrapping with compound type is handled by other code
+      // It's not clear why this node isn't wrapped by later wrapNodes
+      Transforms.wrapNodes(editor, {children: []}, {split: false});
+    } else if (['list-item', 'table-row'].includes(block.type)) {
+      if (changePathLength >= 2) {
+        block = SlateNode.parent(editor, blockPath);
+        // no need to change blockPath as only changePathLength is used after this
+        --changePathLength;
+      } else {
+        throw new Error(`lost child: ${blockPath} ${SlateNode.string(block)}`);
+      }
+    } else if ('table-cell' === block.type) {
+      if (changePathLength >= 3) {
+        changePathLength = changePathLength - 2;
+        block = SlateNode.get(editor, blockPath.slice(0, changePathLength));
+        // no need to change blockPath as only changePathLength is used after this
+      } else {
+        throw new Error(`lost cell: ${blockPath} ${SlateNode.string(block)}`);
+      }
+    }
+
+    let isTypeSame = block.type === newType;
+
+    // unwraps old compound types
+    const selectionRef = Editor.rangeRef(editor, editor.selection, {affinity: 'outward'});
     Transforms.unwrapNodes(editor, {
-      match: n =>
-          COMPOUND_TYPES.includes(
-              !Editor.isEditor(n) && SlateElement.isElement(n) && n.type
-          ),
-      split: true,
+      mode: 'highest',
+      match: (n, p) => p.length === changePathLength && COMPOUND_TYPES.includes(n.type),
+      split: allowSplit,
     });
     Transforms.unwrapNodes(editor, {
-      match: n =>
-          TABLE_TYPES.includes(
-              !Editor.isEditor(n) && SlateElement.isElement(n) && n.type
-          ),
-      split: true,
+      mode: 'highest',
+      match: (n, p) => p.length === changePathLength &&
+          TABLE_TYPES.includes(n.type),
+      split: allowSplit,
     });
-    const newProperties = {
-      type: isActive ? 'paragraph' : isList ? 'list-item' : isTable ? 'table-cell' : type,
-    }
-    if (isTable) {
-      newProperties.isHeader = false;
-    }
-    Transforms.setNodes(editor, newProperties, {split: SlateRange.isExpanded(editor.selection)});
+    Transforms.select(editor, selectionRef.unref());
 
-    if (!isActive) {
-      if (isList) {
-        const block = {type: type, children: []}
-        Transforms.wrapNodes(editor, block);
-      } else if (isTable) {
+    if (isTypeSame && (COMPOUND_TYPES.includes(newType) || changePathLength > 1)) {
+      // reverts type change
+      Transforms.unwrapNodes(editor, {
+        match: (n, p) => p.length === changePathLength,
+        split: allowSplit});
+    } else {
+      // here's where the actual block change is done
+      const newProperties = {
+        type: isTypeSame ? 'paragraph' : newIsList ? 'list-item' : newIsTable ? 'table-cell' : newType,
+      }
+      if (newIsTable) {
+        newProperties.isHeader = false;
+      }
+      Transforms.setNodes(editor, newProperties, {
+        match: (n, p) => p.length === changePathLength && 'image' !== n.type,
+        split: allowSplit
+      });
+
+      // wraps new compound types
+      if (newIsList) {
+        Transforms.wrapNodes(editor, {type: newType, children: []}, {
+          mode: 'highest',
+          match: (n, p) => p.length === changePathLength,
+        });
+      } else if (newIsTable) {
         Transforms.wrapNodes(editor, {type: 'table', children: []});
         const [, tablePath] = Editor.above(editor, {at: editor.selection.focus.path, match: n => 'table' === n.type});
         for (const [, cellPath] of SlateNode.children(editor, tablePath)) {
@@ -103,6 +120,17 @@ function changeBlockType(editor, type) {
       }
     }
   });
+}
+
+function getCommonBlock(editor) {
+  const range = Editor.unhangRange(editor, editor.selection, {voids: true});
+
+  let [common, path] = SlateNode.common(editor, range.anchor.path, range.focus.path);
+  while (!Editor.isBlock(editor, common) && !Editor.isEditor(common)) {
+    path = path.slice(0, -1);
+    common = SlateNode.get(editor, path);
+  }
+  return {block: common, blockPath: path}
 }
 
 async function changeContentType(editor, oldSubtype, newSubtype) {
@@ -172,4 +200,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, isBlockActive, changeBlockType, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, changeContentType, coerceToPlainText};

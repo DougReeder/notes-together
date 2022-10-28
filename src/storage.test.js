@@ -18,6 +18,7 @@ import {
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL} from "uuid";
+import {waitFor} from "@testing-library/react";
 
 
 if (!global.requestIdleCallback) {
@@ -557,7 +558,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 33);
       });
 
       const retrieved = await getNote(id);
@@ -589,7 +590,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 25);
+        }, 33);
       });
 
       const retrieved = await getNote(id);
@@ -621,7 +622,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 33);
       });
 
       const retrieved = await getNote(id);
@@ -653,7 +654,7 @@ Finance: we can't afford it.`,
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 33);
       });
 
       const retrieved = await getNote(id);
@@ -688,7 +689,7 @@ Finance: we can't afford it.</ins>`);
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 10);
+        }, 33);
       });
 
       const retrieved = await getNote(id);
@@ -712,13 +713,7 @@ Finance: we can't afford it.</ins>`);
         oldValue: false,
         newValue: remoteSavedSearch}
       );
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 10);
-      });
-
-      expect(window.postMessage).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(window.postMessage).toHaveBeenCalledTimes(1));
       expect(window.postMessage).toHaveBeenCalledWith({kind: 'TAG_CHANGE'}, expect.anything());
     });
 

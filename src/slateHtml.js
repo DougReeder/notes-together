@@ -114,7 +114,7 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
-    if ('link' === node.type && isBlank(node)) {
+    if (editor.isInline(node) && isBlank(node)) {
       Transforms.removeNodes(editor, {at: path});
       return;
     }
@@ -128,6 +128,7 @@ function withHtml(editor) {   // defines Slate plugin
         return;
       } else if (!node.type) {
         Transforms.setNodes(editor, {type: 'paragraph'}, {at: path, mode: "highest"});
+        return;
       }
     }
 
@@ -151,6 +152,11 @@ function withHtml(editor) {   // defines Slate plugin
 
     // ensure all children of lists are list-items
     if (['bulleted-list', 'numbered-list'].includes(node.type)) {
+      if (0 === node.children.length) {
+        Transforms.removeNodes(editor, {at: path});
+        return;
+      }
+
       let changed = false;
       for (let i=node.children.length-1; i>=0; --i) {
         const child = node.children[i];
@@ -176,14 +182,58 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
+    // deletes or wraps table cells outside a table-row
+    if ('table-cell' === node.type) {
+      let parent = undefined;
+      if (path.length > 1) {
+        parent = SlateNode.get(editor, Path.parent(path));
+      }
+      if ('table-row' !== parent?.type) {
+        if (isBlank(node)) {
+          Transforms.removeNodes(editor, {at: path});
+          return;
+        } else {
+          const row = {type: 'table-row', children: []};
+          Transforms.wrapNodes(editor, row, {at: path});
+          return;
+        }
+      }
+    }
+
+    // deletes or wraps table rows outside a table
+    if ('table-row' === node.type) {
+      let parent = undefined;
+      if (path.length > 1) {
+        parent = SlateNode.get(editor, Path.parent(path));
+      }
+      if ('table' !== parent?.type) {
+        if (isBlank(node)) {
+          Transforms.removeNodes(editor, {at: path});
+          return;
+        } else {
+          Transforms.wrapNodes(editor, {type: 'table', children: []}, {at: path});
+          return;
+        }
+      }
+    }
+
     // ensures tables are normalized
     if ('table' === node.type) {
+      if (0 === node.children.length) {
+        Transforms.removeNodes(editor, {at: path});
+        return;
+      }
+
       let maxWidth = 1;
       for (let r=0; r < node.children.length; ++r) {
         const child = node.children[r];
         if ('table-row' !== child.type) {
-          Transforms.wrapNodes(editor, {type: 'table-row', children: []},
-              {at: [...path, r]});
+          if (isBlank(child)) {
+            Transforms.removeNodes(editor, {at: [...path, r]});
+          } else {
+            Transforms.wrapNodes(editor, {type: 'table-row', children: []},
+                {at: [...path, r]});
+          }
           return;
         }
         for (let c=0; c < child.children.length; ++c) {

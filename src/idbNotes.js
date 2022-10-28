@@ -95,7 +95,7 @@ function createWelcomeNote(transaction) {
 
   const tutorialContent = `
 <h1>Welcome to Notes Together!</h1>
-<p>Create <b>headings</b>, <b>lists</b>, and <b>block quotes</b> using the <i>Block Type</i> menu above. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
+<p>Change body text to <b>headings</b>, <b>lists</b>, and <b>tables</b> using the <i>Block Type</i> menu above. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
 <p>To start typing <b>bold</b> or <i>italic</i> text, select from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</p>
 <p><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</p>
 <p>To <b>Undo</b> or <b>Redo</b>, use the <i>Editor menu</i> <b>⋮</b>︎. <b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste files...</i>.</p>

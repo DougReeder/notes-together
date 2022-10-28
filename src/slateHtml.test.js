@@ -220,20 +220,43 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
+  it("should remove a list with no list-items and no non-blank children", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'quote', children: [
+          {type: 'numbered-list', children: [
+              {type: 'heading-one', children: [{text: "\t"}]},
+              {type: 'code', children: [{text: "\n"}]},
+              {type: 'paragraph', children: [{text: ""}]},
+            ]},
+        ]},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [
+          {text: ""}
+        ]},
+    ]);
+  });
+
   it("should remove all blank links", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'quote', children: [
-          {text: ""},
+          {text: "one"},
           {type: "link", url: "https://example.com/user/jdoe#profile",
             children: [{text: ""}]
           },
-          {text: ""},
+          {text: "three"},
           {type: "link", url: "https://example.com/",
             children: [{text: ""}]
           },
-          {text: ""},
+          {text: "five"},
       ]}
     ];
     editor.selection = null;
@@ -242,7 +265,7 @@ describe("HTML plugin normalizer", () => {
 
     expect(editor.children).toEqual([
       {type: 'quote', children: [
-          {text: ""},
+          {text: "onethreefive"},
       ]},
     ]);
   });
@@ -401,6 +424,7 @@ describe("HTML plugin normalizer", () => {
                 children: [{text: "a sleeping Persian"}]
               },
             ]},
+            {type: 'quote', children: [{text: ""}]},
             {type: 'paragraph', children: [{text: "And another thing..."}]},
           ]},
         ]},
@@ -452,6 +476,30 @@ describe("HTML plugin normalizer", () => {
           ]},
         ]},
         {type: 'list-item', children: [{text: "second"}]},
+      ]}]);
+  });
+
+  it("should delete tables with no table-rows and no non-blank children", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+            {type: 'table', children: [
+                {type: 'quote', children: [{text: ""}]},
+                {type: 'paragraph', children: [{text: ""}]},
+              ]},
+          ]},
+        {type: 'list-item', children: [{text: "trailer"}]},
+      ]}];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+            {text: ""}
+          ]},
+        {type: 'list-item', children: [{text: "trailer"}]},
       ]}]);
   });
 });

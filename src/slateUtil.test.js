@@ -1,7 +1,7 @@
 // Copyright © 2021 Doug Reeder under the MIT License
 
 import {changeBlockType, changeContentType, getRelevantBlockType} from "./slateUtil";
-import {createEditor, Transforms} from 'slate'
+import {createEditor, Editor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
 import auto from "fake-indexeddb/auto.js";
@@ -30,7 +30,7 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('quote');
   });
 
-  it("should return numbered-list for a list-item", () => {
+  it("should return list-item for selection in a list-item", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       { type: "numbered-list", children: [
@@ -46,8 +46,33 @@ describe("getRelevantBlockType", () => {
       ]},
     ];
     editor.selection = {
-      anchor: { path: [0, 1], offset: 3 },
-      focus:  { path: [0, 1], offset: 8 },
+      anchor: { path: [0, 1, 0], offset: 3 },
+      focus:  { path: [0, 1, 0], offset: 8 },
+    };
+
+    const type = getRelevantBlockType(editor);
+
+    expect(type).toEqual('list-item');
+  });
+
+  it("should return numbered-list for a selection with multiple list-items", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "numbered-list", children: [
+          {type: "list-item", children: [
+              {text: "first item"}
+            ]},
+          {type: "list-item", children: [
+              {text: "second item"}
+            ]},
+          {type: "list-item", children: [
+              {text: "third item"}
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 1, 0], offset: 7 },
+      focus:  { path: [0, 2, 0], offset: 5 },
     };
 
     const type = getRelevantBlockType(editor);
@@ -55,7 +80,7 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('numbered-list');
   });
 
-  it("should return bulleted-list for a list-item in a list in a block quote", () => {
+  it("should return bulleted-list for a selection of multiple list-item in a list in a block quote", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       { type: "quote", children: [
@@ -73,8 +98,8 @@ describe("getRelevantBlockType", () => {
         ]},
     ];
     editor.selection = {
-      anchor: { path: [0, 0, 1], offset: 2 },
-      focus:  { path: [0, 0, 1], offset: 9 },
+      anchor: { path: [0, 0, 0, 0], offset: 6 },
+      focus:  { path: [0, 0, 1, 0], offset: 6 },
     };
 
     const type = getRelevantBlockType(editor);
@@ -119,7 +144,7 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('image');
   });
 
-  it("should return table when selection wholly in cell text", () => {
+  it("should return table-cell when selection wholly in cell text", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       { type: "paragraph", children: [
@@ -147,13 +172,13 @@ describe("getRelevantBlockType", () => {
         ]},
     ];
     editor.selection = {
-      anchor: { path: [0, 0, 1, 0], offset: 1 },
-      focus:  { path: [0, 0, 1, 0], offset: 12 },
+      anchor: { path: [0, 0, 1, 0, 0], offset: 1 },
+      focus:  { path: [0, 0, 1, 0, 0], offset: 12 },
     };
 
     const type = getRelevantBlockType(editor);
 
-    expect(type).toEqual('table');
+    expect(type).toEqual('table-cell');
   });
 
   it("should return table when selection crosses from cell to cell", () => {
@@ -252,6 +277,261 @@ describe("getRelevantBlockType", () => {
 });
 
 describe("changeBlockType", () => {
+  it("should wrap image with block quote", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {type: 'image', url: 'https://example.ca', title: "Canada, Eh?", children: [
+                  {text: "Excuse me"}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 2}, focus: {path: [0, 0, 0, 0], offset: 8}});
+
+    expect(getRelevantBlockType(editor)).toEqual('image');
+    changeBlockType(editor, 'quote');
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {type: 'quote', children: [
+                  {type: 'image', url: 'https://example.ca', title: "Canada, Eh?", children: [
+                      {text: "Excuse me"}
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('image');
+  });
+
+  it("should wrap image with bulleted list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [
+          {type: 'image', url: 'https://example.us', title: "US Plus", children: [
+              {text: "We own the idea of the idea of America"}
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 3}, focus: {path: [0, 0, 0], offset: 35}});
+
+    expect(getRelevantBlockType(editor)).toEqual('image');
+    changeBlockType(editor, 'bulleted-list');
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [
+          {type: 'bulleted-list', children: [
+              {type: 'list-item', children: [
+                  {type: 'image', url: 'https://example.us', title: "US Plus", children: [
+                      {text: "We own the idea of the idea of America"}
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('image');
+  });
+
+  it("should not wrap image with heading", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {type: 'image', url: 'https://example.ca', title: "Canada, Eh?", children: [
+                  {text: "Excuse me"}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 2}, focus: {path: [0, 0, 0, 0], offset: 8}});
+
+    expect(getRelevantBlockType(editor)).toEqual('image');
+    changeBlockType(editor, 'heading-two');
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {type: 'image', url: 'https://example.ca', title: "Canada, Eh?", children: [
+                  {text: "Excuse me"}
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('image');
+  });
+
+  it("should convert multiple top-level blocks to table, without splitting images", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      { type: "paragraph",
+        children: [
+          {text: "first paragraph"}
+        ]},
+      {type: 'image', url: 'https://example.us', title: "US Plus", children: [
+          {text: "We own the idea of the idea of America"}
+        ]},
+      { type: "quote",
+        children: [
+          {text: "second paragraph"}
+        ]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "first item"}]},
+          {type: 'list-item', children: [{text: "second item"}]},
+        ]},
+      { type: "heading-two",
+        children: [
+          {text: "some heading"}
+        ]},
+      {type: "paragraph",
+        children: [
+          {text: "first sentence"},
+          {type: 'link', url: 'https://example.edu', title: "important info", children: [
+              {text: "link text"},
+            ]},
+          {text: "last sentence"},
+        ]},
+      {type: 'image', url: 'https://example.gb', title: "Britain", children: [
+          {text: "Keep a stiff upper lip!"}
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "last paragraph"}
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 0], offset: 19}, focus: {path: [6, 0], offset: 4}});
+
+    expect(getRelevantBlockType(editor)).toEqual('multiple');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      { type: "paragraph",
+        children: [
+          {text: "first paragraph"}
+        ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {type: 'image', url: 'https://example.us', title: "US Plus", children: [
+                      {text: "We own the idea of the idea of America"}
+                    ]},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {text: "second paragraph"},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {text: "first item"},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {text: "second item"}
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {text: "some heading"}
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {text: "first sentence"},
+                  {type: 'link', url: 'https://example.edu', title: "important info", children: [
+                      {text: "link text"},
+                    ]},
+                  {text: "last sentence"},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', isHeader: false, children: [
+                  {type: 'image', url: 'https://example.gb', title: "Britain", children: [
+                      {text: "Keep a stiff upper lip!"}
+                    ]},
+                ]},
+            ]},
+        ]},
+      { type: "paragraph",
+        children: [
+          {text: "last paragraph"}
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table');
+  });
+
+  it("should split text nodes (and leave rump lists as bulleted)", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "start of first item"},
+              {type: 'link', url: 'https://example.fr', title: "le chat", children: [
+                  {text: "un chat"},
+                ]},
+              {text: "end of first item"},
+            ]},
+          {type: 'list-item', children: [
+              {type: 'image', url: 'https://example.de', title: "Der Deutches Haus", children: [
+                  {text: "Ein Haus"}
+                ]},
+              {type: "paragraph",
+                children: [
+                  {text: "middle of last item"},
+                  {type: 'link', url: 'https://example.no', title: "something Norwegian", children: [
+                      {text: "more Norwegian"},
+                    ]},
+                  {text: "end of last item"},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 15}, focus: {path: [0, 1, 1, 2], offset: 3}});
+
+    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+    changeBlockType(editor, 'quote');
+
+    expect(editor.children).toEqual([
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {text: "start of first "},
+            ]},
+        ]},
+      {type: 'quote', children: [
+          {text: "item"},
+          {type: 'link', url: 'https://example.fr', title: "le chat", children: [
+              {text: "un chat"},
+            ]},
+          {text: "end of first item"},
+        ]},
+      {type: 'quote', children: [
+          {type: 'image', url: 'https://example.de', title: "Der Deutches Haus", children: [
+              {text: "Ein Haus"}
+            ]},
+          {type: "paragraph",
+            children: [
+              {text: "middle of last item"},
+              {type: 'link', url: 'https://example.no', title: "something Norwegian", children: [
+                  {text: "more Norwegian"},
+                ]},
+              {text: "end"},
+            ]},
+        ]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: " of last item"},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('multiple');
+  });
+
   it("should convert bulleted-list to numbered-list", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -263,6 +543,7 @@ describe("changeBlockType", () => {
     ];
     Transforms.select(editor, []);
 
+    expect(getRelevantBlockType(editor)).toEqual('bulleted-list');
     changeBlockType(editor, 'numbered-list');
 
     expect(editor.children).toEqual([
@@ -272,6 +553,259 @@ describe("changeBlockType", () => {
           {type: 'list-item', children: [{text: "third"}]},
         ]}
     ]);
+    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+  });
+
+  it("should change table-cell to un-nested numbered-list", () =>{
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "sole"}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 2}, focus: {path: [0, 0, 0, 0], offset: 2}});
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    changeBlockType(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [
+                {text: "sole"}
+              ]},
+          ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  });
+
+  it("should convert nested table to nested bulleted-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "vor"}]},
+              {type: 'table-cell', children: [
+                  {type: 'table', children: [
+                      {type: 'table-row', children: [
+                          {type: 'table-cell', children: [{text: "A1"}]},
+                          {type: 'table-cell', children: [{text: "A2"}]},
+                        ]},
+                      {type: 'table-row', children: [
+                          {type: 'table-cell', children: [{text: "B1"}]},
+                          {type: 'table-cell', children: [{text: "B2"}]},
+                        ]},
+                    ]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [{text: "first"}]},
+                      {type: 'list-item', children: [{text: "second"}]},
+                      {type: 'list-item', children: [{text: "third"}]},
+                    ]},
+                ]},
+              {type: 'table-cell', children: [{text: "nach"}]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 1, 0, 0, 0, 0], offset: 0}, focus: {path: [0, 0, 1, 0, 1, 1, 0], offset: 2}});
+
+    expect(getRelevantBlockType(editor)).toEqual('table');
+    changeBlockType(editor, 'bulleted-list');
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "vor"}]},
+              {type: 'table-cell', children: [
+                  {type: 'bulleted-list', children: [
+                      {type: 'list-item', children: [{text: "A1"}]},
+                      {type: 'list-item', children: [{text: "A2"}]},
+                      {type: 'list-item', children: [{text: "B1"}]},
+                      {type: 'list-item', children: [{text: "B2"}]},
+                    ]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [{text: "first"}]},
+                      {type: 'list-item', children: [{text: "second"}]},
+                      {type: 'list-item', children: [{text: "third"}]},
+                    ]},
+                ]},
+              {type: 'table-cell', children: [{text: "nach"}]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('bulleted-list');
+  });
+
+  it("should convert nested table & numbered-list to un-nested bulleted-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "vor"}]},
+              {type: 'table-cell', children: [
+                  {type: 'table', children: [
+                      {type: 'table-row', children: [
+                          {type: 'table-cell', children: [{text: "A1"}]},
+                          {type: 'table-cell', children: [{text: "A2"}]},
+                        ]},
+                      {type: 'table-row', children: [
+                          {type: 'table-cell', children: [{text: "B1"}]},
+                          {type: 'table-cell', children: [{text: "B2"}]},
+                        ]},
+                    ]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [{text: "first"}]},
+                      {type: 'list-item', children: [{text: "second"}]},
+                      {type: 'list-item', children: [{text: "third"}]},
+                    ]},
+                ]},
+              {type: 'table-cell', children: [{text: "nach"}]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 1, 0, 0, 0, 0], offset: 0}, focus: {path: [0, 0, 1, 1, 2, 0], offset: 5}});
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    changeBlockType(editor, 'bulleted-list');
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "vor"}]},
+            ]},
+        ]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "A1"}]},
+                      {type: 'table-cell', children: [{text: "A2"}]},
+                    ]},
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "B1"}]},
+                      {type: 'table-cell', children: [{text: "B2"}]},
+                    ]},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [{text: "first"}]},
+                  {type: 'list-item', children: [{text: "second"}]},
+                  {type: 'list-item', children: [{text: "third"}]},
+                ]},
+            ]},
+        ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "nach"}]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  });
+
+  it("should unwrap nested quote when changed to 'quote'", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+                {type: 'quote', children: [
+                    {text: "Some famous saying"},
+                  ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 5}, focus: {path: [0, 0, 0, 0], offset: 5}});
+
+    expect(getRelevantBlockType(editor)).toEqual('quote');
+    changeBlockType(editor, 'quote');
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "Some famous saying"},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  });
+
+  it("should change un-nested quote to paragraph when changed to 'quote'", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [
+          {text: "Some drivel"},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0], offset: 5}, focus: {path: [0, 0], offset: 5}});
+
+    expect(getRelevantBlockType(editor)).toEqual('quote');
+    changeBlockType(editor, 'quote');
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [
+          {text: "Some drivel"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
+
+  it("should unwrap bulleted list when 'bulleted-list' is reverted", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {text: "Some item"},
+            ]},
+          {type: 'list-item', children: [
+              {text: "Another item"},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 0}, focus: {path: [0, 1, 0], offset: 12}});
+
+    expect(getRelevantBlockType(editor)).toEqual('bulleted-list');
+    changeBlockType(editor, 'bulleted-list');
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [
+          {text: "Some item"},
+        ]},
+      {type: 'paragraph', children: [
+          {text: "Another item"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('multiple');
+  });
+
+  it("should unwrap table when 'table' is reverted (table-row being common block)", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "A1"},
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "A2"},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 0}, focus: {path: [0, 0, 1, 0], offset: 2}});
+
+    expect(getRelevantBlockType(editor)).toEqual('table');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [
+          {text: "A1"},
+        ]},
+      {type: 'paragraph', children: [
+          {text: "A2"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('multiple');
   });
 });
 

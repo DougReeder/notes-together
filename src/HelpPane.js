@@ -174,7 +174,7 @@ function HelpPane({setMustShowPanel}) {
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>
 
         <h4>What formatting is supported for imported files and pasted text?</h4>
-        <p>Headings, paragraphs, lists, {/*tables,*/} graphics and other semantic HTML are imported, but not the styles.</p>
+        <p>Headings, paragraphs, lists, tables, graphics and other semantic HTML are imported, but not the styles.</p>
         <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a>, is supported in files with the extension <code>.md</code> or (optionally) text files.</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 

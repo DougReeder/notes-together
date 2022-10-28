@@ -68,30 +68,49 @@ const BLOCK_TYPE_DISPLAY = {
   'paragraph': "Body",
   'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
+  'list-item': "Simple Item",
   'table': "Table",
+  'table-row': "Table Row",   // not supposed to be returned
+  'table-cell': "Simple Cell",
   'quote': <><span/><span>Block Quote</span></>,
   'code': <code>Monospaced</code>,
   'thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
   'image': <><span>Graphic </span><Photo/></>,
   'multiple': "(Multiple)",
-  'n/a': "(n/a)"
+  'n/a': "(n/a)",
 }
 
-const BLOCK_TYPE_LIST = {
-  'heading-one': <h1>Title</h1>,
-  'heading-two': <h2>Heading</h2>,
-  'heading-three': <h3>Subheading</h3>,
-  'paragraph': "Body",
-  'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
-  'numbered-list': "Numbered List",
-  'table': "Table",
-  'quote': <><span/><span>Block Quote</span></>,
-  'code': <code>Monospaced</code>,
-  '': "Add",   // divider
-  'add-table-row': "Table Row",
-  'add-table-column': "Table Column",
-  'add-thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
-}
+const DEFAULT_BLOCK_TYPE_MENU = [
+  {cmd: 'heading-one', label: <h1>Title</h1>},
+  {cmd: 'heading-two', label: <h2>Heading</h2>},
+  {cmd: 'heading-three', label: <h3>Subheading</h3>},
+  {cmd: 'paragraph', label: "Body"},
+  {cmd: 'bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
+  {cmd: 'numbered-list', label: "Numbered List"},
+  {cmd: 'table', label: "Table"},
+  {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
+  {cmd: 'code', label: <code>Monospaced</code>},
+  {cmd: '', label: "Add"},   // divider
+  {cmd: 'add-table-row', label: "Table Row"},
+  {cmd: 'add-table-column', label: "Table Column"},
+  {cmd: 'add-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
+];
+
+const SINGULAR_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.slice(0);
+
+const ITEM_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
+
+const CELL_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
+
+const COMPOUND_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
+
+const IMAGE_BLOCK_TYPE_MENU = [
+  {cmd: '', label: "Add"},   // divider
+  {cmd: 'add-table-row', label: "Table Row"},
+  {cmd: 'add-table-column', label: "Table Column"},
+  {cmd: 'add-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
+];
+
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
@@ -385,6 +404,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   function handleSelectedBlockTypeChange(targetType) {
     queueMicrotask(() => {
+      try {
       ReactEditor.focus(editor);
       if (! editor.selection && previousSelection.current) {
         Transforms.select(editor, previousSelection.current);
@@ -394,15 +414,15 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         // changes block type
         const relevantBlockType = getRelevantBlockType(editor);
          switch (targetType) {
-          default:
-            if (['image', 'link'].indexOf(relevantBlockType) > -1) {
-              window.postMessage({
-                kind: 'TRANSIENT_MSG',
-                severity: 'info',
-                message: "That can't be changed."
-              }, window?.location?.origin);
-              return;
-            }
+           case 'paragraph':
+           case 'heading-one':
+           case 'heading-two':
+           case 'heading-three':
+           case 'bulleted-list':
+           case 'numbered-list':
+           case 'table':
+           case 'quote':
+           case 'code':
             changeBlockType(editor, targetType);
             return;
           // A void block is inserted, rather than changing a text block to it.
@@ -461,13 +481,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               }, window?.location?.origin);
               return;
             }
-          case 'table-row':
-          case 'table-cell':
-          case 'multiple':
-          case 'list-item':
-          case 'image':
-          case 'n/a':
-          case '':
+          default:
             window.postMessage({
               kind: 'TRANSIENT_MSG',
               severity: 'info',
@@ -540,6 +554,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             return;
         }
       }
+      } catch (err) {
+        window.postMessage({
+          kind: 'TRANSIENT_MSG',
+          severity: err.severity || 'error',
+          message: err.message
+        }, window?.location?.origin);
+      }
     });
     setBlockTypeMenuAnchorEl(null);
   }
@@ -608,6 +629,37 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
+      const relevantBlockType = getRelevantBlockType(editor);
+      let menu;
+      switch (relevantBlockType) {
+        case 'paragraph':
+        case 'heading-one':
+        case 'heading-two':
+        case 'heading-three':
+        case 'quote':
+        case 'code':
+          menu = SINGULAR_BLOCK_TYPE_MENU;
+          break;
+        case 'list-item':
+          menu = ITEM_BLOCK_TYPE_MENU;
+          break;
+        case 'table-cell':
+          menu = CELL_BLOCK_TYPE_MENU;
+          break;
+        case 'bulleted-list':
+        case 'numbered-list':
+        case 'table':
+        case 'table-row':
+        case 'multiple':
+          menu = COMPOUND_BLOCK_TYPE_MENU;
+          break;
+        case 'image':
+          menu = IMAGE_BLOCK_TYPE_MENU;
+          break;
+        case 'thematic-break':
+        default:
+          menu = DEFAULT_BLOCK_TYPE_MENU;
+      }
       formatControls = (<>
         <Button variant="outlined" aria-haspopup="true" title="Open block type menu"
                 sx={{width: '18.5ch', height: '36px', flexShrink: 1, color: 'black', borderColor: 'black'}}
@@ -615,7 +667,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               previousSelection.current = JSON.parse(JSON.stringify(editor.selection));
               setBlockTypeMenuAnchorEl(evt.currentTarget);
             }}>
-          {BLOCK_TYPE_DISPLAY[getRelevantBlockType(editor)]}
+          {BLOCK_TYPE_DISPLAY[relevantBlockType] || relevantBlockType || "?"}
         </Button>
         <Menu
             id="block-type-menu"
@@ -632,10 +684,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               });
             }}
         >
-          {Object.entries(BLOCK_TYPE_LIST).map(([key, label]) =>
-              key ?
-                <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, key)} key={key}>{label}</MenuItem> :
-                <Divider key={key}>{label}</Divider>
+          {menu.map(({cmd, label}) =>
+              cmd ?
+                <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, cmd)} key={cmd}>{label}</MenuItem> :
+                <Divider key={label}>{label}</Divider>
           )}
         </Menu>
 
