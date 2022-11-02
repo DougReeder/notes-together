@@ -1,6 +1,6 @@
 // Copyright © 2021 Doug Reeder under the MIT License
 
-import {changeBlockType, changeContentType, getRelevantBlockType} from "./slateUtil";
+import {changeBlockType, changeContentType, getRelevantBlockType, insertListAfter, insertTableAfter} from "./slateUtil";
 import {createEditor, Editor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
@@ -806,6 +806,225 @@ describe("changeBlockType", () => {
         ]},
     ]);
     expect(getRelevantBlockType(editor)).toEqual('multiple');
+  });
+});
+
+describe("insertListAfter", () => {
+  it("should insert numbered list in list item after text, selection collapsed", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {text: "before"},
+              {text: "abcdef", bold: true},
+              {text: "after"},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 1, 1], offset: 3}, focus: {path: [1, 1, 1], offset: 3}});
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    insertListAfter(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "before"},
+                  {text: "abcdef", bold: true},
+                  {text: "after"},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: ""},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 1, 0, 0]);
+    expect(editor.selection).toHaveProperty('focus.path', [1, 1, 1, 0, 0]);
+  });
+
+  it("should insert numbered list in list item after blocks, selection expanded", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {type: 'heading-three', children: [
+                  {text: "erste"},
+                ]},
+              {type: 'quote', children: [
+                  {text: "zwitte"},
+                ]},
+              {type: 'code', children: [
+                  {text: "dritte"},
+                ]},
+              {type: 'paragraph', children: [
+                  {text: "vierte"},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 1, 1, 0], offset: 3}, focus: {path: [1, 1, 2, 0], offset: 3}});
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    insertListAfter(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {type: 'heading-three', children: [
+                  {text: "erste"},
+                ]},
+              {type: 'quote', children: [
+                  {text: "zwitte"},
+                ]},
+              {type: 'code', children: [
+                  {text: "dritte"},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: ""},
+                    ]},
+                ]},
+              {type: 'paragraph', children: [
+                  {text: "vierte"},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 3, 0, 0]);
+    expect(editor.selection).toHaveProperty('focus.path', [1, 1, 3, 0, 0]);
+  });
+
+  it("should insert list in table cell", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "One of these things"},
+                  {text: "is not like the others.", bold: true},
+                  {text: "Three of these things"},
+                  {text: "are kinda the same.", italic: true},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 1], offset: 7}, focus: {path: [0, 0, 0, 2], offset: 14}});
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    insertListAfter(editor, 'bulleted-list');
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [
+                      {text: "One of these things"},
+                      {text: "is not like the others.", bold: true},
+                      {text: "Three of these things"},
+                      {text: "are kinda the same.", italic: true},
+                    ]},
+                  {type: 'bulleted-list', children: [
+                      {type: 'list-item', children: [
+                          {text: ""},
+                        ]},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    expect(editor.selection).toHaveProperty('anchor.path', [0, 0, 0, 1, 0, 0]);
+    expect(editor.selection).toHaveProperty('focus.path', [0, 0, 0, 1, 0, 0]);
+  });
+});
+
+describe("insertTableAfter", () => {
+  it("should insert table after blocks, selection expanded", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {type: 'heading-three', children: [
+                  {text: "erste"},
+                ]},
+              {type: 'quote', children: [
+                  {text: "zwitte"},
+                ]},
+              {type: 'code', children: [
+                  {text: "dritte"},
+                ]},
+              {type: 'paragraph', children: [
+                  {text: "vierte"},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 1, 1, 0], offset: 3}, focus: {path: [1, 1, 2, 0], offset: 3}});
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    insertTableAfter(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [{text: "beginning"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "something"}]},
+          {type: 'list-item', children: [
+              {type: 'heading-three', children: [
+                  {text: "erste"},
+                ]},
+              {type: 'quote', children: [
+                  {text: "zwitte"},
+                ]},
+              {type: 'code', children: [
+                  {text: "dritte"},
+                ]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                      {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                    ]},
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                      {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                    ]},
+                ]},
+              {type: 'paragraph', children: [
+                  {text: "vierte"},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "other"}]},
+        ]},
+      {type: 'code', children: [{text: "end"}]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 3, 0, 0, 0]);
+    expect(editor.selection).toHaveProperty('focus.path', [1, 1, 3, 0, 0, 0]);
   });
 });
 

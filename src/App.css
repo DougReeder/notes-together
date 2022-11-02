@@ -115,6 +115,7 @@ body {
 
 
 .MuiMenuItem-root {
+  font-size: 1.1rem;
   white-space: normal !important;
   justify-content: space-between;
 }
@@ -162,30 +163,3 @@ body {
   max-width: 56px;
 }
 
-/* HelpPane */
-h4 {
-  margin-block-end: 1em;
-}
-
-h4:first-child {
-  margin-block-start: 0;
-}
-
-p:last-child {
-  margin-block-end: 0;
-}
-
-table.shortcuts {
-  width: 100%;
-  margin-top: 1em;
-}
-.shortcuts caption {
-  padding-bottom: .45em;
-  font-weight: bold;
-}
-.shortcuts tr:nth-child(2n+1) {
-  background-color: #eee;
-}
-.shortcuts td {
-  padding: .45em;
-}

@@ -7,6 +7,7 @@ import PropTypes from 'prop-types';
 import React from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import {KeyboardVoice, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
+import "./HelpPane.css";
 
 function HelpPane({setMustShowPanel}) {
   return <>
@@ -22,7 +23,7 @@ function HelpPane({setMustShowPanel}) {
         </Typography>
       </Toolbar>
     </AppBar>
-    <Box style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
+    <Box className="help" style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
       <div style={{padding: '1rem', backgroundColor: 'white'}}>
         <h4>Can I search for notes containing all of two or more words?</h4>
         <p>Yes! Enter them separated by spaces.</p>

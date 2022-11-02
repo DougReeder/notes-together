@@ -1,0 +1,27 @@
+/* HelpPane */
+.help h4 {
+    margin-block-end: 1em;
+}
+
+.help h4:first-child {
+    margin-block-start: 0;
+}
+
+.help p:last-child {
+    margin-block-end: 0;
+}
+
+table.shortcuts {
+    width: 100%;
+    margin-top: 1em;
+}
+.shortcuts caption {
+    padding-bottom: .45em;
+    font-weight: bold;
+}
+.shortcuts tr:nth-child(2n+1) {
+    background-color: #eee;
+}
+.shortcuts td {
+    padding: .45em;
+}

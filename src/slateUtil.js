@@ -1,7 +1,7 @@
 // slateUtil.js - utility functions for Slate editor
 // © 2021 Doug Reeder under the MIT License
 
-import {Editor, Element as SlateElement, Node as SlateNode, Transforms, Range as SlateRange} from 'slate';
+import {Editor, Element as SlateElement, Node as SlateNode, Text as SlateText, Transforms, Range as SlateRange} from 'slate';
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 
 
@@ -122,6 +122,51 @@ function changeBlockType(editor, newType) {
   });
 }
 
+function insertListAfter(editor, newType) {
+  insertAfter(editor,
+      {type: newType, children: [{type: 'list-item', children: [{text: ""}]}]},
+      [0, 0]);
+}
+
+function insertTableAfter(editor) {
+  insertAfter(editor,{type: 'table', children: [
+      {type: 'table-row', children: [
+          {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+          {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+        ]},
+      {type: 'table-row', children: [
+          {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+          {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+        ]},
+    ]},
+      [0, 0, 0]);
+}
+
+function insertAfter(editor, newNodes, selectionPathFromInsert) {
+  Editor.withoutNormalizing(editor, () => {
+    let {block, blockPath} = getCommonBlock(editor);
+    const allowSplit = SlateRange.isExpanded(editor.selection) && 'image' !== block.type;
+
+    let insertPath;
+    if (Editor.hasBlocks(editor, block)) {
+      const endPnt = SlateRange.end(editor.selection);
+      insertPath = [...blockPath, endPnt.path[blockPath.length] + 1];
+    } else {
+      Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {
+        at: blockPath,
+        match: n => SlateText.isText(n) || editor.isInline(n),
+        mode: 'highest',
+        split: allowSplit,
+      });
+      insertPath = [...blockPath, 1];
+    }
+    Transforms.insertNodes(editor,
+        newNodes, {at: insertPath});
+    const selectionPath = [...insertPath, ...selectionPathFromInsert];
+    Transforms.select(editor, {anchor: {path: selectionPath, offset: 0}, focus: {path: selectionPath, offset: 0}});
+  });
+}
+
 function getCommonBlock(editor) {
   const range = Editor.unhangRange(editor, editor.selection, {voids: true});
 
@@ -200,4 +245,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, insertListAfter, insertTableAfter, changeContentType, coerceToPlainText};

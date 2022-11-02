@@ -51,40 +51,49 @@
     margin-block-end: 0.25ex;
 }
 
+/** This is used by the error boundary */
 details {
     padding: 1rem;
     background-color: rgba(238, 133, 254, 0.35);
 }
 
 
-h1 {
+.details h1,
+.MuiMenuItem-root h1 {
     font-size: 1.4em;
     text-align: center;
     text-transform: none;
 }
 
-h2 {
+.details h2,
+.MuiMenuItem-root h2 {
     font-size: 1.2em;
     text-align: center;
     text-transform: none;
 }
 
-h3 {
+.details h3,
+.MuiMenuItem-root h3 {
     font-size: 1em;
     text-align: center;
     text-transform: none;
 }
 
-table {
+.MuiButton-root {
+    font-size: 1em;
+    text-transform: none;
+}
+
+.details table {
     margin-left: auto;
     margin-right: auto;
     border-collapse: collapse;
 }
 
-td, th {
+.details td {
     min-width: 2ch;
     border: 2px solid #cccccc;
-    padding: 0.5ch;
+    padding: 0.75ch;
 }
 
 del {
@@ -110,6 +119,28 @@ ins {
     border-color: #fffaad;
 }
 
-[role=textbox] pre {
+.details pre {
     white-space: pre-wrap;
+}
+
+td > p:first-child,
+td > blockquote:first-child,
+td > code:first-child,
+td > h1:first-child,
+td > h2:first-child,
+td > h3:first-child,
+td > ul:first-child,
+td > ol:first-child{
+    margin-block-start: 0;
+}
+
+td > p:last-child,
+td > blockquote:last-child,
+td > code:last-child,
+td > h1:last-child,
+td > h2:last-child,
+td > h3:last-child,
+td > ul:last-child,
+td > ol:last-child {
+    margin-block-end: 0;
 }

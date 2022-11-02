@@ -42,7 +42,7 @@ import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
-import {getRelevantBlockType, changeBlockType, changeContentType} from "./slateUtil";
+import {getRelevantBlockType, changeBlockType, changeContentType, insertListAfter, insertTableAfter} from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
@@ -68,10 +68,10 @@ const BLOCK_TYPE_DISPLAY = {
   'paragraph': "Body",
   'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
-  'list-item': "Simple Item",
+  'list-item': "List Item",
   'table': "Table",
-  'table-row': "Table Row",   // not supposed to be returned
-  'table-cell': "Simple Cell",
+  'table-row': "Table Row",   // not supposed to be returned, currently
+  'table-cell': "Table Cell",
   'quote': <><span/><span>Block Quote</span></>,
   'code': <code>Monospaced</code>,
   'thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
@@ -90,26 +90,32 @@ const DEFAULT_BLOCK_TYPE_MENU = [
   {cmd: 'table', label: "Table"},
   {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
-  {cmd: '', label: "Add"},   // divider
-  {cmd: 'add-table-row', label: "Table Row"},
-  {cmd: 'add-table-column', label: "Table Column"},
-  {cmd: 'add-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
+  {cmd: '', label: "Insert"},   // divider
+  {cmd: 'insert-table-row', label: "Table Row"},
+  {cmd: 'insert-table-column', label: "Table Column"},
+  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
 ];
 
 const SINGULAR_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.slice(0);
 
-const ITEM_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
+const UNIT_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['insert-thematic-break'].includes(cmd));
+UNIT_BLOCK_TYPE_MENU.splice(-2, 0,
+    {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
+    {cmd: 'insert-numbered-list', label: "Numbered List"},
+    {cmd: 'insert-table', label: "Table"},);
 
-const CELL_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
-
-const COMPOUND_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['add-thematic-break'].includes(cmd));
+const COMPOUND_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['insert-thematic-break'].includes(cmd));
 
 const IMAGE_BLOCK_TYPE_MENU = [
-  {cmd: '', label: "Add"},   // divider
-  {cmd: 'add-table-row', label: "Table Row"},
-  {cmd: 'add-table-column', label: "Table Column"},
-  {cmd: 'add-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
+  {cmd: '', label: "Insert"},   // divider
+  {cmd: 'insert-table-row', label: "Table Row"},
+  {cmd: 'insert-table-column', label: "Table Column"},
+  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
 ];
+
+const NO_SELECTION_MENU = [{cmd: '', label: "Append"},   // divider,
+  ...DEFAULT_BLOCK_TYPE_MENU.slice(0, -4),
+  DEFAULT_BLOCK_TYPE_MENU[DEFAULT_BLOCK_TYPE_MENU.length - 1]];
 
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
@@ -410,6 +416,20 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         Transforms.select(editor, previousSelection.current);
       }
       previousSelection.current = null;
+
+      // eslint-disable-next-line default-case
+      switch (targetType) {
+        case 'insert-bulleted-list':
+          insertListAfter(editor, 'bulleted-list');
+          return;
+        case 'insert-numbered-list':
+          insertListAfter(editor, 'numbered-list');
+          return;
+        case 'insert-table':
+          insertTableAfter(editor);
+          return;
+      }
+
       if (editor.selection) {
         // changes block type
         const relevantBlockType = getRelevantBlockType(editor);
@@ -426,14 +446,15 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             changeBlockType(editor, targetType);
             return;
           // A void block is inserted, rather than changing a text block to it.
-          case 'add-thematic-break':
+          case 'insert-thematic-break':
             if ('thematic-break' !== relevantBlockType) {
               Transforms.insertNodes(editor,
                   {type: 'thematic-break', children: [{text: ""}]},
+                  {}
               );
             }
             return;
-          case 'add-table-row':
+          case 'insert-table-row':
             for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
               if ('table-row' === ancestor.type) {
                 const insertPath = [...ancestorPath.slice(0, -1), ancestorPath[ancestorPath.length-1] + 1];
@@ -452,11 +473,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               message: "Place the cursor in a table"
             }, window?.location?.origin);
             return;
-          case 'add-table-column':
+          case 'insert-table-column':
+            let selectionPath;
             let insertIndex = 0, tablePath;
             for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
               if ('table-cell' === ancestor.type) {
                 insertIndex = ancestorPath[ancestorPath.length-1] + 1;
+                selectionPath = [...ancestorPath.slice(0, -1), insertIndex, 0];
               } else if ('table' === ancestor.type) {
                 tablePath = ancestorPath;
                 break;
@@ -468,9 +491,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   const insertPath = [...rowPath, insertIndex];
                   Transforms.insertNodes(editor,
                     {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                    {at: insertPath, select: true}
+                    {at: insertPath}
                   );
                 }
+                Transforms.select(editor, {anchor: {path: selectionPath, offset: 0}, focus: {path: selectionPath, offset: 0}});
               });
               return;
             } else {
@@ -491,7 +515,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         }
       } else {
         // appends block at end
-        if ('add-thematic-break' === targetType) { targetType = 'thematic-break'}
+        if ('insert-thematic-break' === targetType) { targetType = 'thematic-break'}
         let path = [editor.children.length];
         switch (targetType) {
           case 'paragraph':
@@ -521,8 +545,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             Transforms.insertNodes(editor, [
                 {type: targetType, children: [
                     {type: 'table-row', children: [
-                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                        {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                        {type: 'table-cell', isHeader: true, children: [{text: ""}]},
                     ]},
                     {type: 'table-row', children: [
                         {type: 'table-cell', isHeader: false, children: [{text: ""}]},
@@ -537,8 +561,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             );
             Transforms.select(editor, [...path, 0, 0]);
             return;
-          case 'add-table-row':
-          case 'add-table-column':
+          case 'insert-table-row':
+          case 'insert-table-column':
             window.postMessage({
               kind: 'TRANSIENT_MSG',
               severity: 'info',
@@ -641,10 +665,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           menu = SINGULAR_BLOCK_TYPE_MENU;
           break;
         case 'list-item':
-          menu = ITEM_BLOCK_TYPE_MENU;
+          menu = UNIT_BLOCK_TYPE_MENU;
           break;
         case 'table-cell':
-          menu = CELL_BLOCK_TYPE_MENU;
+          menu = UNIT_BLOCK_TYPE_MENU;
           break;
         case 'bulleted-list':
         case 'numbered-list':
@@ -655,6 +679,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           break;
         case 'image':
           menu = IMAGE_BLOCK_TYPE_MENU;
+          break;
+        case 'n/a':
+          menu = NO_SELECTION_MENU;
           break;
         case 'thematic-break':
         default:
@@ -752,7 +779,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" style={{color: "black", borderColor: "black"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
+        <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
       </>);
     }
     noteControls = (<>
@@ -1023,7 +1050,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   }
 
   return (<>
-      <Box ref={boxRef} onClick={toggleFocus} style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
+      <Box ref={boxRef} onClick={toggleFocus} className="details" style={{flexGrow: 1, flexShrink: 1, width: '100%', overflowX: 'clip', overflowY: "auto"}}>
         <ErrorBoundary
             FallbackComponent={ErrorFallback}
             onReset={() => {
