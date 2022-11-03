@@ -6,6 +6,7 @@ import {semanticOnly} from "./sanitizeNote";
 import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
 import {base64DecToArr} from "./util/testUtil";
+import {getRelevantBlockType, getCommonBlock} from "./slateUtil";
 
 class DataTransfer {
   constructor() {
@@ -1354,6 +1355,571 @@ https://www.example.org`);
     expect(window.postMessage).toHaveBeenCalledTimes(1);
     expect(window.postMessage).toHaveBeenLastCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, expect.anything());
   })
+});
+
+describe("insertBreak", () => {
+  /** These block types all change the next block to paragraph. 'code' does not. */
+  for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
+    it(`should add another ${blockType}, in a table cell`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'table', children: [
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {type: blockType, children: [
+                        {text: "The paragraph text"}
+                      ]},
+                  ]},
+                {type: 'table-cell', children: [
+                    {text: "A2"}
+                  ]},
+              ]},
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {text: "B1"}
+                  ]},
+                {type: 'table-cell', children: [
+                    {text: "B2"}
+                  ]},
+              ]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: { path: [0, 0, 0, 0, 0], offset: 18 },
+        focus:  { path: [0, 0, 0, 0, 0], offset: 18 },
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {type: 'table', children: [
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {type: blockType, children: [
+                        {text: "The paragraph text"}
+                      ]},
+                    {type: 'paragraph', children: [
+                        {text: ""}
+                      ]},
+                  ]},
+                {type: 'table-cell', children: [
+                    {text: "A2"}
+                  ]},
+              ]},
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {text: "B1"}
+                  ]},
+                {type: 'table-cell', children: [
+                    {text: "B2"}
+                  ]},
+              ]},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [0, 0, 0, 1, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [0, 0, 0, 1, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
+
+  it("should wrap existing text in split paragraphs, in a table cell", () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "The cell text"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "A2"}
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "B1"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "B2"}
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 0, 0, 0], offset: 8 },
+      focus:  { path: [0, 0, 0, 0], offset: 8 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    editor.insertBreak();
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [
+                      {text: "The cell"}
+                    ]},
+                  {type: 'paragraph', children: [
+                      {text: " text"}
+                    ]},
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "A2"}
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "B1"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "B2"}
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    expect(editor.selection).toHaveProperty('anchor.path', [0, 0, 0, 1, 0]);
+    expect(editor.selection).toHaveProperty('anchor.offset', 0);
+    expect(editor.selection).toHaveProperty('focus.path', [0, 0, 0, 1, 0]);
+    expect(editor.selection).toHaveProperty('focus.offset', 0);
+  });
+
+  /** These block types all change the next block to paragraph. 'code' does not. */
+  for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
+    it(`should not replace a trailing blank ${blockType} with a list item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [
+                {text: "erste"}
+              ]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]},
+                {type: blockType, children: [
+                    {text: " "}
+                  ]},
+              ]},
+            {type: 'list-item', children: [
+                {text: "vierte"}
+              ]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 1, 1, 0], offset: 1},
+        focus: {path: [0, 1, 1, 0], offset: 1},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [
+                {text: "erste"}
+              ]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]},
+                {type: blockType, children: [
+                    {text: " "}
+                  ]},
+                {type: 'paragraph', children: [
+                    {text: ""}
+                  ]},
+              ]},
+            {type: 'list-item', children: [
+                {text: "vierte"}
+              ]},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [0, 1, 2, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [0, 1, 2, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
+
+  /** These block types all change the next block to paragraph. 'code' does not. */
+  for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
+    it(`should not replace an interior empty ${blockType} with a list item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {
+          type: 'numbered-list', children: [
+            {
+              type: 'list-item', children: [
+                {text: "erste"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]
+                },
+                {
+                  type: blockType, children: [
+                    {text: ""}
+                  ]
+                },
+                {
+                  type: 'paragraph', children: [
+                    {text: "dritte"}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "vierte"}
+              ]
+            },
+          ]
+        },
+      ];
+      editor.selection = {
+        anchor: {path: [0, 1, 1, 0], offset: 0},
+        focus: {path: [0, 1, 1, 0], offset: 0},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {
+          type: 'numbered-list', children: [
+            {
+              type: 'list-item', children: [
+                {text: "erste"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]
+                },
+                {
+                  type: blockType, children: [
+                    {text: ""}
+                  ]
+                },
+                {
+                  type: 'paragraph', children: [
+                    {text: ""}
+                  ]
+                },
+                {
+                  type: 'paragraph', children: [
+                    {text: "dritte"}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "vierte"}
+              ]
+            },
+          ]
+        },
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [0, 1, 2, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [0, 1, 2, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
+
+  for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote', 'code']) {
+    it(`should replace a trailing empty ${blockType} with a list item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {
+          type: 'numbered-list', children: [
+            {
+              type: 'list-item', children: [
+                {text: "erste"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]
+                },
+                {
+                  type: blockType, children: [
+                    {text: ""}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "vierte"}
+              ]
+            },
+          ]
+        },
+      ];
+      editor.selection = {
+        anchor: {path: [0, 1, 1, 0], offset: 0},
+        focus: {path: [0, 1, 1, 0], offset: 0},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {
+          type: 'numbered-list', children: [
+            {
+              type: 'list-item', children: [
+                {text: "erste"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'paragraph', children: [
+                    {text: "zwitte"}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: ""}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "vierte"}
+              ]
+            },
+          ]
+        },
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      expect(editor.selection).toHaveProperty('anchor.path', [0, 2, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [0, 2, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
+
+  it("should not duplicate an image", () => {
+    window.postMessage = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "before"}
+            ]},
+          {type: 'list-item', children: [
+              {type: 'image', url: "https://example.xyz/", title: "some title", children: [
+                  {text: "some alt text"}
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {text: "after"}
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 1, 0, 0], offset: 13 },
+      focus:  { path: [0, 1, 0, 0], offset: 13 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('image');
+    editor.insertBreak();
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "before"}
+            ]},
+          {type: 'list-item', children: [
+              {type: 'image', url: "https://example.xyz/", title: "some title", children: [
+                  {text: "some alt text"}
+                ]},
+              {type: 'paragraph', children: [
+                  {text: ""}
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {text: "after"}
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    expect(editor.selection).toHaveProperty('anchor.path', [0, 1, 1, 0]);
+    expect(editor.selection).toHaveProperty('anchor.offset', 0);
+    expect(editor.selection).toHaveProperty('focus.path', [0, 1, 1, 0]);
+    expect(editor.selection).toHaveProperty('focus.offset', 0);
+  });
+
+  for (const listType of ['bulleted-list', 'numbered-list']) {
+    it(`should divide ${listType}, when in empty item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {
+          type: listType, children: [
+            {
+              type: 'list-item', children: [
+                {text: "un"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "deux"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: ""}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'image', url: "https://example.xyz/", title: "some title", children: [
+                    {text: "quatre"}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "cinq"}
+              ]
+            },
+          ]
+        },
+      ];
+      editor.selection = {
+        anchor: {path: [0, 2, 0], offset: 0},
+        focus: {path: [0, 2, 0], offset: 0},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {
+          type: listType, children: [
+            {
+              type: 'list-item', children: [
+                {text: "un"}
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "deux"}
+              ]
+            },
+          ]
+        },
+        {
+          type: 'paragraph', children: [
+            {text: ""}
+          ]
+        },
+        {
+          type: listType, children: [
+            {
+              type: 'list-item', children: [
+                {
+                  type: 'image', url: "https://example.xyz/", title: "some title", children: [
+                    {text: "quatre"}
+                  ]
+                },
+              ]
+            },
+            {
+              type: 'list-item', children: [
+                {text: "cinq"}
+              ]
+            },
+          ]
+        },
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
+
+  for (const type of ['heading-one', 'heading-two', 'heading-three', 'quote', 'thematic-break']) {
+    it(`should produce paragraph when selection at end of ${type}`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: type, children: [
+            {text: "The Title"}
+          ]},
+        {type: 'code', children: [
+            {text: "poke($8000)"}
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 0], offset: 9},
+        focus: {path: [0, 0], offset: 9},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(type);
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {
+          type: type, children: [
+            {text: "The Title"}
+          ]
+        },
+        {
+          type: 'paragraph', children: [
+            {text: ""}
+          ]
+        },
+        {type: 'code', children: [
+            {text: "poke($8000)"}
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
+    });
+  }
 });
 
 describe("serializeHtml", () => {

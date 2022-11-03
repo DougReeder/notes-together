@@ -64,8 +64,8 @@ body {
 
   .panelDetail {
     width: 320px;
-    max-width: 37em;
-    flex: 3 1 auto;
+    max-width: 60ch;
+    flex: 10 1 auto;
   }
 
   .narrowLayoutOnly {

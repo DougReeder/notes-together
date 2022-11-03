@@ -245,4 +245,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, insertListAfter, insertTableAfter, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, changeContentType, coerceToPlainText};

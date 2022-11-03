@@ -37,7 +37,7 @@ import {
   Undo
 } from "@mui/icons-material";
 import {Alert, AlertTitle} from '@mui/material';
-import {createEditor, Editor, Node as SlateNode, Transforms, Range as SlateRange, Text} from 'slate'
+import {createEditor, Editor, Node as SlateNode, Transforms, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -866,35 +866,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   if (isHotkey('mod+Enter', { byKey: true }, evt)) {
                     evt.preventDefault();
                     editor.insertText('\n');
-                  } else if (SlateRange.isCollapsed(editor.selection)) {
-                    const textNode = SlateNode.get(editor, editor.selection?.anchor?.path);
-                    const parentPath = editor.selection?.anchor?.path?.slice(0, -1);
-                    const parentElmnt = SlateNode.get(editor, parentPath);
-                    if (['heading-one', 'heading-two', 'heading-three'].includes(parentElmnt.type)) {
-                      evt.preventDefault();
-                      const newPath = [...parentPath.slice(0, -1), parentPath[parentPath.length-1]+1];
-                      Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-                      Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
-                    } else if (/^\n*$/.test(textNode.text) && 'list-item' === parentElmnt.type) {
-                      evt.preventDefault();
-                      Editor.withoutNormalizing(editor, () => {
-                        const listPath = parentPath.slice(0, -1);
-                        const listElmnt = SlateNode.get(editor, listPath);
-                        let newPath;
-                        if (['bulleted-list', 'numbered-list'].includes(listElmnt.type) && 1 === listElmnt.children.length) {
-                          Transforms.removeNodes(editor, {at: listPath});
-                          newPath = listPath;
-                        } else {
-                          Transforms.removeNodes(editor, {at: parentPath});
-                          newPath = [...parentPath.slice(0, -2), parentPath[parentPath.length - 2] + 1];
-                        }
-                        Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-                        Transforms.select(editor, {
-                          anchor: {path: [...newPath, 0], offset: 0},
-                          focus: {path: [...newPath, 0], offset: 0}
-                        });
-                      });
-                    }
                   }
                   break;
                 case 'i':

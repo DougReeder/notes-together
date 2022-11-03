@@ -8,17 +8,43 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
-import {Text, Node as SlateNode, Element as SlateElement, Path, Transforms, Editor, Range as SlateRange, Point} from "slate";
-import {useSelected, useFocused} from 'slate-react'
+import {
+  Text,
+  Node as SlateNode,
+  Element as SlateElement,
+  Path,
+  Transforms,
+  Editor,
+  Range as SlateRange,
+  Point,
+  Text as SlateText
+} from "slate";
+import {useSelected, useFocused} from 'slate-react';
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
-import {coerceToPlainText} from "./slateUtil";
+import {getCommonBlock, coerceToPlainText} from "./slateUtil";
+
+function isEmpty(node) {
+  if (Text.isText(node)) {
+    return 0 === SlateNode.string(node).length;
+  } else {
+    switch (node.type) {
+      case 'image':
+      case 'thematic-break':
+        return false;
+      case 'link':
+        return 0 === SlateNode.string(node).length;
+      default:
+        return ! node?.children?.some(child => ! isEmpty(child));
+    }
+  }
+}
 
 function isBlank(node) {
   if (Text.isText(node)) {
     return /^\s*$/.test(SlateNode.string(node));   // contains non-space character
-  } else if (SlateElement.isElement(node)) {
+  } else {
     switch (node.type) {
       case 'image':
       case 'thematic-break':
@@ -26,13 +52,13 @@ function isBlank(node) {
       case 'link':
         return /^\s*$/.test(SlateNode.string(node));
       default:
-        return ! node.children.some(child => ! isBlank(child));
+        return ! node?.children?.some(child => ! isBlank(child));
     }
   }
 }
 
 function withHtml(editor) {   // defines Slate plugin
-  const {isInline, isVoid, normalizeNode, deleteBackward, deleteForward, insertBreak, insertData} = editor
+  const {isInline, isVoid, normalizeNode, deleteBackward, deleteForward, insertBreak, insertData} = editor;
 
   editor.isInline = element => {
     switch (element?.type) {
@@ -315,21 +341,88 @@ function withHtml(editor) {   // defines Slate plugin
 
   editor.insertBreak = () => {
     const { selection } = editor
+    if (!selection) { return; }
 
-    if (selection) {
-      const [table] = Editor.nodes(editor, {
-        match: n =>
-            !Editor.isEditor(n) &&
-            SlateElement.isElement(n) &&
-            n.type === 'table',
-      })
-
-      if (table) {
-        return
-      }
+    const {block, blockPath} = getCommonBlock(editor);
+    switch (block.type) {
+      case 'image':
+        Editor.withoutNormalizing(editor, () => {
+          const insertPath = [...blockPath.slice(0, -1), blockPath[blockPath.length - 1] + 1];
+          Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: insertPath});
+          const selectionPath = [...insertPath, 0];
+          Transforms.select(editor, {
+            anchor: {path: selectionPath, offset: 0},
+            focus: {path: selectionPath, offset: 0}
+          });
+        });
+        return;
+      case 'table':
+      case 'table-row':
+        return;
+      case 'table-cell':
+        Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {
+          at: blockPath,
+          match: n => SlateText.isText(n) || editor.isInline(n),
+          mode: 'highest',
+          split: true,
+        });
+        insertBreak();
+        return;
+      case 'list-item':
+        if (isEmpty(block) && blockPath.length >= 2) {
+          Editor.withoutNormalizing(editor, () => {
+            const parentPathLength = blockPath.length - 1;
+            Transforms.unwrapNodes(editor,
+                {
+                  at: blockPath,
+                  match: (n, p) => p.length === parentPathLength,
+                  split: true
+                });
+            const newPath = [...blockPath.slice(0,-2), blockPath[blockPath.length-2] + 1];
+            Transforms.setNodes(editor, {type: 'paragraph'}, {at: newPath});
+            Transforms.select(editor, newPath);
+          });
+        } else {
+          insertBreak();
+        }
+        break;
+      case 'heading-one':
+      case 'heading-two':
+      case 'heading-three':
+      case 'paragraph':
+      case 'quote':
+      case 'code':
+      case 'thematic-break':
+        const parent = SlateNode.parent(editor, blockPath);
+        if ('list-item' === parent.type &&
+            blockPath[blockPath.length - 1] === parent.children.length - 1
+            && isEmpty(block)) {
+          Editor.withoutNormalizing(editor, () => {
+            Transforms.removeNodes(editor, {at: blockPath});
+            const insertPath = [...blockPath.slice(0, -2), blockPath[blockPath.length - 2] + 1];
+            Transforms.insertNodes(editor, {type: 'list-item', children: [{text: ""}]}, {at: insertPath});
+            const selectionPath = [...insertPath, 0];
+            Transforms.select(editor, {
+              anchor: {path: selectionPath, offset: 0},
+              focus: {path: selectionPath, offset: 0}
+            });
+          });
+        } else if (SlateRange.isCollapsed(editor.selection) &&
+            Point.equals(Editor.end(editor, blockPath) , SlateRange.end(editor.selection)) &&
+            'code' !== block.type) {
+          Editor.withoutNormalizing(editor, () => {
+            const newPath = [...blockPath.slice(0, -1), blockPath[blockPath.length-1]+1];
+            Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+            Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+          });
+        } else {
+          insertBreak();
+        }
+        return;
+      default:
+        insertBreak();
+        return;
     }
-
-    insertBreak()
   }
 
   // paste or drag & drop
