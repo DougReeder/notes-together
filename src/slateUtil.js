@@ -6,27 +6,33 @@ import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 
 
 function getRelevantBlockType(editor) {
-  const selection = editor.selection;
-  if (selection == null) {
-    return 'n/a';
-  }
-
-  const {block, blockPath} = getCommonBlock(editor);
-
-  if (Editor.isEditor(block)) {
-    return 'multiple';
-  } else {
-    switch (block.type) {
-      case 'table-row':
-        if (blockPath.length >= 2) {
-          const parent = SlateNode.parent(editor, blockPath);
-          return parent.type;
-        } else {
-          return 'multiple';   // no table parent
-        }
-      default:
-        return block.type;
+  try {
+    const selection = editor.selection;
+    if (selection == null) {
+      return 'n/a';
     }
+
+    const {block, blockPath} = getCommonBlock(editor);
+
+    if (Editor.isEditor(block)) {
+      return 'multiple';
+    } else {
+      switch (block.type) {
+        case 'table-row':
+          if (blockPath.length >= 2) {
+            const parent = SlateNode.parent(editor, blockPath);
+            return parent.type;
+          } else {
+            return 'multiple';   // no table parent
+          }
+        default:
+          return block.type;
+      }
+    }
+  } catch (err) {
+    console.error("while getting relevant block:", err);
+    Transforms.deselect(editor);
+    return 'n/a';
   }
 }
 

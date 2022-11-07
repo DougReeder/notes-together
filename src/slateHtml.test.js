@@ -32,6 +32,18 @@ class DataTransfer {
 }
 
 describe("HTML plugin normalizer", () => {
+  it("should ensure at least one node exists", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toHaveLength(1);
+    expect(editor.children[0]).toEqual({type: 'paragraph', children: [{text: ""}]});
+  });
+
   it("should wrap top-level text nodes in Elements", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
@@ -488,6 +500,31 @@ describe("HTML plugin normalizer", () => {
             {type: 'table', children: [
                 {type: 'quote', children: [{text: ""}]},
                 {type: 'paragraph', children: [{text: ""}]},
+              ]},
+          ]},
+        {type: 'list-item', children: [{text: "trailer"}]},
+      ]}];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+            {text: ""}
+          ]},
+        {type: 'list-item', children: [{text: "trailer"}]},
+      ]}]);
+  });
+
+  it("should delete tables with no columns", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [{type: 'numbered-list', children: [
+        {type: 'list-item', children: [
+            {type: 'table', children: [
+                {type: 'table-row', children: [
+                  ]},
+                {type: 'table-row', children: []},
               ]},
           ]},
         {type: 'list-item', children: [{text: "trailer"}]},

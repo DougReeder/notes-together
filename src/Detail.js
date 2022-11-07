@@ -37,7 +37,7 @@ import {
   Undo
 } from "@mui/icons-material";
 import {Alert, AlertTitle} from '@mui/material';
-import {createEditor, Editor, Node as SlateNode, Transforms, Text} from 'slate'
+import {createEditor, Editor, Node as SlateNode, Range as SlateRange, Transforms, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
@@ -80,7 +80,7 @@ const BLOCK_TYPE_DISPLAY = {
   'n/a': "(n/a)",
 }
 
-const DEFAULT_BLOCK_TYPE_MENU = [
+const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'heading-one', label: <h1>Title</h1>},
   {cmd: 'heading-two', label: <h2>Heading</h2>},
   {cmd: 'heading-three', label: <h3>Subheading</h3>},
@@ -90,33 +90,53 @@ const DEFAULT_BLOCK_TYPE_MENU = [
   {cmd: 'table', label: "Table"},
   {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
+];
+
+const BLOCK_ITEMS_INSERT = [
   {cmd: '', label: "Insert"},   // divider
   {cmd: 'insert-table-row', label: "Table Row"},
   {cmd: 'insert-table-column', label: "Table Column"},
   {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
 ];
 
-const SINGULAR_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.slice(0);
-
-const UNIT_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['insert-thematic-break'].includes(cmd));
-UNIT_BLOCK_TYPE_MENU.splice(-2, 0,
-    {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
-    {cmd: 'insert-numbered-list', label: "Numbered List"},
-    {cmd: 'insert-table', label: "Table"},);
-
-const COMPOUND_BLOCK_TYPE_MENU = DEFAULT_BLOCK_TYPE_MENU.filter(({cmd}) => !['insert-thematic-break'].includes(cmd));
-
-const IMAGE_BLOCK_TYPE_MENU = [
-  {cmd: '', label: "Insert"},   // divider
-  {cmd: 'insert-table-row', label: "Table Row"},
-  {cmd: 'insert-table-column', label: "Table Column"},
-  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
+const BLOCK_ITEMS_DELETE = [
+  {cmd: '', label: "Delete"},   // divider
+  {cmd: 'delete-table-row', label: "Table Row"},
+  {cmd: 'delete-table-column', label: "Table Column"},
 ];
 
-const NO_SELECTION_MENU = [{cmd: '', label: "Append"},   // divider,
-  ...DEFAULT_BLOCK_TYPE_MENU.slice(0, -4),
-  DEFAULT_BLOCK_TYPE_MENU[DEFAULT_BLOCK_TYPE_MENU.length - 1]];
+const SINGULAR_BLOCK_TYPE_MENU = [
+  ...BLOCK_ITEMS_DEFAULT,
+  ...BLOCK_ITEMS_INSERT,
+  ...BLOCK_ITEMS_DELETE,
+];
 
+const UNIT_BLOCK_TYPE_MENU = [
+  ...BLOCK_ITEMS_DEFAULT,
+  {cmd: '', label: "Insert"},
+  {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
+  {cmd: 'insert-numbered-list', label: "Numbered List"},
+  {cmd: 'insert-table', label: "Table"},
+  {cmd: 'insert-table-row', label: "Table Row"},
+  {cmd: 'insert-table-column', label: "Table Column"},
+  ...BLOCK_ITEMS_DELETE,
+];
+
+const COMPOUND_BLOCK_TYPE_MENU = [
+  ...BLOCK_ITEMS_DEFAULT,
+  ...BLOCK_ITEMS_INSERT.filter(({cmd}) => !['insert-thematic-break'].includes(cmd)),
+  ...BLOCK_ITEMS_DELETE
+];
+
+const IMAGE_BLOCK_TYPE_MENU = [...BLOCK_ITEMS_INSERT, ...BLOCK_ITEMS_DELETE];
+
+const NO_SELECTION_MENU = [
+    {cmd: '', label: "Append"},
+  ...BLOCK_ITEMS_DEFAULT,
+  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>}
+];
+
+const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
@@ -291,7 +311,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     } catch (err) {
       console.error("handleSlateChange:", err);
       if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
-        window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't save. Split this note into multiple notes"}, window?.location?.origin);
+        transientMsg("Can't save. Split this note into multiple notes");
       } else {
         setNoteErr(err);
       }
@@ -313,7 +333,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
     } catch (err) {
       console.error("Detail handleDateChange:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      transientMsg(extractUserMessage(err))
     }
   }
 
@@ -386,8 +406,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   // Defines our own custom set of helpers.
   function isMarkActive(editor, format) {
-    const marks = Editor.marks(editor);
-    return marks ? marks[format] === true : false
+    try {
+      const marks = Editor.marks(editor);
+      return marks ? marks[format] === true : false;
+    } catch (err) {
+      console.error(`while checking isMarkActive(${format}):`, err);
+      return false;
+    }
   }
 
   function toggleMark(editor, format) {
@@ -433,19 +458,19 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (editor.selection) {
         // changes block type
         const relevantBlockType = getRelevantBlockType(editor);
-         switch (targetType) {
-           case 'paragraph':
-           case 'heading-one':
-           case 'heading-two':
-           case 'heading-three':
-           case 'bulleted-list':
-           case 'numbered-list':
-           case 'table':
-           case 'quote':
-           case 'code':
+        switch (targetType) {
+          case 'paragraph':
+          case 'heading-one':
+          case 'heading-two':
+          case 'heading-three':
+          case 'bulleted-list':
+          case 'numbered-list':
+          case 'table':
+          case 'quote':
+          case 'code':
             changeBlockType(editor, targetType);
             return;
-          // A void block is inserted, rather than changing a text block to it.
+            // A void block is inserted, rather than changing a text block to it.
           case 'insert-thematic-break':
             if ('thematic-break' !== relevantBlockType) {
               Transforms.insertNodes(editor,
@@ -455,62 +480,19 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             }
             return;
           case 'insert-table-row':
-            for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
-              if ('table-row' === ancestor.type) {
-                const insertPath = [...ancestorPath.slice(0, -1), ancestorPath[ancestorPath.length-1] + 1];
-                Transforms.insertNodes(editor,
-                    {type: 'table-row', children: [
-                        {type: 'table-cell', children: [{text: ""}]},
-                      ]},
-                    {at: insertPath, select: true}
-                );
-                return;
-              }
-            }
-            window.postMessage({
-              kind: 'TRANSIENT_MSG',
-              severity: 'info',
-              message: "Place the cursor in a table"
-            }, window?.location?.origin);
+            insertTableRow();
             return;
           case 'insert-table-column':
-            let selectionPath;
-            let insertIndex = 0, tablePath;
-            for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
-              if ('table-cell' === ancestor.type) {
-                insertIndex = ancestorPath[ancestorPath.length-1] + 1;
-                selectionPath = [...ancestorPath.slice(0, -1), insertIndex, 0];
-              } else if ('table' === ancestor.type) {
-                tablePath = ancestorPath;
-                break;
-              }
-            }
-            if (tablePath) {
-              Editor.withoutNormalizing(editor, () => {
-                for (const [, rowPath] of SlateNode.children(editor, tablePath)) {
-                  const insertPath = [...rowPath, insertIndex];
-                  Transforms.insertNodes(editor,
-                    {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                    {at: insertPath}
-                  );
-                }
-                Transforms.select(editor, {anchor: {path: selectionPath, offset: 0}, focus: {path: selectionPath, offset: 0}});
-              });
-              return;
-            } else {
-              window.postMessage({
-                kind: 'TRANSIENT_MSG',
-                severity: 'info',
-                message: "Place the cursor in a table"
-              }, window?.location?.origin);
-              return;
-            }
+            insertTableColumn();
+            return;
+          case 'delete-table-row':
+            deleteTableRow();
+            return;
+          case 'delete-table-column':
+            deleteTableColumn();
+            return;
           default:
-            window.postMessage({
-              kind: 'TRANSIENT_MSG',
-              severity: 'info',
-              message: "That wouldn't make sense."
-            }, window?.location?.origin);
+            transientMsg("That wouldn't make sense.", 'info');
             return;
         }
       } else {
@@ -542,51 +524,123 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             Transforms.select(editor, path);
             return;
           case 'table':
-            Transforms.insertNodes(editor, [
-                {type: targetType, children: [
-                    {type: 'table-row', children: [
-                        {type: 'table-cell', isHeader: true, children: [{text: ""}]},
-                        {type: 'table-cell', isHeader: true, children: [{text: ""}]},
-                    ]},
-                    {type: 'table-row', children: [
-                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                        {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                    ]},
-                ]},
-                { type: 'paragraph', children: [   // TODO: handle via normalization
-                  {text: ""}
-                ]}
-              ],
-              {at: path}
-            );
-            Transforms.select(editor, [...path, 0, 0]);
+            appendTable(path);
             return;
           case 'insert-table-row':
           case 'insert-table-column':
-            window.postMessage({
-              kind: 'TRANSIENT_MSG',
-              severity: 'info',
-              message: "Place the cursor in a table"
-            }, window?.location?.origin);
+            transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
             return;
           default:
-            window.postMessage({
-              kind: 'TRANSIENT_MSG',
-              severity: 'info',
-              message: "Can't insert that!"
-            }, window?.location?.origin);
+            transientMsg("Can't append that!", 'info');
             return;
         }
       }
       } catch (err) {
-        window.postMessage({
-          kind: 'TRANSIENT_MSG',
-          severity: err.severity || 'error',
-          message: err.message
-        }, window?.location?.origin);
+        transientMsg(err.message, err.severity || 'error');
       }
     });
     setBlockTypeMenuAnchorEl(null);
+  }
+
+  function insertTableRow() {
+    for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
+      if ('table-row' === ancestor.type) {
+        const insertPath = [...ancestorPath.slice(0, -1), ancestorPath[ancestorPath.length-1] + 1];
+        Transforms.insertNodes(editor,
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [{text: ""}]},
+              ]},
+            {at: insertPath, select: true}
+        );
+        return;
+      }
+    }
+    transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
+  }
+
+  function insertTableColumn() {
+    let selectionPath;
+    let insertIndex = 0, tablePath;
+    for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
+      if ('table-cell' === ancestor.type) {
+        insertIndex = ancestorPath[ancestorPath.length-1] + 1;
+        selectionPath = [...ancestorPath.slice(0, -1), insertIndex, 0];
+      } else if ('table' === ancestor.type) {
+        tablePath = ancestorPath;
+        break;
+      }
+    }
+    if (tablePath) {
+      Editor.withoutNormalizing(editor, () => {
+        for (const [, rowPath] of SlateNode.children(editor, tablePath)) {
+          const insertPath = [...rowPath, insertIndex];
+          Transforms.insertNodes(editor,
+              {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+              {at: insertPath}
+          );
+        }
+        Transforms.select(editor, {anchor: {path: selectionPath, offset: 0}, focus: {path: selectionPath, offset: 0}});
+      });
+    } else {
+      transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
+    }
+  }
+
+  function deleteTableRow() {
+    for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, editor.selection.focus.path, {reverse: true})) {
+      if ('table-row' === ancestor.type) {
+        Transforms.removeNodes(editor, {at: ancestorPath});
+        return;
+      }
+    }
+    transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
+  }
+
+  function deleteTableColumn() {
+    const endPoint = SlateRange.end(editor.selection);
+    let selectionPath;
+    let deleteIndex = 0, tablePath;
+    for (const [ancestor, ancestorPath] of SlateNode.ancestors(editor, endPoint.path, {reverse: true})) {
+      if ('table-cell' === ancestor.type) {
+        deleteIndex = ancestorPath[ancestorPath.length-1];
+        selectionPath = [...ancestorPath.slice(0, -1), deleteIndex, 0];
+      } else if ('table' === ancestor.type) {
+        tablePath = ancestorPath;
+        break;
+      }
+    }
+    if (tablePath) {
+      Editor.withoutNormalizing(editor, () => {
+        for (const [, rowPath] of SlateNode.children(editor, tablePath)) {
+          const deletePath = [...rowPath, deleteIndex];
+          Transforms.removeNodes(editor, {at: deletePath});
+        }
+        Transforms.select(editor, {anchor: {path: selectionPath, offset: 0}, focus: {path: selectionPath, offset: 0}});
+      });
+    } else {
+      transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
+    }
+  }
+
+  function appendTable(path) {
+    Transforms.insertNodes(editor, [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                  {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                  {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                ]},
+            ]},
+          { type: 'paragraph', children: [   // TODO: handle via normalization
+              {text: ""}
+            ]}
+        ],
+        {at: path}
+    );
+    Transforms.select(editor, [...path, 0, 0]);
   }
 
   const [isContentTypeDialogOpen, setIsContentTypeDialogOpen] = useState(false);
@@ -662,11 +716,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'heading-three':
         case 'quote':
         case 'code':
+        case 'thematic-break':
+        default:
           menu = SINGULAR_BLOCK_TYPE_MENU;
           break;
         case 'list-item':
-          menu = UNIT_BLOCK_TYPE_MENU;
-          break;
         case 'table-cell':
           menu = UNIT_BLOCK_TYPE_MENU;
           break;
@@ -683,9 +737,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'n/a':
           menu = NO_SELECTION_MENU;
           break;
-        case 'thematic-break':
-        default:
-          menu = DEFAULT_BLOCK_TYPE_MENU;
       }
       formatControls = (<>
         <Button variant="outlined" aria-haspopup="true" title="Open block type menu"
@@ -1014,10 +1065,18 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       await editor.insertData(dataTransfer);
     } catch (err) {
       console.error("while pasting files:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: "Switch to another note, then back."}, window?.location?.origin);
+      transientMsg("Switch to another note, then back.");
     } finally {
       pasteFileInput.current.value = "";
     }
+  }
+
+  function transientMsg(message, severity = 'error') {
+    window.postMessage({
+      kind: 'TRANSIENT_MSG',
+      severity,
+      message
+    }, window?.location?.origin);
   }
 
   return (<>

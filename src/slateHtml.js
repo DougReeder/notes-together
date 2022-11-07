@@ -83,6 +83,12 @@ function withHtml(editor) {   // defines Slate plugin
     const [node, path] = entry;
     // console.log("normalizeNode:", path, path.length > 0 ? node : 'editor')
 
+    if (Editor.isEditor(node) && 0 === node.children.length) {
+      Transforms.insertNodes(editor,
+          {type: 'paragraph', children: [{text: ""}]});
+      return;
+    }
+
     if (Text.isText(node) && node.deleted && node.inserted) {
       Transforms.unsetNodes(editor, 'deleted', {at: path, mode: "highest"});
       return;
@@ -232,7 +238,12 @@ function withHtml(editor) {   // defines Slate plugin
       if (path.length > 1) {
         parent = SlateNode.get(editor, Path.parent(path));
       }
-      if ('table' !== parent?.type) {
+      if ('table' === parent?.type) {
+        if (0 === node.children.length) {
+          Transforms.removeNodes(editor, {at: path});
+          return;
+        }
+      } else {
         if (isBlank(node)) {
           Transforms.removeNodes(editor, {at: path});
           return;
