@@ -473,6 +473,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             // A void block is inserted, rather than changing a text block to it.
           case 'insert-thematic-break':
             if ('thematic-break' !== relevantBlockType) {
+              if (! SlateRange.isCollapsed(editor.selection)) {
+                const point = SlateRange.end(editor.selection);
+                Transforms.setSelection(editor, {anchor: point, focus: point});
+              }
               Transforms.insertNodes(editor,
                   {type: 'thematic-break', children: [{text: ""}]},
                   {}

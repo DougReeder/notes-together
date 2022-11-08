@@ -83,12 +83,6 @@ function withHtml(editor) {   // defines Slate plugin
     const [node, path] = entry;
     // console.log("normalizeNode:", path, path.length > 0 ? node : 'editor')
 
-    if (Editor.isEditor(node) && 0 === node.children.length) {
-      Transforms.insertNodes(editor,
-          {type: 'paragraph', children: [{text: ""}]});
-      return;
-    }
-
     if (Text.isText(node) && node.deleted && node.inserted) {
       Transforms.unsetNodes(editor, 'deleted', {at: path, mode: "highest"});
       return;
@@ -149,19 +143,6 @@ function withHtml(editor) {   // defines Slate plugin
     if (editor.isInline(node) && isBlank(node)) {
       Transforms.removeNodes(editor, {at: path});
       return;
-    }
-
-    // Text & links at the top level are wrapped in a paragraph.
-    // Typeless elements are converted to paragraphs.
-    if (1 === path.length) {
-      if (!SlateElement.isElement(node) || editor.isInline(node)) {
-        const block = {type: 'paragraph', children: []}
-        Transforms.wrapNodes(editor, block, {at: path});
-        return;
-      } else if (!node.type) {
-        Transforms.setNodes(editor, {type: 'paragraph'}, {at: path, mode: "highest"});
-        return;
-      }
     }
 
     // deletes or wraps list items outside a list
@@ -297,6 +278,33 @@ function withHtml(editor) {   // defines Slate plugin
         }
       }
       if (isChanged) { return; }
+    }
+
+    // If an Element has one block child, all others must also be blocks
+    if (Editor.isEditor(node) || SlateElement.isElement(node) && Editor.hasBlocks(editor, node)) {
+      let isChanged = false;
+      for (const [child, childPath] of SlateNode.children(editor, path)) {
+        if (! Editor.isBlock(editor, child)) {
+          Transforms.wrapNodes(editor, {type: 'paragraph'}, {at: childPath});
+          isChanged = true;
+        }
+      }
+      if (isChanged) {
+        return;
+      }
+    }
+
+    // Typeless top-level elements are converted to paragraphs.
+    if (1 === path.length && SlateElement.isElement(node) && !node.type) {
+      Transforms.setNodes(editor, {type: 'paragraph'}, {at: path});
+      return;
+    }
+
+    // Ensures editor has at least one child
+    if (Editor.isEditor(node) && 0 === node.children.length) {
+      Transforms.insertNodes(editor,
+          {type: 'paragraph', children: [{text: ""}]});
+      return;
     }
 
     normalizeNode(entry);

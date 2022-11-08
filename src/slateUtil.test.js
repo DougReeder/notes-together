@@ -807,6 +807,52 @@ describe("changeBlockType", () => {
     ]);
     expect(getRelevantBlockType(editor)).toEqual('multiple');
   });
+
+  it("should de-format list without deleting", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [
+                      {text: "body text"},
+                    ]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [
+                          {text: "one"}
+                        ]},
+                      {type: 'list-item', children: [
+                          {text: "two"}
+                        ]},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 1, 0, 0], offset: 1}, focus: {path: [0, 0, 0, 1, 1, 0], offset: 2}});
+
+    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+    changeBlockType(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [
+                      {text: "body text"},
+                    ]},
+                  {type: 'paragraph', children: [
+                      {text: "one"}
+                    ]},
+                  {type: 'paragraph', children: [
+                      {text: "two"}
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+  });
 });
 
 describe("insertListAfter", () => {
