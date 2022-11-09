@@ -107,7 +107,7 @@ function withHtml(editor) {   // defines Slate plugin
             wrapBlock = {type: 'list-item', children: []};
             break;
           case 'table-row':   // an inline shouldn't be a child of this, but...
-            wrapBlock = {type: 'table-cell', isHeader: false, children: []};
+            wrapBlock = {type: 'table-cell', children: []};
             break;
         }
         if (wrapBlock) {
@@ -258,7 +258,7 @@ function withHtml(editor) {   // defines Slate plugin
           const grandchild = child.children[c];
           if ('table-cell' !== grandchild.type) {
             Transforms.wrapNodes(editor,
-                {type: 'table-cell', isHeader: false, children: []},
+                {type: 'table-cell', children: []},
                 {at: [...path, r, c]});
             return;
           }
@@ -271,10 +271,18 @@ function withHtml(editor) {   // defines Slate plugin
       let isChanged = false;
       for (let r=0; r < node.children.length; ++r) {
         const row = node.children[r];
-        const isHeader = 0 === r ? Boolean(row.children[row.children.length-1].isHeader) : false;
+        let isHeader;
+        if (0 === r) {
+          const textDescendantEntries = SlateNode.descendants(row.children[row.children.length - 1], {pass: ([n, p]) => SlateText.isText(n)});
+          isHeader = Boolean(textDescendantEntries.next()?.value?.[0]?.bold);
+        } else {
+          isHeader = false;
+        }
         isChanged = isChanged || row.children.length < maxWidth;
         for (let c = row.children.length; c < maxWidth; ++c) {
-          Transforms.insertNodes(editor, {type: 'table-cell', isHeader, children: [{text: ""}]}, {at: [...path, r, c]});
+          Transforms.insertNodes(editor,
+              {type: 'table-cell', children: [isHeader ? {text: "", bold: true} : {text: ""}]},
+              {at: [...path, r, c]});
         }
       }
       if (isChanged) { return; }
@@ -690,14 +698,14 @@ const ELEMENT_TAGS = {
   PRE: () => ({ type: 'code' }),
   TABLE: () => ({ type: 'table' }),   // presumes it contains a tbody
   TR: () => ({ type: 'table-row' }),
-  TD: () => ({ type: 'table-cell', isHeader: false }),
-  TH: () => ({ type: 'table-cell', isHeader: true }),
+  TD: () => ({ type: 'table-cell'}),
+  TH: () => ({ type: 'table-cell'}),   // also sets bold
 
   // DIV: () => ({ }),
-  FIGURE: () => ({ type: 'paragraph' }),
+  FIGCAPTION: () => ({ type: 'paragraph' }),   // also sets italic
   DETAILS: () => ({ type: 'paragraph' }),
-  DT: () => ({ type: 'paragraph' }),   // TODO: implement natively
-  DD: () => ({ type: 'quote' }),   // TODO: implement natively
+  DT: () => ({ type: 'paragraph' }),   // also sets bold
+  DD: () => ({ type: 'quote' }),   // visual appearance does what we want
 }
 
 const TEXT_TAGS = {
@@ -722,6 +730,9 @@ const TEXT_TAGS = {
   B: () => ({ bold: true }),
   STRONG: () => ({ bold: true }),
   U: () => ({ underline: true }),
+  DT: () => ({ bold: true }),   // also paragraph element
+  FIGCAPTION: () => ({ italic: true }),   // also paragraph element
+  TH: () => ({ bold: true }),   // also table-cell element
 }
 
 function deserializeHtml(html, editor) {
@@ -910,11 +921,7 @@ const RenderingElement = props => {
     case 'table-row':
       return <tr {...attributes}>{children}</tr>
     case 'table-cell':
-      if (element.isHeader) {
-        return <th {...attributes}>{children}</th>
-      } else {
-        return <td {...attributes}>{children}</td>
-      }
+      return <td {...attributes}>{children}</td>
     default:
       return children;
   }
@@ -1075,11 +1082,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         case 'table-row':
           return `<tr>${children}</tr>`;
         case 'table-cell':
-          if (slateNode.isHeader) {
-            return `<th>${children}</th>`;
-          } else {
-            return `<td>${children}</td>`;
-          }
+          return `<td>${children}</td>`;
         default:
           return children
       }

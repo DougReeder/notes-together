@@ -579,7 +579,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         for (const [, rowPath] of SlateNode.children(editor, tablePath)) {
           const insertPath = [...rowPath, insertIndex];
           Transforms.insertNodes(editor,
-              {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+              {type: 'table-cell', children: [{text: ""}]},
               {at: insertPath}
           );
         }
@@ -630,12 +630,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     Transforms.insertNodes(editor, [
           {type: 'table', children: [
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [{text: ""}]},
-                  {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                  {type: 'table-cell', children: [{text: "", bold: true}]},
+                  {type: 'table-cell', children: [{text: "", bold: true}]},
                 ]},
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                  {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                  {type: 'table-cell', children: [{text: ""}]},
+                  {type: 'table-cell', children: [{text: ""}]},
                 ]},
             ]},
           { type: 'paragraph', children: [   // TODO: handle via normalization

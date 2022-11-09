@@ -14,7 +14,7 @@ const semanticOnly = {
     'li', 'dl', 'dt', 'dd', 'b', 'i', 'strong', 'em', 'u', 's', 'strike', 'code', 'hr', 'br', 'div',
     'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre',
     'a', 'img', 'del', 'ins', 'kbd', 'q', 'samp', 'tt', 'sub', 'sup', 'cite', 'var', 'dfn', 'abbr', 'address',
-    'figure', 'details',
+    'figure', 'figcaption', 'details',
     'ruby', 'rp', 'rt',
     'circle', 'clipPath', 'defs', 'desc', 'ellipse',
     'feBlend', 'feColorMatrix', 'feComponentTransfer', 'feConvolveMatrix', 'feDropShadow',

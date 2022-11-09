@@ -421,15 +421,15 @@ describe("HTML plugin normalizer", () => {
         {type: 'list-item', children: [
           {type: 'table', children: [
             {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: true, children: [
-                {text: "Lorem ipsum dolor"},
+              {type: 'table-cell', children: [
+                {text: "Lorem ipsum dolor", bold: true},
               ]},
             ]},
             {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: true, children: [
-                {text: "sit amet, consectetur"},
+              {type: 'table-cell', children: [
+                {text: "sit amet, consectetur", bold: true},
               ]},
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                 {text: "adipiscing elit"},
               ]},
               {type: 'image', url: 'https://storage.org/?q=cat',
@@ -451,24 +451,24 @@ describe("HTML plugin normalizer", () => {
         {type: 'list-item', children: [
           {type: 'table', children: [
             {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: true, children: [
-                {text: "Lorem ipsum dolor"},
+              {type: 'table-cell', children: [
+                {text: "Lorem ipsum dolor", bold: true},
               ]},
-              {type: 'table-cell', isHeader: true, children: [
-                {text: ""},
+              {type: 'table-cell', children: [
+                {text: "", bold: true},
               ]},
-              {type: 'table-cell', isHeader: true, children: [
-                {text: ""},
+              {type: 'table-cell', children: [
+                {text: "", bold: true},
               ]},
             ]},
             {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: true, children: [
-                {text: "sit amet, consectetur"},
+              {type: 'table-cell', children: [
+                {text: "sit amet, consectetur", bold: true},
               ]},
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                 {text: "adipiscing elit"},
               ]},
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                 {type: 'image', url: 'https://storage.org/?q=cat',
                   title: "Cat of the day",
                   children: [{text: "a sleeping Persian"}]
@@ -476,13 +476,13 @@ describe("HTML plugin normalizer", () => {
               ]},
             ]},
               {type: 'table-row', children: [
-                {type: 'table-cell', isHeader: false, children: [
+                {type: 'table-cell', children: [
                   {type: 'paragraph', children: [{text: "And another thing..."}]},
                 ]},
-                {type: 'table-cell', isHeader: false, children: [
+                {type: 'table-cell', children: [
                   {text: ""},
                 ]},
-                {type: 'table-cell', isHeader: false, children: [
+                {type: 'table-cell', children: [
                   {text: ""},
                 ]},
               ]},
@@ -2200,7 +2200,7 @@ describe("deserializeHtml", () => {
     expect(slateNodes.length).toEqual(4);
   });
 
-  it("should parse <p> <figure> <details> <dt> and <dd> tags as paragraphs", () => {
+  it("should parse <p> <figcaption> <details> <dt> and <dd> tags as paragraphs", () => {
     const html = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 <figure>
   <img src="favicon-192x192.png">
@@ -2224,23 +2224,24 @@ describe("deserializeHtml", () => {
 
     expect(slateNodes[0]).toEqual({type: 'paragraph', children: [{text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]});
 
-    expect(slateNodes[1].type).toEqual('paragraph');
-    expect(slateNodes[1].children.length).toEqual(2);
-    expect(slateNodes[1].children[0].type).toEqual('image');
-    expect(slateNodes[1].children.length).toEqual(2);
-
+    expect(slateNodes[1].type).toEqual('image');
+    expect(slateNodes[1].url).toEqual('favicon-192x192.png');
     expect(slateNodes[2].type).toEqual('paragraph');
-    expect(slateNodes[2].children[0].text).toMatch(/Sorry/);
-    expect(slateNodes[2].children[0].text).toMatch(/Syntax error in line 42/);
+    expect(slateNodes[2].children[0].text).toMatch(/MDN Logo/);
+    expect(slateNodes[2].children[0].italic).toEqual(true);
 
     expect(slateNodes[3].type).toEqual('paragraph');
-    expect(slateNodes[3].children[0]).toEqual({text: "Firefox"});
-    expect(slateNodes[4].type).toEqual('paragraph');
-    expect(slateNodes[4].children[0]).toEqual({text: "Mozilla Firefox"});
-    expect(slateNodes[5].type).toEqual('quote');   // This treatment is a hack
-    expect(slateNodes[5].children[0].text).toMatch(/A free, open source, cross-platform, graphical web browser./);
+    expect(slateNodes[3].children[0].text).toMatch(/Sorry/);
+    expect(slateNodes[3].children[0].text).toMatch(/Syntax error in line 42/);
 
-    expect(slateNodes.length).toEqual(6);
+    expect(slateNodes[4].type).toEqual('paragraph');
+    expect(slateNodes[4].children[0]).toEqual({text: "Firefox", bold: true});
+    expect(slateNodes[5].type).toEqual('paragraph');
+    expect(slateNodes[5].children[0]).toEqual({text: "Mozilla Firefox", bold: true});
+    expect(slateNodes[6].type).toEqual('quote');   // This treatment is a hack
+    expect(slateNodes[6].children[0].text).toMatch(/A free, open source, cross-platform, graphical web browser./);
+
+    expect(slateNodes.length).toEqual(7);
   });
 
   it("should retain blank Leaves between inline Elements", () => {
@@ -2388,6 +2389,36 @@ ipso facto`;
     expect(slateNodes[0].url).toEqual("http://example.com");
     expect(Text.isText(slateNodes[1])).toBeTruthy();
     expect(slateNodes[1].text).toEqual(" ipso facto");
+  });
+
+  it("should parse a TH element as a TD plus bold mark", () => {
+    const html = `<table>
+    <tr><th></th><th>Name</th><th>Age</th></tr>
+    <tr><th>Pitcher</th><td>Alice</td><td>34</td></tr>
+</table>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(Element.isElement(slateNodes[0])).toBeTruthy();
+    expect(slateNodes[0].type).toEqual('table');
+    expect(slateNodes.length).toEqual(1);
+
+    expect(Element.isElement(slateNodes[0].children[0])).toBeTruthy();
+    expect(slateNodes[0].children[0].type).toEqual('table-row');
+    expect(Element.isElement(slateNodes[0].children[1])).toBeTruthy();
+    expect(slateNodes[0].children[1].type).toEqual('table-row');
+    expect(slateNodes[0].children).toHaveLength(2);
+
+    expect(Element.isElement(slateNodes[0].children[0].children[1])).toBeTruthy();
+    expect(slateNodes[0].children[0].children[1].type).toEqual('table-cell');
+    expect(slateNodes[0].children[0].children[1].children[0]).toEqual({text: "Name", bold: true});
+    expect(slateNodes[0].children[0].children[2].children[0]).toEqual({text: "Age", bold: true});
+
+    expect(Element.isElement(slateNodes[0].children[1].children[0])).toBeTruthy();
+    expect(slateNodes[0].children[1].children[0].type).toEqual('table-cell');
+    expect(slateNodes[0].children[1].children[0].children[0]).toEqual({text: "Pitcher", bold: true});
+    expect(slateNodes[0].children[1].children[1].children[0]).toEqual({text: "Alice"});
+    expect(slateNodes[0].children[1].children[2].children[0]).toEqual({text: "34"});
   });
 });
 
@@ -2719,12 +2750,12 @@ describe("serializeHtml and deserializeHtml", () => {
     const original = [
       {type: 'table', children: [
         {type: 'table-row', children: [
-            {type: 'table-cell', isHeader: true, children: [{text: " A1 "}]},
-            {type: 'table-cell', isHeader: true, children: [{text: " A2 "}]},
+            {type: 'table-cell', children: [{text: " A1 ", bold: true}]},
+            {type: 'table-cell', children: [{text: " A2 ", bold: true}]},
         ]},
         {type: 'table-row', children: [
-            {type: 'table-cell', isHeader: true, children: [{text: " B1 "}]},
-            {type: 'table-cell', isHeader: false, children: [{text: " B2 "}]},
+            {type: 'table-cell', children: [{text: " B1 ", bold: true}]},
+            {type: 'table-cell', children: [{text: " B2 "}]},
         ]},
         ]
       },

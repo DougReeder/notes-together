@@ -113,18 +113,18 @@ describe("getRelevantBlockType", () => {
       { type: "quote", children: [
         {type: 'table', children: [
           {type: 'table-row', children: [
-            {type: 'table-cell', isHeader: true, children: [
-                {text: "Lorem ipsum dolor"},
+            {type: 'table-cell', children: [
+                {text: "Lorem ipsum dolor", bold: true},
               ]},
-            {type: 'table-cell', isHeader: true, children: [
-                {text: "sit amet, consectetur"},
+            {type: 'table-cell', children: [
+                {text: "sit amet, consectetur", bold: true},
               ]},
           ]},
           {type: 'table-row', children: [
-            {type: 'table-cell', isHeader: true, children: [
-                {text: "adipiscing elit"},
+            {type: 'table-cell', children: [
+                {text: "adipiscing elit", bold: true},
               ]},
-            {type: 'table-cell', isHeader: false, children: [
+            {type: 'table-cell', children: [
                 {type: 'image', url: 'https://storage.org/?q=cat',
                   title: "Cat of the day",
                   children: [{text: "a sleeping Persian"}]
@@ -150,18 +150,18 @@ describe("getRelevantBlockType", () => {
       { type: "paragraph", children: [
           {type: 'table', children: [
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "Lorem ipsum dolor"},
+                  {type: 'table-cell', children: [
+                      {text: "Lorem ipsum dolor", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "sit amet, consectetur"},
+                  {type: 'table-cell', children: [
+                      {text: "sit amet, consectetur", bold: true},
                     ]},
                 ]},
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "adipiscing elit"},
+                  {type: 'table-cell', children: [
+                      {text: "adipiscing elit", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: false, children: [
+                  {type: 'table-cell', children: [
                       {type: 'image', url: 'https://storage.org/?q=cat',
                         title: "Cat of the day",
                         children: [{text: "a sleeping Persian"}]
@@ -187,18 +187,18 @@ describe("getRelevantBlockType", () => {
       { type: "quote", children: [
           {type: 'table', children: [
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "Lorem ipsum dolor"},
+                  {type: 'table-cell', children: [
+                      {text: "Lorem ipsum dolor", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "sit amet, consectetur"},
+                  {type: 'table-cell', children: [
+                      {text: "sit amet, consectetur", bold: true},
                     ]},
                 ]},
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "adipiscing elit"},
+                  {type: 'table-cell', children: [
+                      {text: "adipiscing elit", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: false, children: [
+                  {type: 'table-cell', children: [
                       {type: 'image', url: 'https://storage.org/?q=cat',
                         title: "Cat of the day",
                         children: [{text: "a sleeping Persian"}]
@@ -224,18 +224,18 @@ describe("getRelevantBlockType", () => {
       { type: "paragraph", children: [
           {type: 'table', children: [
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "Lorem ipsum dolor"},
+                  {type: 'table-cell', children: [
+                      {text: "Lorem ipsum dolor", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "sit amet, consectetur"},
+                  {type: 'table-cell', children: [
+                      {text: "sit amet, consectetur", bold: true},
                     ]},
                 ]},
               {type: 'table-row', children: [
-                  {type: 'table-cell', isHeader: true, children: [
-                      {text: "adipiscing elit"},
+                  {type: 'table-cell', children: [
+                      {text: "adipiscing elit", bold: true},
                     ]},
-                  {type: 'table-cell', isHeader: false, children: [
+                  {type: 'table-cell', children: [
                       {type: 'image', url: 'https://storage.org/?q=cat',
                         title: "Cat of the day",
                         children: [{text: "a sleeping Persian"}]
@@ -413,34 +413,34 @@ describe("changeBlockType", () => {
         ]},
       {type: 'table', children: [
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {type: 'image', url: 'https://example.us', title: "US Plus", children: [
                       {text: "We own the idea of the idea of America"}
                     ]},
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {text: "second paragraph"},
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {text: "first item"},
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {text: "second item"}
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {text: "some heading"}
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {text: "first sentence"},
                   {type: 'link', url: 'https://example.edu', title: "important info", children: [
                       {text: "link text"},
@@ -449,7 +449,7 @@ describe("changeBlockType", () => {
                 ]},
             ]},
           {type: 'table-row', children: [
-              {type: 'table-cell', isHeader: false, children: [
+              {type: 'table-cell', children: [
                   {type: 'image', url: 'https://example.gb', title: "Britain", children: [
                       {text: "Keep a stiff upper lip!"}
                     ]},
@@ -1052,12 +1052,12 @@ describe("insertTableAfter", () => {
                 ]},
               {type: 'table', children: [
                   {type: 'table-row', children: [
-                      {type: 'table-cell', isHeader: true, children: [{text: ""}]},
-                      {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+                      {type: 'table-cell', children: [{text: "", bold: true}]},
+                      {type: 'table-cell', children: [{text: "", bold: true}]},
                     ]},
                   {type: 'table-row', children: [
-                      {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-                      {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+                      {type: 'table-cell', children: [{text: ""}]},
+                      {type: 'table-cell', children: [{text: ""}]},
                     ]},
                 ]},
               {type: 'paragraph', children: [

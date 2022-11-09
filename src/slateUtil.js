@@ -103,9 +103,6 @@ function changeBlockType(editor, newType) {
       const newProperties = {
         type: isTypeSame ? 'paragraph' : newIsList ? 'list-item' : newIsTable ? 'table-cell' : newType,
       }
-      if (newIsTable) {
-        newProperties.isHeader = false;
-      }
       Transforms.setNodes(editor, newProperties, {
         match: (n, p) => p.length === changePathLength && 'image' !== n.type,
         split: allowSplit
@@ -137,12 +134,12 @@ function insertListAfter(editor, newType) {
 function insertTableAfter(editor) {
   insertAfter(editor,{type: 'table', children: [
       {type: 'table-row', children: [
-          {type: 'table-cell', isHeader: true, children: [{text: ""}]},
-          {type: 'table-cell', isHeader: true, children: [{text: ""}]},
+          {type: 'table-cell', children: [{text: "", bold: true}]},
+          {type: 'table-cell', children: [{text: "", bold: true}]},
         ]},
       {type: 'table-row', children: [
-          {type: 'table-cell', isHeader: false, children: [{text: ""}]},
-          {type: 'table-cell', isHeader: false, children: [{text: ""}]},
+          {type: 'table-cell', children: [{text: ""}]},
+          {type: 'table-cell', children: [{text: ""}]},
         ]},
     ]},
       [0, 0, 0]);
