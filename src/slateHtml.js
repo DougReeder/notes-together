@@ -733,6 +733,7 @@ const TEXT_TAGS = {
   DT: () => ({ bold: true }),   // also paragraph element
   FIGCAPTION: () => ({ italic: true }),   // also paragraph element
   TH: () => ({ bold: true }),   // also table-cell element
+  CAPTION: () => ({ bold: true }),   // also specially handled
 }
 
 function deserializeHtml(html, editor) {
@@ -740,12 +741,16 @@ function deserializeHtml(html, editor) {
 
   let activeMarkStack = [{}];
   let activeCodeBlockStack = [false];
+  let captionStack = [];
   const slateNodes = domNodeToSlateNodes(parsed.body);
   if (activeMarkStack.length !== 1){
     console.error("activeMarkStack corrupt:", activeMarkStack);
   }
   if (activeCodeBlockStack.length !== 1) {
     console.error("activeCodeBlockStack corrupt", activeCodeBlockStack);
+  }
+  if (captionStack.length > 0) {
+    console.warning("unused caption:", captionStack);
   }
 
   return slateNodes;
@@ -779,6 +784,8 @@ function deserializeHtml(html, editor) {
 
       if ('PRE' === nodeName) {
         activeCodeBlockStack.push(true);
+      } else if ('TABLE' === nodeName) {
+        captionStack.push(null);
       }
 
       let parent = el;
@@ -840,9 +847,21 @@ function deserializeHtml(html, editor) {
         }
       }
 
+      if ('CAPTION' === nodeName) {
+        captionStack[captionStack.length-1] = children;
+        return "";
+      }
+
       if (ELEMENT_TAGS[nodeName]) {
-        const attrs = ELEMENT_TAGS[nodeName](el)
-        if (Array.isArray(attrs.children)) {
+        const attrs = ELEMENT_TAGS[nodeName](el);
+        if ('TABLE' === nodeName) {
+          const elements = [jsx('element', attrs, children)];
+          let captionChildren;
+          if ((captionChildren = captionStack[captionStack.length-1])) {
+            elements.unshift(jsx('element', {type: 'paragraph'}, captionChildren));
+          }
+          return jsx('fragment', null, elements);
+        } else if (Array.isArray(attrs.children)) {
           for (const child of attrs.children) {
             Object.assign(child, marks);
           }
@@ -857,7 +876,9 @@ function deserializeHtml(html, editor) {
       console.error("while deserializing HTML:", err);
       return [{text: el?.innerText || ""}];
     } finally {
-      if ('PRE' === nodeName) {
+      if ('TABLE' === nodeName) {
+        captionStack.pop();
+      } else if ('PRE' === nodeName) {
         activeCodeBlockStack.pop();
       }
 

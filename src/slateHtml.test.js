@@ -2420,6 +2420,43 @@ ipso facto`;
     expect(slateNodes[0].children[1].children[1].children[0]).toEqual({text: "Alice"});
     expect(slateNodes[0].children[1].children[2].children[0]).toEqual({text: "34"});
   });
+
+  it("should parse a table caption as a bold paragraph before the table", () => {
+    const html = `
+<table>
+  <caption><strike>Example</strike> Caption</caption>
+  <tr>
+    <th>Login</th>
+    <th>Emails</th>
+  </tr>
+  <tr>
+    <td>user1</td>
+    <td>user1@sample.com</td>
+  </tr>
+  <tr>
+    <td>user2</td>
+    <td><table>
+        <tr><td>user2@sample.com</td></tr>
+        <tr><td>user2@sample.edu</td></tr>
+    </table></td>
+  </tr>
+</table>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes[0].type).toEqual('paragraph');
+    expect(slateNodes[0].children[0].text).toMatch(/Example/);
+    expect(slateNodes[0].children[0]).toHaveProperty('bold', true);
+    expect(slateNodes[0].children[0]).toHaveProperty('strikethrough', true);
+    expect(slateNodes[0].children[1].text).toMatch(/ Caption/);
+    expect(slateNodes[0].children[1]).toHaveProperty('bold', true);
+    expect(slateNodes[0].children).toHaveLength(2);
+    expect(slateNodes[1].type).toEqual('table');
+    expect(slateNodes[1].children).toHaveLength(3);
+    expect(slateNodes[1].children[2].children[1].children[0]).toHaveProperty('type', 'table');
+    expect(slateNodes[1].children[2].children[1].children).toHaveLength(1);
+    expect(slateNodes).toHaveLength(2);
+  });
 });
 
 
