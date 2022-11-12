@@ -719,7 +719,7 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
         ]},
       { type: "numbered-list", listStart: 1, children: [
           {type: "list-item", children: [
-              {text: "only item"}
+              {type: 'paragraph', children: [{text: "only item"}]},
             ]},
         ]},
       { type: "code",
@@ -1142,7 +1142,10 @@ https://www.example.org`);
         ]},
       { type: "paragraph",
         children: [
-          {text: 'before `const NUMBER = 42;`![natter](http://example.com/pic)'}
+          {text: 'before `const NUMBER = 42;`'},
+        ]},
+      { type: 'paragraph', children: [
+          {text: '![natter](http://example.com/pic)'},
         ]},
       { type: "paragraph",
         children: [

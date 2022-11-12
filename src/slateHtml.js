@@ -604,7 +604,7 @@ function withHtml(editor) {   // defines Slate plugin
   function pasteHtmlToMarkdown(html) {
     html = sanitizeHtml(html, semanticOnly);
     const syntaxTree = deserializeHtml(html, editor);
-    const markdown = serializeMarkdown(syntaxTree);
+    const markdown = serializeMarkdown(editor, syntaxTree);
     const lines = markdown.split('\n');
     console.info("HTML -> Markdown:", markdown);
 

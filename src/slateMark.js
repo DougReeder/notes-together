@@ -2,7 +2,7 @@
 // Copyright © 2021-2022 Doug Reeder under the MIT License
 
 import {adHocTextReplacements} from "./util";
-import {Text} from 'slate';
+import {Element as SlateElement, Text as SlateText} from 'slate';
 import {Parser} from "commonmark";
 
 const markdownReader = new Parser({smart: true});
@@ -12,7 +12,6 @@ function deserializeMarkdown(markdown) {
 
   const slateNodeStack = [[]];
   let italic = false, bold = false;
-  let listDepth = 0;
   const walker = mdDoc.walker();
   let event;
   while ((event = walker.next())) {
@@ -26,11 +25,7 @@ function deserializeMarkdown(markdown) {
           default:
             console.error(event.entering ? '>' : '<', mdNode.type, mdNode.literal);
             // falls through
-          case 'paragraph':   // TODO: normalize such paragraphs away, rather than this
-            if (listDepth > 0) {
-              break;
-            }
-            // falls through
+          case 'paragraph':
           case 'heading':
           case 'list':
           case 'item':
@@ -38,16 +33,10 @@ function deserializeMarkdown(markdown) {
             // console.log(event.entering ? '>' : '<', mdNode.type, mdNode.level, mdNode.listType);
             if (event.entering) {
               slateNodeStack.push([])
-              if ('list' === mdNode.type) {
-                ++listDepth
-              }
             } else {
-              if ('list' === mdNode.type) {
-                --listDepth
-              }
               const children = slateNodeStack.pop();
               if (0 === children.length) {
-                children.push(textNode("", italic, bold));
+                break;   // the children have been moved out, so doesn't instantiate this
               }
               const slateNode = {
                 type: slateType(mdNode),
@@ -86,7 +75,7 @@ function deserializeMarkdown(markdown) {
               if (0 === children.length) {
                 children.push(textNode("", italic, bold));
               }
-              slateNodeStack[slateNodeStack.length-1].push({
+              slateNodeStack[slateNodeStack.length-2].push({
                 type: 'image',
                 url: mdNode.destination,
                 title: mdNode.title || "",
@@ -247,129 +236,132 @@ function textNode(text, italic, bold) {
   }
 }
 
-function serializeMarkdown(slateNodes) {
+function serializeMarkdown(editor, slateNodes) {
+  const hierarchy = [];
   let inCodeBlock = false;
-  const lists = [];
-  return serializeSlateNodes(slateNodes);
+  const lines = [];
 
-  function serializeSlateNodes(slateNodes) {
-    return slateNodes.map((slateNode, i) => {
-      if (Text.isText(slateNode)) {
-        if (inCodeBlock) {
-          return slateNode.text;
-        } else if (slateNode.code) {
-          return `\`${slateNode.text}\``;
+  const text = slateNodes.map(serializeSlateNode).join('');
+  if (text) {
+    lines.push(text);
+  }
+  return lines.join("\n");
+
+  /** blocks are written to lines[], but text is returned */
+  function serializeSlateNode(slateNode, ind) {
+    if ('table-cell' === slateNode.type) {
+      const childrenText = slateNode.children.map(serializeSlateNode).join('');
+      return "| " + childrenText + " ";
+    } else if (SlateText.isText(slateNode)) {
+      if (inCodeBlock) {
+        return slateNode.text;
+      } else if (slateNode.code) {
+        if (/`/.test(slateNode.text)) {
+          return "``" + slateNode.text + "``";
         } else {
-          let string = slateNode.text;
-          string = escapeMarkdown(string);
-          if (slateNode.bold) {
-            string = `**${string}**`;
-          }
-          if (slateNode.italic) {
-            string = `*${string}*`;
-          }
-          // newline -> hard break
-          string = string.replace(/\n/g, "  \n");
-          return string;
+          return "`" + slateNode.text + "`";
         }
+      } else {
+        let string = slateNode.text;
+        string = escapeMarkdown(string);
+        if (slateNode.bold) {
+          string = `**${string}**`;
+        }
+        if (slateNode.italic) {
+          string = `*${string}*`;
+        }
+        // newline -> hard break
+        string = string.replace(/\n/g, "  \n");
+        return string;
       }
-
-      switch (slateNode.type) {   // eslint-disable-line default-case
-        case 'bulleted-list':
-          lists.push(slateNode)
-          break;
-        case 'numbered-list':
-          lists.push(slateNode)
-          break;
-        case 'code':
+    } else if (SlateElement.isElement(slateNode)) {
+      hierarchy.unshift(slateNode.type);
+      if (editor.isInline(slateNode)) {
+        const childrenText = slateNode.children.map(serializeSlateNode).join('');
+        const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
+        return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
+      } else {   // block
+        if ('code' === slateNode.type) {
           inCodeBlock = true;
-          break;
-      }
-
-      const childrenText = serializeSlateNodes(slateNode.children);
-
-      let str = "";   // some types don't use this
-      if (i > 0) {
-        str += "\n";
-        if ('list-item' !== slateNode.type) {
-          for (let j = 0; j < lists.length; ++j) {
-            str += '    ';
+        }
+        let text = slateNode.children.map(serializeSlateNode).join('');
+        if (ind > 0 && 'paragraph' === hierarchy[0]) {
+          text = prefixText("\n", text);
+        }
+        for (let level = 0; level < hierarchy.length; ++level) {
+          // eslint-disable-next-line default-case
+          switch (hierarchy[level]) {
+            case 'heading-one':
+              text = prefixText("# ", text);
+              break;
+            case 'heading-two':
+              text = prefixText("## ", text);
+              break;
+            case 'heading-three':
+              text = prefixText("### ", text);
+              break;
+            case 'quote':
+              text = prefixText("> ", text);
+              break;
+            case 'code':
+              text = '```\n' + text + '\n```';
+              inCodeBlock = false;
+              break;
+            case 'image':
+              if (slateNode.title) {
+                text = `![${text}](${slateNode.url} "${slateNode.title}")`;
+              } else {
+                text = `![${text}](${slateNode.url})`;
+              }
+              break;
+            case 'list-item':
+              const listParent = hierarchy.find(type => ['bulleted-list', 'numbered-list'].includes(type));
+              let prefix;
+              if ('bulleted-list' === listParent) {
+                prefix = "* ";
+              } else if ('numbered-list' === listParent) {
+                prefix = (ind + 1) + ". ";
+              }
+              const innermost = hierarchy.findIndex(type => 'list-item' === type);
+              if (level > 0) {
+                if (level === innermost) {
+                  if (0 !== ind) {
+                    prefix = prefix.replace(/\S/, " ");
+                  }
+                } else {
+                  prefix = "    ";
+                }
+              }
+              text = prefixText(prefix, text);
+              break;
+            case 'thematic-break':
+              text = `\n------------------------------\n`;
+              break;
+            case 'table-row':
+              if (0 === level) {
+                text = text + "|";
+              }
+              break;
           }
         }
+        if (text) {
+          lines.push(text);
+        }
       }
+      hierarchy.shift();
+      return null;
+    } else {
+      console.error("neither Element nor Text:", slateNode);
+      return null;
+    }
+  }
 
-      switch (slateNode.type) {
-        default:
-        case 'paragraph':
-          str += childrenText;
-          break;
-        case 'quote':
-          str += `> ${childrenText}`;
-          break;
-        case 'heading-one':
-          str += `# ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'heading-two':
-          str += `## ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'heading-three':
-          str += `### ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'heading-four':
-          str += `##### ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'heading-five':
-          str += `##### ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'heading-six':
-          str += `###### ${escapeMarkdown(childrenText)}`;
-          break;
-        case 'thematic-break':
-          return `\n------------------------------\n`;
-
-        case 'code':
-          inCodeBlock = false;
-          str += '```\n' + childrenText + '\n```';
-          break;
-
-        case 'bulleted-list':
-        case 'numbered-list':
-          lists.pop();
-          str += `${childrenText}`
-          break;
-        case 'list-item':
-          for (let j=1; j<lists.length; ++j) {
-            str += '    ';
-          }
-          if ('numbered-list' === lists[lists.length-1].type) {
-            str += `1. ${childrenText}`
-          } else {
-            str += `* ${childrenText}`
-          }
-          break;
-
-        case 'table':
-          str += `${childrenText}`
-          break;
-        case 'table-row':
-          str += `${childrenText}`
-          break;
-        case 'table-cell':
-          str += `| ${childrenText} `
-          break;
-
-        case 'link':
-          const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
-          return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
-        case 'image':
-          const titleMarkup2 = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
-          return `![${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup2})`;
-      }
-      if (['paragraph', 'bulleted-list', 'numbered-list', 'table-row'].includes(slateNode.type) && i < slateNodes.length-1) {
-        str += "\n";
-      }
-      return str;
-    }).join("");
+  function prefixText(prefix, text) {
+    if (text) {
+      return text.split('\n').map(line => prefix + line).join('\n');
+    } else {
+      return null;
+    }
   }
 }
 

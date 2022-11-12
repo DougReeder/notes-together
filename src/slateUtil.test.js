@@ -1,4 +1,4 @@
-// Copyright © 2021 Doug Reeder under the MIT License
+// Copyright © 2021-2022 Doug Reeder under the MIT License
 
 import {changeBlockType, changeContentType, getRelevantBlockType, insertListAfter, insertTableAfter} from "./slateUtil";
 import {createEditor, Editor, Transforms} from 'slate'
@@ -1128,7 +1128,9 @@ describe("changeContentType", () => {
         {text: "Review of "}, {italic: true, text: "Epic Movie"}
       ]});
     expect(editor.children[2]).toEqual({type: 'numbered-list', listStart: 1, children: [
-        {type: 'list-item', children: [{text: "Acting uneven"}]}
+        {type: 'list-item', children: [
+            {type: 'paragraph', children: [{text: "Acting uneven"}]},
+          ]},
       ]});
     expect(editor.subtype).toEqual(newSubtype);
   });
@@ -1185,9 +1187,9 @@ describe("changeContentType", () => {
     expect(editor.children[1]).toEqual({type: 'paragraph',
       children: [{text: "## A *Dramatic* Article Title"}]});
     expect(editor.children[2]).toEqual({type: 'paragraph',
-      children: [{text: "    1. First point"}]});
+      children: [{text: "1. First point"}]});
     expect(editor.children[3]).toEqual({type: 'paragraph',
-      children: [{text: "1. **Second** point"}]});
+      children: [{text: "2. **Second** point"}]});
     expect(editor.subtype).toEqual(newSubtype);
   });
 
@@ -1217,6 +1219,7 @@ describe("changeContentType", () => {
   });
 
   it("should convert Markdown to plain text & remove markup", async () => {
+    console.info = jest.fn();
     const oldSubtype = 'markdown;hint=COMMONMARK';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -1249,12 +1252,15 @@ describe("changeContentType", () => {
 
     expect(editor.children[0].children).toEqual([{text: "Quotable dialog"}]);
     expect(editor.children[1].children).toEqual([{text: "Review of Epic Movie"}]);
-    expect(editor.children[2].children).toEqual([{text: "Acting unevenSeparate paragraph of first item"}]);
-    expect(editor.children[3].children).toEqual([{text: "General Electric Big Blow"}]);
-    expect(editor.children.length).toEqual(4);
+    expect(editor.children[2].children).toEqual([{text: "Acting uneven"}]);
+    expect(editor.children[3].children).toEqual([{text: "Separate paragraph of first item"}]);
+    expect(editor.children[4].children).toEqual([{text: "General Electric Big Blow"}]);
+    expect(editor.children.length).toBeGreaterThanOrEqual(5);
 
     expect(editor.subtype).toEqual(newSubtype);
     expect(editor.children[0].noteSubtype).toEqual(newSubtype);
+
+    expect(console.info).toHaveBeenCalledWith("markdown;hint=COMMONMARK => plain");
   });
 
   it("should convert HTML to plain text and remove markup", async () => {

@@ -889,8 +889,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         <MenuItem onClick={evt => {
           previousSelection.current = null;
           setDetailsMenuAnchorEl(null);
-          setEffectiveSubtype('html');
-          setIsContentTypeDialogOpen(true);
+          prepareContentTypeDialog();
         }}>
           Change note type...
         </MenuItem>

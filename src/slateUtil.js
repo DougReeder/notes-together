@@ -195,7 +195,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
     });
   } else if (newSubtype.startsWith('markdown')) {
     if (oldSubtype?.startsWith('html')) {
-      const content = serializeMarkdown(editor.children);
+      const content = serializeMarkdown(editor, editor.children);
       const slateNodes = content.split('\n').map(line => {
         return {type: 'paragraph', children: [{text: line}]};
       });
