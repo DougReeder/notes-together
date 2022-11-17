@@ -562,22 +562,64 @@ describe("changeBlockType", () => {
       {type: 'table', children: [
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
-                  {text: "sole"}
+                  {text: "alpha"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "beta"}
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "gamma"}
+                ]},
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [{text: "delta 1"}]},
+                  {type: 'quote', children: [{text: "delta 2"}]},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "epsilon"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "zeta"}
                 ]},
             ]},
         ]},
     ];
-    Transforms.select(editor, {anchor: {path: [0, 0, 0, 0], offset: 2}, focus: {path: [0, 0, 0, 0], offset: 2}});
+    Transforms.select(editor, {anchor: {path: [0, 1, 0, 0], offset: 0}, focus: {path: [0, 1, 1, 1, 0], offset: 7}});
 
-    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(getRelevantBlockType(editor)).toEqual('table');
     changeBlockType(editor, 'numbered-list');
 
     expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "alpha"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "beta"}
+                ]},
+            ]},
+        ]},
         {type: 'numbered-list', children: [
             {type: 'list-item', children: [
-                {text: "sole"}
+                {type: 'paragraph', children: [{text: "gamma"}]},
+                {type: 'paragraph', children: [{text: "delta 1"}]},
+                {type: 'quote', children: [{text: "delta 2"}]},
               ]},
           ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "epsilon"}
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "zeta"}
+                ]},
+            ]},
+        ]},
     ]);
     expect(getRelevantBlockType(editor)).toEqual('list-item');
   });
@@ -620,10 +662,14 @@ describe("changeBlockType", () => {
               {type: 'table-cell', children: [{text: "vor"}]},
               {type: 'table-cell', children: [
                   {type: 'bulleted-list', children: [
-                      {type: 'list-item', children: [{text: "A1"}]},
-                      {type: 'list-item', children: [{text: "A2"}]},
-                      {type: 'list-item', children: [{text: "B1"}]},
-                      {type: 'list-item', children: [{text: "B2"}]},
+                      {type: 'list-item', children: [
+                          {type: 'paragraph', children: [{text: "A1"}]},
+                          {type: 'paragraph', children: [{text: "A2"}]},
+                        ]},
+                      {type: 'list-item', children: [
+                          {type: 'paragraph', children: [{text: "B1"}]},
+                          {type: 'paragraph', children: [{text: "B2"}]},
+                        ]},
                     ]},
                   {type: 'numbered-list', children: [
                       {type: 'list-item', children: [{text: "first"}]},

@@ -79,22 +79,32 @@ function changeBlockType(editor, newType) {
     let isTypeSame = block.type === newType;
 
     // unwraps old compound types
-    const selectionRef = Editor.rangeRef(editor, editor.selection, {affinity: 'outward'});
     Transforms.unwrapNodes(editor, {
       mode: 'highest',
       match: (n, p) => p.length === changePathLength && COMPOUND_TYPES.includes(n.type),
       split: allowSplit,
     });
-    Transforms.unwrapNodes(editor, {
+    for (const [node, path] of Editor.nodes(editor, {
       mode: 'highest',
-      match: (n, p) => p.length === changePathLength &&
+      match: (n, p) => p.length === changePathLength+1 &&
           TABLE_TYPES.includes(n.type),
       split: allowSplit,
-    });
-    Transforms.select(editor, selectionRef.unref());
+    })) {
+      if (Editor.hasBlocks(editor, node)) {
+        Transforms.unwrapNodes(editor, {
+          at: path,
+          split: allowSplit
+        });
+      } else {
+        Transforms.setNodes(editor, {type: 'paragraph'}, {
+          at: path,
+          split: allowSplit
+        });
+      }
+    }
 
     if (isTypeSame && (COMPOUND_TYPES.includes(newType) || changePathLength > 1)) {
-      // reverts type change
+      // de-formats
       Transforms.unwrapNodes(editor, {
         match: (n, p) => p.length === changePathLength,
         split: allowSplit});
