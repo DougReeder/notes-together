@@ -328,6 +328,8 @@ yucking my yum
   });
 
   it("should continue after refusing to create a text note longer than 60,000 characters", async () => {
+    console.error = jest.fn();
+
     const content0 = 'before\n';
     const date0 = '2006-02-14T07:00:00Z';
     let logLines = `Feb 16 00:17:00 frodo Java Updater[24847]: Untrusted apps are not allowed to connect to Window Server before login.
@@ -362,6 +364,8 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(titleLines[0]).toMatch(/^after/);
     expect(retrievedNote.content).toEqual(content2 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date2));
+
+    expect(console.error).toHaveBeenCalledWith("splitIntoNotes:", expect.any(Error));
   });
 
   it("should continue after refusing to create a Markdown note longer than 600,000 characters", async () => {

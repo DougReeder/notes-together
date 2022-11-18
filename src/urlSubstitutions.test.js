@@ -38,6 +38,7 @@ describe("urlSubstitutions", () => {
   });
 
   it("should handle errors", async () => {
+    console.error = jest.fn();
     jest.spyOn(global, 'fetch').mockImplementation(() => {
       return Promise.reject("probe")
     });
@@ -46,6 +47,7 @@ describe("urlSubstitutions", () => {
     addSubstitution(objectUrl);
 
     expect(await currentSubstitutions()).toEqual(new Map());
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("URL substitution err"), expect.anything());
   });
 });
 

@@ -194,7 +194,11 @@ describe("RemoteNotes", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
+      console.error = jest.fn();
+
       await expect(remoteStorage.documents.delete(NIL)).resolves.toBeTruthy();
+
+      expect(console.error).toHaveBeenCalledWith(expect.stringMatching("Cannot delete non-existing node"));
     });
   });
 

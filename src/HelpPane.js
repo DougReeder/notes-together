@@ -78,11 +78,11 @@ function HelpPane({setMustShowPanel}) {
             </ul>
           </li>
           <li>Accented letters match unaccented letters, so
-            “cafe” matches “café”, and “slychac” matches “słychać”.
+            “cafe” matches “café”, “slychac” matches “słychać” and “ɩωɑννησ” matches “Ἰωάννης”.
           </li>
           <li>“strasse” matches “Straße”, “thath” matches “Það”, “aelfred” matches “Ælfred” and so forth.</li>
           {/*<li>Superscript and subscript digits match normal digits, so “h2o” matches “H₂O”</li>*/}
-          <li>If there’s a latin letter that doesn’t match the way it should, please send a support e-mail (see below).</li>
+          <li>If there’s a latin or greek letter that doesn’t match the way it should, please send a support e-mail.</li>
           <li>Synonyms do <strong>not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
         </ul>
 

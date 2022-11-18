@@ -1381,6 +1381,7 @@ https://www.example.org`);
   });
 
   it("should post a message if the paste type isn't handled", async () => {
+    console.warn = jest.fn();
     window.postMessage = jest.fn();
 
     const editor = withHtml(withReact(createEditor()));
@@ -1394,6 +1395,7 @@ https://www.example.org`);
 
     expect(window.postMessage).toHaveBeenCalledTimes(1);
     expect(window.postMessage).toHaveBeenLastCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, expect.anything());
+    expect(console.warn).toHaveBeenCalledWith("default handling", ...dataTransfer.items);
   })
 });
 
@@ -2081,6 +2083,8 @@ describe("serializeHtml", () => {
   });
 
   it("should drop images containing an object URL with no substitution", () => {
+    console.error = jest.fn();
+
     const html = serializeHtml([{
       type: 'image',
       url: 'blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
@@ -2089,6 +2093,8 @@ describe("serializeHtml", () => {
         {text: "a thing"}]
     }], new Map());
     expect(html).toEqual('');
+
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("No substitution for"), expect.stringMatching("blob:http://192.168.1.74:3000/"));
   });
 });
 

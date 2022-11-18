@@ -77,7 +77,7 @@ const diacritics = {
     "\u00FB": "u",
     "\u00FC": "u",   // LATIN SMALL LETTER U WITH DIAERESIS
     "\u00FD": "y",
-    "\u00FE": "th",
+    "\u00FE": "th",   // LATIN SMALL LETTER THORN
     "\u00FF": "y",
 // Latin Extended-A
     "\u0100": "A",
@@ -250,6 +250,7 @@ const diacritics = {
     "\u01B4": "y",
     "\u01B5": "Z",
     "\u01B6": "z",
+    "\u01BF": "w",   // wynn
     "\u01C4": "DZ",
     "\u01C5": "Dz",
     "\u01C6": "dz",
@@ -298,6 +299,7 @@ const diacritics = {
     "\u01F3": "dz",
     "\u01F4": "G",
     "\u01F5": "g",
+    "\u01F7": "W",   // capital wynn
     "\u01F8": "N",
     "\u01F9": "n",
     "\u01FA": "A",
@@ -334,6 +336,8 @@ const diacritics = {
     "\u0219": "s",
     "\u021A": "T",
     "\u021B": "t",
+    "\u021C": "Y",   // capital yogh
+    "\u021D": "y",   // small yogh
     "\u021E": "H",
     "\u021F": "h",
     "\u0220": "N",

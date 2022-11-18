@@ -147,15 +147,16 @@ describe("storage", () => {
       expect(wordArr.length).toEqual(6);
     });
 
-    it('tokenizes "Það á sér langan aðdraganda." to "THATH", "A", "SER", "LANGAN", "ATHDRAGANDA"', async () => {
-      const wordArr = Array.from(parseWords("Það á sér langan aðdraganda."));
+    it('tokenizes "Það á sér langan aðdraganda. ƿǷȜȝ" to "THATH", "A", "SER", "LANGAN", "ATHDRAGANDA" "WWYY"', async () => {
+      const wordArr = Array.from(parseWords("Það á sér langan aðdraganda. ƿǷȜȝ"));
 
       expect(wordArr).toContain("THATH");
       expect(wordArr).toContain("A");
       expect(wordArr).toContain("SER");
       expect(wordArr).toContain("LANGAN");
       expect(wordArr).toContain("ATHDRAGANDA");
-      expect(wordArr.length).toEqual(5);
+      expect(wordArr).toContain("WWYY");
+      expect(wordArr.length).toEqual(6);
     });
 
     it('in the default locale, tokenizes "café Peña słychać grüßen Åland Ælfred"', async () => {
@@ -178,7 +179,7 @@ describe("storage", () => {
       expect(wordArr.length).toEqual(3);
     });
 
-    it('in the default locale, tokenizes ABCDEFG_ÀÁÂÃÄÅÆÇ ÈÉÊËÌÍÎÏÐÑ to ABCDEFGAAAAAAAEC EEEEIIIITHN', async () => {
+    it('in the default locale, tokenizes ABCDEFG_ÀÁÂÃÄÅÆÇ ÈÉÊËÌÍÎÏÐÑ  to ABCDEFGAAAAAAAEC EEEEIIIITHN', async () => {
       const wordArr = Array.from(parseWords("ABCDEFG_ÀÁÂÃÄÅÆÇ ÈÉÊËÌÍÎÏÐÑ"));
 
       expect(wordArr).toContain("ABCDEFGAAAAAAAEC");
@@ -470,8 +471,12 @@ describe("storage", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
+      console.error = jest.fn();
+
       const deleteResult = await deleteNote(NIL);
       expect(deleteResult).toContain(NIL);
+
+      expect(console.error).toHaveBeenCalledWith(expect.stringMatching("Cannot delete non-existing node"));
     });
   });
 
@@ -523,6 +528,8 @@ describe("storage", () => {
     });
 
     it("should retain a modified note which was deleted on another device", async () => {
+      console.warn = jest.fn();
+
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -544,6 +551,8 @@ describe("storage", () => {
       expect(retrieved.title).toEqual(localNote.title);
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
+
+      expect(console.warn).toHaveBeenCalledWith("remoteStorage local change, remote delete:", undefined, localNote, false);
     });
 
     it("should restore a deleted note which was edited on another device", async () => {

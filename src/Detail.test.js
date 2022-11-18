@@ -70,6 +70,7 @@ describe("Details component", () => {
   });
 
   it('renders error if note not text type', async () => {
+    console.error = jest.fn();
     const noteId = uuidv4();
     const initialText = "";
     const noteDate = new Date(1980, 11, 20);
@@ -81,6 +82,7 @@ describe("Details component", () => {
     expect(textEl).toBeInTheDocument();
     expect(textEl).not.toHaveFocus();
     expect(await screen.queryByTitle('Block type')).not.toBeInTheDocument();
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("while replacing note"), expect.any(Error));
   });
 
   it("clears text & date when noteId set to null", async () => {
