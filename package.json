@@ -99,7 +99,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "postbuild": "surge build https://notes-together.surge.sh/; true",
-    "deploy": "scp -p -r -o PreferredAuthentications=keyboard-interactive,password ~/git/notes-together/build/* root@hominidsoftware.com:/var/www/notestogether/",
+    "deploy": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/build/* root@hominidsoftware.com:/var/www/notestogether/",
     "test": "node scripts/test.js"
   },
   "eslintConfig": {

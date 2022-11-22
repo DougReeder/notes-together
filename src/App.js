@@ -131,12 +131,12 @@ function App() {
       case 'TAG_CHANGE':
         combineTagsWithSuggestions().catch(err => {
           console.error("while combining tags:", err);
-          window.postMessage({ kind: "Can't retrieve tags - restart your browser", severity: 'error',
+          window.postMessage({ kind: "Can't retrieve tags - close and re-open this tab", severity: 'error',
             message: extractUserMessage(err)}, window?.location?.origin);
         });
         break;
       case 'TRANSIENT_MSG':
-        enqueueSnackbar(evt.data?.message || "Restart your browser", {
+        enqueueSnackbar(evt.data?.message || "Close and re-open this tab", {
           anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
           autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 3000 : 8000,
@@ -466,7 +466,7 @@ function App() {
         <Fab onClick={addNote} color="primary" title="Create new note"><AddIcon /></Fab>
         <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
           <Alert onClose={handleSnackbarClose} severity="error">
-            <AlertTitle>{transientErr?.userMsg || "Restart your browser"}</AlertTitle>
+            <AlertTitle>{transientErr?.userMsg || "Close and re-open this tab"}</AlertTitle>
             {transientErr?.message || transientErr?.name || transientErr?.toString()}
           </Alert>
         </Snackbar>

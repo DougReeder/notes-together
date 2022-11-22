@@ -577,6 +577,32 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
     });
 
+    it("should confirm remote changes, if the same changes were made to local", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `<h1>Duis ex elit</h1><p>Vestibulum nec massa eu, cursus porta augue.</p>`,
+        title: `Duis ex elit`,
+        date: new Date(2021, 8, 1),
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
+      };
+      const remoteNote = JSON.parse(JSON.stringify(localNote));
+      remoteNote.date = localNote.date;
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(`<h1>Duis ex elit</h1><p>Vestibulum nec massa eu, cursus porta augue.</p>`);
+      expect(retrieved.title).toEqual("Duis ex elit");
+      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+    });
+
     it("should merge a conflicted HTML note", async () => {
       const id = generateTestId();
       const localNote = {
@@ -599,7 +625,7 @@ describe("storage", () => {
       await new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 33);
+        }, 100);
       });
 
       const retrieved = await getNote(id);

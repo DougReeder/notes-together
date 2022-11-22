@@ -89,7 +89,14 @@ async function changeHandler(evt) {
                   console.error("while handling local delete, remote change:", err);
                 }
               });
-            } else {
+            } else {   // changed on both
+              if (evt.oldValue.content  === evt.newValue.content &&
+                  evt.oldValue.date     === evt.newValue.date &&
+                  evt.oldValue.mimeType === evt.newValue.mimeType) {
+                console.warn("remoteStorage same change locally & remote:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+                await upsertNote(evt.newValue, 'DETAIL');   // doesn't re-render
+                break;
+              }
               console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
               requestIdleCallback(async () => {
                 let cleanNote;

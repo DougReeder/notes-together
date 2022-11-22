@@ -348,7 +348,7 @@ function List(props) {
 
   let listItems;
   if (listErr) {
-    listItems = <div className="error"><h2>Restart your browser</h2>{listErr.message}</div>
+    listItems = <div className="error"><h2>Close and re-open this tab</h2>{listErr.message}</div>
   } else if (notes.length > 0) {
     listItems = [];
     let prevDateStr = null;

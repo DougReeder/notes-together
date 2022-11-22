@@ -1,3 +1,5 @@
+// noinspection ExceptionCaughtLocallyJS
+
 import {validate as uuidValidate} from 'uuid';
 import {createMemoryNote} from './Note';
 import {semanticOnly} from './sanitizeNote';
@@ -672,6 +674,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   </IconButton>;
 
 
+  if (noteErr) {
+    console.error("error in Details:", noteErr);
+  }
   let content;
   let noteControls = null;
   if (noteErr) {
@@ -680,7 +685,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         <Toolbar>{outBtn}</Toolbar>
       </AppBar>
       <Alert severity={noteErr.severity || "error"} style={{margin: "2ex"}}>
-        <AlertTitle>{noteErr?.userMsg || "Restart your browser"}</AlertTitle>
+        <AlertTitle>{noteErr?.userMsg || "Close and re-open this tab"}</AlertTitle>
         {noteErr?.message || noteErr?.name || noteErr?.toString()}
       </Alert>
     </>;
