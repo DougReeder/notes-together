@@ -995,6 +995,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   break;
               }
             }}
+            // forcing an update preserves focus; unclear why
+            onFocus={() => forceUpdate()}
             decorate={decorate}
         />
       </Slate>
