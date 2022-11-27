@@ -10,6 +10,15 @@ import {KeyboardVoice, MoreVert, Redo, Settings, Undo} from "@mui/icons-material
 import "./HelpPane.css";
 
 function HelpPane({setMustShowPanel}) {
+  const helpEmail = "mailto:support@hominidsoftware.com?subject=Notes%20Together%20Support&body=" +
+      encodeURIComponent(`
+
+${navigator.userAgent}
+${navigator.language}
+${navigator.userAgentData?.platform || ''}
+mobile: ${navigator.userAgentData?.mobile || ''}` +
+(navigator.userAgentData?.brands || []).map(item => '\n' + item.brand + ' ' + item.version));
+
   return <>
     <AppBar>
       <Toolbar style={{justifyContent: 'flex-start'}}>
@@ -187,6 +196,12 @@ function HelpPane({setMustShowPanel}) {
 
         <h4>Does the editor behave differently when editing a Markdown note?</h4>
         <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
+
+        <img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/>
+        <h2>Notes Together</h2>
+        <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
+        <p><a href="https://hominidsoftware.com/notes-together/license.html">Copyright 2021-2022</a> Hominid Software</p>
+        <p>&nbsp;</p>
       </div>
     </Box>
   </>;
