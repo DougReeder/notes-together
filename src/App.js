@@ -48,6 +48,7 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: '1.5ch',
       marginRight: '1.5ch',
       minWidth: '3ch',
+      textAlign: 'right',
     }
   },
 }));

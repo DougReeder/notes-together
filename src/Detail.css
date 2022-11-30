@@ -90,6 +90,12 @@ details {
     text-transform: none;
 }
 
+@media (any-pointer: coarse) {
+    .MuiIconButton-root {
+        flex-grow: 0.1;
+    }
+}
+
 .details table {
     margin-left: auto;
     margin-right: auto;
