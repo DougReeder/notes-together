@@ -44,7 +44,7 @@ import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
-import {getRelevantBlockType, changeBlockType, changeContentType, insertListAfter, insertTableAfter} from "./slateUtil";
+import {getRelevantBlockType, changeBlockType, changeContentType, insertListAfter, insertTableAfter, tabRight} from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
@@ -921,6 +921,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               switch (evt.key) {   // eslint-disable-line default-case
+                case 'Tab':
+                  if (!evt.shiftKey) {
+                    evt.preventDefault();
+                    tabRight(editor);
+                  }
+                  break;
                 case 'Enter':
                   if (isHotkey('mod+Enter', { byKey: true }, evt)) {
                     evt.preventDefault();

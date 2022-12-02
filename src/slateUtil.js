@@ -1,7 +1,14 @@
 // slateUtil.js - utility functions for Slate editor
 // © 2021 Doug Reeder under the MIT License
 
-import {Editor, Element as SlateElement, Node as SlateNode, Text as SlateText, Transforms, Range as SlateRange} from 'slate';
+import {
+  Editor,
+  Element as SlateElement,
+  Node as SlateNode,
+  Text as SlateText,
+  Transforms,
+  Range as SlateRange,
+} from 'slate';
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 
 
@@ -191,6 +198,53 @@ function getCommonBlock(editor) {
   return {block: common, blockPath: path}
 }
 
+function tabRight(editor) {
+  if (!editor.selection) return;
+  const [, firstPath] = Editor.first(editor, editor.selection);
+  const [, lastPath] = Editor.last(editor, editor.selection);
+  // searches for a block to operate on
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+    try {
+      if ('list-item' === candidate.type) {
+        // calculates a normalized source range from selection
+        const startPath = firstPath.slice(0, candidatePath.length);
+        const endPath = lastPath.slice(0, candidatePath.length);
+        const sourceRange = {anchor: Editor.start(editor, startPath),
+                             focus:  Editor.end(editor, endPath)};
+        // If a list exists at the destination, moves source items to it.
+        let [sibling, siblingPath] = Editor.previous(editor, {at: candidatePath});
+        for (const [child, childPath] of SlateNode.children(editor, siblingPath, {reverse: true})) {
+          if (['bulleted-list', 'numbered-list'].includes(child.type)) {
+            const destination = [...childPath, child.children.length];
+            Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === candidatePath.length});
+            return;
+          }
+        }
+
+        // If no list exists at the destination, moves source items & wraps them in list.
+        Editor.withoutNormalizing(editor, () => {
+          if (SlateText.isText(sibling.children[0])) {
+            const wrapRange = {anchor: Editor.start(editor, siblingPath),
+                               focus: Editor.end(editor, siblingPath)};
+            Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {at: wrapRange, match: (n,p) => siblingPath.length + 1 === p.length});
+            sibling = SlateNode.get(editor, siblingPath);
+          }
+          const destination = [...siblingPath, sibling.children.length];
+          const [parent] = Editor.parent(editor, candidatePath);
+          Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === candidatePath.length});
+          const wrapRange = {anchor: Editor.start(editor, destination),
+                             focus: Editor.end(editor, siblingPath)};
+          Transforms.wrapNodes(editor, {type: parent.type, children: []}, {at: wrapRange, match: (n,p) => p.length === destination.length});
+        });
+        return;
+      }
+    } catch (err) {
+      // The action can't be done; continues searching.
+    }
+  }
+  console.info("nothing that can tab right");
+}
+
 async function changeContentType(editor, oldSubtype, newSubtype) {
   if (!newSubtype || newSubtype.startsWith('plain')) {
     Editor.withoutNormalizing(editor, () => {
@@ -258,4 +312,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, tabRight, changeContentType, coerceToPlainText};
