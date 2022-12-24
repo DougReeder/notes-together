@@ -6,10 +6,10 @@ import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, checkpointSear
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
 import {sanitizeNote} from "./sanitizeNote";
-import {mergeConflicts} from "./mergeConflicts";
-import {createMemoryNote} from "./Note";
+// import {mergeConflicts} from "./mergeConflicts";
+// import {createMemoryNote} from "./Note";
 import decodeEntities from "./util/decodeEntities";
-import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
+// import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import {globalWordRE} from "./util";
 
@@ -97,38 +97,38 @@ async function changeHandler(evt) {
                 await upsertNote(evt.newValue, 'DETAIL');   // doesn't re-render
                 break;
               }
-              console.warn("remoteStorage conflict:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-              requestIdleCallback(async () => {
-                let cleanNote;
-                try {
-                  const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
-                  let mergedMimeType, documentHasTags;
-                  if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
-                    mergedMimeType = evt.oldValue.mimeType;
-                    documentHasTags = true;
-                  } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
-                    mergedMimeType = evt.newValue.mimeType;
-                    documentHasTags = true;
-                  } else {
-                    mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
-                    documentHasTags = false;
-                  }
-                  const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content, documentHasTags);
-                  // initiator is **not** 'REMOTE' for this purpose
-                  cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
-                } catch (err) {
-                  console.error("while handling conflict:", err);
-                } finally {
-                  const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
-                  const message = `Edit “${title?.split('\n')[0]}” then select ‘Clear Deleted & Inserted styles’`;
-                  window.postMessage({
-                    kind: 'TRANSIENT_MSG',
-                    severity: 'warning',
-                    message: message,
-                    key: evt.oldValue?.id || evt.newValue?.id
-                  }, window?.location?.origin);
-                }
-              });
+              console.warn("remoteStorage changed on both:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+              // setTimeout(async () => {
+              //   let cleanNote;
+              //   try {
+              //     const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+              //     let mergedMimeType, documentHasTags;
+              //     if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
+              //       mergedMimeType = evt.oldValue.mimeType;
+              //       documentHasTags = true;
+              //     } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
+              //       mergedMimeType = evt.newValue.mimeType;
+              //       documentHasTags = true;
+              //     } else {
+              //       mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
+              //       documentHasTags = false;
+              //     }
+              //     const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content, documentHasTags);
+              //     // initiator is **not** 'REMOTE' for this purpose
+              //     cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
+              //   } catch (err) {
+              //     console.error("while handling conflict:", err);
+              //   } finally {
+              //     const title = cleanNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+              //     const message = `Edit “${title?.split('\n')[0]}” then select ‘Clear Deleted & Inserted styles’`;
+              //     window.postMessage({
+              //       kind: 'TRANSIENT_MSG',
+              //       severity: 'warning',
+              //       message: message,
+              //       key: evt.oldValue?.id || evt.newValue?.id
+              //     }, window?.location?.origin);
+              //   }
+              // }, 0);
             }
             break;
             // case 'local':

@@ -603,7 +603,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it("should merge a conflicted HTML note", async () => {
+    xit("should merge a conflicted HTML note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -635,7 +635,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it("should merge a conflicted text note", async () => {
+    xit("should merge a conflicted text note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -667,7 +667,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it("should merge a conflicted local HTML / remote text note as HTML", async () => {
+    xit("should merge a conflicted local HTML / remote text note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -702,7 +702,7 @@ Finance: we can't afford it.</ins>`);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it("should merge a conflicted local text / remote HTML note as HTML", async () => {
+    xit("should merge a conflicted local text / remote HTML note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -736,6 +736,7 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming upsert", async () => {
+      console.info = jest.fn();
       window.postMessage = jest.fn();
 
       const original = "Man Cave ";
@@ -753,6 +754,8 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming conflict", async () => {
+      console.warn = jest.fn();
+      console.info = jest.fn();
       window.postMessage = jest.fn();
 
       const original = "Man Cave ";
@@ -779,6 +782,8 @@ Finance: we can't afford it.</ins>`);
       expect(normalizedTags.values().next().value).toEqual(Array.from(parseWords(original)).sort().join(' '))
       expect(window.postMessage).toHaveBeenCalledTimes(1);
       expect(window.postMessage).toHaveBeenCalledWith({kind: 'TAG_CHANGE'}, expect.anything());
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      expect(console.warn).toHaveBeenCalledWith("remoteStorage incoming savedSearch conflict", undefined, undefined, expect.anything(), expect.anything());
     });
   });
 
