@@ -10,6 +10,7 @@ import {
   Range as SlateRange,
 } from 'slate';
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
+import {arraylikeEqual} from "./util/arrayUtil";
 
 
 function getRelevantBlockType(editor) {
@@ -202,7 +203,7 @@ function tabRight(editor) {
   if (!editor.selection) return;
   const [, firstPath] = Editor.first(editor, editor.selection);
   const [, lastPath] = Editor.last(editor, editor.selection);
-  // searches for a block to operate on
+  // searches upward for a block to operate on
   for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
     try {
       if ('table-cell' === candidate.type) {
@@ -244,6 +245,30 @@ function tabRight(editor) {
         return;
       }
     } catch (err) {
+      // The action on this candidate failed; continues searching.
+    }
+  }
+  // searches upward for a block to operate on
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+    try {
+      if (['paragraph', 'quote', 'code'].includes(candidate.type)) {
+        const [startPnt] = Editor.edges(editor, editor.selection);
+        let selectionOffset = 0;
+        for (const [child, childPath] of SlateNode.texts(candidate)) {
+          if (arraylikeEqual([...candidatePath, ...childPath], startPnt.path)) {
+            selectionOffset += startPnt.offset;
+            break;
+          } else {
+            selectionOffset += SlateNode.string(child).length;
+          }
+        }
+        const numSpaces = 4 - selectionOffset % 4;
+        const spaces = new Array(numSpaces).fill(' ').join('');
+        Transforms.insertText(editor, spaces, {voids: true});
+        return;
+      }
+    } catch (err) {
+      console.error("while tabbing right (2):", err);
       // The action on this candidate failed; continues searching.
     }
   }

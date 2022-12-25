@@ -1132,6 +1132,7 @@ describe("tabRight", () => {
     console.info = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     const nodes = [
+      {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
       {type: 'bulleted-list', children: [
           {type: 'list-item', children: [{text: "this"}]},
           {type: 'list-item', children: [{text: "won't"}]},
@@ -1139,12 +1140,19 @@ describe("tabRight", () => {
         ]},
     ];
     editor.children = nodes;
-    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 4}, focus: {path: [0, 0, 0], offset: 4}});
+    Transforms.select(editor, {
+      anchor: {path: [1, 0, 0], offset: 4},
+      focus:  {path: [1, 0, 0], offset: 4}
+    });
 
     expect(getRelevantBlockType(editor)).toEqual('list-item');
     tabRight(editor);
 
     expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 0, 0], offset: 4},
+      focus:  {path: [1, 0, 0], offset: 4}
+    });
   });
 
   it("should create a sublist of same type", () => {
@@ -1429,6 +1437,109 @@ describe("tabRight", () => {
     expect(editor.selection).toEqual({
       anchor: { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
       focus:  { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+    });
+  });
+
+  it("inserts spaces to advance to next multiple of four characters in  top-level paragraph",() => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Maecenas sed mauris vel purus vulputate varius."}]},
+      {type: 'paragraph', children: [
+          {text: "Nulla dignissim libero et ante commodo, vehicula fermentum odio fringilla"},
+          {text: "Quisque scelerisque ullamcorper nunc, eu commodo eros consequat in.", bold: true},
+          {text: "Proin sollicitudin diam quis nulla lobortis, sed semper purus vehicula."},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1], offset: 1},
+      focus: {path: [1, 1], offset: 1}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Maecenas sed mauris vel purus vulputate varius."}]},
+      {type: 'paragraph', children: [
+          {text: "Nulla dignissim libero et ante commodo, vehicula fermentum odio fringilla"},
+          {text: "Q  uisque scelerisque ullamcorper nunc, eu commodo eros consequat in.", bold: true},
+          {text: "Proin sollicitudin diam quis nulla lobortis, sed semper purus vehicula."},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 1], offset: 3},
+      focus: {path: [1, 1], offset: 3}
+    });
+
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Maecenas sed mauris vel purus vulputate varius."}]},
+      {type: 'paragraph', children: [
+          {text: "Nulla dignissim libero et ante commodo, vehicula fermentum odio fringilla"},
+          {text: "Q      uisque scelerisque ullamcorper nunc, eu commodo eros consequat in.", bold: true},
+          {text: "Proin sollicitudin diam quis nulla lobortis, sed semper purus vehicula."},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 1], offset: 7},
+      focus: {path: [1, 1], offset: 7}
+    });
+  });
+
+  it("inserts spaces to advance to next multiple of four characters in monospaced",() => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Quisque iaculis tristique porttitor."}]},
+      {type: 'code', children: [
+          {text: `  def update
+    @article = `},
+          {text: `Article`, bold: true},
+          {text: `.find(params[:id])
+`},
+          {text: `if @article.update(article_params)`, italic: true},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 2], offset: 2},
+      focus:  {path: [1, 2], offset: 2}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Quisque iaculis tristique porttitor."}]},
+      {type: 'code', children: [
+          {text: `  def update
+    @article = `},
+          {text: `Article`, bold: true},
+          {text: `.f   ind(params[:id])
+`},
+          {text: `if @article.update(article_params)`, italic: true},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2], offset: 5},
+      focus:  {path: [1, 2], offset: 5}
+    });
+
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Quisque iaculis tristique porttitor."}]},
+      {type: 'code', children: [
+          {text: `  def update
+    @article = `},
+          {text: `Article`, bold: true},
+          {text: `.f       ind(params[:id])
+`},
+          {text: `if @article.update(article_params)`, italic: true},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2], offset: 9},
+      focus:  {path: [1, 2], offset: 9}
     });
   });
 });
