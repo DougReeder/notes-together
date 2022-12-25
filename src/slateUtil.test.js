@@ -1326,6 +1326,111 @@ describe("tabRight", () => {
         ]},
     ]);
   });
+
+  it("move collapsed selection in table to beginning of next column of table", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: "quote", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Aenean non metus quam."},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'paragraph', children: [{text: "Nulla nec pretium sem."}]},
+                      {type: 'paragraph', children: [{text: "Ut condimentum nisl lorem, et suscipit neque vestibulum non."}]},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'image', url: 'https://storage.com/?q=pet',
+                        title: "Pet of the day",
+                        children: [{text: "an alert chinchilla"}]
+                      },
+                      {type: 'paragraph', children: [{text: "Ut condimentum nisl lorem, et suscipit neque vestibulum non."}]},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Proin gravida, magna ut accumsan vestibulum, justo metus euismod elit.", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Donec tempus faucibus enim, a ornare nunc laoreet et.", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Suspendisse vel nisl pulvinar, pretium nulla vel, bibendum diam.", bold: true},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.children = nodes;
+    editor.selection = {
+      anchor: { path: [0, 0, 0, 1, 0, 0], offset: 18 },
+      focus:  { path: [0, 0, 0, 1, 0, 0], offset: 18 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabRight(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: { path: [0, 0, 0, 2, 0, 0], offset: 0 },
+      focus:  { path: [0, 0, 0, 2, 0, 0], offset: 0 },
+    });
+  });
+
+  it("moves collapsed selection in last column to beginning of next row of table", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: "quote", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Aenean non metus quam."},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'paragraph', children: [{text: "Nulla nec pretium sem."}]},
+                      {type: 'paragraph', children: [{text: "Ut condimentum nisl lorem, et suscipit neque vestibulum non."}]},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'image', url: 'https://storage.com/?q=pet',
+                        title: "Pet of the day",
+                        children: [{text: "an alert chinchilla"}]
+                      },
+                      {type: 'paragraph', children: [{text: "Ut condimentum nisl lorem, et suscipit neque vestibulum non."}]},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {type: 'numbered-list', children: [
+                          {type: 'list-item', children: [{text: "Proin gravida, magna ut accumsan vestibulum, justo metus euismod elit."}]}
+                        ]},
+                      {type: 'paragraph', children: [{text: "Proin gravida, magna ut accumsan vestibulum, justo metus euismod elit."}]},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Donec tempus faucibus enim, a ornare nunc laoreet et.", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Suspendisse vel nisl pulvinar, pretium nulla vel, bibendum diam.", bold: true},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.children = nodes;
+    editor.selection = {
+      anchor: { path: [0, 0, 0, 2, 0, 0], offset: 15 },
+      focus:  { path: [0, 0, 0, 2, 0, 0], offset: 15 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('image');
+    tabRight(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+      focus:  { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+    });
+  });
 });
 
 describe("changeContentType", () => {

@@ -205,7 +205,12 @@ function tabRight(editor) {
   // searches for a block to operate on
   for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
     try {
-      if ('list-item' === candidate.type) {
+      if ('table-cell' === candidate.type) {
+        const endPnt = Editor.end(editor, candidatePath);
+        const afterPnt = Editor.after(editor, endPnt);
+        Transforms.select(editor, {anchor: afterPnt, focus: afterPnt});
+        return;
+      } else if ('list-item' === candidate.type) {
         // calculates a normalized source range from selection
         const startPath = firstPath.slice(0, candidatePath.length);
         const endPath = lastPath.slice(0, candidatePath.length);
@@ -239,7 +244,7 @@ function tabRight(editor) {
         return;
       }
     } catch (err) {
-      // The action can't be done; continues searching.
+      // The action on this candidate failed; continues searching.
     }
   }
   console.info("nothing that can tab right");
