@@ -44,7 +44,15 @@ import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
 import isHotkey from 'is-hotkey';
-import {getRelevantBlockType, changeBlockType, changeContentType, insertListAfter, insertTableAfter, tabRight} from "./slateUtil";
+import {
+  getRelevantBlockType,
+  changeBlockType,
+  changeContentType,
+  insertListAfter,
+  insertTableAfter,
+  tabRight,
+  tabLeft
+} from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
@@ -925,6 +933,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   if (!evt.shiftKey) {
                     evt.preventDefault();
                     tabRight(editor);
+                  } else {
+                    evt.preventDefault();
+                    tabLeft(editor);
                   }
                   break;
                 case 'Enter':

@@ -6,7 +6,7 @@ import {
   getRelevantBlockType,
   tabRight,
   insertListAfter,
-  insertTableAfter
+  insertTableAfter, tabLeft
 } from "./slateUtil";
 import {createEditor, Editor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
@@ -1182,6 +1182,10 @@ describe("tabRight", () => {
           {type: 'list-item', children: [{text: "gimmel"}]},
         ]},
     ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 1, 1, 0, 0], offset: 4},
+      focus: {path: [0, 1, 1, 0, 0], offset: 4},
+    });
   });
 
   it("should move to existing sublist of different type", () => {
@@ -1540,6 +1544,380 @@ describe("tabRight", () => {
     expect(editor.selection).toEqual({
       anchor: {path: [1, 2], offset: 9},
       focus:  {path: [1, 2], offset: 9}
+    });
+  });
+});
+
+describe("tabLeft", () => {
+  it("should do nothing if list item not in sub-list", () => {
+    console.info = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: 'heading-two', children: [{text: "Vestibulum sollicitudin dignissim justo placerat cursus."}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "unchanged"}]},
+          {type: 'list-item', children: [{text: "unaltered"}]},
+          {type: 'list-item', children: [{text: "unaffected"}]},
+        ]},
+    ];
+    editor.children = nodes;
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 0], offset: 2},
+      focus:  {path: [1, 1, 0], offset: 2},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 1, 0], offset: 2},
+      focus:  {path: [1, 1, 0], offset: 2},
+    });
+  });
+
+  it("should do nothing if middle item in sub-list", () => {
+    console.info = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "this"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "won't"}]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [{text: " change"}]},
+                  {type: 'list-item', children: [{text: " at"}]},
+                  {type: 'list-item', children: [{text: " all"}]},
+                ]},
+
+            ]},
+          {type: 'list-item', children: [{text: "Nope!"}]},
+        ]},
+    ];
+    editor.children = nodes;
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 1], offset: 2},
+      focus:  {path: [1, 1, 1, 1], offset: 2},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 1, 1, 1], offset: 2},
+      focus:  {path: [1, 1, 1, 1], offset: 2},
+    });
+  });
+
+  it("should make first item in sub-list a new item in parent list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "static"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "still "}, {text: "top-level", bold: true}]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: "changes to "},
+                      {text: "top-level", bold: true},
+                    ]},
+                  {type: 'list-item', children: [
+                      {text: "remains "},
+                      {text: "sub-item", bold: true},
+                    ]},
+                ]},
+
+            ]},
+          {type: 'list-item', children: [{text: "unmoved"}]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 0, 0], offset: 7},
+      focus:  {path: [1, 1, 1, 0, 0], offset: 7},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "static"}]},
+          {type: 'list-item', children: [{text: "still "}, {text: "top-level", bold: true}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "changes to "},
+                  {text: "top-level", bold: true},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: "remains "},
+                      {text: "sub-item", bold: true},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "unmoved"}]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2, 0, 0], offset: 0},
+      focus:  {path: [1, 2, 0, 0], offset: 0},
+    });
+  });
+
+  it("should handle list items containing blocks", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-two', children: [{text: "Proin volutpat sapien vel ante porttitor varius."}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "motionless"}]},
+          {type: 'list-item', children: [
+              {type: 'quote', children: [
+                  {text: "visible in "},
+                  {text: "parent list", bold: true}
+                ]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [
+                      {type: 'code', children: [
+                          {text: "moves to "},
+                          {text: "parent list", bold: true},
+                        ]},
+                    ]},
+                  {type: 'list-item', children: [
+                      {type: 'quote', children: [
+                          {text: "stays in "},
+                          {text: "sublist", bold: true},
+                        ]},
+                    ]},
+                ]},
+
+            ]},
+          {type: 'list-item', children: [{text: "no change"}]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 0, 0, 1], offset: 6},
+      focus:  {path: [1, 1, 1, 0, 0, 1], offset: 6},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-two', children: [{text: "Proin volutpat sapien vel ante porttitor varius."}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "motionless"}]},
+          {type: 'list-item', children: [
+              {type: 'quote', children: [
+                  {text: "visible in "},
+                  {text: "parent list", bold: true}
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {type: 'code', children: [
+                  {text: "moves to "},
+                  {text: "parent list", bold: true},
+                ]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [
+                      {type: 'quote', children: [
+                          {text: "stays in "},
+                          {text: "sublist", bold: true},
+                        ]},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "no change"}]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2, 0, 0], offset: 0},
+      focus:  {path: [1, 2, 0, 0], offset: 0},
+    });
+  });
+
+  it("should revert tabRight", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const originalNodes = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "ichi"}]},
+          {type: 'list-item', children: [{text: "ni"}, {text: "NI", bold: true}]},
+          {type: 'list-item', children: [{text: "san"}, {text: "SAN",bold: true}]},
+          {type: 'list-item', children: [{text: "shi"}]},
+        ]},
+    ];
+    editor.children = originalNodes;
+    Transforms.select(editor, {
+      anchor: {path: [0, 2, 0], offset: 2},
+      focus: {path: [0, 2, 0], offset: 2}
+    });
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "ichi"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "ni"}, {text: "NI", bold: true}]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [{text: "san"}, {text: "SAN",bold: true}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "shi"}]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 1, 1, 0, 0], offset: 2},
+      focus: {path: [0, 1, 1, 0, 0], offset: 2},
+    });
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(originalNodes);
+  });
+
+  it("should move sub-sub-list items to sub-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Etiam tempor nisl quis eros gravida pulvinar."}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "oceans unmoving"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "remains "}, {text: "top-level", bold: true}]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [
+                          {text: "altered to "},
+                          {text: "top-level", bold: true},
+                        ]},
+                      {type: 'bulleted-list', children: [
+                          {type: 'list-item', children: [
+                              {text: "follows as "},
+                              {text: "sub-item of top-level", bold: true},
+                            ]},
+                          {type: 'list-item', children: [
+                              {text: "also follows "},
+                              {text: "as sub-item of top-level", bold: true},
+                            ]},
+                        ]},
+                    ]},
+                  {type: 'list-item', children: [{text: "second in sub-list"}]},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 0, 0, 1], offset: 4},
+      focus:  {path: [1, 1, 1, 0, 0, 1], offset: 4},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Etiam tempor nisl quis eros gravida pulvinar."}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "oceans unmoving"}]},
+          {type: 'list-item', children: [{text: "remains "}, {text: "top-level", bold: true}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "altered to "},
+                  {text: "top-level", bold: true},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: "follows as "},
+                      {text: "sub-item of top-level", bold: true},
+                    ]},
+                  {type: 'list-item', children: [
+                      {text: "also follows "},
+                      {text: "as sub-item of top-level", bold: true},
+                    ]},
+                  {type: 'list-item', children: [{text: "second in sub-list"}]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2, 0, 0], offset: 0},
+      focus:  {path: [1, 2, 0, 0], offset: 0},
+    });
+  });
+
+  it("should make last item in sub-list a new item in parent list, keeping its children", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "A bedrock"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "B parent "}, {text: "item", italic: true}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "C first child"}]},
+                  {type: 'list-item', children: [{text: "D poor middle child"}]},
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [
+                          {text: "E last "},
+                          {text: "child", italic: true},
+                        ]},
+                      {type: 'numbered-list', children: [
+                          {type: 'list-item', children: [
+                              {text: "F first "},
+                              {text: "sub-sub-item", italic: true},
+                            ]},
+                          {type: 'list-item', children: [
+                              {text: "G second "},
+                              {text: "sub-sub-item", italic: true},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [0, 1, 1, 2, 0, 1], offset: 5},
+      focus:  {path: [0, 1, 1, 2, 0, 1], offset: 5},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "A bedrock"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "B parent "}, {text: "item", italic: true}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "C first child"}]},
+                  {type: 'list-item', children: [{text: "D poor middle child"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "E last "},
+                  {text: "child", italic: true},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: "F first "},
+                      {text: "sub-sub-item", italic: true},
+                    ]},
+                  {type: 'list-item', children: [
+                      {text: "G second "},
+                      {text: "sub-sub-item", italic: true},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 2, 0, 0], offset: 0},
+      focus:  {path: [0, 2, 0, 0], offset: 0},
     });
   });
 });

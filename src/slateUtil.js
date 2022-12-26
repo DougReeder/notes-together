@@ -275,6 +275,82 @@ function tabRight(editor) {
   console.info("nothing that can tab right");
 }
 
+function tabLeft(editor) {
+  if (!editor.selection) return;
+  const [, firstPath] = Editor.first(editor, editor.selection);
+  const [, lastPath] = Editor.last(editor, editor.selection);
+  // searches upward for a block to operate on
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+    try {
+      if ('list-item' === candidate.type) {
+        if (candidatePath.length < 4) continue;
+        // only moves first or last sublist item
+        const candidateInd = candidatePath[candidatePath.length-1];
+        const [sublist, sublistPath] = Editor.above(editor, {match: (n,p) => candidatePath.length-1 === p.length});
+        if (candidateInd > 0 && candidateInd < sublist.children.length - 1) continue;
+        // calculates a normalized source range from selection
+        const startPath = firstPath.slice(0, candidatePath.length);
+        const endPath = lastPath.slice(0, candidatePath.length);
+        const sourceRange = {
+          anchor: Editor.start(editor, startPath),
+          focus: Editor.end(editor, endPath)
+        };
+        // calculates destination
+        const [parentItem, parentItemPath] = Editor.above(editor, {match: (n,p) => candidatePath.length-2 === p.length});
+        if ('list-item' !== parentItem.type) continue;
+        const itemDestination = [...parentItemPath.slice(0, -1),
+                                  1 + parentItemPath[parentItemPath.length - 1]];
+        Editor.withoutNormalizing(editor, () => {
+          // moves list-item
+          Transforms.moveNodes(editor, {at: sourceRange, to: itemDestination,
+              match: (n,p) => candidatePath.length === p.length});
+          if (0 === candidateInd) {
+            // moves sub-sub-list items (if any) to sub-list
+            const maybeListPath = [...itemDestination, candidate.children.length - 1];
+            const maybeList = SlateNode.get(editor, maybeListPath);
+            if (['bulleted-list', 'numbered-list'].includes(maybeList.type)) {
+              Transforms.moveNodes(editor, {
+                at: maybeListPath,
+                match: (n, p) => maybeListPath.length + 1 === p.length,
+                to: candidatePath
+              });
+            }
+            // moves or deletes sub-list
+            const changedSublist = SlateNode.get(editor, sublistPath);
+            if (changedSublist.children.length > 0) {
+              if (SlateText.isText(candidate.children[0])) {
+                Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {
+                  at: itemDestination,
+                  match: (n, p) => itemDestination.length + 1 === p.length
+                });
+              }
+              const changedCandidate = SlateNode.get(editor, itemDestination);
+              const listDestination = [...itemDestination, changedCandidate.children.length];
+              Transforms.moveNodes(editor, {at: sublistPath, to: listDestination});
+            } else {
+              Transforms.removeNodes(editor, {at: sublistPath});
+            }
+          }
+          // unwraps parent item
+          const changedParentItem = SlateNode.get(editor, parentItemPath);
+          if (1 === changedParentItem.children.length) {
+            if ('paragraph' === changedParentItem.children[0].type) {
+              Transforms.unwrapNodes(editor, {at: parentItemPath, match: (n,p) => parentItemPath.length+1 === p.length});
+            }
+          }
+          const changedStart = Editor.start(editor, itemDestination);
+          Transforms.select(editor, {anchor: changedStart, focus: changedStart});
+        });
+        return;
+      }
+    } catch (err) {
+      console.error("while tabbing left (1):", err);
+      // The action on this candidate failed; continues searching.
+    }
+  }
+  console.info("nothing that can tab left");
+}
+
 async function changeContentType(editor, oldSubtype, newSubtype) {
   if (!newSubtype || newSubtype.startsWith('plain')) {
     Editor.withoutNormalizing(editor, () => {
@@ -342,4 +418,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, tabRight, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, tabRight, tabLeft, changeContentType, coerceToPlainText};
