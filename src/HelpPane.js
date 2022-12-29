@@ -162,11 +162,11 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>tab ⇥</td><td><ul style={{paddingInlineStart: '20px'}}>
               <li>moves list item to child list</li>
               <li>moves cursor to next column in table</li>
-              <li>advances to next tab stop</li></ul></td></tr>
+              <li>inserts spaces to move to next tab stop</li></ul></td></tr>
             <tr><td>shift-tab ⇧⇥</td><td><ul style={{paddingInlineStart: '20px'}}>
               <li>moves list item to parent list</li>
               <li>moves cursor to previous column in table</li>
-              {/*<li>moves to previous tab stop</li>*/}
+              <li>deletes characters to move to previous tab stop</li>
             </ul></td></tr>
           </tbody>
         </table>

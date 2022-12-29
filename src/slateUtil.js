@@ -248,28 +248,21 @@ function tabRight(editor) {
       // The action on this candidate failed; continues searching.
     }
   }
-  // searches upward for a block to operate on
-  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
-    try {
-      if (['paragraph', 'quote', 'code'].includes(candidate.type)) {
-        const [startPnt] = Editor.edges(editor, editor.selection);
-        let selectionOffset = 0;
-        for (const [child, childPath] of SlateNode.texts(candidate)) {
-          if (arraylikeEqual([...candidatePath, ...childPath], startPnt.path)) {
-            selectionOffset += startPnt.offset;
-            break;
-          } else {
-            selectionOffset += SlateNode.string(child).length;
-          }
+  if (SlateRange.isCollapsed(editor.selection)) {
+    // searches upward for a block to operate on
+    for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+      try {
+        if (['paragraph', 'quote', 'code'].includes(candidate.type)) {
+          const selectionOffset = measureOffset(editor, candidate, candidatePath);
+          const numSpaces = 4 - selectionOffset % 4;
+          const spaces = new Array(numSpaces).fill(' ').join('');
+          Transforms.insertText(editor, spaces, {voids: true});
+          return;
         }
-        const numSpaces = 4 - selectionOffset % 4;
-        const spaces = new Array(numSpaces).fill(' ').join('');
-        Transforms.insertText(editor, spaces, {voids: true});
-        return;
+      } catch (err) {
+        console.error("while tabbing right (2):", err);
+        // The action on this candidate failed; continues searching.
       }
-    } catch (err) {
-      console.error("while tabbing right (2):", err);
-      // The action on this candidate failed; continues searching.
     }
   }
   console.info("nothing that can tab right");
@@ -353,7 +346,39 @@ function tabLeft(editor) {
       // The action on this candidate failed; continues searching.
     }
   }
+  if (SlateRange.isCollapsed(editor.selection)) {
+    // searches upward for a block to operate on
+    for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+      try {
+        if (['paragraph', 'quote', 'code'].includes(candidate.type)) {
+          const selectionOffset = measureOffset(editor, candidate, candidatePath);
+          if (selectionOffset > 0) {
+            const numChars = selectionOffset % 4 || 4;
+            Transforms.delete(editor, {distance: numChars, unit: 'character', reverse: true});
+          }
+          return;
+        }
+      } catch (err) {
+        console.error("while tabbing right (2):", err);
+        // The action on this candidate failed; continues searching.
+      }
+    }
+  }
   console.info("nothing that can tab left");
+}
+
+function measureOffset(editor, block, blockPath) {
+  const [startPnt] = Editor.edges(editor, editor.selection);
+  let selectionOffset = 0;
+  for (const [child, childPath] of SlateNode.texts(block)) {
+    if (arraylikeEqual([...blockPath, ...childPath], startPnt.path)) {
+      selectionOffset += startPnt.offset;
+      break;
+    } else {
+      selectionOffset += SlateNode.string(child).length;
+    }
+  }
+  return selectionOffset;
 }
 
 async function changeContentType(editor, oldSubtype, newSubtype) {

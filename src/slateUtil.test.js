@@ -1444,7 +1444,7 @@ describe("tabRight", () => {
     });
   });
 
-  it("inserts spaces to advance to next multiple of four characters in  top-level paragraph",() => {
+  it("inserts spaces to advance to next multiple of four characters in top-level paragraph", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'heading-one', children: [{text: "Maecenas sed mauris vel purus vulputate varius."}]},
@@ -1491,7 +1491,7 @@ describe("tabRight", () => {
     });
   });
 
-  it("inserts spaces to advance to next multiple of four characters in monospaced",() => {
+  it("inserts spaces to advance to next multiple of four characters in monospaced", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'heading-one', children: [{text: "Quisque iaculis tristique porttitor."}]},
@@ -1545,6 +1545,28 @@ describe("tabRight", () => {
       anchor: {path: [1, 2], offset: 9},
       focus:  {path: [1, 2], offset: 9}
     });
+  });
+
+  it("doesn't insert spaces if selection expanded", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const originalNodes = [
+      {type: 'heading-one', children: [{text: "Sed iaculis sed sapien vitae semper."}]},
+      {type: 'code', children: [
+          {text: `   <%= form.select :status, ['public', 'private', 'archived'],`},
+        ]},
+    ];
+    editor.children = originalNodes;
+    const originalSelection = {
+      anchor: {path: [1, 0], offset: 7},
+      focus:  {path: [1, 0], offset: 11}
+    };
+    Transforms.select(editor, originalSelection);
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabRight(editor);
+
+    expect(editor.children).toEqual(originalNodes);
+    expect(editor.selection).toEqual(originalSelection);
   });
 });
 
@@ -1981,6 +2003,91 @@ describe("tabLeft", () => {
       anchor: { path: [0, 0, 0, 2, 1, 0], offset: 22 },
       focus:  { path: [0, 0, 0, 2, 1, 0], offset: 22 },
     });
+  });
+
+  it("removes characters to move back to previous multiple of four characters",() => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Pellentesque eget pellentesque magna."}]},
+      {type: 'code', children: [
+          {text: `    def destroy`},
+        ]},
+      {type: 'code', children: [
+          {text: `      `},
+          {text: `@comment`, bold: true},
+          {text: ` = @article.comments.find(params[:id])`},
+        ]},
+      {type: 'code', children: [
+          {text: `   end`},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [2, 2], offset: 3},
+      focus:  {path: [2, 2], offset: 3},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Pellentesque eget pellentesque magna."}]},
+      {type: 'code', children: [
+          {text: `    def destroy`},
+        ]},
+      {type: 'code', children: [
+          {text: `      `},
+          {text: `@comment`, bold: true},
+          {text: ` =@article.comments.find(params[:id])`},
+        ]},
+      {type: 'code', children: [
+          {text: `   end`},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [2, 2], offset: 2},
+      focus:  {path: [2, 2], offset: 2},
+    });
+  });
+
+  it("doesn't remove characters from previous block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const originalNodes = [
+      {type: 'heading-one', children: [{text: "Phasellus neque purus, ornare id tellus eget"}]},
+      {type: 'code', children: [
+          {text: `params.require(:comment).permit(:commenter, :body, :status)`},
+        ]},
+    ];
+    editor.children = originalNodes;
+    const originalSelection = {anchor: {path: [1, 0], offset: 0}, focus:  {path: [1, 0], offset: 0}};
+    Transforms.select(editor, originalSelection);
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(originalNodes);
+    expect(editor.selection).toEqual(originalSelection);
+  });
+
+  it("doesn't remove characters if selection expanded", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const originalNodes = [
+      {type: 'heading-one', children: [{text: "Nam vel pulvinar massa"}]},
+      {type: 'code', children: [
+          {text: ` <% article.errors.full_messages_for(:body).each do |message| %>`},
+        ]},
+    ];
+    editor.children = originalNodes;
+    const originalSelection = {
+      anchor: {path: [1, 0], offset: 4},
+      focus:  {path: [1, 0], offset: 11}
+    };
+    Transforms.select(editor, originalSelection);
+
+    expect(getRelevantBlockType(editor)).toEqual('code');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(originalNodes);
+    expect(editor.selection).toEqual(originalSelection);
   });
 });
 
