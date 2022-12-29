@@ -1920,6 +1920,68 @@ describe("tabLeft", () => {
       focus:  {path: [0, 2, 0, 0], offset: 0},
     });
   });
+
+  it("move collapsed selection in table to beginning of previous column or row of table", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: "quote", children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Aenean ultricies augue arcu"},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'paragraph', children: [{text: "Nunc non finibus nisi"}]},
+                      {type: 'paragraph', children: [{text: "Integer risus metus, pretium vitae ligula ut,"}]},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'image', url: 'https://storage.com/?q=wildanimal',
+                        title: "Wild Animal of the day",
+                        children: [{text: "a drowsy crocodile"}]
+                      },
+                      {type: 'paragraph', children: [{text: "Nunc non finibus nisi."}]},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Suspendisse sollicitudin mi sit amet nisi congue, at feugiat sapien tempor."},
+                      {text: "Vestibulum eget ultricies ligula.", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {type: 'paragraph', children: [{text: "Maecenas rutrum, sapien ac fermentum varius"}]},
+                      {type: 'paragraph', children: [{text: "Pellentesque habitant morbi tristique senectus"}]},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Interdum et malesuada fames ac ante ipsum primis in faucibus.", bold: true},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.children = nodes;
+    editor.selection = {
+      anchor: { path: [0, 0, 1, 1, 1, 0], offset: 68 },
+      focus:  { path: [0, 0, 1, 1, 1, 0], offset: 68 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: { path: [0, 0, 1, 0, 1], offset: 33 },
+      focus:  { path: [0, 0, 1, 0, 1], offset: 33 },
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual(nodes);
+    expect(editor.selection).toEqual({
+      anchor: { path: [0, 0, 0, 2, 1, 0], offset: 22 },
+      focus:  { path: [0, 0, 0, 2, 1, 0], offset: 22 },
+    });
+  });
 });
 
 describe("changeContentType", () => {

@@ -159,9 +159,14 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
             <tr><td>shift+ctrl+S or ⇧⌘S</td><td>subheading</td></tr>
             <tr><td>ctrl+' or shift+ctrl+' or ⌘' or ⇧⌘'</td><td>block quote</td></tr>
-            <tr><td>tab ⇥</td><td><ul style={{paddingInlineStart: '20px'}}><li>moves list item to child list</li><li>moves cursor to next column in table</li><li>advances to next tab stop</li></ul></td></tr>
-            <tr><td>shift-tab ⇧⇥</td><td><ul style={{paddingInlineStart: '20px'}}><li>moves list item to parent list</li>
-              {/*<li>moves cursor to previous column in table</li><li>moves to previous tab stop</li>*/}
+            <tr><td>tab ⇥</td><td><ul style={{paddingInlineStart: '20px'}}>
+              <li>moves list item to child list</li>
+              <li>moves cursor to next column in table</li>
+              <li>advances to next tab stop</li></ul></td></tr>
+            <tr><td>shift-tab ⇧⇥</td><td><ul style={{paddingInlineStart: '20px'}}>
+              <li>moves list item to parent list</li>
+              <li>moves cursor to previous column in table</li>
+              {/*<li>moves to previous tab stop</li>*/}
             </ul></td></tr>
           </tbody>
         </table>

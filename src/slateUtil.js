@@ -282,7 +282,12 @@ function tabLeft(editor) {
   // searches upward for a block to operate on
   for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
     try {
-      if ('list-item' === candidate.type) {
+      if ('table-cell' === candidate.type) {
+        const startPnt = Editor.start(editor, candidatePath);
+        const beforePnt = Editor.before(editor, startPnt);
+        Transforms.select(editor, {anchor: beforePnt, focus: beforePnt});
+        return;
+      } else if ('list-item' === candidate.type) {
         if (candidatePath.length < 4) continue;
         // only moves first or last sublist item
         const candidateInd = candidatePath[candidatePath.length-1];
