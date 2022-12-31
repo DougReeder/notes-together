@@ -92,7 +92,8 @@ async function changeHandler(evt) {
             } else {   // changed on both
               if (evt.oldValue.content  === evt.newValue.content &&
                   evt.oldValue.date     === evt.newValue.date &&
-                  evt.oldValue.mimeType === evt.newValue.mimeType) {
+                  evt.oldValue.mimeType === evt.newValue.mimeType &&
+                  evt.oldValue.isLocked === evt.newValue.isLocked) {
                 console.warn("remoteStorage same change locally & remote:", evt.lastCommonValue, evt.oldValue, evt.newValue);
                 await upsertNote(evt.newValue, 'DETAIL');   // doesn't re-render
                 break;
@@ -113,9 +114,10 @@ async function changeHandler(evt) {
               //       mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
               //       documentHasTags = false;
               //     }
+              //     let mergedIsLocked = Boolean(evt.oldValue.isLocked || evt.newValue.isLocked);
               //     const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content, documentHasTags);
               //     // initiator is **not** 'REMOTE' for this purpose
-              //     cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType));
+              //     cleanNote = await upsertNote(createMemoryNote(evt.oldValue.id, mergedMarkup, mergedDate, mergedMimeType, mergedIsLocked));
               //   } catch (err) {
               //     console.error("while handling conflict:", err);
               //   } finally {

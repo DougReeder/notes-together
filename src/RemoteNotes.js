@@ -42,6 +42,10 @@ const RemoteNotes = {
           pattern: "^[a-z]{1,50}/[-+.a-zA-Z0-9]{1,100}(;[a-z]{1,35}=[-+.a-zA-Z0-9]{1,100})*$",
           default: "text/plain"
         },
+        isLocked: {
+          type: "boolean",
+          default: false
+        }
       },
       "required": ["id", "content", "title", "date" ]
     });
@@ -80,10 +84,10 @@ const RemoteNotes = {
 
           let remoteNote;
           if (cleanNote.mimeType) {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType, lastEdited: Date.now()};
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType, isLocked: cleanNote.isLocked, lastEdited: Date.now()};
 
           } else {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), lastEdited: Date.now()};
+            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), isLocked: cleanNote.isLocked, lastEdited: Date.now()};
           }
           const path = 'notes/' + remoteNote.id;
           await Promise.allSettled([previousStoreObjectPrms]);
@@ -224,6 +228,7 @@ function toMemoryNote(remoteNote) {
     title: 'string' === typeof remoteNote.title ? remoteNote.title : "⁂",
     date: date,
     mimeType: remoteNote.mimeType,
+    isLocked: Boolean(remoteNote.isLocked),
   };
 }
 

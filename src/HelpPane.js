@@ -6,7 +6,7 @@ import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
 import PropTypes from 'prop-types';
 import React from "react";
 import MenuIcon from "@mui/icons-material/Menu";
-import {KeyboardVoice, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
+import {KeyboardVoice, Lock, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
 import "./HelpPane.css";
 
 function HelpPane({setMustShowPanel}) {
@@ -97,6 +97,9 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>Can I change the order of notes?</h4>
         <p>Click the date in the upper left of the editing panel and set the date earlier or later.  The date can be anything that helps you find the note.</p>
+
+        <h4>How do I avoid altering a note by mistake?</h4>
+        <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.4ex'}}/> select <b>Lock note <Lock style={{position: 'relative', bottom: '-0.4ex'}}/></b>.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>

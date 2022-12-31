@@ -50,6 +50,7 @@ unstyled text small red text unstyled text`);
     const cleanNote = sanitizeNote(original);
 
     expect(cleanNote.content).toEqual("<header>A mind is a <strike>terrible thing to waste</strike></header>");
+    expect(cleanNote.isLocked).toEqual(false);
   });
 
   it("should pass through a date of type Date", () => {
@@ -92,6 +93,34 @@ unstyled text small red text unstyled text`);
     expect(cleanNote.date.getFullYear()).toEqual(today.getFullYear());
     expect(cleanNote.date.getMonth()).toEqual(today.getMonth());
     expect(cleanNote.date.getDate()).toEqual(today.getDate());
+  });
+
+  it("should normalize falsy isLocked to false", () => {
+    const note = createMemoryNote(generateTestId(), "another thing", null, 'text/plain');
+    note.date = document.documentElement;
+
+    const cleanNote = sanitizeNote(note);
+
+    expect(cleanNote.date).toBeInstanceOf(Date);
+    const today = new Date();
+    expect(cleanNote.date.getFullYear()).toEqual(today.getFullYear());
+    expect(cleanNote.date.getMonth()).toEqual(today.getMonth());
+    expect(cleanNote.date.getDate()).toEqual(today.getDate());
+    expect(cleanNote.isLocked).toEqual(false);
+  });
+
+  it("should normalize truthy isLocked to true", () => {
+    const note = createMemoryNote(generateTestId(), "yet another thing", null, 'text/plain', true);
+    note.date = document.documentElement;
+
+    const cleanNote = sanitizeNote(note);
+
+    expect(cleanNote.date).toBeInstanceOf(Date);
+    const today = new Date();
+    expect(cleanNote.date.getFullYear()).toEqual(today.getFullYear());
+    expect(cleanNote.date.getMonth()).toEqual(today.getMonth());
+    expect(cleanNote.date.getDate()).toEqual(today.getDate());
+    expect(cleanNote.isLocked).toEqual(true);
   });
 
   it("should allow extraction of normalized keywords from HTML via textFilter",  () => {

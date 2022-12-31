@@ -6,7 +6,7 @@ import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 
 const TITLE_MAX = 400;
 
-function createMemoryNote(id, content, date, mimeType) {
+function createMemoryNote(id, content, date, mimeType, isLocked) {
   if (!uuidValidate(id)) {
     id = uuidv4();
   }
@@ -16,6 +16,7 @@ function createMemoryNote(id, content, date, mimeType) {
     content: content || "",
     date: date || new Date(),
     mimeType: mimeType,
+    isLocked: Boolean(isLocked),
   }
 }
 

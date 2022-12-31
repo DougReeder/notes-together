@@ -185,6 +185,7 @@ function sanitizeNote(memoryNote, textFilter) {
     title: title,
     date: date,
     mimeType: memoryNote.mimeType,
+    isLocked: Boolean(memoryNote.isLocked),
   };
 }
 

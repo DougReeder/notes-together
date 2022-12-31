@@ -336,7 +336,7 @@ function List(props) {
   const adviceGettingStarted = <>
     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
       <h2>Get mundane details out of your head!</h2>
-      <IconButton title="Close" aria-label="Close" onClick={hideGettingStarted}>
+      <IconButton title="Close" aria-label="Close" size="large" onClick={hideGettingStarted}>
         <CloseIcon/>
       </IconButton>
     </div>
@@ -384,7 +384,7 @@ function List(props) {
                   <div className="itemButtons">
                     <Button ref={deleteBtn} variant="contained" onClick={deleteItem}>Delete</Button>
                     {/*<Button type="button">Share</Button>*/}
-                    <IconButton ref={cancelItemButtonsBtn} title="Cancel" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
+                    <IconButton ref={cancelItemButtonsBtn} title="Cancel" size="large" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
                       <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
                     </IconButton>
                   </div>

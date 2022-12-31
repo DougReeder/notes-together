@@ -32,16 +32,16 @@
     margin-block-end: 0;
 }
 
-[role=textbox] {
+[data-slate-editor=true] {
     padding: 1rem;
     background-color: white;
 }
 
-[role=textbox] > *:first-child {
+[data-slate-editor=true] > *:first-child {
     margin-block-start: 0;
 }
 
-[role=textbox] > *:last-child {
+[data-slate-editor=true] > *:last-child {
     margin-block-end: 0;
 }
 
@@ -52,7 +52,7 @@ td > p, td > ul, td > ol {
 }
 
 /** blocks of a plain content note have similar spacing to line breaks within a block */
-[role=textbox].unformatted > * {
+[data-slate-editor=true].unformatted > * {
     margin-block-start: 0.25ex;
     margin-block-end: 0.25ex;
 }

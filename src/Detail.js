@@ -29,7 +29,7 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import {
-  AddCircleOutline,
+  AddCircleOutline, Lock,
   MoreVert,
   Photo,
   Redo,
@@ -200,6 +200,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       saveOnAstChangeRef.current = false;
       Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
+      setIsLocked(Boolean(theNote.isLocked));
       clearSubstitutions();
     } catch (err) {
       console.error(`while replacing note ${theNote?.id}:`, err);
@@ -309,7 +310,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         // console.log(`AST change ${noteId}:`, editor.operations, newValue);
         if (saveOnAstChangeRef.current) {
           if (canSave.current) {
-            await save(noteDate);
+            await save(noteDate, isLocked);
           } else {
             shouldSave.current = true;
           }
@@ -337,7 +338,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       setNoteDate(newDate);
       // console.log('handleDateChange:', newDate);
       if (canSave.current) {
-        await save(newDate);
+        await save(newDate, isLocked);
       } else {
         shouldSave.current = true;
       }
@@ -347,7 +348,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     }
   }
 
-  async function save(date) {
+  async function save(date, isLocked) {
     canSave.current = false;
     let content;
     if (editor.subtype?.startsWith('html')) {
@@ -357,12 +358,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       content = editor.children.map(node => SlateNode.string(node)).join('\n')
       // console.log('save text:', noteId, editor.children, content, date);
     }
-    await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined), 'DETAIL');
+    await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined, isLocked), 'DETAIL');
     setTimeout(async () => {
       canSave.current = true;
       if (shouldSave.current) {
         shouldSave.current = false;
-        await save(noteDate);
+        await save(noteDate, isLocked);
       }
     }, 1500);
   }
@@ -681,6 +682,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     <ArrowBackIcon />
   </IconButton>;
 
+  const [isLocked, setIsLocked] = useState(false);
 
   if (noteErr) {
     console.error("error in Details:", noteErr);
@@ -850,65 +852,87 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
       </>);
     }
-    noteControls = (<>
-      {dateControl}
-      <IconButton aria-controls="details-menu" aria-haspopup="true"
-          title="Open Editor menu" size="large"
-          onClick={handleDetailsMenuClick}>
-        <MoreVert/>
-      </IconButton>
-      <Menu
-          id="details-menu"
-          role="menu"
-          aria-label="Editor menu"
-          anchorEl={detailsMenuAnchorEl}
-          keepMounted
-          open={Boolean(detailsMenuAnchorEl)}
-          onClose={evt => {
+
+    if (isLocked) {
+      noteControls = <>
+        <div style={{margin: '0 1em'}}>{noteDate.toDateString()}</div>
+        <IconButton title="Unlock note" size="large" onClick={evt => {
+          setIsLocked(false);
+          save(noteDate, false);
+        }}><Lock/></IconButton>
+      </>;
+    } else {
+      noteControls = (<>
+        {dateControl}
+        <IconButton aria-controls="details-menu" aria-haspopup="true"
+                    title="Open Editor menu" size="large"
+                    onClick={handleDetailsMenuClick}>
+          <MoreVert/>
+        </IconButton>
+        <Menu
+            id="details-menu"
+            role="menu"
+            aria-label="Editor menu"
+            anchorEl={detailsMenuAnchorEl}
+            keepMounted
+            open={Boolean(detailsMenuAnchorEl)}
+            onClose={evt => {
+              previousSelection.current = null;
+              setDetailsMenuAnchorEl(null)
+            }}
+        >
+          <MenuItem onClick={evt => {
             previousSelection.current = null;
-            setDetailsMenuAnchorEl(null)
-          }}
-      >
-        <MenuItem onClick={evt => {
-          previousSelection.current = null;
-          editor.undo();
-          setDetailsMenuAnchorEl(null);
-        }}>
-          Undo &nbsp;<Undo/>
-        </MenuItem>
-        <MenuItem onClick={evt => {
-          previousSelection.current = null;
-          editor.redo();
-          setDetailsMenuAnchorEl(null);
-        }}>
-          Redo &nbsp;<Redo/>
-        </MenuItem>
-        <MenuItem onClick={evt => {
-          if (!editor.selection && previousSelection.current) {
-            Transforms.select(editor, previousSelection.current);
-          }
-          previousSelection.current = null;
-          pasteFileInput.current.click();
-          setDetailsMenuAnchorEl(null);
-        }}>
-          Paste files...
-        </MenuItem>
-        <MenuItem onClick={evt => {
-          Transforms.unsetNodes(editor, ['deleted', 'inserted'], {at: [], match: node => Text.isText(node), mode: 'all'});
-          setDetailsMenuAnchorEl(null);
-        }}>
-          Clear Deleted &amp; Inserted styles
-        </MenuItem>
-        <MenuItem onClick={evt => {
-          previousSelection.current = null;
-          setDetailsMenuAnchorEl(null);
-          prepareContentTypeDialog();
-        }}>
-          Change note type...
-        </MenuItem>
-      </Menu>
-      {formatControls}
-    </>);
+            editor.undo();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Undo &nbsp;<Undo/>
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            previousSelection.current = null;
+            editor.redo();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Redo &nbsp;<Redo/>
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            if (!editor.selection && previousSelection.current) {
+              Transforms.select(editor, previousSelection.current);
+            }
+            previousSelection.current = null;
+            pasteFileInput.current.click();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Paste files...
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            setDetailsMenuAnchorEl(null);
+            setIsLocked(true);
+            save(noteDate, true);
+          }}>
+            Lock note <Lock/>
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            Transforms.unsetNodes(editor, ['deleted', 'inserted'], {
+              at: [],
+              match: node => Text.isText(node),
+              mode: 'all'
+            });
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Clear Deleted &amp; Inserted styles
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            previousSelection.current = null;
+            setDetailsMenuAnchorEl(null);
+            prepareContentTypeDialog();
+          }}>
+            Change note type...
+          </MenuItem>
+        </Menu>
+        {formatControls}
+      </>);
+    }
 
     content = (<>
       <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
@@ -1015,6 +1039,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             // forcing an update preserves focus; unclear why
             onFocus={() => forceUpdate()}
             decorate={decorate}
+            readOnly={isLocked}
         />
       </Slate>
       <Dialog open={isContentTypeDialogOpen} onClose={setIsContentTypeDialogOpen.bind(this, false)} aria-labelledby="content-type-dialog-title">

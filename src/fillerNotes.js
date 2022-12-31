@@ -33,7 +33,8 @@ async function seedNotes() {
   await upsertNote({
     id: uuidv4({random}),
     content: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner",
-    mimeType: 'text/html;hint=SEMANTIC'
+    mimeType: 'text/html;hint=SEMANTIC',
+    isLocked: true,
   });
   random[15] = 11;
   await upsertNote({

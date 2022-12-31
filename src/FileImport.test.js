@@ -71,6 +71,7 @@ describe("importFromFile", () => {
     expect(retrievedNote.title).toEqual(`Some Topic`);
     expect(retrievedNote.content).toEqual(fileContent + "<hr /><p><em>Lipsum.html</em></p>");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse a file containing an HTML document as one note, with file name appended", async () => {
@@ -95,6 +96,7 @@ Buckaroo-Banzai.html`);
 <blockquote>No matter where you go, there you are.</blockquote>
 <hr /><p><em>Buckaroo-Banzai.html</em></p>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse an empty HTML file as 0 notes", async () => {
@@ -159,6 +161,7 @@ There's three things to say about this:
 
 review.t`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse a text file with two separations as three text notes", async () => {
@@ -188,6 +191,7 @@ review.t`);
     expect(titleLines[1]).toMatch(/^nice atmosphere/);
     expect(retrievedNote.content).toEqual(content0 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
@@ -197,6 +201,7 @@ review.t`);
     expect(titleLines[1]).toMatch(/^wouldn't cows be a better heat source?/);
     expect(retrievedNote.content).toEqual(content1 + '\nmelange.txt');
     expect(retrievedNote.date).toEqual(new Date(date1));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[2]);
     expect(retrievedNote).toBeInstanceOf(Object);
@@ -206,6 +211,7 @@ review.t`);
     expect(titleLines[1]).toMatch(/^Nye County, Nevada/);
     expect(retrievedNote.content).toEqual(content2 + '\n\nmelange.txt');
     expect(Math.abs(retrievedNote.date - new Date(fileDate))).toBeLessThan(5);
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse a text file containing Markdown with one separation as two Markdown notes", async () => {
@@ -246,6 +252,7 @@ review.t`);
     expect(titleLines[1]).toMatch(/^Actual Title/);
     expect(retrievedNote.content).toEqual(content0 + '\n------------------------------\n*actually-markdown.txt*');
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
@@ -255,6 +262,7 @@ review.t`);
     expect(titleLines[1]).toMatch(/^Juicy Apples  1.99       7/);
     expect(retrievedNote.content).toEqual(content1 + '\n------------------------------\n*actually-markdown.txt*');
     expect(retrievedNote.date).toEqual(new Date(date1));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should import a Serene Notes backup as Markdown without appending the file name", async () => {
@@ -284,12 +292,14 @@ body text of second note
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.content).toEqual(content0);
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown');
     expect(retrievedNote.content).toEqual(content1);
     expect(retrievedNote.date).toEqual(new Date(date1));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should import a Serene Notes backup as plain text without appending the file name", async () => {
@@ -319,12 +329,14 @@ yucking my yum
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.content).toEqual(content0);
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     expect(retrievedNote.content).toEqual(content1);
     expect(retrievedNote.date).toEqual(new Date(date1));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should continue after refusing to create a text note longer than 60,000 characters", async () => {
@@ -356,6 +368,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(titleLines[0]).toMatch(/^before/);
     expect(retrievedNote.content).toEqual(content0 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
@@ -364,6 +377,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(titleLines[0]).toMatch(/^after/);
     expect(retrievedNote.content).toEqual(content2 + '\nreport-with-log.txt');
     expect(retrievedNote.date).toEqual(new Date(date2));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     expect(console.error).toHaveBeenCalledWith("splitIntoNotes:", expect.any(Error));
   });
@@ -397,6 +411,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote.title).toMatch(/^introduction\ninterminable.md/);
     expect(retrievedNote.content).toEqual(content0 + '\n------------------------------\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date0));
+    expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
@@ -404,6 +419,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote.title).toMatch(/^Lorem ipsum dolor sit amet, consectetur adipiscing elit/);
     expect(retrievedNote.content).toEqual(lipsum + '\n------------------------------\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date2));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse a non-plain text file as one note, with file name appended", async () => {
@@ -483,6 +499,7 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     expect(titleLines[1]).toMatch(/^Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
     expect(retrievedNote.content).toEqual(fileContent + "\n\ngap.txt");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse a Markdown file as one note when flagged single", async () => {
@@ -518,6 +535,7 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     expect(retrievedNote.title).toMatch(/^Lorem Ipsum\n1. Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
     expect(retrievedNote.content).toEqual(fileContent + "\n\n------------------------------\ndivided.txt");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
   });
 
   it("should parse an empty text file as 0 notes, in single mode", async () => {

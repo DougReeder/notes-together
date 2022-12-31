@@ -355,6 +355,7 @@ describe("storage", () => {
       expect(note.wordArr).toContain("ITS");
       expect(note.wordArr.length).toEqual(5);
       expect(note.mimeType).toEqual(original.mimeType);
+      expect(note.isLocked).toEqual(original.isLocked);
     });
 
     it('should drop keywords that match the start of another keyword', async () => {
@@ -376,6 +377,7 @@ describe("storage", () => {
       expect(cleanNote.wordArr).not.toContain("2.10");
       expect(cleanNote.wordArr.length).toEqual(5);
       expect(cleanNote.mimeType).toEqual(original.mimeType);
+      expect(cleanNote.isLocked).toEqual(original.isLocked);
     });
 
     it("should insert a note",async () => {
@@ -397,6 +399,7 @@ describe("storage", () => {
       expect(retrieved.wordArr).toContain("UNBEARABLE");
       expect(retrieved.wordArr.length).toEqual(2);
       expect(retrieved.mimeType).toEqual(original.mimeType);
+      expect(retrieved.isLocked).toEqual(original.isLocked);
     });
 
     it("should update a note",async () => {
@@ -424,6 +427,7 @@ describe("storage", () => {
       expect(retrieved.wordArr).toContain("TRYING");
       expect(retrieved.wordArr.length).toEqual(4);
       expect(retrieved.mimeType).toEqual(updated.mimeType);
+      expect(retrieved.isLocked).toEqual(original.isLocked);
     });
 
     it("should insert an indexed note only in IndexedDb, when initiator is REMOTE", async () => {
@@ -537,6 +541,7 @@ describe("storage", () => {
         title: `Lorem ipsum dolor sit amet`,
         date: new Date(1500, 0, 1),
         mimeType: 'text/html;hint=SEMANTIC',
+        isLocked: false,
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: false});
@@ -551,6 +556,7 @@ describe("storage", () => {
       expect(retrieved.title).toEqual(localNote.title);
       expect(retrieved.date).toEqual(localNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
+      expect(retrieved.isLocked).toEqual(localNote.isLocked);
 
       expect(console.warn).toHaveBeenCalledWith("remoteStorage local change, remote delete:", undefined, localNote, false);
     });
@@ -561,6 +567,7 @@ describe("storage", () => {
         id: id,
         content: ` Ut enim ad minim veniam `,
         title: `Ut enim ad minim veniam`,
+        isLocked: true,
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: false, newValue: remoteNote});
@@ -575,6 +582,7 @@ describe("storage", () => {
       expect(retrieved.title).toEqual(remoteNote.title);
       // expect(retrieved.date).toEqual(remoteNote.date);
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+      expect(retrieved.isLocked).toEqual(remoteNote.isLocked);
     });
 
     it("should confirm remote changes, if the same changes were made to local", async () => {
@@ -585,6 +593,7 @@ describe("storage", () => {
         title: `Duis ex elit`,
         date: new Date(2021, 8, 1),
         mimeType: 'text/html;hint=SEMANTIC',
+        isLocked: false,
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = JSON.parse(JSON.stringify(localNote));
@@ -601,6 +610,7 @@ describe("storage", () => {
       expect(retrieved.title).toEqual("Duis ex elit");
       expect(retrieved.date).toEqual(remoteNote.date);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
+      expect(retrieved.isLocked).toEqual(localNote.isLocked);
     });
 
     xit("should merge a conflicted HTML note", async () => {

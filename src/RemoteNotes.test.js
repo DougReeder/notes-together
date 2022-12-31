@@ -72,6 +72,7 @@ describe("RemoteNotes", () => {
       expect(savedNote.title).toEqual(memNote.content);
       expect(new Date(savedNote.date)).toEqual(memNote.date);
       expect(savedNote.mimeType).toEqual(memNote.mimeType);
+      expect(savedNote.isLocked).toEqual(memNote.isLocked);
     });
 
     it("should store HTML note unchanged when all fields good", async () => {
@@ -101,6 +102,7 @@ describe("RemoteNotes", () => {
       expect(retrieved.title).toEqual("In Joy Still Felt");
       expect(retrieved.date).toEqual(updated.date);
       expect(retrieved.mimeType).toEqual(updated.mimeType);
+      expect(retrieved.isLocked).toEqual(updated.isLocked);
     });
 
     it("should update multiple notes", () => {

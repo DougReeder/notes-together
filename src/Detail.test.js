@@ -342,4 +342,29 @@ it('renders error if note missing', async () => {
   //   expect(textbox.textContent).toEqual("firstsecondfoo");
   //   expect(screen.queryAllByRole('listitem').length).toEqual(3);
   // });
+
+  it("locks a note when menu item selected", async () => {
+    const noteId = uuidv4();
+    const noteText = "<p>Some paragraph</p>";
+    const noteDate = new Date(2022, 8, 3);
+    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+
+    render(<Detail noteId={noteId}></Detail>);
+    const textbox = await screen.findByRole('textbox');
+    expect(textbox).toBeVisible();
+    expect(textbox.textContent).toEqual("Some paragraph");
+    expect(textbox).not.toHaveFocus();
+
+    userEvent.click(textbox);
+    expect(textbox).toHaveFocus();
+
+    userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
+    userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
+    userEvent.click(textbox);
+    expect(textbox).not.toHaveFocus();
+
+    userEvent.click(screen.getByRole('button', {name: "Unlock note"}));
+    userEvent.click(textbox);
+    expect(textbox).toHaveFocus();
+  });
 });
