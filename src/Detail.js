@@ -51,7 +51,7 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft
+  tabLeft, getSelectedTable
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -102,43 +102,11 @@ const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'code', label: <code>Monospaced</code>},
 ];
 
-const BLOCK_ITEMS_INSERT = [
-  {cmd: '', label: "Insert"},   // divider
-  {cmd: 'insert-table-row', label: "Table Row"},
-  {cmd: 'insert-table-column', label: "Table Column"},
-  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>},
-];
-
 const BLOCK_ITEMS_DELETE = [
   {cmd: '', label: "Delete"},   // divider
   {cmd: 'delete-table-row', label: "Table Row"},
   {cmd: 'delete-table-column', label: "Table Column"},
 ];
-
-const SINGULAR_BLOCK_TYPE_MENU = [
-  ...BLOCK_ITEMS_DEFAULT,
-  ...BLOCK_ITEMS_INSERT,
-  ...BLOCK_ITEMS_DELETE,
-];
-
-const UNIT_BLOCK_TYPE_MENU = [
-  ...BLOCK_ITEMS_DEFAULT,
-  {cmd: '', label: "Insert"},
-  {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
-  {cmd: 'insert-numbered-list', label: "Numbered List"},
-  {cmd: 'insert-table', label: "Table"},
-  {cmd: 'insert-table-row', label: "Table Row"},
-  {cmd: 'insert-table-column', label: "Table Column"},
-  ...BLOCK_ITEMS_DELETE,
-];
-
-const COMPOUND_BLOCK_TYPE_MENU = [
-  ...BLOCK_ITEMS_DEFAULT,
-  ...BLOCK_ITEMS_INSERT.filter(({cmd}) => !['insert-thematic-break'].includes(cmd)),
-  ...BLOCK_ITEMS_DELETE
-];
-
-const IMAGE_BLOCK_TYPE_MENU = [...BLOCK_ITEMS_INSERT, ...BLOCK_ITEMS_DELETE];
 
 const NO_SELECTION_MENU = [
     {cmd: '', label: "Append"},
@@ -727,6 +695,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
       const relevantBlockType = getRelevantBlockType(editor);
+      const [selectedTable] = getSelectedTable(editor);
       let menu;
       switch (relevantBlockType) {
         case 'paragraph':
@@ -737,21 +706,35 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'code':
         case 'thematic-break':
         default:
-          menu = SINGULAR_BLOCK_TYPE_MENU;
+          menu = [...BLOCK_ITEMS_DEFAULT];
+          addInsertsAndDeletes(menu, selectedTable, true);
           break;
         case 'list-item':
         case 'table-cell':
-          menu = UNIT_BLOCK_TYPE_MENU;
+          menu = [...BLOCK_ITEMS_DEFAULT,
+            {cmd: '', label: "Insert"},
+            {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
+            {cmd: 'insert-numbered-list', label: "Numbered List"},
+            {cmd: 'insert-table', label: "Table"},
+          ];
+          if (selectedTable) {
+            menu.push({cmd: 'insert-table-row', label: "Table Row"},
+                      {cmd: 'insert-table-column', label: "Table Column"},
+                      ...BLOCK_ITEMS_DELETE
+            );
+          }
           break;
         case 'bulleted-list':
         case 'numbered-list':
         case 'table':
         case 'table-row':
         case 'multiple':
-          menu = COMPOUND_BLOCK_TYPE_MENU;
+          menu = [...BLOCK_ITEMS_DEFAULT];
+          addInsertsAndDeletes(menu, selectedTable, false)
           break;
         case 'image':
-          menu = IMAGE_BLOCK_TYPE_MENU;
+          menu = [];
+          addInsertsAndDeletes(menu, selectedTable, true)
           break;
         case 'n/a':
           menu = NO_SELECTION_MENU;
@@ -1066,6 +1049,29 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       </Dialog>
 
     </>);
+  }
+
+  function addInsertsAndDeletes(menu, table, includeThematicBreak) {
+    if (table || includeThematicBreak) {
+      menu.push({cmd: '', label: "Insert"});   // divider
+    }
+    if (table) {
+      menu.push(
+          {cmd: 'insert-table-row', label: "Table Row"},
+          {cmd: 'insert-table-column', label: "Table Column"}
+      );
+    }
+    if (includeThematicBreak) {
+      menu.push({cmd: 'insert-thematic-break',
+        label: <>
+          <div>Rule</div>
+          <hr style={{marginLeft: '1ex', flex: '1 1 auto'}}/>
+        </>
+      });
+    }
+    if (table) {
+      menu.push(...BLOCK_ITEMS_DELETE);
+    }
   }
 
   function prepareContentTypeDialog() {

@@ -6,7 +6,7 @@ import {
   getRelevantBlockType,
   tabRight,
   insertListAfter,
-  insertTableAfter, tabLeft
+  insertTableAfter, tabLeft, getSelectedTable
 } from "./slateUtil";
 import {createEditor, Editor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
@@ -1124,6 +1124,101 @@ describe("insertTableAfter", () => {
     expect(getRelevantBlockType(editor)).toEqual('table-cell');
     expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 3, 0, 0, 0]);
     expect(editor.selection).toHaveProperty('focus.path', [1, 1, 3, 0, 0, 0]);
+  });
+});
+
+describe("getSelectedTable", () => {
+  it("should return falsy if no selection", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: 'heading-two', children: [{text: "Sed sed velit quis mauris accumsan aliquet."}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Nam ac lacinia nibh."}]},
+          {type: 'list-item', children: [{text: "Integer eu dolor vitae ante consequat"}]},
+          {type: 'list-item', children: [{text: "Nullam mattis risus ut nulla gravida"}]},
+        ]},
+    ];
+    editor.children = nodes;
+    Transforms.deselect(editor);
+
+    expect(getRelevantBlockType(editor)).toEqual('n/a');
+    expect(getSelectedTable(editor)).toEqual([undefined, undefined]);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("should return falsy if not in table", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    const nodes = [
+      {type: 'heading-two', children: [{text: "Sed sed velit quis mauris accumsan aliquet."}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Nam ac lacinia nibh."}]},
+          {type: 'list-item', children: [{text: "Integer eu dolor vitae ante consequat"}]},
+          {type: 'list-item', children: [{text: "Nullam mattis risus ut nulla gravida"}]},
+        ]},
+    ];
+    editor.children = nodes;
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 0], offset: 28},
+      focus:  {path: [1, 1, 0], offset: 28},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    expect(getSelectedTable(editor)).toEqual([undefined, undefined]);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("should return table node if selection in table at any level", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "Quisque id metus mattis", bold: true},
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "vehicula tortor a, tincidunt mi.", bold: true},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [
+                      {text: "Integer placerat, nisl nec fringilla placerat,"},
+                    ]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [
+                          {type: 'paragraph', children: [
+                              {text: "lectus enim aliquet nisl,"},
+                            ]},
+                        ]},
+                      {type: 'list-item', children: [
+                          {type: 'paragraph', children: [
+                              {text: "quis venenatis mauris erat et orci."},
+                              {text: "Mauris condimentum", bold: true},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+              {type: 'table-cell', children: [
+                  {text: "felis sed posuere euismod."},
+                ]},
+            ]},
+        ]},
+    ];
+    editor.selection = {
+      anchor: { path: [0, 1, 0, 1, 1, 0, 0], offset: 31 },
+      focus:  { path: [0, 1, 0, 1, 1, 0, 0], offset: 31 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    const [selectedTable, selectedTablePath] = getSelectedTable(editor);
+    expect(selectedTable).toHaveProperty('type', 'table');
+    expect(selectedTable).toHaveProperty('children.length', 2);
+    expect(Array.isArray(selectedTablePath)).toBeTruthy();
+    expect(selectedTablePath).toHaveLength(1);
+    expect(console.error).not.toHaveBeenCalled();
   });
 });
 

@@ -199,6 +199,22 @@ function getCommonBlock(editor) {
   return {block: common, blockPath: path}
 }
 
+function getSelectedTable(editor) {
+  if (!editor.selection) return [undefined, undefined];
+  const [, firstPath] = Editor.first(editor, editor.selection);
+  // searches upward for a table
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+    try {
+      if ('table' === candidate.type) {
+        return [candidate, candidatePath];
+      }
+    } catch (err) {
+      console.error("while searching for selected table:", err);
+    }
+  }
+  return [undefined, undefined];
+}
+
 function tabRight(editor) {
   if (!editor.selection) return;
   const [, firstPath] = Editor.first(editor, editor.selection);
@@ -448,4 +464,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, tabRight, tabLeft, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedTable, tabRight, tabLeft, changeContentType, coerceToPlainText};

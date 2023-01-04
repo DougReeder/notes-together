@@ -323,7 +323,29 @@ it('renders error if note missing', async () => {
     expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
   });
 
-  // it('allows typing enter in blank item to end list', async () => {
+  it("shows 'no selection' menu when no selection", async () => {
+    const noteId = uuidv4();
+    const noteText = "<p>outside</p><table><tr><td><p>just paragraph</p><ul><li>also list</li></ul></td></tr></table>";
+    const noteDate = new Date(2022, 8, 4);
+    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+
+    render(<Detail noteId={noteId}></Detail>);
+    await screen.findByRole('textbox');
+    userEvent.click(screen.getByRole('button', {name: "(n/a)"}));
+    expect(screen.getByRole('menuitem', {name: "Title"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Heading"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Subheading"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Body"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "• Bulleted List"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Numbered List"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Table"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Block Quote"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Monospaced"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Rule"})).toBeVisible();
+    expect(screen.getAllByRole('menuitem')).toHaveLength(10);
+  });
+
+    // it('allows typing enter in blank item to end list', async () => {
   //   const noteId = uuidv4();
   //   const noteText = "<ol><li>first</li><li>second</li></ol>";
   //   const noteDate = new Date(2021, 7, 2);
