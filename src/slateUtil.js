@@ -164,8 +164,13 @@ function insertTableAfter(editor) {
 }
 
 function insertAfter(editor, newNodes, selectionPathFromInsert) {
+  const [block, blockPath] = getSelectedBlock(['list-item', 'table-cell'], editor);
+  if (!block) {
+    const err = new Error("Reduce your selection, first");
+    err.severity = 'info';
+    throw err;
+  }
   Editor.withoutNormalizing(editor, () => {
-    let {block, blockPath} = getCommonBlock(editor);
     const allowSplit = SlateRange.isExpanded(editor.selection) && 'image' !== block.type;
 
     let insertPath;
@@ -199,13 +204,17 @@ function getCommonBlock(editor) {
   return {block: common, blockPath: path}
 }
 
-function getSelectedTable(editor) {
+const getSelectedListItem = getSelectedBlock.bind(null, ['list-item']);
+
+const getSelectedTable = getSelectedBlock.bind(null, ['table']);
+
+function getSelectedBlock(blockTypes, editor) {
   if (!editor.selection) return [undefined, undefined];
-  const [, firstPath] = Editor.first(editor, editor.selection);
-  // searches upward for a table
-  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+  const {blockPath} = getCommonBlock(editor);
+  // searches upward for block of appropriate type
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, blockPath, {reverse: true})) {
     try {
-      if ('table' === candidate.type) {
+      if (blockTypes.includes(candidate.type)) {
         return [candidate, candidatePath];
       }
     } catch (err) {
@@ -464,4 +473,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedTable, tabRight, tabLeft, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, changeContentType, coerceToPlainText};

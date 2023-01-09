@@ -4,11 +4,14 @@ import {
   changeBlockType,
   changeContentType,
   getRelevantBlockType,
-  tabRight,
+  getSelectedListItem,
+  getSelectedTable,
   insertListAfter,
-  insertTableAfter, tabLeft, getSelectedTable
+  insertTableAfter,
+  tabLeft,
+  tabRight
 } from "./slateUtil";
-import {createEditor, Editor, Transforms} from 'slate'
+import {createEditor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
 import auto from "fake-indexeddb/auto.js";
@@ -954,6 +957,68 @@ describe("insertListAfter", () => {
     expect(editor.selection).toHaveProperty('focus.path', [1, 1, 1, 0, 0]);
   });
 
+  it("should insert numbered list after paragraph in list item after text, selection collapsed", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'quote', children: [{text: "quis bibendum arcu commodo"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "begin"},
+                  {text: "12345678", bold: true},
+                  {text: "end"},
+                ]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [
+                          {text: "maximus sollicitudin lacus non"},
+                        ]},
+                    ]},
+                ]}
+            ]},
+          {type: 'list-item', children: [{text: "molestie sollicitudin est"}]},
+        ]},
+      {type: 'code', children: [{text: "In vitae condimentum ipsum"}]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0, 0, 0], offset: 4},
+      focus:  {path: [1, 0, 0, 0], offset: 4},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    insertListAfter(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [{text: "quis bibendum arcu commodo"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "begin"},
+                  {text: "12345678", bold: true},
+                  {text: "end"},
+                ]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [
+                      {text: ""},
+                    ]},
+                ]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [
+                          {text: "maximus sollicitudin lacus non"},
+                        ]},
+                    ]},
+                ]}
+            ]},
+          {type: 'list-item', children: [{text: "molestie sollicitudin est"}]},
+        ]},
+      {type: 'code', children: [{text: "In vitae condimentum ipsum"}]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    expect(editor.selection).toHaveProperty('anchor.path', [1, 0, 1, 0, 0]);
+    expect(editor.selection).toHaveProperty('focus.path',  [1, 0, 1, 0, 0]);
+  });
+
   it("should insert numbered list in list item after blocks, selection expanded", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -1127,6 +1192,87 @@ describe("insertTableAfter", () => {
   });
 });
 
+describe("getSelectedListItem", () => {
+  it("should return falsy if no selection", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-two', children: [{text: "Vivamus dapibus nunc vitae sapien fermentum"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Mauris sollicitudin hendrerit eros"}]},
+          {type: 'list-item', children: [{text: "Donec sodales est at risus porttitor"}]},
+        ]
+      },
+    ];
+    Transforms.deselect(editor);
+
+    expect(getRelevantBlockType(editor)).toEqual('n/a');
+    expect(getSelectedListItem(editor)).toEqual([undefined, undefined]);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("should return falsy if not in list", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-three', children: [{text: "Cras sed viverra ante"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Fusce pretium nisi non fermentum auctor."}]},
+          {type: 'list-item', children: [{text: "Aliquam hendrerit in nulla pharetra"}]},
+        ]
+      },
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [0, 0], offset: 21},
+      focus:  {path: [0, 0], offset: 21},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('heading-three');
+    expect(getSelectedListItem(editor)).toEqual([undefined, undefined]);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("should return list and path if selection in list at any level", () => {
+    console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-three', children: [{text: "Nunc nulla diam, maximus in rutrum vitae"}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "Aliquam at arcu sed magna tempor cursus"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {text: "Nullam dapibus pharetra urna"},
+                ]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [
+                          {text: "Nam a fermentum lectus."},
+                        ]},
+                      {type: 'table-cell', children: [
+                          {text: "Donec aliquam at enim at aliquet."},
+                        ]},
+                    ]}
+                ]}
+            ]},
+          {type: 'list-item', children: [{text: "Nunc ultrices arcu eu mi fermentum"}]},
+        ]
+      },
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 0, 1, 0], offset: 25},
+      focus:  {path: [1, 1, 1, 0, 1, 0], offset: 25},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    const [selectedListItem, selectedListItemPath] = getSelectedListItem(editor);
+    expect(selectedListItem).toHaveProperty('type', 'list-item');
+    expect(selectedListItem).toHaveProperty('children.length', 2);
+    expect(Array.isArray(selectedListItemPath)).toBeTruthy();
+    expect(selectedListItemPath).toHaveLength(2);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+});
+
 describe("getSelectedTable", () => {
   it("should return falsy if no selection", () => {
     console.error = jest.fn();
@@ -1169,7 +1315,7 @@ describe("getSelectedTable", () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it("should return table node if selection in table at any level", () => {
+  it("should return table and path if selection in table at any level", () => {
     console.error = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.children = [

@@ -51,7 +51,7 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft, getSelectedTable
+  tabLeft, getSelectedTable, getSelectedListItem
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -519,6 +519,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         }
       }
       } catch (err) {
+        console.error("while executing block command:", err);
         transientMsg(err.message, err.severity || 'error');
       }
     });
@@ -695,6 +696,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
       const relevantBlockType = getRelevantBlockType(editor);
+      const [selectedListItem] = getSelectedListItem(editor);
       const [selectedTable] = getSelectedTable(editor);
       let menu;
       switch (relevantBlockType) {
@@ -705,24 +707,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'quote':
         case 'code':
         case 'thematic-break':
-        default:
-          menu = [...BLOCK_ITEMS_DEFAULT];
-          addInsertsAndDeletes(menu, selectedTable, true);
-          break;
         case 'list-item':
         case 'table-cell':
-          menu = [...BLOCK_ITEMS_DEFAULT,
-            {cmd: '', label: "Insert"},
-            {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
-            {cmd: 'insert-numbered-list', label: "Numbered List"},
-            {cmd: 'insert-table', label: "Table"},
-          ];
-          if (selectedTable) {
-            menu.push({cmd: 'insert-table-row', label: "Table Row"},
-                      {cmd: 'insert-table-column', label: "Table Column"},
-                      ...BLOCK_ITEMS_DELETE
-            );
-          }
+        default:
+          menu = [...BLOCK_ITEMS_DEFAULT];
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, true);
           break;
         case 'bulleted-list':
         case 'numbered-list':
@@ -730,11 +719,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'table-row':
         case 'multiple':
           menu = [...BLOCK_ITEMS_DEFAULT];
-          addInsertsAndDeletes(menu, selectedTable, false)
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, false)
           break;
         case 'image':
           menu = [];
-          addInsertsAndDeletes(menu, selectedTable, true)
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, true)
           break;
         case 'n/a':
           menu = NO_SELECTION_MENU;
@@ -1051,9 +1040,16 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     </>);
   }
 
-  function addInsertsAndDeletes(menu, table, includeThematicBreak) {
-    if (table || includeThematicBreak) {
+  function addInsertsAndDeletes(menu, listItem, table, includeThematicBreak) {
+    if (listItem || table || includeThematicBreak) {
       menu.push({cmd: '', label: "Insert"});   // divider
+    }
+    if (listItem || table) {
+      menu.push(
+          {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
+          {cmd: 'insert-numbered-list', label: "Numbered List"},
+          {cmd: 'insert-table', label: "Table"}
+      );
     }
     if (table) {
       menu.push(
@@ -1061,7 +1057,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           {cmd: 'insert-table-column', label: "Table Column"}
       );
     }
-    if (includeThematicBreak) {
+    if (includeThematicBreak && ! listItem && ! table) {
       menu.push({cmd: 'insert-thematic-break',
         label: <>
           <div>Rule</div>
