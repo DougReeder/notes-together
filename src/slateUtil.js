@@ -406,6 +406,26 @@ function measureOffset(editor, block, blockPath) {
   return selectionOffset;
 }
 
+function flipTableRowsToColumns(editor) {
+  const [selectedTable, selectedTablePath] = getSelectedTable(editor);
+  const oldNumRow = selectedTable.children.length;
+  const oldNumCol = SlateNode.child(selectedTable, 0).children.length;
+  Editor.withoutNormalizing(editor, () => {
+    for (let newRow = 0; newRow < oldNumCol; ++newRow) {
+      const rowPath = [...selectedTablePath, newRow];
+      Transforms.insertNodes(editor, {type: 'table-row', children: []}, {at: rowPath});
+      for (let newCol = 0; newCol < oldNumRow; ++newCol) {
+        const oldPath = [...selectedTablePath, 1 + newRow + newCol, 0];
+        const newPath = [...rowPath, newCol]
+        Transforms.moveNodes(editor, {at: oldPath, to: newPath});
+      }
+    }
+
+    const startPnt = Editor.start(editor, selectedTablePath);
+    Transforms.select(editor, {anchor: startPnt, focus: startPnt});
+  });
+}
+
 async function changeContentType(editor, oldSubtype, newSubtype) {
   if (!newSubtype || newSubtype.startsWith('plain')) {
     Editor.withoutNormalizing(editor, () => {
@@ -473,4 +493,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};

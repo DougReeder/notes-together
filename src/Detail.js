@@ -51,7 +51,7 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft, getSelectedTable, getSelectedListItem
+  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -693,11 +693,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       setMarkMenuAnchorEl(null);
     }
 
+    const [selectedTable] = getSelectedTable(editor);
     let formatControls;
     if (editor.subtype?.startsWith('html')) {
       const relevantBlockType = getRelevantBlockType(editor);
       const [selectedListItem] = getSelectedListItem(editor);
-      const [selectedTable] = getSelectedTable(editor);
       let menu;
       switch (relevantBlockType) {
         case 'paragraph':
@@ -876,6 +876,16 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             setDetailsMenuAnchorEl(null);
           }}>
             Paste files...
+          </MenuItem>
+          <MenuItem disabled={!selectedTable} onClick={evt => {
+            if (!editor.selection && previousSelection.current) {
+              Transforms.select(editor, previousSelection.current);
+            }
+            previousSelection.current = null;
+            flipTableRowsToColumns(editor);
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Flip Table Rows To Columns
           </MenuItem>
           <MenuItem onClick={evt => {
             setDetailsMenuAnchorEl(null);

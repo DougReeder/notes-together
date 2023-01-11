@@ -2,7 +2,7 @@
 
 import {
   changeBlockType,
-  changeContentType,
+  changeContentType, flipTableRowsToColumns,
   getRelevantBlockType,
   getSelectedListItem,
   getSelectedTable,
@@ -2329,6 +2329,132 @@ describe("tabLeft", () => {
 
     expect(editor.children).toEqual(originalNodes);
     expect(editor.selection).toEqual(originalSelection);
+  });
+});
+
+describe("flipTableRowsToColumns", () => {
+  it("should flip table inside list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Aenean fringilla massa vel ipsum"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "Nam quis nibh mattis libero rutrum"}]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "A1"}]},
+                      {type: 'table-cell', children: [{text: "A2"}]},
+                      {type: 'table-cell', children: [{text: "A3"}]},
+                    ]},
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "B1"}]},
+                      {type: 'table-cell', children: [{text: "B2"}]},
+                      {type: 'table-cell', children: [{text: "B3"}]},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "Morbi mattis augue ac mauris porttitor"}]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [0, 1, 1, 0, 1, 0], offset: 1},
+      focus:  {path: [0, 1, 1, 1, 0, 0], offset: 1},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('table');
+    flipTableRowsToColumns(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "Aenean fringilla massa vel ipsum"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "Nam quis nibh mattis libero rutrum"}]},
+              {type: 'table', children: [
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "A1"}]},
+                      {type: 'table-cell', children: [{text: "B1"}]},
+                    ]},
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "A2"}]},
+                      {type: 'table-cell', children: [{text: "B2"}]},
+                    ]},
+                  {type: 'table-row', children: [
+                      {type: 'table-cell', children: [{text: "A3"}]},
+                      {type: 'table-cell', children: [{text: "B3"}]},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "Morbi mattis augue ac mauris porttitor"}]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 1, 1, 0, 0, 0], offset: 0},
+      focus:  {path: [0, 1, 1, 0, 0, 0], offset: 0},
+    });
+  });
+
+  it("should flip table outside list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "alpha one"}]},
+              {type: 'table-cell', children: [{text: "alpha two"}]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "beta one"}]},
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [{text: "beta two"}]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [{text: "Etiam sed feugiat lacus."}]},
+                      {type: 'list-item', children: [
+                          {type: 'quote', children: [{text: "Nullam eleifend dui sit amet"}]},
+                        ]},
+                      {type: 'list-item', children: [{text: "Mauris leo elit, venenatis in"}]},
+                    ]},
+                ]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "gamma one"}]},
+              {type: 'table-cell', children: [{text: "gamma two"}]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [0, 1, 1, 1, 0, 0], offset: 6},
+      focus:  {path: [0, 1, 1, 1, 1, 0, 0], offset: 24},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+    flipTableRowsToColumns(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "alpha one"}]},
+              {type: 'table-cell', children: [{text: "beta one"}]},
+              {type: 'table-cell', children: [{text: "gamma one"}]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "alpha two"}]},
+              {type: 'table-cell', children: [
+                  {type: 'paragraph', children: [{text: "beta two"}]},
+                  {type: 'numbered-list', children: [
+                      {type: 'list-item', children: [{text: "Etiam sed feugiat lacus."}]},
+                      {type: 'list-item', children: [
+                          {type: 'quote', children: [{text: "Nullam eleifend dui sit amet"}]},
+                        ]},
+                      {type: 'list-item', children: [{text: "Mauris leo elit, venenatis in"}]},
+                    ]},
+                ]},
+              {type: 'table-cell', children: [{text: "gamma two"}]},
+            ]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 0, 0, 0], offset: 0},
+      focus:  {path: [0, 0, 0, 0], offset: 0},
+    });
   });
 });
 
