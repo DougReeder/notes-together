@@ -7,7 +7,7 @@ import {
   saveTag, deleteTag, listTags
 } from './storage';
 import {findFillerNoteIds} from './idbNotes';
-import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
+import React, {useState, useEffect, useRef, useCallback, useMemo, useReducer} from 'react';
 import {Helmet} from "react-helmet"
 import {useSearchParams} from "react-router-dom";
 import List from './List';
@@ -77,10 +77,20 @@ function App() {
   const [count, setCount] = useState(" ");
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
 
-  // LIST, DETAIL or HELP
-  const [mustShowPanel, setMustShowPanel] = useState('LIST');
+  const [, forceRender] = useReducer(x => x + 1, 0);
 
-  const [selectedNoteId, setSelectedNoteId] = useState(null);
+  // LIST, DETAIL or HELP
+  const mustShowPanel = sessionStorage.getItem('mustShowPanel') || 'LIST';
+  function setMustShowPanel(panel) {
+    sessionStorage.setItem('mustShowPanel', panel);
+    forceRender();
+  }
+
+  const selectedNoteId = sessionStorage.getItem('selectedNoteId');
+  function setSelectedNoteId(id) {
+    sessionStorage.setItem('selectedNoteId', id);
+    forceRender();
+  }
 
   const searchRef = useRef();
   const lastCheckpointRef = useRef(new Set());

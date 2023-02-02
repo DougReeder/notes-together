@@ -284,7 +284,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           }
         }
       } else {
-        forceUpdate();   // updates the mark indicators
+        forceRender();   // updates the mark indicators
         // console.log("selection change:", editor.operations);
       }
     } catch (err) {
@@ -381,7 +381,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   const previousSelection = useRef(null);
 
-  const [, forceUpdate] = useReducer(x => x + 1, 0);
+  const [, forceRender] = useReducer(x => x + 1, 0);
 
   // Defines our own custom set of helpers.
   function isMarkActive(editor, format) {
@@ -409,7 +409,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     } else {
       Editor.addMark(editor, format, true)
     }
-    forceUpdate();   // so buttons can change colors
+    forceRender();   // so buttons can change colors
   }
 
   function handleSelectedBlockTypeChange(targetType) {
@@ -1019,7 +1019,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               }
             }}
             // forcing an update preserves focus; unclear why
-            onFocus={() => forceUpdate()}
+            onFocus={() => forceRender()}
             decorate={decorate}
             readOnly={isLocked}
         />
