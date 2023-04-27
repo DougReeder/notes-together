@@ -31,11 +31,23 @@ describe("hasTagsLikeHtml", () => {
     expect(hasTagsLikeHtml("text/xml;charset=ISO-8859-1")).toBeTruthy();
   });
 
-  it("should map *.jsp as having tags", () => {
-    expect(hasTagsLikeHtml("", ".jsp")).toBeTruthy();
+  it("should map *.xo (XOXO outline) as having tags", () => {
+    expect(hasTagsLikeHtml("", ".xo")).toBeTruthy();
   });
 
-  it("should map *.asp as having tags", () => {
-    expect(hasTagsLikeHtml("", ".asp")).toBeTruthy();
+  it("should map *.jsp as not having tags", () => {
+    expect(hasTagsLikeHtml("", ".jsp")).toBeFalsy();
+  });
+
+  it("should map *.asp as not having tags", () => {
+    expect(hasTagsLikeHtml("", ".asp")).toBeFalsy();
+  });
+
+  it("should map *.njk (Nunjucks template) as not having tags", () => {
+    expect(hasTagsLikeHtml("", ".njk")).toBeFalsy();
+  });
+
+  it("should map *.webc (WebC template) as not having tags", () => {
+    expect(hasTagsLikeHtml("", ".webc")).toBeFalsy();
   });
 });

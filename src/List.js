@@ -335,7 +335,7 @@ function List(props) {
 
   const adviceGettingStarted = <>
     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'end'}}>
-      <h2>Get mundane details out of your head!</h2>
+      <h2>Free your mind from mundane details!</h2>
       <IconButton title="Close" aria-label="Close" size="large" onClick={hideGettingStarted}>
         <CloseIcon/>
       </IconButton>

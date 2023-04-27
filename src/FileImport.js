@@ -216,7 +216,7 @@ FileImport.propTypes = {
 
 const allowedFileTypesNonText = ['application/mathml+xml','application/xhtml+xml','image/svg+xml','application/x-yaml','application/json','application/javascript', 'application/ecmascript','message/rfc822'];
 
-const allowedExtensions = ['.rst', '.txt', '.text', '.readme', '.me', '.1st', '.log', '.markdown', '.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.adoc', '.textile', '.rst', '.etx', '.org', '.apt', '.pod', '.html', '.htm', '.xhtml', '.php', '.jsp', '.asp', '.mustache', '.hbs', '.erb', '.njk', '.ejs', '.mustache', '.haml', '.pug', '.erb', '.json', '.yaml', '.yml', '.awk', '.vcs', '.ics', '.abc', '.js', '.ts', '.jsx', '.css', '.less', '.sass', '.m', '.java', '.properties', '.sql', '.c', '.h', '.cc', '.cxx', '.cpp', '.hpp', '.py', '.rb', '.pm', '.erl', '.hs', '.hbx', '.sh', '.csh', '.bat', '.inf', '.ni'];
+const allowedExtensions = ['.rst', '.txt', '.text', '.readme', '.me', '.1st', '.plain', '.log', '.markdown', '.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.adoc', '.textile', '.rst', '.etx', '.org', '.apt', '.pod', '.html', '.htm', '.xhtml', '.msg', '.eml', '.php', '.jsp', '.asp', '.mustache', '.hbs', '.erb', '.njk', '.ejs', '.haml', '.pug', '.erb', '.webc', '.liquid', '.xo', '.json', '.yaml', '.yml', '.awk', '.vcs', '.ics', '.abc', '.js', '.ts', '.jsx', '.css', '.less', '.sass', '.m', '.java', '.properties', '.sql', '.c', '.h', '.cc', '.cxx', '.cpp', '.hpp', '.py', '.rb', '.pm', '.erl', '.hs', '.make', '.mak', '.mk', '.nmk', '.hbx', '.sh', '.csh', '.bat', '.inf', '.ni'];
 
 async function determineParseType(file) {
   // console.log(`selected file “${file.name}” "${file.type}"`)

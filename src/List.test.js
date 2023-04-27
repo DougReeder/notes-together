@@ -33,12 +33,12 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findByRole('list');
-    expect(await screen.findByRole('heading', {name: "Get mundane details out of your head!"})).toBeVisible();
+    expect(await screen.findByRole('heading', {name: "Free your mind from mundane details!"})).toBeVisible();
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Get mundane details out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
   });
 
 
@@ -51,12 +51,12 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findAllByRole('listitem');
-    expect(await screen.findByRole('heading', {name: "Get mundane details out of your head!"})).toBeVisible();
+    expect(await screen.findByRole('heading', {name: "Free your mind from mundane details!"})).toBeVisible();
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
     userEvent.click(closeBtn);
-    expect(screen.queryByRole('heading', {name: "Get mundane details out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
   });
 
   it("should not render advice when no stubs returned on later launch", async () => {
@@ -66,7 +66,7 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findByRole('list');
-    expect(screen.queryByRole('heading', {name: "Get mundane details out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {name: "Close"})).not.toBeInTheDocument();
   });
 
@@ -80,7 +80,7 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     await screen.findByRole('list');
-    expect(screen.queryByRole('heading', {name: "Get mundane details out of your head!"})).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {name: "Close"})).not.toBeInTheDocument();
   });
 

@@ -65,7 +65,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <p><i>On Android, you may first need to enable voice dictation in the keyboard Settings.</i> <Settings style={{position: 'relative', bottom: '-0.5ex'}}/></p>
         </ol>
 
-        <h4>How do I back up my notes, or sync notes between devices?</h4>
+        <h4>How do I sync notes between devices?</h4>
         <p>Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations). Then use the widget in the lower-left of the list panel to connect to it.</p>
         <svg style={{position: 'relative', bottom: '1.2ex'}}
              className="rs-main-logo" id="rs-main-logo-remotestorage" version="1.1" width="0.739008in" height="0.853339in"
@@ -209,10 +209,10 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>Does the editor behave differently when editing a Markdown note?</h4>
         <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
 
-        <img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/>
+        <a href="https://hominidsoftware.com/notes-together/"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
         <h2>Notes Together</h2>
         <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
-        <p><a href="https://hominidsoftware.com/notes-together/license.html">Copyright 2021-2022</a> Hominid Software</p>
+        <p>Copyright © 2021-2023 <a href="https://hominidsoftware.com/">Hominid Software</a></p>
         <p>&nbsp;</p>
       </div>
     </Box>
