@@ -719,7 +719,7 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
         ]},
       { type: "numbered-list", listStart: 1, children: [
           {type: "list-item", children: [
-              {type: 'paragraph', children: [{text: "only item"}]},
+              {text: "only item"},
             ]},
         ]},
       { type: "code",

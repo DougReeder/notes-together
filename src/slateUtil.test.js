@@ -2505,7 +2505,7 @@ describe("changeContentType", () => {
 
     expect(editor.children[0]).toEqual(
       {noteSubtype: newSubtype, type: 'quote', children: [
-          {type: 'paragraph', children: [{text: "Quotable dialog"}]},
+          {text: "Quotable dialog"},
         ]}
     );
     expect(editor.children[1]).toEqual({type: 'heading-one', children: [
@@ -2513,7 +2513,7 @@ describe("changeContentType", () => {
       ]});
     expect(editor.children[2]).toEqual({type: 'numbered-list', listStart: 1, children: [
         {type: 'list-item', children: [
-            {type: 'paragraph', children: [{text: "Acting uneven"}]},
+            {text: "Acting uneven"},
           ]},
       ]});
     expect(editor.subtype).toEqual(newSubtype);

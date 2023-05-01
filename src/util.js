@@ -4,8 +4,8 @@
 const globalWordRE = /[\w\u00AA\u00B2\u00B3\u00B5\u00B9\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u02BC\u037A\u037F\u0384-\u0386\u0388-\u03CE\u03D0-\u03D6\u03D9-\u03E1\u03F3\u1E00-\u1FFC\u2070-\u2079\u207F-\u2089\u2090-\u2094\u2460-\u24FD\u2C60-\u2C7F\uA728-\uA7AF\uFF10-\uFF5A]([-‐‑­'’ʼ. ^]*[\w\u00AA\u00B2\u00B3\u00B5\u00B9\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u02BC\u037A\u037F\u0384-\u0386\u0388-\u03CE\u03D0-\u03D6\u03D9-\u03E1\u03F3\u1E00-\u1FFC\u2070-\u2079\u207F-\u2089\u2090-\u2094\u2460-\u24FD\u2C60-\u2C7F\uA728-\uA7AF\uFF10-\uFF5A]+)*/g;
 
 function isLikelyMarkdown(text) {
-  if (/(^|\s)(__|\*\*)(?=\S).+(\2(\s|$))/.test(text)) {
-    return true;   // strong emphasis
+  if (/(^|\s)(__|\*\*|~~)(?=\S).+(\2(\s|$))/.test(text)) {
+    return true;   // strong emphasis or strikethrough
   }
   if (/(^|\s)([_*`])(?!\2).+(\2(\s|$))/.test(text)) {
     return true;   // emphasis or code
@@ -51,6 +51,11 @@ function isLikelyMarkdown(text) {
   if (/\[[^\]]+]\([^)]+\)/.test(text)) {
     return true;   // link (images also match this)
   }
+
+  if (/\n(\|\s*:?-{3,}:?\s*){2,}/.test(text)) {
+    return true;   // table delimiter row w/ 2 or more columns
+  }
+
   return false;
 }
 
@@ -65,6 +70,8 @@ function adHocTextReplacements(text) {
   text = text.replace(/([A-Za-z])\^7(?![\dA-Za-z])/g, "$1⁷");
   text = text.replace(/([A-Za-z])\^8(?![\dA-Za-z])/g, "$1⁸");
   text = text.replace(/([A-Za-z])\^9(?![\dA-Za-z])/g, "$1⁹");
+  text = text.replace(/(\d)--(\d)/g, "$1–$2");
+  text = text.replace(/([A-Za-z]\s*)---(\s*[A-Za-z])/g, "$1—$2");
   return text;
 }
 

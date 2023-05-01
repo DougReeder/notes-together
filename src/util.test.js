@@ -1,4 +1,4 @@
-import {isLikelyMarkdown, visualViewportMatters} from "./util";
+import {adHocTextReplacements, isLikelyMarkdown, visualViewportMatters} from "./util";
 
 describe("isLikelyMarkdown", () => {
   test("should not flag plain text starting or ending in newline", () => {
@@ -29,6 +29,14 @@ describe("isLikelyMarkdown", () => {
 
   test("should flag strong emphasis using underscores", () => {
     expect(isLikelyMarkdown("__bold*text__")).toBeTruthy();
+  });
+
+
+  test("should flag strikethrough using double tilde surrounded by space", () => {
+    expect(isLikelyMarkdown("We use ~~the old way~~ the new way to...")).toBeTruthy();
+  });
+  test("should not flag tildes indicating approximation", () => {
+    expect(isLikelyMarkdown("add ~1 c. flour and ~2 tbsp. sugar")).toBeFalsy();
   });
 
 
@@ -104,6 +112,12 @@ describe("isLikelyMarkdown", () => {
     expect(isLikelyMarkdown(" * erste\n  - zwitte\n  + dritte")).toBeFalsy();
   });
 
+  test("should flag table delimiter row", () => {
+    expect(isLikelyMarkdown(`
+| :--- | ---: 
+`)).toBeTruthy();
+  });
+
   test("should flag link", () => {
     expect(isLikelyMarkdown("[link with title](http://nodeca.github.io/pica/demo/ \"title text!\")) An adorable corgi!")).toBeTruthy();
   });
@@ -114,6 +128,24 @@ describe("isLikelyMarkdown", () => {
 
   test("should not flag letter-caret-1", () => {
     expect(isLikelyMarkdown("...as asserted by Fong^1")).toBeFalsy();
+  });
+});
+
+describe("AdHocTextReplacements", () => {
+  it("should only replace double hyphen with en-dash between numbers", () => {
+    const replaced = adHocTextReplacements(`foo --long-option 34--56--78`);
+    expect(replaced).toEqual(`foo --long-option 34–56–78`);
+  });
+
+  it("should only replace triple hyphen with em-dash when flanked by letters", () => {
+    const replaced = adHocTextReplacements(`---
+      ---what is this?
+      foo--->bar
+      this --- not that---nor the other--- and not the other other`);
+    expect(replaced).toEqual(`---
+      ---what is this?
+      foo--->bar
+      this — not that—nor the other— and not the other other`);
   });
 });
 

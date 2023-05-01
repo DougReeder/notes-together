@@ -196,8 +196,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>
 
         <h4>What formatting is supported for imported files and pasted text?</h4>
-        <p>Headings, paragraphs, lists, tables, graphics and other semantic HTML are imported, but not the styles.</p>
-        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a>, is supported in files with the extension <code>.md</code> or (optionally) text files.</p>
+        <p>Headings, paragraphs, lists, tables, graphics and other semantic HTML are imported, but not custom styles.</p>
+        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">GFM tables</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, delete and insert text styles, as usual in Markdown.)</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
         <h4>How do I add a link?</h4>
