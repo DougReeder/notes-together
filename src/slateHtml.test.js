@@ -2209,6 +2209,27 @@ describe("deserializeHtml", () => {
     expect(slateNodes.length).toEqual(4);
   });
 
+
+  it("should parse <h4> <h5> and <h6> tags as <h3>", () => {
+    const html = `<h1>Heading One</h1>
+<h2>Heading Two</h2>
+<h3>Heading Three</h3>
+<h4>Heading Four</h4>
+<h5>Heading Five</h5>
+<h6>Heading Six</h6>`;
+
+    const slateNodes = deserializeHtml(html, editor);
+
+    expect(slateNodes).toEqual([
+      {type: 'heading-one', children: [{text: "Heading One"}]},
+      {type: 'heading-two', children: [{text: "Heading Two"}]},
+      {type: 'heading-three', children: [{text: "Heading Three"}]},
+      {type: 'heading-three', children: [{text: "Heading Four"}]},
+      {type: 'heading-three', children: [{text: "Heading Five"}]},
+      {type: 'heading-three', children: [{text: "Heading Six"}]},
+    ]);
+  });
+
   it("should parse <p> <figcaption> <details> <dt> and <dd> tags as paragraphs", () => {
     const html = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 <figure>

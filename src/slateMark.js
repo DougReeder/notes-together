@@ -8,8 +8,9 @@ import {gfmTable} from 'micromark-extension-gfm-table';
 import {gfmTableFromMarkdown} from 'mdast-util-gfm-table';
 import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough'
 import {gfmStrikethroughFromMarkdown} from 'mdast-util-gfm-strikethrough'
+import {deserializeHtml} from "./slateHtml";
 
-function deserializeMarkdown(markdown) {
+function deserializeMarkdown(markdown, editor) {
   const root = fromMarkdown(markdown, {
     extensions: [gfmTable, gfmStrikethrough()],
     mdastExtensions: [gfmTableFromMarkdown, gfmStrikethroughFromMarkdown]
@@ -202,15 +203,8 @@ function deserializeMarkdown(markdown) {
                   slateNodes.push(textNode("\n", {italic, bold, superscript, subscript, underline, strikethrough, deleted, inserted}));
                   break;
                 default:
-                  const parsed = new DOMParser().parseFromString(mdNode.value, 'text/html');
-                  // TODO: call deserializeHTML(html, editor)
-                  const text = parsed.documentElement.textContent.trim();
-                  if (text) {
-                    slateNodes.push(textNode(text, {italic, bold, superscript, subscript, underline, strikethrough, deleted, inserted}));
-                    console.warn(`extracted “${text}” from:`, mdNode);
-                  } else {
-                    console.warn(`ignoring HTML:`, mdNode);
-                  }
+                  const sNodes = deserializeHtml(mdNode.value, editor);
+                  slateNodes.push(...sNodes);
               }
               break;
             default:

@@ -570,7 +570,7 @@ function withHtml(editor) {   // defines Slate plugin
   }
 
   function pasteMarkdownToRichText(text) {
-    const slateNodes = deserializeMarkdown(text);
+    const slateNodes = deserializeMarkdown(text, editor);
     // console.log("MD -> slateNodes:", slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
@@ -675,6 +675,9 @@ const ELEMENT_TAGS = {
   H1: () => ({ type: 'heading-one' }),
   H2: () => ({ type: 'heading-two' }),
   H3: () => ({ type: 'heading-three' }),
+  H4: () => ({ type: 'heading-three' }),
+  H5: () => ({ type: 'heading-three' }),
+  H6: () => ({ type: 'heading-three' }),
   HR: () => ({ type: 'thematic-break'}),
   IMG: el => {
     if (el.hasAttribute('src')) {

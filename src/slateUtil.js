@@ -431,7 +431,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
     Editor.withoutNormalizing(editor, () => {
       if (oldSubtype?.startsWith('markdown')) {   // convert to rich text in editor
         const text = editor.children.map(node => SlateNode.string(node)).join('\n');
-        const slateNodes = deserializeMarkdown(text);
+        const slateNodes = deserializeMarkdown(text, editor);
         Transforms.select(editor, []);
         Editor.insertFragment(editor, slateNodes);
       }
@@ -450,7 +450,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
   } else if (newSubtype.startsWith('html')) {
     if (oldSubtype?.startsWith('markdown')) {   // convert to rich text in editor
       const text = editor.children.map(node => SlateNode.string(node)).join('\n');
-      const slateNodes = deserializeMarkdown(text);
+      const slateNodes = deserializeMarkdown(text, editor);
       Transforms.select(editor, []);
       Editor.insertFragment(editor, slateNodes);
     }

@@ -34,10 +34,11 @@ describe("escapeMarkdown", () => {
 
 describe("deserializeMarkdown", () => {
   it("should parse character entities", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `23&ndash;45
 To be &mdash; or not to be`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [{text: `23–45 To be — or not to be`}]}
@@ -45,11 +46,12 @@ To be &mdash; or not to be`;
   });
 
   it("should collapse softbreak plus spacing to single space", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `foo 
   bar 
    spam`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [{text: `foo bar spam`}]}
@@ -57,11 +59,12 @@ To be &mdash; or not to be`;
   });
 
   it("should remove space after a hard break", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `waldo fred
 spam *frotz  
   nim* wibble`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -75,9 +78,10 @@ spam *frotz
   });
 
   it("should handle multiple mark types", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = 'plain *emphasized **also strongly emphasized ~~also strikethrough `also monospace` just three~~ just two** just emph* normal';
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect (slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -114,6 +118,7 @@ spam *frotz
   });
 
   it("should convert MD unordered list to Slate bulleted list", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `   * erste 
 
    *  zwitte A
@@ -122,7 +127,7 @@ spam *frotz
 
   *   dritte`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: "bulleted-list", children: [
         {type: 'list-item', children: [
@@ -139,17 +144,19 @@ spam *frotz
   });
 
   it("should discard empty link", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `[]( )`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([]);
   });
 
   it("should normalize link w/o link text", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `*plugh [](http://example.com/) xyzzy*`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: 'paragraph', children: [
         {text: "plugh ", italic: true},
@@ -161,9 +168,10 @@ spam *frotz
   });
 
   it("should retain link text of link w/o URL", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `**thud [waugh oh]( ) limber**`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: 'paragraph', children: [
         {text: "thud ", bold: true},
@@ -174,13 +182,14 @@ spam *frotz
 
   it("should pull definition into link reference", () => {
     console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `For information, see the [Markdown][md] reference.
 For the same information, see the [][md] reference.
 For no information, see the [fake][nomatch] reference!  
 
  [md]: http://daringfireball.net/projects/markdown "Markdown [announcement post]"
 `;
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -221,6 +230,7 @@ For no information, see the [fake][nomatch] reference!
 
   it("should parse GFM tables", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `
 | Name | Occupation |
 |:-----|:----------:|
@@ -230,7 +240,7 @@ For no information, see the [fake][nomatch] reference!
 |
 | Aurthur [Conan Doyle](https://sf-encyclopedia.com/entry/doyle_arthur_conan) | Author |`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'table', children: [
@@ -268,13 +278,14 @@ For no information, see the [fake][nomatch] reference!
 
   it("should parse GFM tables without leading & trailing pipes", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `
  Framework | Notes 
 -----|----------:
  Mojo | webOS only 
  Enyo 1 | webOS \\| WebKit browser`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'table', children: [
@@ -297,19 +308,26 @@ For no information, see the [fake][nomatch] reference!
 
   it("should extract text of HTML that's not specially handled", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = "something <samp>special</samp> for you";
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
-    expect(slateNodes).toEqual([{type: "paragraph", children: [{text: "something "}, {text: "special"}, {text: " for you"}]}]);
-    expect(console.warn).toHaveBeenCalled();
+    expect(slateNodes).toEqual([{type: "paragraph", children: [
+        {text: "something "},
+        {text: ""},
+        {text: "special"},
+        {text: " for you"},
+      ]}]);
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it("should apply superscript tag to enclosed text", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = "M<sup>lle</sup> Juliet";
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "M"},
@@ -321,9 +339,10 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply subscript tag to enclosed text", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = "Mason & Jones<sub>MJ</sub> found no such relationship";
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "Mason & Jones"},
@@ -335,9 +354,10 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply underline tag to enclosed text", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = "the word <u>cheif</u> is misspelled";
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "the word "},
@@ -349,9 +369,10 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply strikethrough tag to enclosed text", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = "shall <s>not</s> be accepted";
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "shall "},
@@ -363,10 +384,11 @@ For no information, see the [fake][nomatch] reference!
 
   it("should recognize break tag", () => {
     console.warn = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `grault garply
 baz **qux<br />quux** corge`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -380,28 +402,32 @@ baz **qux<br />quux** corge`;
     expect(console.warn).not.toHaveBeenCalled();
   });
 
-  it("should extract text from definition list", () => {
+  it("should parse definition list as paragraphs and block quotes", () => {
     console.error = jest.fn();
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `<dl>
   <dt>Danish axe</dt>
   <dt>poleaxe</dt>
   <dd>A somewhat larger axehead on a two-handed haft</dd>
 </dl>`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
-    expect(slateNodes).toEqual([{text: `Danish axe
-  poleaxe
-  A somewhat larger axehead on a two-handed haft`}]);
+    expect(slateNodes).toEqual([
+      {type: 'paragraph', children: [{text: "Danish axe", bold: true}]},
+      {type: 'paragraph', children: [{text: "poleaxe", bold: true}]},
+      {type: 'quote', children: [{text: "A somewhat larger axehead on a two-handed haft"}]},
+    ]);
     expect(console.error).not.toHaveBeenCalled();
   });
 
   it("should deserialize image in paragraph as separate block", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `before
 ![description](https://delta.edu/a.png "some title")
 after`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -415,13 +441,14 @@ after`;
   });
 
   it("should deserialize separate image as separate block", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `before
 
 ![description](https://chi.edu/b.gif "some title")
 
 after`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -437,9 +464,10 @@ after`;
   });
 
   it("should retain description text of image w/o URL", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `~~pre ![some thing]( ) post~~`;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -451,12 +479,13 @@ after`;
   });
 
   it("should pull definition into image reference", () => {
+    const editor = withHtml(withReact(createEditor()));
     const mdText = `prelude ![first reference][foo *bar*] first interlude ![foo *bar*] second interlude ![][foo *bar*] afterword
 
 [foo *bar*]: train.jpg "train & tracks"
 `;
 
-    const slateNodes = deserializeMarkdown(mdText);
+    const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -691,7 +720,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -706,7 +735,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   //   ];
   //
   //   const mdText = serializeMarkdown(editor, original);
-  //   const reloaded = deserializeMarkdown(mdText);
+  //   const reloaded = deserializeMarkdown(mdText, editor);
   //
   //   expect(reloaded).toEqual(original);
   // });
@@ -723,7 +752,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -742,7 +771,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -760,7 +789,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -777,7 +806,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -798,7 +827,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -820,7 +849,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -839,7 +868,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ]
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -862,7 +891,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -885,7 +914,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -903,7 +932,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -919,7 +948,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -935,7 +964,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -974,7 +1003,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -995,7 +1024,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
       ]}];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -1036,7 +1065,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
@@ -1053,7 +1082,7 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     ];
 
     const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText);
+    const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
   });
