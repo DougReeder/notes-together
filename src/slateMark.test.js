@@ -635,7 +635,9 @@ let a = b**c, x = y**z;
     const md = serializeMarkdown(editor, slateNodes);
 
     expect(md).toEqual(`# title phrase
+
 ## heading phrase
+
 1. [one grandparent](#internal-1)
     1. [one one](#internal-2)
     2. one two
@@ -702,9 +704,10 @@ let a = b**c, x = y**z;
 * deux`);
   });
 
-  it("should serialize a table", () => {
+  it("should serialize tables", () => {
     const editor = withHtml(withReact(createEditor()));
     const original = [
+      {type: 'paragraph', children: [{text: "Nullam egestas odio nec velit."}]},
       {type: "table", children: [
           {type: "table-row", children: [
               {type: 'table-cell', children: [
@@ -723,13 +726,37 @@ let a = b**c, x = y**z;
                 ]},
             ]},
         ]},
+      {type: "table", children: [
+          {type: "table-row", children: [
+              {type: 'table-cell', children: [
+                  {text: "erste", bold: true}
+                ]},
+            ]},
+          {type: "table-row", children: [
+              {type: 'table-cell', children: [
+                  {text: "zwitte"}
+                ]},
+            ]},
+          {type: "table-row", children: [
+              {type: 'table-cell', children: [
+                  {text: "dritte"}
+                ]},
+            ]},
+        ]},
     ];
 
     const mdText = serializeMarkdown(editor, original);
 
-    expect(mdText).toEqual(`| **At vero** | **eos et accusamus** 
+    expect(mdText).toEqual(`Nullam egestas odio nec velit.
+
+| **At vero** | **eos et accusamus** 
 | --- | --- 
-| et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum | deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident `);
+| et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum | deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident 
+
+| **erste** 
+| --- 
+| zwitte 
+| dritte `);
   });
 
   it("should handle typeless blocks", () => {
@@ -986,13 +1013,17 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip a bulleted list", () => {
+  it("should round-trip a thematic break in a block quote", () => {
     const editor = withHtml(withReact(createEditor()));
     const original = [
-      {type: "bulleted-list", children: [
-          {type: 'list-item', children: [{text: "un gato"}]},
-          {type: 'list-item', children: [{text: "dos perros"}]},
-          {type: 'list-item', children: [{text: "tres ratones ciegos"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Sed congue arcu quis diam viverra, id cursus eros molestie."},
+            ]},
+          {type: 'thematic-break', children: [{text: ""}]},
+          {type: 'paragraph', children: [
+              {text: "Nunc venenatis vehicula odio id efficitur."},
+            ]},
         ]},
     ];
 
@@ -1002,13 +1033,16 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip a numbered list", () => {
+  it("should round-trip two separate block quotes inside a block quote", () => {
     const editor = withHtml(withReact(createEditor()));
     const original = [
-      {type: "numbered-list", "listStart": 1, children: [
-          {type: 'list-item', children: [{text: "erste"}]},
-          {type: 'list-item', children: [{text: "zwitte"}]},
-          {type: 'list-item', children: [{text: "dritte"}]},
+      {type: 'quote', children: [
+          {type: 'quote', children: [
+                  {text: "Quisque lobortis lorem porttitor quam maximus molestie."},
+            ]},
+          {type: 'quote', children: [
+                  {text: "Sed aliquam placerat nisl placerat sodales."},
+            ]},
         ]},
     ];
 
@@ -1016,6 +1050,70 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     const reloaded = deserializeMarkdown(mdText, editor);
 
     expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a hierarchical bulleted list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "bulleted-list", children: [
+          {type: 'list-item', children: [{text: "un gato"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "tres ratones\nciegos"}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual([
+      {type: "bulleted-list", children: [
+          {type: 'list-item', children: [{text: "un gato"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {text: "tres ratones"},
+              {text: "\n"},
+              {text: "ciegos"},
+            ]},
+        ]},
+    ]);
+  });
+
+  it("should round-trip a numbered list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "numbered-list", "listStart": 1, children: [
+          {type: 'list-item', children: [{text: "erste"}]},
+          {type: 'list-item', children: [{text: "zwitte\nsecond"}]},
+          {type: 'list-item', children: [{text: "dritte"}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual([
+      {type: "numbered-list", "listStart": 1, children: [
+          {type: 'list-item', children: [{text: "erste"}]},
+          {type: 'list-item', children: [
+              {text: "zwitte"},
+              {text: "\n"},
+              {text: "second"},
+            ]},
+          {type: 'list-item', children: [{text: "dritte"}]},
+        ]},
+    ]);
   });
 
   it("should round-trip a bulleted list of paragraphs", () => {
@@ -1108,6 +1206,49 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
                   {type: 'link', url: 'data:foo', title: "swatch", children: [
                       {text: "cobalt"},
                     ]}
+                ]},
+            ]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a table in a block quote", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: 'quote', children: [
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Name", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "Favorite Color", bold: true},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Alice", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "fuscous", italic: true},
+                      {text: " blue"},
+                    ]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "Bob", bold: true},
+                    ]},
+                  {type: 'table-cell', children: [
+                      {text: "smalt "},
+                      {type: 'link', url: 'data:foo', title: "swatch", children: [
+                          {text: "cobalt"},
+                        ]}
+                    ]},
                 ]},
             ]},
         ]},

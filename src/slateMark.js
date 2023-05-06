@@ -378,84 +378,63 @@ function serializeMarkdown(editor, slateNodes) {
         const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
         return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
       } else {   // block
-        hierarchy.unshift(slateNode.type);
-        if ('code' === slateNode.type) {
-          inCodeBlock = true;
+        switch (slateNode.type) {   // before children
+          case 'bulleted-list':
+          case 'numbered-list':
+            if (hierarchy.some(type => 'list-item' === type)) {
+              break;
+            }
+            /* fallthrough */
+          case 'heading-one':
+          case 'heading-two':
+          case 'heading-three':
+          case 'paragraph':
+          case 'table':
+          case 'quote':
+            if (ind > 0) {
+              lines.push(hierarchy.reduce((acc, curr) => 'quote' === curr ? acc + "> " : acc, ""));
+            }
+            break;
+          case 'code':
+            inCodeBlock = true;
+            break;
+          default:
         }
+        hierarchy.push(slateNode.type);
         let text = slateNode.children.map(serializeSlateNode).join('');
-        if (ind > 0 && 'paragraph' === hierarchy[0]) {
-          text = prefixText("\n", text);
-        }
-        for (let level = 0; level < hierarchy.length; ++level) {
-          // eslint-disable-next-line default-case
-          switch (hierarchy[level]) {
-            case 'heading-one':
-              text = prefixText("# ", text);
-              break;
-            case 'heading-two':
-              text = prefixText("## ", text);
-              break;
-            case 'heading-three':
-              text = prefixText("### ", text);
-              break;
-            case 'quote':
-              text = prefixText("> ", text);
-              break;
-            case 'code':
-              text = '```\n' + text + '\n```';
-              inCodeBlock = false;
-              break;
-            case 'image':
-              if (slateNode.title) {
-                text = `![${text}](${slateNode.url} "${slateNode.title}")`;
-              } else {
-                text = `![${text}](${slateNode.url})`;
-              }
-              break;
-            case 'list-item':
-              const listParent = hierarchy.find(type => ['bulleted-list', 'numbered-list'].includes(type));
-              let prefix;
-              if ('bulleted-list' === listParent) {
-                prefix = "* ";
-              } else if ('numbered-list' === listParent) {
-                prefix = (ind + 1) + ". ";
-              }
-              const innermost = hierarchy.findIndex(type => 'list-item' === type);
-              if (level > 0) {
-                if (level === innermost) {
-                  if (0 !== ind) {
-                    prefix = prefix.replace(/\S/, " ");
-                  }
-                } else {
-                  prefix = "    ";
-                }
-              }
-              text = prefixText(prefix, text);
-              break;
-            case 'thematic-break':
-              text = `\n------------------------------\n`;
-              break;
-            case 'table-row':
-              if (0 === level) {
-                if (1 === tableRowNum++) {
-                  let delimiterRow = '';
-                  for (let i=0; i<numTableCol; ++i) { delimiterRow += '| --- '; }
-                  lines.push(delimiterRow);
-                }
-              }
-              break;
-            case 'table':
-              if (0 === level) {
-                tableRowNum = 0;
-              }
-              break;
-          }
+        switch (slateNode.type) {   // after children
+          case 'code':
+            text = '```\n' + text + '\n```';
+            inCodeBlock = false;
+            break;
+          case 'image':
+            if (slateNode.title) {
+              text = `![${text}](${slateNode.url} "${slateNode.title}")`;
+            } else {
+              text = `![${text}](${slateNode.url})`;
+            }
+            break;
+          case 'thematic-break':
+            text = `\n- - - - - - - - - - - - - - - `;
+            break;
+          case 'table-row':
+            if (1 === tableRowNum++) {
+              let delimiterRow = '';
+              for (let i=0; i<numTableCol; ++i) { delimiterRow += '| --- '; }
+              lines.push(indentText(...assemblePrefix(hierarchy, ind), delimiterRow));
+            }
+            break;
+          case 'table':
+            tableRowNum = 0;
+            numTableCol = 0;
+            break;
+          default:
         }
         if (text) {
-          lines.push(text);
+          lines.push(indentText(...assemblePrefix(hierarchy, ind), text));
         }
       }
-      hierarchy.shift();
+      hierarchy.pop();
       return null;
     } else {
       console.error("neither Element nor Text:", slateNode);
@@ -463,14 +442,57 @@ function serializeMarkdown(editor, slateNodes) {
     }
   }
 
-  function prefixText(prefix, text) {
+  function assemblePrefix(hierarchy, indChild) {
+    let indent = "";
+    let prefix = "";
+    for (let level=0; level<hierarchy.length; ++level) {
+      switch(hierarchy[level]) {
+        case 'heading-one':
+          prefix += "# ";
+          break;
+        case 'heading-two':
+          prefix += "## ";
+          break;
+        case 'heading-three':
+          prefix += "### ";
+          break;
+        case 'list-item':
+          const hasChildItem = hierarchy.slice(level+1).some(type => 'list-item' === type);
+          const isContinuation = level < hierarchy.length - 1 && indChild > 0;
+          if (hasChildItem || isContinuation) {
+            prefix += "    ";   // has child list-item
+          } else {
+            const listParent = hierarchy.findLast(type => ['bulleted-list', 'numbered-list'].includes(type))
+            if ('bulleted-list' === listParent) {
+              prefix += "* ";
+            } else {
+              prefix += (indChild + 1) + ". ";   // TODO: use index of list item
+            }
+          }
+          break;
+        case 'quote':
+          indent += "> ";
+          break;
+        default:
+      }
+    }
+    return [indent, prefix];
+  }
+
+  function indentText(indent, prefix, text) {
     if (text) {
-      return text.split('\n').map(line => prefix + line).join('\n');
+      const prefix2 = prefix.length < SPACES.length ? SPACES[prefix.length] : "      ";
+      const lines = text.split('\n');
+      const firstLine = lines.shift();
+      const indentedLines = [indent + prefix + firstLine, ...(lines.map(line => indent + prefix2 + line))];
+      return indentedLines.join("\n");
     } else {
       return null;
     }
   }
 }
+
+const SPACES = ["", " ", "  ", "   ", "    ", "     "];
 
 /* punctuation that might need escaping: \ ` * _ { } [ ] ( ) # + - . ! */
 function escapeMarkdown(text) {

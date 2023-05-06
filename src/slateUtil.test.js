@@ -2569,10 +2569,14 @@ describe("changeContentType", () => {
     expect(editor.children[0]).toEqual({noteSubtype: newSubtype, type: 'paragraph',
       children: [{text: "> Something to lure you in"}]});
     expect(editor.children[1]).toEqual({type: 'paragraph',
-      children: [{text: "## A *Dramatic* Article Title"}]});
+      children: [{text: ""}]});
     expect(editor.children[2]).toEqual({type: 'paragraph',
-      children: [{text: "1. First point"}]});
+      children: [{text: "## A *Dramatic* Article Title"}]});
     expect(editor.children[3]).toEqual({type: 'paragraph',
+      children: [{text: ""}]});
+    expect(editor.children[4]).toEqual({type: 'paragraph',
+      children: [{text: "1. First point"}]});
+    expect(editor.children[5]).toEqual({type: 'paragraph',
       children: [{text: "2. **Second** point"}]});
     expect(editor.subtype).toEqual(newSubtype);
   });
