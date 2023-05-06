@@ -373,12 +373,12 @@ function serializeMarkdown(editor, slateNodes) {
         return string;
       }
     } else if (SlateElement.isElement(slateNode)) {
-      hierarchy.unshift(slateNode.type);
       if (editor.isInline(slateNode)) {
         const childrenText = slateNode.children.map(serializeSlateNode).join('');
         const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
         return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;
       } else {   // block
+        hierarchy.unshift(slateNode.type);
         if ('code' === slateNode.type) {
           inCodeBlock = true;
         }

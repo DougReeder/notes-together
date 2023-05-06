@@ -595,6 +595,55 @@ let a = b**c, x = y**z;
 3. troi`);
   });
 
+  it("should serialize hierarchical ordered lists with links", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const slateNodes = [
+      {type: 'heading-one', children: [{text: "title phrase"}]},
+      {type: 'heading-two', children: [{text: "heading phrase"}]},
+      {type: "numbered-list", "listStart": 1, children: [
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [
+                  {type: 'link', url: '#internal-1', title: null, children: [
+                      {text: "one grandparent"}
+                    ]},
+                ]},
+              {type: "numbered-list", "listStart": 1, children: [
+                  {type: 'list-item', children: [
+                      {type: 'link', url: '#internal-2', title: null, children: [
+                          {text: "one one"}
+                        ]},
+                    ]},
+                  {type: 'list-item', children: [{text: "one two"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "two grandparent"}]},
+              {type: "numbered-list", "listStart": 1, children: [
+                  {type: 'list-item', children: [{text: "two one"}]},
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [
+                          {type: 'link', url: '#internal-3', title: null, children: [
+                              {text: "two two"},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ];
+
+    const md = serializeMarkdown(editor, slateNodes);
+
+    expect(md).toEqual(`# title phrase
+## heading phrase
+1. [one grandparent](#internal-1)
+    1. [one one](#internal-2)
+    2. one two
+1. two grandparent
+    1. two one
+    1. [two two](#internal-3)`);
+  });
+
   it("should serialize children of graphic as alt text", () => {
     const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
