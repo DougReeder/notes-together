@@ -40,6 +40,8 @@ function initDb(dbName = dbNameDefault) {
         isFirstLaunch = true;
 
         const objectStore = theDb.createObjectStore('note', {keyPath: 'id', autoIncrement: false});
+        // If architecting something new like this, make `byDate` unique and
+        // have the persistence layer retry failures with a value one greater.
         objectStore.createIndex('byDate', 'date', {});
         const wordsInd = objectStore.createIndex('byWords', 'wordArr', {unique: false, multiEntry: true});
         if (!wordsInd.multiEntry) {
@@ -80,6 +82,11 @@ function initDb(dbName = dbNameDefault) {
       console.warn("IDB open blocked:", evt);
       window.postMessage({kind: 'TRANSIENT_MSG', message: "Close all other tabs with this webapp open"}, window?.location?.origin);
     };
+
+    openRequest.onclose = evt => {
+      console.warn("IDB forcibly closed:", evt);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: "Database forcibly closed: " + extractUserMessage(evt.target?.error)}, window?.location?.origin);
+    }
   });
 
   dbPrms.catch(err => {
@@ -245,16 +252,7 @@ function sortedStubs(callback, itemStore) {
   };
 }
 function searchStubs(callback, itemStore, searchWords) {
-  // Finds the longest word, which will probably narrow the search the most.
-  let indexWord = "";
-  for (let word of searchWords) {
-    if (word.length > indexWord.length) {
-      indexWord = word;
-    }
-  }
-  searchWords.delete(indexWord);
-  const endWord = indexWord.slice(0, -1) + String.fromCharCode(indexWord.charCodeAt(indexWord.length - 1) + 1);
-  // console.log(`searching from ${indexWord} to ${endWord}`, searchWords)
+  const [indexWord, endWord] = extractLongestWord(searchWords);
 
   const index = itemStore.index('byWords');
   const foundStubs = [];
@@ -307,6 +305,83 @@ function searchStubs(callback, itemStore, searchWords) {
       callback(err);
     }
   };
+}
+
+async function findNoteIds(searchWords) {
+  const {indexedDb: db} = await dbPrms;
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('note', "readonly");
+    transaction.onerror = function (evt) {
+      if (evt.target.error?.name !== 'AbortError') {
+        console.error("IDB findNoteIds:", evt.target.error);
+        reject(evt.target.error);
+      }
+      evt.preventDefault();
+      evt.stopPropagation();
+    };
+
+    const noteStore = transaction.objectStore("note");
+    if (searchWords.size === 0) {
+      noteStore.index('byDate').getAllKeys().onsuccess = evt => {
+        resolve(evt.target.result.reverse());
+      }
+    } else {
+      searchIds(resolve, reject, noteStore, new Set(searchWords))
+    }
+  });
+}
+
+function searchIds(resolve, reject, noteStore, searchWords) {
+  const [indexWord, endWord] = extractLongestWord(searchWords);
+
+  const index = noteStore.index('byWords');
+  const foundIdDates = [];
+  const foundIds = new Set();
+  const cursorRequest = index.openCursor(IDBKeyRange.bound(indexWord, endWord, false, true));
+  cursorRequest.onsuccess = function (evt) {
+    try {
+      const cursor = evt.target.result
+      if (cursor) {
+        // A note might be indexed under "their" and "then".
+        // The search word "the" would match both entries.
+        if (foundIds.has(cursor.value.id)) {
+          return cursor.continue();
+        }
+        for (const searchWord of searchWords) {
+          if (!cursor.value.wordArr.some(noteWord => noteWord.startsWith(searchWord))) {
+            return cursor.continue();
+          }
+        }
+
+        foundIdDates.push({
+          id: cursor.value.id,
+          date: cursor.value.date,
+        });
+        foundIds.add(cursor.value.id);
+
+        cursor.continue();
+      } else {   // no cursor -> end
+        foundIdDates.sort(compareByDate);
+        resolve(foundIdDates.map(idDate => idDate.id));
+      }
+    } catch (err) {
+      reject(err);
+    }
+  };
+}
+
+function extractLongestWord(searchWords) {
+  // Finds the longest word, which will probably narrow the search the most.
+  let indexWord = "";
+  for (let word of searchWords) {
+    if (word.length > indexWord.length) {
+      indexWord = word;
+    }
+  }
+  searchWords.delete(indexWord);
+  const endWord = indexWord.slice(0, -1) + String.fromCharCode(indexWord.charCodeAt(indexWord.length - 1) + 1);
+  // console.log(`searching from ${indexWord} to ${endWord}`, searchWords)
+  return [indexWord, endWord];
 }
 
 function compareByDate(itemA, itemB) {
@@ -617,4 +692,4 @@ function listSuggestions(max) {
   });
 }
 
-export {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds, checkpointSearch, listSuggestions};
+export {initDb, findStubs, findNoteIds, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds, checkpointSearch, listSuggestions};

@@ -14,7 +14,7 @@ import List from './List';
 import Detail from './Detail'
 import './App.css';
 import {
-  AppBar,
+  AppBar, CircularProgress,
   Fab,
   IconButton,
   Menu,
@@ -35,6 +35,7 @@ import HelpPane from "./HelpPane";
 import {Delete, DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
+import {fileExportMarkdown} from "./fileExport";
 
 const useStyles = makeStyles((theme) => ({
   appbar: {
@@ -48,8 +49,14 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: '1.5ch',
       marginRight: '1.5ch',
       minWidth: '3ch',
-      textAlign: 'right',
-    }
+      textAlign: 'center',
+    },
+    '& .workingInBackground': {
+      width: '48px',
+      height: '48px',
+      textAlign: 'center',
+      paddingTop: '10px',
+    },
   },
 }));
 
@@ -76,6 +83,7 @@ function App() {
 
   const [count, setCount] = useState(" ");
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
+  const [numBackgroundTasks, setNumBackgroundTasks] = useState(0);
 
   const [, forceRender] = useReducer(x => x + 1, 0);
 
@@ -150,7 +158,7 @@ function App() {
         enqueueSnackbar(evt.data?.message || "Close and re-open this tab", {
           anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
-          autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 3000 : 8000,
+          autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 4000 : 8000,
           key: evt.data?.key,
           TransitionComponent: Slide,
         });
@@ -306,6 +314,27 @@ function App() {
     }
   }
 
+
+  async function handleExportSelectedMarkdown(_evt) {
+    setAppMenuAnchorEl(null);
+    setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
+    try {
+      if ("0" === count) {
+        window.postMessage({kind: 'TRANSIENT_MSG', severity: 'info', message: "Change the search to match some notes!"}, window?.location?.origin);
+        return;
+      }
+
+      await fileExportMarkdown(searchStr, searchWords);
+    } catch (err) {
+      console.error(`while exporting:`, err);
+      if ('AbortError' !== err.name || "The user aborted a request." !== err.message) {
+        window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+      }
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
+    }
+  }
+
   function preventDefault(evt) {
     evt.stopPropagation();
     evt.preventDefault();
@@ -386,40 +415,52 @@ function App() {
   async function handleAddSeedNotes() {
     try {
       setTestMenuAnchorEl(null);
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       await seedNotes();
     } catch (err) {
       setTransientErr(err);
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
   }
 
   async function handleAddMovieNotes() {
     try {
       setTestMenuAnchorEl(null);
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       for (let i = 0; i < 100; ++i) {
         await randomNote();
       }
     } catch (err) {
       setTransientErr(err);
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
   }
 
   async function handleHammer() {
     try {
       setTestMenuAnchorEl(null);
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       await hammerStorage();
     } catch (err) {
       setTransientErr(err);
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
   }
 
   async function handleDeleteFillerNotes() {
     try {
       setTestMenuAnchorEl(null);
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       for (const noteId of await findFillerNoteIds()) {
         await deleteNote(noteId);
       }
     } catch (err) {
       setTransientErr(err);
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
   }
 
@@ -456,16 +497,20 @@ function App() {
               <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
               <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
             </Menu>
-            <IconButton onClick={openAppMenu} title="Open application menu" size="large">
+            {numBackgroundTasks > 0 ?
+              <div className="workingInBackground"><CircularProgress /></div> :
+              <IconButton onClick={openAppMenu} title="Open application menu" size="large">
               <MenuIcon/>
             </IconButton>
+            }
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                   onClose={setAppMenuAnchorEl.bind(this, null)}>
               <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
-              <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
-              <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               <MenuItem onClick={handleSaveTag}>Save search as tag<Label/></MenuItem>
               <MenuItem onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
+              <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
+              <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
+              <MenuItem className={!('showSaveFilePicker' in window && "0" !== count) ? 'pseudoDisabled' : ''} onClick={handleExportSelectedMarkdown}>{`Export ${searchWords.size > 0 ? count : "all"} notes to Markdown...`}</MenuItem>
               <MenuItem onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}

@@ -150,7 +150,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         editor.subtype = /\/(.+)/.exec(theNote.mimeType)?.[1];
         slateNodes = theNote.content.split("\n").map(line => {return {type: 'paragraph', children: [{text: line}]}});
       } else {
-        throw new Error("Can't display this type of note");
+        throw new Error(`Can't display “${theNote.mimeType}” note`);
       }
       // console.log("initializing slateNodes:", slateNodes);
 

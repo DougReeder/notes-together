@@ -78,7 +78,7 @@ describe("Details component", () => {
 
     render(<Detail noteId={noteId}></Detail>);
 
-    const textEl = await screen.findByText(/Can't display this type of note/);
+    const textEl = await screen.findByText(/Can't display “application\/example” note/);
     expect(textEl).toBeInTheDocument();
     expect(textEl).not.toHaveFocus();
     expect(await screen.queryByTitle('Block type')).not.toBeInTheDocument();

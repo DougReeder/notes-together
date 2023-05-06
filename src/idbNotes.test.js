@@ -2,10 +2,19 @@
 // Copyright © 2021-2022 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 import {createMemoryNote} from "./Note";
 import auto from "fake-indexeddb/auto.js";
-import {initDb, findStubs, getNoteDb, upsertNoteDb, deleteNoteDb, checkpointSearch, listSuggestions} from "./idbNotes";
+import {
+  initDb,
+  findStubs,
+  getNoteDb,
+  upsertNoteDb,
+  deleteNoteDb,
+  checkpointSearch,
+  listSuggestions,
+  findNoteIds
+} from "./idbNotes";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
 
@@ -173,45 +182,24 @@ describe("findStubs", () => {
   const text3 = "I don't <pre>like thin crust</pre>";
   const text3title = "like thin crust";
 
-  const date = new Date(2001, 0, 1);
-
-  function createIndexedNote(content) {
-    date.setTime(date.getTime() + 24*60*60*1000);
-    const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
-
-    const wordSet = new Set();
-    const textFilter = function (text) {
-      for (const word of parseWords(text)) {
-        wordSet.add(word);
-      }
-      return text;
-    }
-
-    const cleanNote = sanitizeNote(memNote, textFilter);
-
-    for (let candidateWord of wordSet) {
-      for (let otherWord of wordSet) {
-        if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
-          wordSet.delete(otherWord);
-        }
-      }
-    }
-    cleanNote.wordArr = Array.from(wordSet);
-
-    return cleanNote;
-  }
-
    beforeAll(async () => {
     await deleteTestNotes();
 
+    const date = new Date(2001, 0, 1);
     for (let i = 0; i < 11; ++i) {
-      await upsertNoteDb(createIndexedNote(text1));
-      await upsertNoteDb(createIndexedNote(text2));
-      await upsertNoteDb(createIndexedNote(text3));
+      date.setTime(date.getTime() + 24*60*60*1000);
+      await upsertNoteDb(createIndexedNote(text1, date));
+      date.setTime(date.getTime() + 24*60*60*1000);
+      await upsertNoteDb(createIndexedNote(text2, date));
+      date.setTime(date.getTime() + 24*60*60*1000);
+      await upsertNoteDb(createIndexedNote(text3, date));
     }
-    await upsertNoteDb(createIndexedNote(text2));
-    await upsertNoteDb(createIndexedNote(text3));
-    await upsertNoteDb(createIndexedNote(text3));
+    date.setTime(date.getTime() + 24*60*60*1000);
+    await upsertNoteDb(createIndexedNote(text2, date));
+    date.setTime(date.getTime() + 24*60*60*1000);
+    await upsertNoteDb(createIndexedNote(text3, date));
+    date.setTime(date.getTime() + 24*60*60*1000);
+    await upsertNoteDb(createIndexedNote(text3, date));
   });
 
   it("should return all notes when no words in search string", done => {
@@ -303,6 +291,92 @@ describe("findStubs", () => {
     }
   });
 });
+
+describe("findNoteIds", () => {
+  const text1 = "<h1>The Mysterious Island</h1><p>by Jules Verne</p>";
+  const text1title = "The Mysterious Island";
+  const text2 = "<h2>The <i>Widget</i> Chronicle</h2><i>by John Doe</i>";
+  const text2title = "The Widget Chronicle";
+  const text3 = "<h3>groceries</h3><ol><li>all purpose flour</li><li>oranges</li></ol>";
+  const text3title = "groceries";
+  const titles = [text1title, text2title, text3title];
+  const earlierDate = new Date(2010, 6, 1);
+  const laterDate = new Date(2010, 7, 1);
+
+  beforeAll(async () => {
+    await deleteTestNotes();
+
+    await upsertNoteDb(createIndexedNote(text1, earlierDate));
+    await upsertNoteDb(createIndexedNote(text2, earlierDate));
+    await upsertNoteDb(createIndexedNote(text3, earlierDate));
+
+    await upsertNoteDb(createIndexedNote(text2, laterDate));
+    await upsertNoteDb(createIndexedNote(text1, laterDate));
+    await upsertNoteDb(createIndexedNote(text3, laterDate));
+  });
+
+  it("should return all note IDs, by descending date order, when no search words", async () => {
+    const ids = await findNoteIds(new Set());
+
+    const notes = [];
+    for (const id of ids) {
+      expect(uuidValidate(id)).toBeTruthy();
+      notes.push(await getNoteDb(id));
+    }
+    expect(ids.length).toEqual(6);
+    expect(notes[0].date).toEqual(laterDate);
+    expect(notes[1].date).toEqual(laterDate);
+    expect(notes[2].date).toEqual(laterDate);
+    expect(notes[3].date).toEqual(earlierDate);
+    expect(notes[4].date).toEqual(earlierDate);
+    expect(notes[5].date).toEqual(earlierDate);
+
+    expect(notes.every(note => titles.includes(note.title))).toBeTruthy();
+  });
+
+  it("should return note IDs that match search words, by descending date order", async () => {
+    const ids = await findNoteIds(new Set(["BY"]));
+
+    const notes = [];
+    for (const id of ids) {
+      expect(uuidValidate(id)).toBeTruthy();
+      notes.push(await getNoteDb(id));
+    }
+    expect(ids.length).toEqual(4);
+    expect(notes[0].date).toEqual(laterDate);
+    expect(notes[1].date).toEqual(laterDate);
+    expect(notes[2].date).toEqual(earlierDate);
+    expect(notes[3].date).toEqual(earlierDate);
+
+    const bookTitles = [text1title, text2title];
+    expect(notes.every(note => bookTitles.includes(note.title))).toBeTruthy();
+  });
+});
+
+function createIndexedNote(content, date) {
+  const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
+
+  const wordSet = new Set();
+  const textFilter = function (text) {
+    for (const word of parseWords(text)) {
+      wordSet.add(word);
+    }
+    return text;
+  }
+
+  const cleanNote = sanitizeNote(memNote, textFilter);
+
+  for (let candidateWord of wordSet) {
+    for (let otherWord of wordSet) {
+      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
+        wordSet.delete(otherWord);
+      }
+    }
+  }
+  cleanNote.wordArr = Array.from(wordSet);
+
+  return cleanNote;
+}
 
 
 describe("checkPointSearch", () => {

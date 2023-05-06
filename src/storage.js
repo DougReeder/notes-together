@@ -2,7 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import removeDiacritics from "./diacritics";
-import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, checkpointSearch, listSuggestions} from "./idbNotes";
+import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, findNoteIds, checkpointSearch, listSuggestions} from "./idbNotes";
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
 import {sanitizeNote} from "./sanitizeNote";
@@ -332,4 +332,4 @@ async function listTags() {
   return await remoteStorage.documents.getAllTags();
 }
 
-export {WORD_LENGTH_MAX, TAG_LENGTH_MAX, init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, parseWords, normalizeWord, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};
+export {WORD_LENGTH_MAX, TAG_LENGTH_MAX, init, changeHandler, upsertNote, getNoteDb as getNote, deleteNote, findStubs, findNoteIds, parseWords, normalizeWord, checkpointSearch, listSuggestions, saveTag, deleteTag, listTags};

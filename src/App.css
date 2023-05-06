@@ -119,7 +119,9 @@ body {
   white-space: normal !important;
   justify-content: space-between;
 }
-
+.MuiMenuItem-root.pseudoDisabled {
+  color: silver;
+}
 
 .error {
   position: absolute;
