@@ -177,20 +177,21 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
           <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel.</p>
-            <p>If you don't add text related to the graphic, at least add several keywords, so you can search for it.  But you don't have to do that right away!</p>
+            <p>If you don't need text related to the graphic, at least add several key words, so you can find it by search.</p>
           </li>
           <li><p>To add graphics to an existing note, drag the files to the editor, or copy and paste them.</p>
             <p>On a phone or tablet, from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste files...</b>. That's also how you insert a picture with the camera.</p>
           </li>
         </ul>
 
-        <h4>How do I import text or graphics from PDF or office documents?</h4>
+        <h4>How do I import text or graphics from a PDF or office document?</h4>
         <ol>
           <li>Open the document in an appropriate app.</li>
           <li>Select and copy the text or graphic.</li>
-          <li>Paste into the Notes Together editor.</li>
+          <li>Paste into the Notes Together editor pane.</li>
         </ol>
-        <p>Or, select the text or graphic in the other app, and drag it into the editor.</p>
+        <p>Or, select the text or graphic in the other app, and drag it into the editor pane.</p>
+        <p><i>Note that PDFs and office documents are designed to place ink on a page. They don't necessarily contain semantic markup that can be imported.</i></p>
 
         <h4>How many graphics can I add to a note?</h4>
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>

@@ -71,7 +71,7 @@ function initDb(dbName = dbNameDefault) {
       // maybe store something in localStorage?
       noteDb.onclose = function (evt) {
         console.error("unexpected IDB close:", evt);
-        window.postMessage({kind: 'TRANSIENT_MSG', message: "Access to database lost - restart your browser"}, window?.location?.origin);
+        window.postMessage({kind: 'TRANSIENT_MSG', message: "Access to database lost - reload this page"}, window?.location?.origin);
       }
       resolve({indexedDb: noteDb, isFirstLaunch});
     };
