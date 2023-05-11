@@ -464,6 +464,10 @@ describe("storage", () => {
   });
 
   describe("deleteNote", () => {
+    it("should fail when passed a non-number", async () => {
+      await expect(deleteNote(undefined)).rejects.toThrow();
+    });
+
     it("should remove note from storage", async () => {
       const id = generateTestId();
       const note = createMemoryNote(id, "Aroint, thee, knave!")
@@ -481,6 +485,18 @@ describe("storage", () => {
       expect(deleteResult).toContain(NIL);
 
       expect(console.error).toHaveBeenCalledWith(expect.stringMatching("Cannot delete non-existing node"));
+    });
+
+    it("should not remove locked note from storage", async () => {
+      const savedNote = await upsertNote(createMemoryNote(generateTestId(), "Fusce vel maximus ipsum, at consequat dolor.", new Date(1983, 2, 26), 'text/html;hint=SEMANTIC', true));
+
+      await expect(deleteNote(savedNote.id)).rejects.toThrow("First, unlock ");
+      await expect(getNote(savedNote.id)).resolves.toEqual(savedNote);
+
+      savedNote.isLocked = false;
+      await upsertNote(savedNote);
+      await expect(deleteNote(savedNote.id)).resolves.toEqual([{statusCode: 200},  savedNote.id]);
+      await expect(getNote(savedNote.id)).resolves.toBeUndefined();
     });
   });
 
@@ -813,7 +829,7 @@ Finance: we can't afford it.</ins>`);
 
     beforeAll(async () => {
       for (const noteId of await findFillerNoteIds()) {
-        await deleteNote(noteId);
+        await deleteNote(noteId, true);
       }
 
       await upsertNote(note1);

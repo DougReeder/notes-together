@@ -12,6 +12,7 @@ import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
 import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
@@ -74,18 +75,22 @@ function List(props) {
 
   const inactivateAndActivateItemButtons = useCallback(
       (evt, newActiveId) => {
-    const newItemButtonIds = {};
-    for (const [id, isActive] of Object.entries(itemButtonsIds)) {
-      newItemButtonIds[id] = false;
-      if (isActive) { evt?.stopPropagation(); }   // Escape key handled
-    }
-    if (newActiveId) {
-      evt?.stopPropagation();
-      newItemButtonIds[newActiveId] = true;
-      list.current?.focus();
-    }
-    setItemButtonsIds(newItemButtonIds);
-  }, [itemButtonsIds]);
+    setItemButtonsIds(oldItemButtonIds => {
+      const newItemButtonIds = {};
+      for (const [id, isActive] of Object.entries(oldItemButtonIds)) {
+        if (isActive) {
+          newItemButtonIds[id] = false;
+          evt?.stopPropagation();   // Escape key handled
+        }   // discards inactive entries
+      }
+      if (newActiveId) {
+        evt?.stopPropagation();
+        newItemButtonIds[newActiveId] = true;
+        list.current?.focus();
+      }
+      return newItemButtonIds;
+    });
+  }, []);
 
   const pointerRef = useRef({});
 
@@ -142,7 +147,7 @@ function List(props) {
   }
 
   function handleClick(evt) {
-    if (2 === evt.detail) {
+    if (2 === evt.detail) {   // double click
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
@@ -207,12 +212,20 @@ function List(props) {
       case 'Enter':   // The App key handler also handles this - that's ok.
       case 'Space':
         if (itemButtonsIds[selectedNoteId]) {
-          switch (actionToConfirm.current) {   // eslint-disable-line default-case
-            case 'DELETE':
-              await deleteNote(selectedNoteId);
-              break;
+          evt.stopPropagation();
+          evt.preventDefault();
+          try {
+            switch (actionToConfirm.current) {   // eslint-disable-line default-case
+              case 'DELETE':
+                await deleteNote(selectedNoteId);
+                break;
+            }
+          } catch (err) {
+            window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+          } finally {
+            actionToConfirm.current = '';
+            inactivateAndActivateItemButtons(evt, null);
           }
-          actionToConfirm.current = '';
         }
         break;
       // default:
@@ -309,7 +322,9 @@ function List(props) {
       const id = noteEl?.dataset?.id;
       await deleteNote(id);
     } catch (err) {
-      setTransientErr(err);
+      window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+    } finally {
+      inactivateAndActivateItemButtons(evt, null);
     }
   }
 

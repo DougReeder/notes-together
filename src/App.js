@@ -393,9 +393,13 @@ function App() {
     }
   }
 
-  function handleDeleteSelected(evt) {
+  async function handleDeleteSelected(evt) {
     if (selectedNoteId) {
-      deleteNote(selectedNoteId);
+      try {
+        await deleteNote(selectedNoteId);
+      } catch (err) {
+        window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+      }
     } else {
       window.postMessage({kind: 'TRANSIENT_MSG', message: "First, select a note!", severity: 'info'}, window?.location?.origin);
     }

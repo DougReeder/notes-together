@@ -192,7 +192,7 @@ describe("findStubs", () => {
       date.setTime(date.getTime() + 24*60*60*1000);
       await upsertNoteDb(createIndexedNote(text2, date));
       date.setTime(date.getTime() + 24*60*60*1000);
-      await upsertNoteDb(createIndexedNote(text3, date));
+      await upsertNoteDb(createIndexedNote(text3, date, 1 === i));
     }
     date.setTime(date.getTime() + 24*60*60*1000);
     await upsertNoteDb(createIndexedNote(text2, date));
@@ -353,8 +353,8 @@ describe("findNoteIds", () => {
   });
 });
 
-function createIndexedNote(content, date) {
-  const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
+function createIndexedNote(content, date, isLocked = false) {
+  const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC', isLocked);
 
   const wordSet = new Set();
   const textFilter = function (text) {

@@ -280,10 +280,20 @@ async function upsertNote(memoryNote, initiator) {
 }
 
 
-function deleteNote(id) {
-  return remotePrms.then(remoteStorage => {
-    return Promise.all([remoteStorage.documents.delete(id), deleteNoteDb(id)]);
-  });
+async function deleteNote(id, force) {
+  const remoteStorage = await remotePrms;
+  if (!force) {
+    const note = await getNoteDb(id);
+    if (note?.isLocked) {
+      const shortTitle = note.title?.split("\n")?.[0]?.slice(0, 24) + "...";
+      const message = `First, unlock “${shortTitle}”`;
+      console.info(message);
+      const err = new Error(message);
+      err.severity = 'info';
+      throw err;
+    }
+  }
+  return Promise.all([remoteStorage.documents.delete(id), deleteNoteDb(id)]);
 }
 
 
