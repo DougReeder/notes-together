@@ -164,7 +164,7 @@ function insertTableAfter(editor) {
 }
 
 function insertAfter(editor, newNodes, selectionPathFromInsert) {
-  const [block, blockPath] = getSelectedBlock(['list-item', 'table-cell'], editor);
+  const [block, blockPath] = getSelectedBlock(['list-item', 'table-cell', 'quote'], editor);
   if (!block) {
     const err = new Error("Reduce your selection, first");
     err.severity = 'info';
@@ -208,6 +208,8 @@ const getSelectedListItem = getSelectedBlock.bind(null, ['list-item']);
 
 const getSelectedTable = getSelectedBlock.bind(null, ['table']);
 
+const getSelectedQuote = getSelectedBlock.bind(null, ['quote']);
+
 function getSelectedBlock(blockTypes, editor) {
   if (!editor.selection) return [undefined, undefined];
   const {blockPath} = getCommonBlock(editor);
@@ -218,7 +220,7 @@ function getSelectedBlock(blockTypes, editor) {
         return [candidate, candidatePath];
       }
     } catch (err) {
-      console.error("while searching for selected table:", err);
+      console.error(`while searching for selected ${blockTypes.join()}:`, err);
     }
   }
   return [undefined, undefined];
@@ -493,4 +495,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, getSelectedQuote, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};

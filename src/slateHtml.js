@@ -421,13 +421,14 @@ function withHtml(editor) {   // defines Slate plugin
       case 'code':
       case 'thematic-break':
         const parent = SlateNode.parent(editor, blockPath);
-        if ('list-item' === parent.type &&
+        if (['list-item', 'quote'].includes(parent.type) &&
             blockPath[blockPath.length - 1] === parent.children.length - 1
-            && isEmpty(block)) {
+            && isEmpty(block)) {   // last block child of list-item is empty
           Editor.withoutNormalizing(editor, () => {
             Transforms.removeNodes(editor, {at: blockPath});
             const insertPath = [...blockPath.slice(0, -2), blockPath[blockPath.length - 2] + 1];
-            Transforms.insertNodes(editor, {type: 'list-item', children: [{text: ""}]}, {at: insertPath});
+            const newNodeType = 'list-item' === parent.type ? 'list-item' : 'paragraph';
+            Transforms.insertNodes(editor, {type: newNodeType, children: [{text: ""}]}, {at: insertPath});
             const selectionPath = [...insertPath, 0];
             Transforms.select(editor, {
               anchor: {path: selectionPath, offset: 0},
@@ -436,7 +437,7 @@ function withHtml(editor) {   // defines Slate plugin
           });
         } else if (SlateRange.isCollapsed(editor.selection) &&
             Point.equals(Editor.end(editor, blockPath) , SlateRange.end(editor.selection)) &&
-            'code' !== block.type) {
+            'code' !== block.type) {   // at end of editor
           Editor.withoutNormalizing(editor, () => {
             const newPath = [...blockPath.slice(0, -1), blockPath[blockPath.length-1]+1];
             Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});

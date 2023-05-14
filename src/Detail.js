@@ -51,7 +51,7 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns, insertAfter
+  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns, insertAfter, getSelectedQuote
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -703,6 +703,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     if (editor.subtype?.startsWith('html')) {
       const relevantBlockType = getRelevantBlockType(editor);
       const [selectedListItem] = getSelectedListItem(editor);
+      const [selectedQuote] = getSelectedQuote(editor);
       let menu;
       switch (relevantBlockType) {
         case 'paragraph':
@@ -716,7 +717,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'table-cell':
         default:
           menu = [...BLOCK_ITEMS_DEFAULT];
-          addInsertsAndDeletes(menu, selectedListItem, selectedTable, true);
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, selectedQuote, true);
           break;
         case 'bulleted-list':
         case 'numbered-list':
@@ -724,11 +725,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'table-row':
         case 'multiple':
           menu = [...BLOCK_ITEMS_DEFAULT];
-          addInsertsAndDeletes(menu, selectedListItem, selectedTable, false)
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, selectedQuote, false)
           break;
         case 'image':
           menu = [];
-          addInsertsAndDeletes(menu, selectedListItem, selectedTable, true)
+          addInsertsAndDeletes(menu, selectedListItem, selectedTable, selectedQuote, true)
           break;
         case 'n/a':
           menu = NO_SELECTION_MENU;
@@ -1055,11 +1056,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     </>);
   }
 
-  function addInsertsAndDeletes(menu, listItem, table, includeThematicBreak) {
-    if (listItem || table || includeThematicBreak) {
+  function addInsertsAndDeletes(menu, listItem, table, quote, includeThematicBreak) {
+    if (listItem || table || quote || includeThematicBreak) {
       menu.push({cmd: '', label: "Insert"});   // divider
     }
-    if (listItem || table) {
+    if (listItem || table || quote) {
       menu.push(
           {cmd: 'insert-paragraph', label: "Paragraph"},
           {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
