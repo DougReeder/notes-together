@@ -51,7 +51,7 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns
+  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns, insertAfter
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -423,6 +423,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
       // eslint-disable-next-line default-case
       switch (targetType) {
+        case 'insert-paragraph':
+          insertAfter(editor,
+              {type: 'paragraph', children: [{text: ""}]},
+              [0]);
+          return;
         case 'insert-bulleted-list':
           insertListAfter(editor, 'bulleted-list');
           return;
@@ -1056,6 +1061,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     }
     if (listItem || table) {
       menu.push(
+          {cmd: 'insert-paragraph', label: "Paragraph"},
           {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
           {cmd: 'insert-numbered-list', label: "Numbered List"},
           {cmd: 'insert-table', label: "Table"}

@@ -493,4 +493,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};
