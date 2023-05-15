@@ -24,6 +24,7 @@ import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
 import {getCommonBlock, coerceToPlainText} from "./slateUtil";
+import {extractUserMessage} from "./util/extractUserMessage";
 
 function isEmpty(node) {
   if (Text.isText(node)) {
@@ -367,89 +368,97 @@ function withHtml(editor) {   // defines Slate plugin
   }
 
   editor.insertBreak = () => {
-    const { selection } = editor
-    if (!selection) { return; }
+    try {
+      const {selection} = editor;
+      if (!selection) { return; }
 
-    const {block, blockPath} = getCommonBlock(editor);
-    switch (block.type) {
-      case 'image':
-        Editor.withoutNormalizing(editor, () => {
-          const insertPath = [...blockPath.slice(0, -1), blockPath[blockPath.length - 1] + 1];
-          Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: insertPath});
-          const selectionPath = [...insertPath, 0];
-          Transforms.select(editor, {
-            anchor: {path: selectionPath, offset: 0},
-            focus: {path: selectionPath, offset: 0}
-          });
-        });
-        return;
-      case 'table':
-      case 'table-row':
-        return;
-      case 'table-cell':
-        Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {
-          at: blockPath,
-          match: n => SlateText.isText(n) || editor.isInline(n),
-          mode: 'highest',
-          split: true,
-        });
-        insertBreak();
-        return;
-      case 'list-item':
-        if (isEmpty(block) && blockPath.length >= 2) {
+      const {block, blockPath} = getCommonBlock(editor);
+      switch (block.type) {
+        case 'image':
           Editor.withoutNormalizing(editor, () => {
-            const parentPathLength = blockPath.length - 1;
-            Transforms.unwrapNodes(editor,
-                {
-                  at: blockPath,
-                  match: (n, p) => p.length === parentPathLength,
-                  split: true
-                });
-            const newPath = [...blockPath.slice(0,-2), blockPath[blockPath.length-2] + 1];
-            Transforms.setNodes(editor, {type: 'paragraph'}, {at: newPath});
-            Transforms.select(editor, newPath);
-          });
-        } else {
-          insertBreak();
-        }
-        break;
-      case 'heading-one':
-      case 'heading-two':
-      case 'heading-three':
-      case 'paragraph':
-      case 'quote':
-      case 'code':
-      case 'thematic-break':
-        const parent = SlateNode.parent(editor, blockPath);
-        if (['list-item', 'quote'].includes(parent.type) &&
-            blockPath[blockPath.length - 1] === parent.children.length - 1
-            && isEmpty(block)) {   // last block child of list-item is empty
-          Editor.withoutNormalizing(editor, () => {
-            Transforms.removeNodes(editor, {at: blockPath});
-            const insertPath = [...blockPath.slice(0, -2), blockPath[blockPath.length - 2] + 1];
-            const newNodeType = 'list-item' === parent.type ? 'list-item' : 'paragraph';
-            Transforms.insertNodes(editor, {type: newNodeType, children: [{text: ""}]}, {at: insertPath});
+            const insertPath = [...blockPath.slice(0, -1), blockPath[blockPath.length - 1] + 1];
+            Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: insertPath});
             const selectionPath = [...insertPath, 0];
             Transforms.select(editor, {
               anchor: {path: selectionPath, offset: 0},
               focus: {path: selectionPath, offset: 0}
             });
           });
-        } else if (SlateRange.isCollapsed(editor.selection) &&
-            Point.equals(Editor.end(editor, blockPath) , SlateRange.end(editor.selection)) &&
-            'code' !== block.type) {   // at end of editor
-          Editor.withoutNormalizing(editor, () => {
-            const newPath = [...blockPath.slice(0, -1), blockPath[blockPath.length-1]+1];
-            Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
-            Transforms.select(editor, {anchor: {path: [...newPath, 0], offset: 0}, focus: {path: [...newPath, 0], offset: 0}});
+          return;
+        case 'table':
+        case 'table-row':
+          return;
+        case 'table-cell':
+          Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {
+            at: blockPath,
+            match: n => SlateText.isText(n) || editor.isInline(n),
+            mode: 'highest',
+            split: true,
           });
-        } else {
           insertBreak();
-        }
-        return;
-      default:
-        insertBreak();
-        return;
+          return;
+        case 'list-item':
+          if (isEmpty(block) && blockPath.length >= 2) {
+            Editor.withoutNormalizing(editor, () => {
+              const parentPathLength = blockPath.length - 1;
+              Transforms.unwrapNodes(editor,
+                  {
+                    at: blockPath,
+                    match: (n, p) => p.length === parentPathLength,
+                    split: true
+                  });
+              const newPath = [...blockPath.slice(0,-2), blockPath[blockPath.length-2] + 1];
+              Transforms.setNodes(editor, {type: 'paragraph'}, {at: newPath});
+              Transforms.select(editor, newPath);
+            });
+          } else {
+            insertBreak();
+          }
+          break;
+        case 'heading-one':
+        case 'heading-two':
+        case 'heading-three':
+        case 'paragraph':
+        case 'quote':
+        case 'code':
+        case 'thematic-break':
+          const parent = SlateNode.parent(editor, blockPath);
+          if (['list-item', 'quote'].includes(parent.type) &&
+              blockPath[blockPath.length - 1] === parent.children.length - 1
+              && isEmpty(block)) {   // last block child of list-item is empty
+            Editor.withoutNormalizing(editor, () => {
+              Transforms.removeNodes(editor, {at: blockPath});
+              const insertPath = [...blockPath.slice(0, -2), blockPath[blockPath.length - 2] + 1];
+              const newNodeType = 'list-item' === parent.type ? 'list-item' : 'paragraph';
+              Transforms.insertNodes(editor, {type: newNodeType, children: [{text: ""}]}, {at: insertPath});
+              const selectionPath = [...insertPath, 0];
+              Transforms.select(editor, {
+                anchor: {path: selectionPath, offset: 0},
+                focus: {path: selectionPath, offset: 0}
+              });
+            });
+          } else if (SlateRange.isCollapsed(editor.selection) &&
+              Point.equals(Editor.end(editor, blockPath) , SlateRange.end(editor.selection)) &&
+              'code' !== block.type) {   // at end of editor
+            Editor.withoutNormalizing(editor, () => {
+              const newPath = [...blockPath.slice(0, -1), blockPath[blockPath.length-1]+1];
+              Transforms.insertNodes(editor, {type: 'paragraph', children: [{text: ""}]}, {at: newPath});
+              Transforms.select(editor, {
+                anchor: {path: [...newPath, 0], offset: 0},
+                focus: {path: [...newPath, 0], offset: 0}
+              });
+            });
+          } else {
+            insertBreak();
+          }
+          return;
+        default:
+          insertBreak();
+          return;
+      }
+    } catch (err) {
+      console.error("insertBreak:", err);
+      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
     }
   }
 

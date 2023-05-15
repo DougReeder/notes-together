@@ -940,6 +940,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             placeholder="Type, or paste or drag some text or a picture."
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
+              try {
               switch (evt.key) {   // eslint-disable-line default-case
                 case 'Tab':
                   if (!evt.shiftKey) {
@@ -1022,6 +1023,10 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                     changeBlockType(editor, 'quote');
                   }
                   break;
+              }
+              } catch (err) {
+                console.error(`typed ${evt.key}:`, err);
+                window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity}, window?.location?.origin);
               }
             }}
             // forcing an update preserves focus; unclear why

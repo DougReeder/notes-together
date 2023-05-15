@@ -2,7 +2,8 @@
 
 import {
   changeBlockType,
-  changeContentType, flipTableRowsToColumns,
+  changeContentType,
+  flipTableRowsToColumns,
   getRelevantBlockType,
   getSelectedListItem,
   getSelectedTable,
@@ -14,7 +15,6 @@ import {
 import {createEditor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
-import auto from "fake-indexeddb/auto.js";
 import {init} from "./storage";
 
 describe("getRelevantBlockType", () => {
@@ -2142,6 +2142,89 @@ describe("tabLeft", () => {
     });
   });
 
+  it("should move item which contains whole selection", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "111"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "222"}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "222AAA"}]},
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [{text: "222BBB"}]},
+                      {type: 'numbered-list', children: [
+                          {type: 'list-item', children: [{text: "222BBBi"}]},
+                          {type: 'list-item', children: [
+                              {type: 'paragraph', children: [{text: "222BBBii"}]},
+                              {type: 'bulleted-list', children: [
+                                  {type: 'list-item', children: [{text: "222BBBiia a"}]},
+                                  {type: 'list-item', children: [{text: "222BBBiib b"}]},
+                                ]},
+                            ]},
+                          {type: 'list-item', children: [
+                              {type: 'paragraph', children: [{text: "222BBBii"}]},
+                              {type: 'bulleted-list', children: [
+                                  {type: 'list-item', children: [{text: "222BBBiiia a"}]},
+                                  {type: 'list-item', children: [{text: "222BBBiiib b"}]},
+                                ]},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "333"}]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 1, 1, 1, 1, 1, 1, 0], offset: 10},
+      focus:  {path: [1, 1, 1, 1, 1, 2, 1, 0, 0], offset: 10},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "111"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "222"}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "222AAA"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "222BBB"}]},
+              {type: 'numbered-list', children: [
+                  {type: 'list-item', children: [{text: "222BBBi"}]},
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [{text: "222BBBii"}]},
+                      {type: 'bulleted-list', children: [
+                          {type: 'list-item', children: [{text: "222BBBiia a"}]},
+                          {type: 'list-item', children: [{text: "222BBBiib b"}]},
+                        ]},
+                    ]},
+                  {type: 'list-item', children: [
+                      {type: 'paragraph', children: [{text: "222BBBii"}]},
+                      {type: 'bulleted-list', children: [
+                          {type: 'list-item', children: [{text: "222BBBiiia a"}]},
+                          {type: 'list-item', children: [{text: "222BBBiiib b"}]},
+                        ]},
+                    ]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "333"}]},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 2, 0, 0], offset: 0},
+      focus:  {path: [1, 2, 0, 0], offset: 0},
+    });
+  });
+
   it("should handle list items containing blocks", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
@@ -2460,6 +2543,216 @@ describe("tabLeft", () => {
       anchor: { path: [0, 0, 0, 2, 1, 0], offset: 22 },
       focus:  { path: [0, 0, 0, 2, 1, 0], offset: 22 },
     });
+  });
+
+  it("should change block quote to paragraph", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'code', children: [{text: "nec feugiat diam"}]},
+      {
+        type: 'quote', children: [
+          {text: "metus nec eleifend"},
+          {text: "enim magna egestas", italic: true},
+        ]
+      },
+      {type: 'heading-three', children: [{text: "nisl non purus"}]}
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0], offset: 0},
+      focus: {path: [1, 0], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('quote');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'code', children: [{text: "nec feugiat diam"}]},
+      {type: 'paragraph', children: [
+          {text: "metus nec eleifend"},
+          {text: "enim magna egestas", italic: true},
+        ]},
+      {type: 'heading-three', children: [{text: "nisl non purus"}]}
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
+
+  it("unwraps a top-level block quote, when selection at start of block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Fusce pretium "},
+              {text: "eros molestie semper fermentum", bold: true},
+              {text: " ligula neque volutpat purus"},
+            ]},
+          {type: 'numbered-list', children: [
+              {type: 'list-item', children: [
+                  {text: "Mauris blandit felis ut neque mollis ultricies."}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0, 0], offset: 0},
+      focus: {path: [1, 0, 0], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'paragraph', children: [
+          {text: "Fusce pretium "},
+          {text: "eros molestie semper fermentum", bold: true},
+          {text: " ligula neque volutpat purus"},
+        ]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "Mauris blandit felis ut neque mollis ultricies."}
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
+
+  it("unwraps a block quote, when selection at start of second block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Fusce pretium "},
+              {text: "eros molestie semper fermentum", bold: true},
+              {text: " ligula neque volutpat purus"},
+            ]},
+          {type: 'numbered-list', children: [
+              {type: 'list-item', children: [
+                  {text: "Mauris blandit felis ut neque mollis ultricies."}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1, 0, 0], offset: 0},
+      focus: {path: [1, 1, 0, 0], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'paragraph', children: [
+          {text: "Fusce pretium "},
+          {text: "eros molestie semper fermentum", bold: true},
+          {text: " ligula neque volutpat purus"},
+        ]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [
+              {text: "Mauris blandit felis ut neque mollis ultricies."}
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  });
+
+  it("doesn't unwrap a top-level block quote, when selection at start of leaf", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Fusce pretium "},
+              {text: "eros molestie semper fermentum", bold: true},
+              {text: " ligula neque volutpat purus"},
+            ]},
+          {type: 'numbered-list', children: [
+              {type: 'list-item', children: [
+                  {text: "Mauris blandit felis ut neque mollis ultricies."}
+                ]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0, 1], offset: 0},
+      focus: {path: [1, 0, 1], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "condimentum velit facilisis vel"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Fusce pretiu"},
+              {text: "eros molestie semper fermentum", bold: true},
+              {text: " ligula neque volutpat purus"},
+            ]},
+          {type: 'numbered-list', children: [
+              {type: 'list-item', children: [
+                  {text: "Mauris blandit felis ut neque mollis ultricies."}
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
+
+  it("unwraps a mid-level block quote, when selection at start of block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "eget sollicitudin mauris"}]},
+      {type: 'quote', children: [
+          {type: 'quote', children: [
+              {type: 'paragraph', children: [
+                  {text: "Nullam lacus arcu, "},
+                  {text: "rutrum vel ante in,", bold: true},
+                  {text: " placerat commodo quam."},
+                ]},
+            ]},
+          {type: 'quote', children: [
+              {type: 'paragraph', children: [
+                  {text: "Fusce pretium "},
+                  {text: "eros molestie semper fermentum", bold: true},
+                  {text: " ligula neque volutpat purus"},
+                ]},
+            ]},
+         ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0, 0, 0], offset: 0},
+      focus: {path: [1, 0, 0, 0], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "eget sollicitudin mauris"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Nullam lacus arcu, "},
+              {text: "rutrum vel ante in,", bold: true},
+              {text: " placerat commodo quam."},
+            ]},
+          {type: 'quote', children: [
+              {type: 'paragraph', children: [
+                  {text: "Fusce pretium "},
+                  {text: "eros molestie semper fermentum", bold: true},
+                  {text: " ligula neque volutpat purus"},
+                ]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
   });
 
   it("removes characters to move back to previous multiple of four characters",() => {
