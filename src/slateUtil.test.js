@@ -1369,9 +1369,10 @@ describe("getSelectedTable", () => {
 });
 
 describe("tabRight", () => {
-  it("should do nothing if first item in list", () => {
+  it("should insert space (not create sublist) if first item in list", () => {
     console.info = jest.fn();
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
       {type: 'bulleted-list', children: [
@@ -1389,15 +1390,19 @@ describe("tabRight", () => {
     expect(getRelevantBlockType(editor)).toEqual('list-item');
     tabRight(editor);
 
-    expect(editor.children).toEqual(nodes);
+    expect(editor.children[0]).toEqual(nodes[0]);
+    expect(editor.children[1].type).toEqual('bulleted-list');
+    expect(editor.children[1].children[0]).toEqual({type: 'list-item', children: [{text: "this    "}]});
+    expect(editor.children[1].children.slice(1)).toEqual(nodes[1].children.slice(1));
     expect(editor.selection).toEqual({
-      anchor: {path: [1, 0, 0], offset: 4},
-      focus:  {path: [1, 0, 0], offset: 4}
+      anchor: {path: [1, 0, 0], offset: 8},
+      focus:  {path: [1, 0, 0], offset: 8}
     });
   });
 
   it("should create a sublist of same type", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "aleph"}]},
@@ -1431,6 +1436,7 @@ describe("tabRight", () => {
 
   it("should move to existing sublist of different type", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'bulleted-list', children: [
           {type: 'list-item', children: [{text: "apple"}]},
@@ -1466,6 +1472,7 @@ describe("tabRight", () => {
 
   it("should create a sublist of same type, with all selected items", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "aleph"}, {text: "ALEPH", bold: true}]},
@@ -1495,6 +1502,7 @@ describe("tabRight", () => {
 
   it("should create a sublist of same type, with all selected items & children", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "one"}]},
@@ -1534,6 +1542,7 @@ describe("tabRight", () => {
 
   it("should move all selected items & their children to existing sublist", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "aaa"}]},
@@ -1582,6 +1591,7 @@ describe("tabRight", () => {
 
   it("move collapsed selection in table to beginning of next column of table", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: "quote", children: [
           {type: 'table', children: [
@@ -1633,6 +1643,7 @@ describe("tabRight", () => {
 
   it("moves collapsed selection in last column to beginning of next row of table", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: "quote", children: [
           {type: 'table', children: [
@@ -1685,8 +1696,173 @@ describe("tabRight", () => {
     });
   });
 
+  it("wraps whole table in block quote", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    const tableNodes = [
+        {type: 'table', children: [
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {type: 'paragraph', children: [{text: "blandit tincidunt volutpat"}]},
+                    {type: 'paragraph', children: [{text: "Proin sit amet "}]},
+                  ]},
+                {type: 'table-cell', children: [
+                    {type: 'image', url: 'https://storage.com/?q=animal',
+                      title: "Animal of the day",
+                      children: [{text: "an alert axolotl"}]
+                    },
+                    {type: 'paragraph', children: [{text: "iaculis justo ut"}]},
+                  ]},
+              ]},
+            {type: 'table-row', children: [
+                {type: 'table-cell', children: [
+                    {type: 'numbered-list', children: [
+                        {type: 'list-item', children: [{text: "pretium leo"}]}
+                      ]},
+                    {type: 'paragraph', children: [{text: ""}]},
+                  ]},
+                {type: 'table-cell', children: [
+                    {text: "Phasellus ultricies enim"},
+                  ]},
+              ]},
+          ]},
+    ];
+    const nodes = [
+      {type: 'heading-one', children: [{text: "Etiam imperdiet"}]},
+        ...tableNodes.slice(0),
+      {type: 'code', children: [{text: "let h = i * j;"}]}
+    ];
+    editor.children = nodes;
+    editor.selection = {
+      anchor: { path: [1, 0, 0, 0, 0], offset: 0 },
+      focus:  { path: [1, 1, 1, 0], offset: 24 },
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('table');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Etiam imperdiet"}]},
+      {type: 'quote', children: tableNodes},
+      {type: 'code', children: [{text: "let h = i * j;"}]}
+    ]);
+    // expect(editor.selection).toEqual({
+    //   anchor: { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+    //   focus:  { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+    // });
+  });
+
+  it("changes a paragraph to a block quote, when selection at start of block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Curabitur nec mi non nisi cursus aliquam."}]},
+      {type: 'paragraph', children: [
+          {text: "Sed sed euismod ante."},
+          {text: "Donec tempor, nibh eu tincidunt vulputate ", bold: true},
+          {text: "ex odio vestibulum mauris"},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 0], offset: 0},
+      focus: {path: [1, 0], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Curabitur nec mi non nisi cursus aliquam."}]},
+      {type: 'quote', children: [
+          {text: "Sed sed euismod ante."},
+          {text: "Donec tempor, nibh eu tincidunt vulputate ", bold: true},
+          {text: "ex odio vestibulum mauris"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('quote');
+  });
+
+  it("wraps multiple blocks in a block quote, when selection at start of block", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Etiam varius suscipit tortor vel"}]},
+      {type: 'paragraph', children: [
+          {text: "Nunc nibh est"},
+        ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [
+                  {text: "efficitur vitae nunc eu"},
+                ]},
+            ]},
+        ]},
+      {type: 'paragraph', children: [
+          {text: "cursus pharetra enim"},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [2, 0, 0, 0], offset: 23},
+      focus: {path: [1, 0], offset: 0},
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('multiple');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Etiam varius suscipit tortor vel"}]},
+      {type: 'quote', children: [
+          {type: 'paragraph', children: [
+              {text: "Nunc nibh est"},
+            ]},
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [
+                      {text: "efficitur vitae nunc eu"},
+                    ]},
+                ]},
+            ]},
+        ]},
+      {type: 'paragraph', children: [
+          {text: "cursus pharetra enim"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('quote');
+  });
+
+  it("doesn't change a paragraph to a block quote, when selection at start of leaf", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Pellentesque sollicitudin mauris et ligula convallis hendrerit."}]},
+      {type: 'paragraph', children: [
+          {text: "Vivamus, "},
+          {text: "dapibus ut odio.", bold: true},
+          {text: "Maecenas dictum porttitor eros"},
+        ]},
+    ];
+    Transforms.select(editor, {
+      anchor: {path: [1, 1], offset: 0},
+      focus: {path: [1, 1], offset: 0}
+    });
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Pellentesque sollicitudin mauris et ligula convallis hendrerit."}]},
+      {type: 'paragraph', children: [
+          {text: "Vivamus, "},
+          {text: "   dapibus ut odio.", bold: true},
+          {text: "Maecenas dictum porttitor eros"},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
+
   it("inserts spaces to advance to next multiple of four characters in top-level paragraph", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-one', children: [{text: "Maecenas sed mauris vel purus vulputate varius."}]},
       {type: 'paragraph', children: [
@@ -1734,6 +1910,7 @@ describe("tabRight", () => {
 
   it("inserts spaces to advance to next multiple of four characters in monospaced", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-one', children: [{text: "Quisque iaculis tristique porttitor."}]},
       {type: 'code', children: [
@@ -1790,6 +1967,7 @@ describe("tabRight", () => {
 
   it("doesn't insert spaces if selection expanded", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const originalNodes = [
       {type: 'heading-one', children: [{text: "Sed iaculis sed sapien vitae semper."}]},
       {type: 'code', children: [
@@ -1809,12 +1987,43 @@ describe("tabRight", () => {
     expect(editor.children).toEqual(originalNodes);
     expect(editor.selection).toEqual(originalSelection);
   });
+
+  it("doesn't change block type if Markdown", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'markdown;hint=COMMONMARK';
+    const originalNodes = [
+      {type: 'paragraph', children: [
+          {text: `Curabitur quis molestie quam.`},
+        ]},
+    ];
+    editor.children = originalNodes;
+    const originalSelection = {
+      anchor: {path: [0, 0], offset: 0},
+      focus:  {path: [0, 0], offset: 0}
+    };
+    Transforms.select(editor, originalSelection);
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [
+          {text: `    Curabitur quis molestie quam.`},
+        ]},
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 0], offset: 4},
+      focus:  {path: [0, 0], offset: 4}
+    });
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+  });
 });
 
 describe("tabLeft", () => {
   it("should do nothing if list item not in sub-list", () => {
     console.info = jest.fn();
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: 'heading-two', children: [{text: "Vestibulum sollicitudin dignissim justo placerat cursus."}]},
       {type: 'numbered-list', children: [
@@ -1842,6 +2051,7 @@ describe("tabLeft", () => {
   it("should do nothing if middle item in sub-list", () => {
     console.info = jest.fn();
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
       {type: 'bulleted-list', children: [
@@ -1876,6 +2086,7 @@ describe("tabLeft", () => {
 
   it("should make first item in sub-list a new item in parent list", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
       {type: 'bulleted-list', children: [
@@ -1933,6 +2144,7 @@ describe("tabLeft", () => {
 
   it("should handle list items containing blocks", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-two', children: [{text: "Proin volutpat sapien vel ante porttitor varius."}]},
       {type: 'numbered-list', children: [
@@ -2004,6 +2216,7 @@ describe("tabLeft", () => {
 
   it("should revert tabRight", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const originalNodes = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "ichi"}]},
@@ -2046,6 +2259,7 @@ describe("tabLeft", () => {
 
   it("should move sub-sub-list items to sub-list", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-one', children: [{text: "Etiam tempor nisl quis eros gravida pulvinar."}]},
       {type: 'bulleted-list', children: [
@@ -2114,6 +2328,7 @@ describe("tabLeft", () => {
 
   it("should make last item in sub-list a new item in parent list, keeping its children", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'numbered-list', children: [
           {type: 'list-item', children: [{text: "A bedrock"}]},
@@ -2186,6 +2401,7 @@ describe("tabLeft", () => {
 
   it("move collapsed selection in table to beginning of previous column or row of table", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
       {type: "quote", children: [
           {type: 'table', children: [
@@ -2248,6 +2464,7 @@ describe("tabLeft", () => {
 
   it("removes characters to move back to previous multiple of four characters",() => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'heading-one', children: [{text: "Pellentesque eget pellentesque magna."}]},
       {type: 'code', children: [
@@ -2292,6 +2509,7 @@ describe("tabLeft", () => {
 
   it("doesn't remove characters from previous block", () => {
     const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
     const originalNodes = [
       {type: 'heading-one', children: [{text: "Phasellus neque purus, ornare id tellus eget"}]},
       {type: 'code', children: [

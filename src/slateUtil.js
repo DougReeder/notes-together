@@ -7,6 +7,7 @@ import {
   Node as SlateNode,
   Text as SlateText,
   Transforms,
+  Point as SlatePoint,
   Range as SlateRange,
 } from 'slate';
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
@@ -228,10 +229,11 @@ function getSelectedBlock(blockTypes, editor) {
 
 function tabRight(editor) {
   if (!editor.selection) return;
-  const [, firstPath] = Editor.first(editor, editor.selection);
-  const [, lastPath] = Editor.last(editor, editor.selection);
-  // searches upward for a block to operate on
-  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+  const {blockPath} = getCommonBlock(editor);
+  const firstPoint = Editor.start(editor, editor.selection);
+  const firstPath = firstPoint.path;
+  // searches upward for a list or table block to operate on
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, blockPath, {reverse: true})) {
     try {
       if ('table-cell' === candidate.type) {
         const endPnt = Editor.end(editor, candidatePath);
@@ -239,60 +241,78 @@ function tabRight(editor) {
         Transforms.select(editor, {anchor: afterPnt, focus: afterPnt});
         return;
       } else if ('list-item' === candidate.type) {
-        // calculates a normalized source range from selection
-        const startPath = firstPath.slice(0, candidatePath.length);
-        const endPath = lastPath.slice(0, candidatePath.length);
-        const sourceRange = {anchor: Editor.start(editor, startPath),
-                             focus:  Editor.end(editor, endPath)};
-        // If a list exists at the destination, moves source items to it.
-        let [sibling, siblingPath] = Editor.previous(editor, {at: candidatePath});
-        for (const [child, childPath] of SlateNode.children(editor, siblingPath, {reverse: true})) {
-          if (['bulleted-list', 'numbered-list'].includes(child.type)) {
-            const destination = [...childPath, child.children.length];
-            Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === candidatePath.length});
-            return;
-          }
-        }
-
-        // If no list exists at the destination, moves source items & wraps them in list.
-        Editor.withoutNormalizing(editor, () => {
-          if (SlateText.isText(sibling.children[0])) {
-            const wrapRange = {anchor: Editor.start(editor, siblingPath),
-                               focus: Editor.end(editor, siblingPath)};
-            Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {at: wrapRange, match: (n,p) => siblingPath.length + 1 === p.length});
-            sibling = SlateNode.get(editor, siblingPath);
-          }
-          const destination = [...siblingPath, sibling.children.length];
-          const [parent] = Editor.parent(editor, candidatePath);
-          Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === candidatePath.length});
-          const wrapRange = {anchor: Editor.start(editor, destination),
-                             focus: Editor.end(editor, siblingPath)};
-          Transforms.wrapNodes(editor, {type: parent.type, children: []}, {at: wrapRange, match: (n,p) => p.length === destination.length});
-        });
+        nestListItems(editor, firstPath, candidatePath);
+        return;
+      } else if (['bulleted-list', 'numbered-list'].includes(candidate.type)) {
+        nestListItems(editor, firstPath, firstPath.slice(0, candidatePath.length+1));
         return;
       }
     } catch (err) {
       // The action on this candidate failed; continues searching.
     }
   }
-  if (SlateRange.isCollapsed(editor.selection)) {
-    // searches upward for a block to operate on
-    for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
-      try {
-        if (['paragraph', 'quote', 'code'].includes(candidate.type)) {
-          const selectionOffset = measureOffset(editor, candidate, candidatePath);
-          const numSpaces = 4 - selectionOffset % 4;
-          const spaces = new Array(numSpaces).fill(' ').join('');
-          Transforms.insertText(editor, spaces, {voids: true});
+  // searches upward for any block to operate on
+  for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
+    try {
+      if (! (Editor.isBlock(editor, candidate) || Editor.isEditor(candidate))) { continue; }
+      const candidateStart = Editor.start(editor, candidatePath);
+      const comparison = SlatePoint.compare(candidateStart, firstPoint);
+      if (0 === comparison && editor.subtype?.startsWith('html')) {
+        if (SlateRange.isCollapsed(editor.selection) && 'paragraph' === candidate.type) {
+          Transforms.setNodes(editor, {type: 'quote'}, {match: (n, p) => candidatePath.length === p.length});
+          return;
+        } else if (['heading-one', 'heading-two', 'heading-three', 'paragraph', 'bulleted-list', 'numbered-list', 'table', 'quote', 'code'].includes(candidate.type)) {
+          const wrapDepth = Math.max(blockPath.length, 1);
+          Transforms.wrapNodes(editor, {type: 'quote'}, {match: (n, p) => wrapDepth === p.length});
           return;
         }
-      } catch (err) {
-        console.error("while tabbing right (2):", err);
-        // The action on this candidate failed; continues searching.
+      } else if (SlateRange.isCollapsed(editor.selection)) {
+        const selectionOffset = measureOffset(editor, candidate, candidatePath);
+        const numSpaces = 4 - selectionOffset % 4;
+        const spaces = new Array(numSpaces).fill(' ').join('');
+        Transforms.insertText(editor, spaces, {voids: true});
+        return;
       }
+    } catch (err) {
+      console.error("while tabbing right (2):", err);
+      // The action on this candidate failed; continues searching.
     }
   }
   console.info("nothing that can tab right");
+}
+
+function nestListItems(editor, firstPath, sourceItemPath) {
+  const [, lastPath] = Editor.last(editor, editor.selection);
+  // calculates a normalized source range from selection
+  const startPath = firstPath.slice(0, sourceItemPath.length);
+  const endPath = lastPath.slice(0, sourceItemPath.length);
+  const sourceRange = {anchor: Editor.start(editor, startPath),
+    focus:  Editor.end(editor, endPath)};
+  // If a list exists at the destination, moves source items to it.
+  let [sibling, siblingPath] = Editor.previous(editor, {at: sourceItemPath});
+  for (const [child, childPath] of SlateNode.children(editor, siblingPath, {reverse: true})) {
+    if (['bulleted-list', 'numbered-list'].includes(child.type)) {
+      const destination = [...childPath, child.children.length];
+      Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === sourceItemPath.length});
+      return;
+    }
+  }
+
+  // If no list exists at the destination, moves source items & wraps them in list.
+  Editor.withoutNormalizing(editor, () => {
+    if (SlateText.isText(sibling.children[0])) {
+      const wrapRange = {anchor: Editor.start(editor, siblingPath),
+        focus: Editor.end(editor, siblingPath)};
+      Transforms.wrapNodes(editor, {type: 'paragraph', children: []}, {at: wrapRange, match: (n,p) => siblingPath.length + 1 === p.length});
+      sibling = SlateNode.get(editor, siblingPath);
+    }
+    const destination = [...siblingPath, sibling.children.length];
+    const [parent] = Editor.parent(editor, sourceItemPath);
+    Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === sourceItemPath.length});
+    const wrapRange = {anchor: Editor.start(editor, destination),
+      focus: Editor.end(editor, siblingPath)};
+    Transforms.wrapNodes(editor, {type: parent.type, children: []}, {at: wrapRange, match: (n,p) => p.length === destination.length});
+  });
 }
 
 function tabLeft(editor) {
