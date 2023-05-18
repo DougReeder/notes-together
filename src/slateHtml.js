@@ -1,5 +1,5 @@
 // slateHtml.js - constants & functions to customize Slate for HTML/JSX
-// Copyright © 2021-2022 Doug Reeder under the MIT License
+// Copyright © 2021-2023 Doug Reeder under the MIT License
 
 import React from "react";
 import { jsx } from 'slate-hyperscript';
@@ -146,95 +146,17 @@ function withHtml(editor) {   // defines Slate plugin
       return;
     }
 
-    // deletes or wraps list items outside a list
-    if ('list-item' === node.type) {
-      let parent = undefined;
-      if (path.length > 1) {
-        parent = SlateNode.get(editor, Path.parent(path));
-      }
-      if (! ['bulleted-list', 'numbered-list'].includes(parent?.type)) {
-        if (isBlank(node)) {
-          Transforms.removeNodes(editor, {at: path});
-          return;
-        } else {
-          const list = {type: 'bulleted-list', children: []};
-          Transforms.wrapNodes(editor, list, {at: path});
-          return;
-        }
-      }
+    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list'], true)) {
+      return;
     }
 
-    // ensure all children of lists are list-items
-    if (['bulleted-list', 'numbered-list'].includes(node.type)) {
-      if (0 === node.children.length) {
-        Transforms.removeNodes(editor, {at: path});
-        return;
-      }
-
-      let changed = false;
-      for (let i=node.children.length-1; i>=0; --i) {
-        const child = node.children[i];
-        const childPath = [...path, i];
-        if ('list-item' !== child.type) {
-          if (isBlank(child)) {
-            Transforms.removeNodes(editor, {at: childPath});
-            changed = true;
-          } else {
-            if (['paragraph','heading-one','heading-two','heading-three'].includes(child.type)) {
-              Transforms.setNodes(editor, {type: 'list-item'}, {at: childPath});
-              changed = true;
-            } else {
-              const item = {type: 'list-item', children: []};
-              Transforms.wrapNodes(editor, item, {at: childPath});
-              changed = true;
-            }
-          }
-        }
-      }
-      if (changed) {
-        return;
-      }
+    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list'], 'list-item')) {
+      return;
     }
 
-    // deletes or wraps table cells outside a table-row
-    if ('table-cell' === node.type) {
-      let parent = undefined;
-      if (path.length > 1) {
-        parent = SlateNode.get(editor, Path.parent(path));
-      }
-      if ('table-row' !== parent?.type) {
-        if (isBlank(node)) {
-          Transforms.removeNodes(editor, {at: path});
-          return;
-        } else {
-          const row = {type: 'table-row', children: []};
-          Transforms.wrapNodes(editor, row, {at: path});
-          return;
-        }
-      }
-    }
+    if (ChildDeleteOrWrap('table-cell', ['table-row'], false)) { return; }
 
-    // deletes or wraps table rows outside a table
-    if ('table-row' === node.type) {
-      let parent = undefined;
-      if (path.length > 1) {
-        parent = SlateNode.get(editor, Path.parent(path));
-      }
-      if ('table' === parent?.type) {
-        if (0 === node.children.length) {
-          Transforms.removeNodes(editor, {at: path});
-          return;
-        }
-      } else {
-        if (isBlank(node)) {
-          Transforms.removeNodes(editor, {at: path});
-          return;
-        } else {
-          Transforms.wrapNodes(editor, {type: 'table', children: []}, {at: path});
-          return;
-        }
-      }
-    }
+    if (ChildDeleteOrWrap('table-row', ['table'], true)) { return; }
 
     // ensures tables are normalized
     if ('table' === node.type) {
@@ -317,6 +239,65 @@ function withHtml(editor) {   // defines Slate plugin
     }
 
     normalizeNode(entry);
+
+    /** deletes or wraps child not in proper parent */
+    function ChildDeleteOrWrap(childType, parentTypes, deleteIfEmpty) {
+      if (node.type === childType) {
+        let parent = undefined;
+        if (path.length > 1) {
+          parent = SlateNode.get(editor, Path.parent(path));
+        }
+        if (parentTypes.includes(parent?.type)) {
+          if (deleteIfEmpty && 0 === node.children.length) {
+            Transforms.removeNodes(editor, {at: path});
+            return true;
+          }
+        } else {
+          if (isBlank(node)) {
+            Transforms.removeNodes(editor, {at: path});
+            return true;
+          } else {
+            const parent = {type: parentTypes[0], children: []};
+            Transforms.wrapNodes(editor, parent, {at: path});
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    /** ensure all children of parent are child type */
+    function ParentDeleteSetOrWrap(parentTypes, childType) {
+      if (parentTypes.includes(node.type)) {
+        if (0 === node.children.length) {
+          Transforms.removeNodes(editor, {at: path});
+          return true;
+        }
+
+        let isChanged = false;
+        for (let i=node.children.length-1; i>=0; --i) {
+          const child = node.children[i];
+          const childPath = [...path, i];
+          if (childType !== child.type) {
+            if (isBlank(child)) {
+              Transforms.removeNodes(editor, {at: childPath});
+              isChanged = true;
+            } else {
+              if (['paragraph', 'quote','heading-one','heading-two','heading-three'].includes(child.type)) {
+                Transforms.setNodes(editor, {type: childType}, {at: childPath});
+                isChanged = true;
+              } else {
+                const item = {type: childType, children: []};
+                Transforms.wrapNodes(editor, item, {at: childPath});
+                isChanged = true;
+              }
+            }
+          }
+        }
+        return isChanged;
+      }
+      return false;
+    }
   }
 
   editor.deleteBackward = unit => {

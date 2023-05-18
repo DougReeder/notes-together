@@ -509,9 +509,6 @@ describe("HTML plugin normalizer", () => {
     Editor.normalize(editor, {force: true});
 
     expect(editor.children).toEqual([{type: 'numbered-list', children: [
-        {type: 'list-item', children: [
-            {text: ""}
-          ]},
         {type: 'list-item', children: [{text: "trailer"}]},
       ]}]);
   });
@@ -534,9 +531,6 @@ describe("HTML plugin normalizer", () => {
     Editor.normalize(editor, {force: true});
 
     expect(editor.children).toEqual([{type: 'numbered-list', children: [
-        {type: 'list-item', children: [
-            {text: ""}
-          ]},
         {type: 'list-item', children: [{text: "trailer"}]},
       ]}]);
   });
