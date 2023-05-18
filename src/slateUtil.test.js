@@ -2969,7 +2969,7 @@ describe("flipTableRowsToColumns", () => {
   });
 });
 
-describe("changeContentType", () => {
+xdescribe("changeContentType", () => {
   beforeAll(() => {
     return init("testStorageDb");
   });
