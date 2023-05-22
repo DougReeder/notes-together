@@ -29,3 +29,4 @@ yarn-error.log*
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/dictionaries
+.idea/shelf
