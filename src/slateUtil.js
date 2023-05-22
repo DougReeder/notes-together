@@ -99,7 +99,7 @@ function changeBlockType(editor, newType) {
           TABLE_TYPES.includes(n.type),
       split: allowSplit,
     })) {
-      if (Editor.hasBlocks(editor, node)) {
+      if (SlateElement.isElement(node) && Editor.hasBlocks(editor, node)) {
         Transforms.unwrapNodes(editor, {
           at: path,
           split: allowSplit
@@ -198,7 +198,7 @@ function getCommonBlock(editor) {
   const range = Editor.unhangRange(editor, editor.selection, {voids: true});
 
   let [common, path] = SlateNode.common(editor, range.anchor.path, range.focus.path);
-  while (!Editor.isBlock(editor, common) && !Editor.isEditor(common)) {
+  while (SlateText.isText(common) || editor.isInline(common)) {
     path = path.slice(0, -1);
     common = SlateNode.get(editor, path);
   }
@@ -254,7 +254,7 @@ function tabRight(editor) {
   // searches upward for any block to operate on
   for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
     try {
-      if (! (Editor.isBlock(editor, candidate) || Editor.isEditor(candidate))) { continue; }
+      if (SlateText.isText(candidate) || editor.isInline(candidate)) { continue; }
       const candidateStart = Editor.start(editor, candidatePath);
       const comparison = SlatePoint.compare(candidateStart, firstPoint);
       if (0 === comparison && editor.subtype?.startsWith('html')) {
@@ -351,7 +351,7 @@ function tabLeft(editor) {
     let comparison;
     for (const [candidate, candidatePath] of SlateNode.levels(editor, firstPath, {reverse: true})) {
       try {
-        if (undefined === comparison && Editor.isBlock(editor, candidate)) {
+        if (undefined === comparison && SlateElement.isElement(candidate) && Editor.isBlock(editor, candidate)) {
           const candidateStart = Editor.start(editor, candidatePath);
           comparison = SlatePoint.compare(candidateStart, firstPoint);
         }
@@ -528,7 +528,7 @@ function coerceToPlainText(editor) {
   Transforms.unwrapNodes(editor,
       {
         at: [],
-        match: node => !Editor.isEditor(node) && node.children?.every(child => Editor.isBlock(editor, child)),
+        match: node => !Editor.isEditor(node) && SlateElement.isElement(node) && Editor.hasBlocks(editor, node),
         mode: "all",
       }
   );

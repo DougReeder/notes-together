@@ -91,7 +91,7 @@ function withHtml(editor) {   // defines Slate plugin
 
     // moves blocks (e.g images) out of inlines (e.g. links)
     if (SlateElement.isElement(node) && editor.isInline(node)) {
-      if (node.children.some(child => SlateElement.isElement(child) && !editor.isInline(child))) {
+      if (Editor.hasBlocks(editor, node)) {
         const nodeRef = Editor.pathRef(editor, path);
 
         let wrapBlock;
@@ -141,7 +141,7 @@ function withHtml(editor) {   // defines Slate plugin
       }
     }
 
-    if (editor.isInline(node) && isBlank(node)) {
+    if (SlateElement.isElement(node) && editor.isInline(node) && isBlank(node)) {
       Transforms.removeNodes(editor, {at: path});
       return;
     }
@@ -215,7 +215,7 @@ function withHtml(editor) {   // defines Slate plugin
     if (Editor.isEditor(node) || SlateElement.isElement(node) && Editor.hasBlocks(editor, node)) {
       let isChanged = false;
       for (const [child, childPath] of SlateNode.children(editor, path)) {
-        if (! Editor.isBlock(editor, child)) {
+        if (SlateText.isText(child) || editor.isInline(child)) {
           Transforms.wrapNodes(editor, {type: 'paragraph'}, {at: childPath});
           isChanged = true;
         }
