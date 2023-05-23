@@ -96,9 +96,54 @@ details {
     }
 }
 
+[data-slate-editor=true] p,
+[data-slate-editor=true] blockquote,
+[data-slate-editor=true] pre {
+    margin-block-start: 0;
+    margin-block-end: 0.5em;
+}
+
+[data-slate-editor=true] li {
+    margin-block-start: 0.5em;
+    margin-block-end: 0.5em;
+}
+
+.details ul {
+    padding-inline-start: 40px;
+}
+.details ul.checklist {
+    padding-inline-start: 10px;
+    list-style-type: none;
+}
+[data-slate-editor=true] li.checkListItem {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+}
+[data-slate-editor=true] input[type="checkbox"] {
+    min-width:16px;
+    min-height:16px;
+    margin: 0 1em 0 0;
+}
+@media (pointer:coarse) {
+    .details ul.checklist {
+        padding-inline-start: 0;
+    }
+
+    [data-slate-editor=true] input[type="checkbox"] {
+        min-width:44px;
+        min-height:44px;
+        background:transparent;
+    }
+    [data-slate-editor=true] li.checkListItem {
+        align-items: start;
+    }
+}
+
 .details table {
     margin-left: auto;
     margin-right: auto;
+    margin-bottom: 0.5em;
     border-collapse: collapse;
 }
 

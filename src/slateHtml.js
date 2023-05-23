@@ -19,7 +19,7 @@ import {
   Point,
   Text as SlateText
 } from "slate";
-import {useSelected, useFocused} from 'slate-react';
+import {useSelected, useFocused, useSlateStatic, useReadOnly, ReactEditor} from 'slate-react';
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
@@ -107,6 +107,9 @@ function withHtml(editor) {   // defines Slate plugin
           case 'numbered-list':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'list-item', children: []};
             break;
+          case 'check-list':   // an inline shouldn't be a child of this, but...
+            wrapBlock = {type: 'list-item', checked: false, children: []};
+            break;
           case 'table-row':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'table-cell', children: []};
             break;
@@ -146,11 +149,11 @@ function withHtml(editor) {   // defines Slate plugin
       return;
     }
 
-    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list'], true)) {
+    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list', 'check-list'], true)) {
       return;
     }
 
-    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list'], 'list-item')) {
+    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list', 'check-list'], 'list-item')) {
       return;
     }
 
@@ -250,15 +253,18 @@ function withHtml(editor) {   // defines Slate plugin
         if (parentTypes.includes(parent?.type)) {
           if (deleteIfEmpty && 0 === node.children.length) {
             Transforms.removeNodes(editor, {at: path});
+            console.warn(`removed empty child:`, node);
             return true;
           }
         } else {
           if (isBlank(node)) {
             Transforms.removeNodes(editor, {at: path});
+            console.warn(`removed blank orphan:`, node);
             return true;
           } else {
-            const parent = {type: parentTypes[0], children: []};
+            const parent = {type: 'checked' in node ? 'check-list' : parentTypes[0], children: []};
             Transforms.wrapNodes(editor, parent, {at: path});
+            console.warn(`wrapped orphan with ${parent}:`, node);
             return true;
           }
         }
@@ -281,17 +287,29 @@ function withHtml(editor) {   // defines Slate plugin
           if (childType !== child.type) {
             if (isBlank(child)) {
               Transforms.removeNodes(editor, {at: childPath});
+              console.warn(`removed blank misplaced:`, child);
               isChanged = true;
             } else {
               if (['paragraph', 'quote','heading-one','heading-two','heading-three'].includes(child.type)) {
-                Transforms.setNodes(editor, {type: childType}, {at: childPath});
+                if ('check-list' === node.type) {
+                  Transforms.setNodes(editor, {type: childType, checked: false}, {at: childPath});
+                } else {
+                  Transforms.setNodes(editor, {type: childType}, {at: childPath});
+                }
+                console.warn(`changed type to ${childType}:`, child);
                 isChanged = true;
               } else {
-                const item = {type: childType, children: []};
+                const item = 'check-list' === node.type ?
+                    {type: childType, checked: false, children: []} :
+                    {type: childType, children: []};
                 Transforms.wrapNodes(editor, item, {at: childPath});
+                console.warn(`wrapped in ${childType}:`, child);
                 isChanged = true;
               }
             }
+          } else if ('check-list' === node.type && !('checked' in child)) {
+            Transforms.setNodes(editor, {checked: false}, {at: childPath});
+            console.warn(`added 'checked' property to:`, child);
           }
         }
         return isChanged;
@@ -379,6 +397,7 @@ function withHtml(editor) {   // defines Slate plugin
           insertBreak();
           return;
         case 'list-item':
+        case 'check-list-item':
           if (isEmpty(block) && blockPath.length >= 2) {
             Editor.withoutNormalizing(editor, () => {
               const parentPathLength = blockPath.length - 1;
@@ -390,10 +409,18 @@ function withHtml(editor) {   // defines Slate plugin
                   });
               const newPath = [...blockPath.slice(0,-2), blockPath[blockPath.length-2] + 1];
               Transforms.setNodes(editor, {type: 'paragraph'}, {at: newPath});
+              Transforms.unsetNodes(editor, 'checked', {at: newPath});
               Transforms.select(editor, newPath);
             });
           } else {
-            insertBreak();
+            if ('checked' in block) {
+              const newBlock = {type: 'list-item', checked: false, children: [{text: ""}]};
+              const newPath = [...blockPath.slice(0, -1), blockPath.at(-1) + 1];
+              Transforms.insertNodes(editor, newBlock, {at: newPath});
+              Transforms.select(editor, newPath);
+            } else {
+              insertBreak();
+            }
           }
           break;
         case 'heading-one':
@@ -404,13 +431,13 @@ function withHtml(editor) {   // defines Slate plugin
         case 'code':
         case 'thematic-break':
           const parent = SlateNode.parent(editor, blockPath);
-          if (['list-item', 'quote'].includes(parent.type) &&
+          if (['list-item', 'check-list-item', 'quote'].includes(parent.type) &&
               blockPath[blockPath.length - 1] === parent.children.length - 1
               && isEmpty(block)) {   // last block child of list-item is empty
             Editor.withoutNormalizing(editor, () => {
               Transforms.removeNodes(editor, {at: blockPath});
               const insertPath = [...blockPath.slice(0, -2), blockPath[blockPath.length - 2] + 1];
-              const newNodeType = 'list-item' === parent.type ? 'list-item' : 'paragraph';
+              const newNodeType = 'quote' === parent.type ? 'paragraph' : parent.type;
               Transforms.insertNodes(editor, {type: newNodeType, children: [{text: ""}]}, {at: insertPath});
               const selectionPath = [...insertPath, 0];
               Transforms.select(editor, {
@@ -735,6 +762,7 @@ function deserializeHtml(html, editor) {
 
   let activeMarkStack = [{}];
   let activeCodeBlockStack = [false];
+  const isChecklistStack = [];
   let captionStack = [];
   const slateNodes = domNodeToSlateNodes(parsed.body);
   if (activeMarkStack.length !== 1){
@@ -742,6 +770,9 @@ function deserializeHtml(html, editor) {
   }
   if (activeCodeBlockStack.length !== 1) {
     console.error("activeCodeBlockStack corrupt", activeCodeBlockStack);
+  }
+  if (isChecklistStack.length > 0) {
+    console.error("isChecklistStack corrupt", isChecklistStack);
   }
   if (captionStack.length > 0) {
     console.warning("unused caption:", captionStack);
@@ -764,9 +795,11 @@ function deserializeHtml(html, editor) {
           return text;
         }
       } else if (el.nodeType !== 1) {   // not ELEMENT_NODE
-        return null
+        return '';
       } else if (el.nodeName === 'BR') {
         return '\n'
+      } else if ('INPUT' === el.nodeName) {
+        return '';
       }
 
       nodeName = el.nodeName;
@@ -776,19 +809,30 @@ function deserializeHtml(html, editor) {
         activeMarkStack.push({...activeMarkStack[activeMarkStack.length-1], ...tagMarks});
       }
 
-      if ('PRE' === nodeName) {
-        activeCodeBlockStack.push(true);
-      } else if ('TABLE' === nodeName) {
-        captionStack.push(null);
+      const firstChild = el.childNodes[0] || {};
+
+      switch (nodeName) {
+        case 'PRE':
+          activeCodeBlockStack.push(true);
+          break;
+        case 'UL':
+        case 'OL':
+          isChecklistStack.push(false);
+          break;
+        case 'LI':
+          if ('INPUT' === firstChild.nodeName && 'checkbox' === firstChild.type && isChecklistStack.length > 0) {
+            isChecklistStack[isChecklistStack.length-1] = true;
+          }
+          break;
+        case 'TABLE':
+          captionStack.push(null);
+          break;
+        default:
       }
 
       let parent = el;
-      if (
-          nodeName === 'PRE' &&
-          el.childNodes[0] &&
-          el.childNodes[0].nodeName === 'CODE'
-      ) {
-        parent = el.childNodes[0]
+      if (nodeName === 'PRE' && firstChild.nodeName === 'CODE') {
+        parent = firstChild
       }
 
       let children = Array.from(parent.childNodes)
@@ -848,6 +892,13 @@ function deserializeHtml(html, editor) {
 
       if (ELEMENT_TAGS[nodeName]) {
         const attrs = ELEMENT_TAGS[nodeName](el);
+
+        if ('LI' === nodeName && (isChecklistStack[isChecklistStack.length-1] || 'INPUT' === firstChild.nodeName && 'checkbox' === firstChild.type)) {
+          attrs.checked = Boolean(firstChild.checked);
+        } else if (('UL' === nodeName || 'OL' === nodeName) && isChecklistStack[isChecklistStack.length-1]) {
+          attrs.type = 'check-list';
+        }
+
         if ('TABLE' === nodeName) {
           const elements = [jsx('element', attrs, children)];
           let captionChildren;
@@ -870,10 +921,18 @@ function deserializeHtml(html, editor) {
       console.error("while deserializing HTML:", err);
       return [{text: el?.innerText || ""}];
     } finally {
-      if ('TABLE' === nodeName) {
-        captionStack.pop();
-      } else if ('PRE' === nodeName) {
-        activeCodeBlockStack.pop();
+      switch (nodeName) {
+        case 'TABLE':
+          captionStack.pop();
+          break;
+        case 'UL':
+        case 'OL':
+          isChecklistStack.pop();
+          break;
+        case 'PRE':
+          activeCodeBlockStack.pop();
+          break;
+        default:
       }
 
       if (TEXT_TAGS[nodeName]) {
@@ -900,6 +959,8 @@ const RenderingElement = props => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
+    case 'check-list':
+      return <ul className="checklist" {...attributes}>{children}</ul>
     case 'heading-one':
       return <h1 {...attributes}>{children}</h1>
     case 'heading-two':
@@ -907,7 +968,11 @@ const RenderingElement = props => {
     case 'heading-three':
       return <h3 {...attributes}>{children}</h3>
     case 'list-item':
-      return <li {...attributes}>{children}</li>
+      if ('checked' in element) {
+        return <CheckListItemElement {...props} />
+      } else {
+        return <li {...attributes}>{children}</li>
+      }
     case 'numbered-list':
       if (element.listStart) {
         return <ol start={element.listStart} {...attributes}>{children}</ol>
@@ -955,6 +1020,37 @@ const ImageElement = ({ attributes, children, element }) => {
             style={{display: 'block', maxWidth: '100%', maxHeight: '75vh', boxShadow: selected && focused ? '0 0 0 2px blue' : 'none'}}
         />
       </div>
+  )
+}
+
+const CheckListItemElement = ({ attributes, children, element }) => {
+  const editor = useSlateStatic();
+  const readOnly = useReadOnly();
+  const { checked } = element
+  return (
+    <li
+      className="checkListItem"
+      {...attributes}
+    >
+      <span contentEditable={false}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={evt => {
+            const path = ReactEditor.findPath(editor, element)
+            const newProperties = {
+              checked: evt.target.checked,
+            }
+            Transforms.setNodes(editor, newProperties, { at: path });
+            evt.stopPropagation();
+            ReactEditor.blur(editor);
+          }}
+        />
+      </span>
+      <div contentEditable={!readOnly} suppressContentEditableWarning >
+        {children}
+      </div>
+    </li>
   )
 }
 
@@ -1074,8 +1170,18 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
           return `<ul>${children}</ul>`;
         case 'numbered-list':
           return `<ol>${children}</ol>`;
+        case 'check-list':
+          return `<ul>${children}</ul>`;
         case 'list-item':
-          return `<li>${children}</li>`;
+          if ('checked' in slateNode) {
+            if (slateNode.checked) {
+              return `<li><input type="checkbox" checked/>${children}</li>`;
+            } else {
+              return `<li><input type="checkbox"/>${children}</li>`;
+            }
+          } else {
+            return `<li>${children}</li>`;
+          }
         case 'thematic-break':
           return `<hr />`;
         case 'link':

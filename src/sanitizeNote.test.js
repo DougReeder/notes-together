@@ -19,7 +19,6 @@ describe("sanitizeNote", () => {
 <img srcset="https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=480 480w, https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=1080 1080w" src="https://mdg.imgix.net/book-cover.jpg" class="img-fluid" alt="Markdown Guide book cover" loading="lazy" sizes="100vw">
 <script>alert("Hello World!");</script>
 <button name="button">Press me</button>
-<input type="text" id="name" name="name" required minlength="4" maxlength="8" size="10">
 <select id="pet-select"><option value="dog">Dog</option><option value="cat">Cat</option></select>
 <canvas width="300" height="300">graph of sine function</canvas>
 <div style="position: absolute; bottom: 0; left: 0">This is absolutely positioned bottom left</div>
@@ -31,7 +30,6 @@ unstyled text <font color="red" size="-2">small red text</font> unstyled text`, 
     expect(cleanNote.content).toEqual(
         `Our <a href="/menu">menu</a> is extensive!
 <img srcset="https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=480 480w, https://mdg.imgix.net/book-cover.jpg?fit=clip&amp;w=1080 1080w" src="https://mdg.imgix.net/book-cover.jpg" alt="Markdown Guide book cover" sizes="100vw" />
-
 
 
 

@@ -100,6 +100,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>How do I avoid altering a note by mistake?</h4>
         <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.4ex'}}/> select <b>Lock note <Lock style={{position: 'relative', bottom: '-0.4ex'}}/></b>.</p>
+        <p>Checklist items can be checked or cleared, even when a note is locked.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
@@ -158,6 +159,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
             <tr><td>ctrl+8 or shift+ctrl+* or ctrl+- or shift-ctrl+-<br/>or ⌘8 or ⇧⌘* or ⌘- or ⇧⌘-</td><td>bulleted list</td></tr>
             <tr><td>ctrl+1 or shift+ctrl+1 or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
+            <tr><td>ctrl+[ or shift+ctrl+[ or ⌘[ or ⇧⌘[</td><td>checklist</td></tr>
             <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>
             <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
             <tr><td>shift+ctrl+S or ⇧⌘S</td><td>subheading</td></tr>
@@ -198,7 +200,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>What formatting is supported for imported files and pasted text?</h4>
         <p>Headings, paragraphs, lists, tables, graphics and other semantic HTML are imported, but not custom styles.</p>
-        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">GFM tables</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, delete and insert text styles, as usual in Markdown.)</p>
+        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus GFM <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">tables</a>, <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists" target="_blank" rel="noreferrer">checklists</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, delete and insert text styles, as usual in Markdown.)</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
         <h4>How do I add a link?</h4>

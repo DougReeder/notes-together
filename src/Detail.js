@@ -51,7 +51,13 @@ import {
   insertListAfter,
   insertTableAfter,
   tabRight,
-  tabLeft, getSelectedTable, getSelectedListItem, flipTableRowsToColumns, insertAfter, getSelectedQuote
+  tabLeft,
+  getSelectedTable,
+  getSelectedListItem,
+  flipTableRowsToColumns,
+  insertAfter,
+  getSelectedQuote,
+  insertCheckListAfter
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -78,7 +84,9 @@ const BLOCK_TYPE_DISPLAY = {
   'paragraph': "Paragraph",
   'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
+  'check-list': "✔️ Checklist",
   'list-item': "List Item",
+  'check-list-item': "✔️ Checklist Item",
   'table': "Table",
   'table-row': "Table Row",   // not supposed to be returned, currently
   'table-cell': "Table Cell",
@@ -97,6 +105,7 @@ const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'paragraph', label: "Paragraph"},
   {cmd: 'bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
   {cmd: 'numbered-list', label: "Numbered List"},
+  {cmd: 'check-list', label: "✔️ Checklist"},
   {cmd: 'table', label: "Table"},
   {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
@@ -434,6 +443,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'insert-numbered-list':
           insertListAfter(editor, 'numbered-list');
           return;
+        case 'insert-check-list':
+          insertCheckListAfter(editor);
+          return;
         case 'insert-table':
           insertTableAfter(editor);
           return;
@@ -449,6 +461,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           case 'heading-three':
           case 'bulleted-list':
           case 'numbered-list':
+          case 'check-list':
           case 'table':
           case 'quote':
           case 'code':
@@ -506,6 +519,15 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             Transforms.insertNodes(editor,
                 {type: targetType, children: [
                     {type: 'list-item', children: [{text: ""}]}
+                  ]},
+                {at: path}
+            );
+            Transforms.select(editor, path);
+            return;
+          case 'check-list':
+            Transforms.insertNodes(editor,
+                {type: targetType, children: [
+                    {type: 'list-item', checked: false, children: [{text: ""}]}
                   ]},
                 {at: path}
             );
@@ -714,6 +736,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'code':
         case 'thematic-break':
         case 'list-item':
+        case 'check-list-item':
         case 'table-cell':
         default:
           menu = [...BLOCK_ITEMS_DEFAULT];
@@ -721,6 +744,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           break;
         case 'bulleted-list':
         case 'numbered-list':
+        case 'check-list':
         case 'table':
         case 'table-row':
         case 'multiple':
@@ -998,6 +1022,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                     changeBlockType(editor, 'numbered-list');
                   }
                   break;
+                case '[':
+                  if (isHotkey('mod+[', { byKey: true }, evt) ||
+                      isHotkey('mod+shift+[', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'check-list');
+                  }
+                  break;
                 case 't':   // blocked in Chrome
                   if (isHotkey('mod+shift+t', { byKey: true }, evt)) {
                     evt.preventDefault();
@@ -1070,6 +1101,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           {cmd: 'insert-paragraph', label: "Paragraph"},
           {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
           {cmd: 'insert-numbered-list', label: "Numbered List"},
+          {cmd: 'insert-check-list', label: "✔️ Checklist"},
           {cmd: 'insert-table', label: "Table"}
       );
     }

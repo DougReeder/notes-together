@@ -27,6 +27,12 @@ function getRelevantBlockType(editor) {
       return 'multiple';
     } else {
       switch (block.type) {
+        case 'list-item':
+          if ('checked' in block) {
+            return 'check-list-item';
+          } else {
+            return 'list-item';
+          }
         case 'table-row':
           if (blockPath.length >= 2) {
             const parent = SlateNode.parent(editor, blockPath);
@@ -45,7 +51,7 @@ function getRelevantBlockType(editor) {
   }
 }
 
-const LIST_TYPES = ['numbered-list', 'bulleted-list', 'list-item'];
+const LIST_TYPES = ['numbered-list', 'bulleted-list', 'check-list', 'list-item'];
 const TABLE_TYPES = ['table', 'table-row', 'table-cell'];
 const COMPOUND_TYPES = [...LIST_TYPES, ...TABLE_TYPES];
 // wrapping with compound type is handled by other code
@@ -122,6 +128,12 @@ function changeBlockType(editor, newType) {
       const newProperties = {
         type: isTypeSame ? 'paragraph' : newIsList ? 'list-item' : newIsTable ? 'table-cell' : newType,
       }
+      if ('check-list' === newType) {
+        newProperties.checked = false;
+      } else if ('check-list' === block.type) {
+        Transforms.unsetNodes(editor, 'checked', {
+          match: (n, p) => p.length === changePathLength});
+      }
       Transforms.setNodes(editor, newProperties, {
         match: (n, p) => p.length === changePathLength && 'image' !== n.type,
         split: allowSplit
@@ -148,6 +160,12 @@ function insertListAfter(editor, newType) {
   insertAfter(editor,
       {type: newType, children: [{type: 'list-item', children: [{text: ""}]}]},
       [0, 0]);
+}
+
+function insertCheckListAfter(editor) {
+  insertAfter(editor,
+    {type: 'check-list', children: [{type: 'list-item', checked: false, children: [{text: ""}]}]},
+    [0, 0]);
 }
 
 function insertTableAfter(editor) {
@@ -243,7 +261,7 @@ function tabRight(editor) {
       } else if ('list-item' === candidate.type) {
         nestListItems(editor, firstPath, candidatePath);
         return;
-      } else if (['bulleted-list', 'numbered-list'].includes(candidate.type)) {
+      } else if (['bulleted-list', 'numbered-list', 'check-list'].includes(candidate.type)) {
         nestListItems(editor, firstPath, firstPath.slice(0, candidatePath.length+1));
         return;
       }
@@ -261,7 +279,7 @@ function tabRight(editor) {
         if (SlateRange.isCollapsed(editor.selection) && 'paragraph' === candidate.type) {
           Transforms.setNodes(editor, {type: 'quote'}, {match: (n, p) => candidatePath.length === p.length});
           return;
-        } else if (['heading-one', 'heading-two', 'heading-three', 'paragraph', 'bulleted-list', 'numbered-list', 'table', 'quote', 'code'].includes(candidate.type)) {
+        } else if (['heading-one', 'heading-two', 'heading-three', 'paragraph', 'bulleted-list', 'numbered-list', 'check-list', 'table', 'quote', 'code'].includes(candidate.type)) {
           const wrapDepth = Math.max(blockPath.length, 1);
           Transforms.wrapNodes(editor, {type: 'quote'}, {match: (n, p) => wrapDepth === p.length});
           return;
@@ -291,9 +309,22 @@ function nestListItems(editor, firstPath, sourceItemPath) {
   // If a list exists at the destination, moves source items to it.
   let [sibling, siblingPath] = Editor.previous(editor, {at: sourceItemPath});
   for (const [child, childPath] of SlateNode.children(editor, siblingPath, {reverse: true})) {
-    if (['bulleted-list', 'numbered-list'].includes(child.type)) {
+    if (['bulleted-list', 'numbered-list', 'check-list'].includes(child.type)) {
       const destination = [...childPath, child.children.length];
-      Transforms.moveNodes(editor, {at: sourceRange, to: destination, match: (n,p) => p.length === sourceItemPath.length});
+      Editor.withoutNormalizing(editor, () => {
+        Transforms.moveNodes(editor, {
+          at: sourceRange,
+          to: destination,
+          match: (n, p) => p.length === sourceItemPath.length
+        });
+        if ('check-list' === child.type) {
+          Transforms.setNodes(editor, {checked: false}, {
+            at: destination,
+            match: (n,p) => p.length === destination.length && !('checked' in n)});
+        } else {
+          Transforms.unsetNodes(editor, 'checked', {at: destination});
+        }
+      });
       return;
     }
   }
@@ -406,11 +437,19 @@ function unnestListItem(editor, firstPath, childItem, childItemPath) {
     // moves list-item
     Transforms.moveNodes(editor, {at: sourceRange, to: itemDestination,
       match: (n,p) => childItemPath.length === p.length});
+    const parentList = SlateNode.ancestor(editor, parentItemPath.slice(0, -1));
+    if ('check-list' === parentList.type) {
+      Transforms.setNodes(editor, {checked: false}, {
+        at: itemDestination,
+        match: (n,p) => p.length === itemDestination.length && !('checked' in n)});
+    } else {
+      Transforms.unsetNodes(editor, 'checked', {at: itemDestination});
+    }
     if (0 === childItemPath[childItemPath.length-1]) {
       // moves sub-sub-list items (if any) to sub-list
       const maybeListPath = [...itemDestination, childItem.children.length - 1];
       const maybeList = SlateNode.get(editor, maybeListPath);
-      if (['bulleted-list', 'numbered-list'].includes(maybeList.type)) {
+      if (['bulleted-list', 'numbered-list', 'check-list'].includes(maybeList.type)) {
         Transforms.moveNodes(editor, {
           at: maybeListPath,
           match: (n, p) => maybeListPath.length + 1 === p.length,
@@ -547,4 +586,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, getSelectedQuote, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertCheckListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, getSelectedQuote, tabRight, tabLeft, flipTableRowsToColumns, changeContentType, coerceToPlainText};

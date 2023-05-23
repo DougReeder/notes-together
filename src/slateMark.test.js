@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Doug Reeder under the MIT License
+// Copyright © 2021-2023 Doug Reeder under the MIT License
 
 import {deserializeMarkdown, serializeMarkdown, escapeMarkdown} from "./slateMark";
 import {withHtml} from "./slateHtml";
@@ -143,6 +143,44 @@ spam *frotz
       ]}]);
   });
 
+  it("should convert MD checklist to Slate check-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const mdText = `  - uno 
+
+  -  [ ]  dos A
+
+      dos B   
+
+  - [x] tres
+ 
+  - cuatro
+    - cuatro alpha
+    - cuatro beta`;
+
+    const slateNodes = deserializeMarkdown(mdText, editor);
+
+    expect(slateNodes).toEqual([
+      {type: "check-list", children: [
+        {type: 'list-item', children: [   // leans on normalizer to fix this
+            {text: "uno"},
+          ]},
+        {type: 'list-item', checked: false, children: [
+            {type: 'paragraph', children: [{text: " dos A"}]},
+            {type: 'paragraph', children: [{text: "dos B"}]},
+          ]},
+        {type: 'list-item', checked: true, children: [
+            {text: "tres"},
+          ]},
+        {type: 'list-item', checked: false, children: [
+            {type: 'paragraph', children: [{text: "cuatro"}]},
+            {type: 'bulleted-list', children: [
+                {type: 'list-item', children: [{text: "cuatro alpha"}]},
+                {type: 'list-item', children: [{text: "cuatro beta"}]},
+              ]},
+          ]},
+      ]}]);
+  });
+
   it("should discard empty link", () => {
     const editor = withHtml(withReact(createEditor()));
     const mdText = `[]( )`;
@@ -229,7 +267,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should parse GFM tables", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `
 | Name | Occupation |
@@ -277,7 +315,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should parse GFM tables without leading & trailing pipes", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `
  Framework | Notes 
@@ -307,7 +345,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should extract text of HTML that's not specially handled", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "something <samp>special</samp> for you";
 
@@ -323,7 +361,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply superscript tag to enclosed text", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "M<sup>lle</sup> Juliet";
 
@@ -338,7 +376,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply subscript tag to enclosed text", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "Mason & Jones<sub>MJ</sub> found no such relationship";
 
@@ -353,7 +391,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply underline tag to enclosed text", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "the word <u>cheif</u> is misspelled";
 
@@ -368,7 +406,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply strikethrough tag to enclosed text", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "shall <s>not</s> be accepted";
 
@@ -383,7 +421,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should recognize break tag", () => {
-    console.warn = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `grault garply
 baz **qux<br />quux** corge`;
@@ -595,6 +633,43 @@ let a = b**c, x = y**z;
 3. troi`);
   });
 
+  it("should serialize checklists", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const slateNodes = [
+      {type: "bulleted-list", "listStart": 1, children: [
+          {type: 'list-item', children: [{text: "eins"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "zwei"}]},
+              {type: 'check-list', children: [
+                  {type: 'list-item', checked: false, children: [{text: "zwei A"}]},
+                  {type: 'list-item', checked: true,  children: [
+                      {type: 'paragraph', children: [
+                          {text: "zwei B"}
+                        ]},
+                      {type: 'numbered-list', children: [
+                          {type: 'list-item', children: [{text: "zwei B 1"}]},
+                          {type: 'list-item', children: [{text: "zwei B 2"}]},
+                        ]},
+                    ]},
+                  {type: 'list-item', checked: true, children: [{text: "zwei C"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "drei"}]},
+        ]},
+    ];
+
+    const md = serializeMarkdown(editor, slateNodes);
+
+    expect(md).toEqual(`* eins
+* zwei
+    * [ ] zwei A
+    * [x] zwei B
+        1. zwei B 1
+        2. zwei B 2
+    * [x] zwei C
+* drei`);
+  });
+
   it("should serialize hierarchical ordered lists with links", () => {
     const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
@@ -641,9 +716,9 @@ let a = b**c, x = y**z;
 1. [one grandparent](#internal-1)
     1. [one one](#internal-2)
     2. one two
-1. two grandparent
+2. two grandparent
     1. two one
-    1. [two two](#internal-3)`);
+    2. [two two](#internal-3)`);
   });
 
   it("should serialize children of graphic as alt text", () => {

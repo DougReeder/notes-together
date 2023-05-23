@@ -1,21 +1,24 @@
 // slateMark.js - constants & functions to customize Slate for Markdown
-// Copyright © 2021-2022 Doug Reeder under the MIT License
+// Copyright © 2021-2023 Doug Reeder under the MIT License
 
 import {adHocTextReplacements} from "./util";
 import {Element as SlateElement, Text as SlateText} from 'slate';
 import {fromMarkdown} from 'mdast-util-from-markdown';
 import {gfmTable} from 'micromark-extension-gfm-table';
 import {gfmTableFromMarkdown} from 'mdast-util-gfm-table';
+import {gfmTaskListItem} from 'micromark-extension-gfm-task-list-item';
+import {gfmTaskListItemFromMarkdown} from 'mdast-util-gfm-task-list-item';
 import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough'
 import {gfmStrikethroughFromMarkdown} from 'mdast-util-gfm-strikethrough'
 import {deserializeHtml} from "./slateHtml";
 
 function deserializeMarkdown(markdown, editor) {
   const root = fromMarkdown(markdown, {
-    extensions: [gfmTable, gfmStrikethrough()],
-    mdastExtensions: [gfmTableFromMarkdown, gfmStrikethroughFromMarkdown]
+    extensions: [gfmTable, gfmTaskListItem, gfmStrikethrough()],
+    mdastExtensions: [gfmTableFromMarkdown, gfmTaskListItemFromMarkdown, gfmStrikethroughFromMarkdown]
   });
   const definitions = extractDefinitions(root, new Map());
+  const isChecklistStack = [];
   return slateNodesFromMdNodes(root.children);
 
   function slateNodesFromMdNodes(mdNodes, italic = false, bold = false, superscript = false, subscript= false, underline = false, strikethrough = false, deleted = false, inserted = false) {
@@ -26,10 +29,11 @@ function deserializeMarkdown(markdown, editor) {
         if (mdNode.children) {
           let children;
           switch (mdNode.type) {
+            case 'list':
+              isChecklistStack.push(false);
+              /* fallthrough */
             case 'paragraph':
             case 'heading':
-            case 'list':
-            case 'listItem':
             case 'table':
             case 'tableRow':
             case 'tableCell':
@@ -46,7 +50,7 @@ function deserializeMarkdown(markdown, editor) {
                   }
                 }
               }
-              if (['listItem', 'blockquote'].includes(mdNode.type) && 1 === children.length && 'paragraph' === children[0].type) {
+              if (['blockquote'].includes(mdNode.type) && 1 === children.length && 'paragraph' === children[0].type) {
                 children = children[0].children;
               }
               if (0 === children.length) {
@@ -58,13 +62,30 @@ function deserializeMarkdown(markdown, editor) {
                 }
               }
               const slateNode = {
-                type: slateType(mdNode),
+                type: slateType(mdNode, isChecklistStack[isChecklistStack.length-1]),
                 children,
               };
               if ('list' === mdNode.type && 'number' === typeof mdNode.start) {
                 slateNode.listStart = mdNode.start;
               }
               slateNodes.push(slateNode, ...hoistedChildren);
+              break;
+            case 'listItem':
+              children = slateNodesFromMdNodes(mdNode.children, false, bold);
+              if (1 === children.length && 'paragraph' === children[0].type) {
+                children = children[0].children;
+              }
+              const slateNodeItem = {
+                type: 'list-item',
+                children,
+              };
+              if ('boolean' === typeof mdNode.checked) {
+                slateNodeItem.checked = mdNode.checked;
+                isChecklistStack[isChecklistStack.length-1] = true;
+              } else if (isChecklistStack[isChecklistStack.length-1]) {
+                slateNodeItem.checked = false;
+              }
+              slateNodes.push(slateNodeItem);
               break;
             case 'link':
               children = slateNodesFromMdNodes(mdNode.children, italic, bold, superscript, subscript, underline, strikethrough, deleted, inserted);
@@ -213,6 +234,10 @@ function deserializeMarkdown(markdown, editor) {
         }
       } catch (err) {
         console.error(`while processing Markdown ${mdNode}:`, err);
+      } finally {
+        if ('list' === mdNode.type) {
+          isChecklistStack.pop();
+        }
       }
     }
 
@@ -237,7 +262,7 @@ function extractDefinitions(node, definitions) {
   return definitions;
 }
 
-function slateType(mdNode) {
+function slateType(mdNode, isChecklist) {
   switch (mdNode.type) {
     case 'heading':
       switch (mdNode.depth) {
@@ -257,8 +282,10 @@ function slateType(mdNode) {
     case 'paragraph':
       return 'paragraph';
     case 'list':
-      if (mdNode.ordered) {
-        return 'numbered-list'
+      if (isChecklist) {
+        return 'check-list';
+      } else if (mdNode.ordered) {
+        return 'numbered-list';
       } else {
         return 'bulleted-list';
       }
@@ -381,7 +408,7 @@ function serializeMarkdown(editor, slateNodes) {
         switch (slateNode.type) {   // before children
           case 'bulleted-list':
           case 'numbered-list':
-            if (hierarchy.some(type => 'list-item' === type)) {
+            if (hierarchy.some(container => 'list-item' === container.type)) {
               break;
             }
             /* fallthrough */
@@ -392,7 +419,7 @@ function serializeMarkdown(editor, slateNodes) {
           case 'table':
           case 'quote':
             if (ind > 0) {
-              lines.push(hierarchy.reduce((acc, curr) => 'quote' === curr ? acc + "> " : acc, ""));
+              lines.push(hierarchy.reduce((acc, curr) => 'quote' === curr.type ? acc + "> " : acc, ""));
             }
             break;
           case 'code':
@@ -400,7 +427,7 @@ function serializeMarkdown(editor, slateNodes) {
             break;
           default:
         }
-        hierarchy.push(slateNode.type);
+        hierarchy.push({type: slateNode.type, ind, checked: slateNode.checked});
         let text = slateNode.children.map(serializeSlateNode).join('');
         switch (slateNode.type) {   // after children
           case 'code':
@@ -446,7 +473,8 @@ function serializeMarkdown(editor, slateNodes) {
     let indent = "";
     let prefix = "";
     for (let level=0; level<hierarchy.length; ++level) {
-      switch(hierarchy[level]) {
+      const ancestor = hierarchy[level];
+      switch(ancestor.type) {
         case 'heading-one':
           prefix += "# ";
           break;
@@ -457,16 +485,19 @@ function serializeMarkdown(editor, slateNodes) {
           prefix += "### ";
           break;
         case 'list-item':
-          const hasChildItem = hierarchy.slice(level+1).some(type => 'list-item' === type);
+          const hasChildItem = hierarchy.slice(level+1).some(container => 'list-item' === container.type);
           const isContinuation = level < hierarchy.length - 1 && indChild > 0;
           if (hasChildItem || isContinuation) {
-            prefix += "    ";   // has child list-item
+            prefix += "    ";
           } else {
-            const listParent = hierarchy.findLast(type => ['bulleted-list', 'numbered-list'].includes(type))
-            if ('bulleted-list' === listParent) {
+            const listParent = hierarchy.findLast(container => ['bulleted-list', 'numbered-list'].includes(container.type))
+            if ('bulleted-list' === listParent.type) {
               prefix += "* ";
             } else {
-              prefix += (indChild + 1) + ". ";   // TODO: use index of list item
+              prefix += (ancestor.ind + 1) + ". ";
+            }
+            if ('boolean' === typeof ancestor.checked) {
+              prefix += `[${ancestor.checked ? "x" : " "}] `;
             }
           }
           break;
