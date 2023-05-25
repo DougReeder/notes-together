@@ -2129,7 +2129,7 @@ describe("insertBreak", () => {
       focus: {path: [0, 2, 0], offset: 0},
     };
 
-    expect(getRelevantBlockType(editor)).toEqual('check-list-item');
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
     editor.insertBreak();
 
     expect(editor.children).toEqual([
@@ -2169,7 +2169,7 @@ describe("insertBreak", () => {
       focus: {path: [0, 1, 0], offset: 16},
     };
 
-    expect(getRelevantBlockType(editor)).toEqual('check-list-item');
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
     editor.insertBreak();
 
     expect(editor.children).toEqual([
@@ -2179,7 +2179,7 @@ describe("insertBreak", () => {
           {type: 'list-item', checked: false, children: [{text: ""}]},
         ]},
     ]);
-    expect(getRelevantBlockType(editor)).toEqual('check-list-item');
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
     expect(editor.selection).toEqual({
       anchor: {path: [0, 2, 0], offset: 0},
       focus: {path: [0, 2, 0], offset: 0},

@@ -86,7 +86,6 @@ const BLOCK_TYPE_DISPLAY = {
   'numbered-list': "Numbered List",
   'check-list': "✔️ Checklist",
   'list-item': "List Item",
-  'check-list-item': "✔️ Checklist Item",
   'table': "Table",
   'table-row': "Table Row",   // not supposed to be returned, currently
   'table-cell': "Table Cell",
@@ -736,7 +735,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'code':
         case 'thematic-break':
         case 'list-item':
-        case 'check-list-item':
         case 'table-cell':
         default:
           menu = [...BLOCK_ITEMS_DEFAULT];

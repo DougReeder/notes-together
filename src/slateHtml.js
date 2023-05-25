@@ -397,7 +397,6 @@ function withHtml(editor) {   // defines Slate plugin
           insertBreak();
           return;
         case 'list-item':
-        case 'check-list-item':
           if (isEmpty(block) && blockPath.length >= 2) {
             Editor.withoutNormalizing(editor, () => {
               const parentPathLength = blockPath.length - 1;
@@ -431,7 +430,7 @@ function withHtml(editor) {   // defines Slate plugin
         case 'code':
         case 'thematic-break':
           const parent = SlateNode.parent(editor, blockPath);
-          if (['list-item', 'check-list-item', 'quote'].includes(parent.type) &&
+          if (['list-item', 'quote'].includes(parent.type) &&
               blockPath[blockPath.length - 1] === parent.children.length - 1
               && isEmpty(block)) {   // last block child of list-item is empty
             Editor.withoutNormalizing(editor, () => {

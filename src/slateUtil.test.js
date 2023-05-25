@@ -65,7 +65,7 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('list-item');
   });
 
-  it("should return check-list-item for a list-item with a 'checked' property, regardless of list type", () => {
+  it("should return list-item for a list-item with a 'checked' property, regardless of list type", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -88,7 +88,7 @@ describe("getRelevantBlockType", () => {
 
     const type = getRelevantBlockType(editor);
 
-    expect(type).toEqual('check-list-item');
+    expect(type).toEqual('list-item');
   });
 
   it("should return numbered-list for a selection with multiple list-items", () => {
@@ -1149,7 +1149,7 @@ describe("insertListAfter", () => {
         ]},
       {type: 'code', children: [{text: "end"}]},
     ]);
-    expect(getRelevantBlockType(editor)).toEqual('check-list-item');
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
     expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 1, 0, 0]);
     expect(editor.selection).toHaveProperty('focus.path', [1, 1, 1, 0, 0]);
   });
@@ -1851,7 +1851,7 @@ describe("tabRight", () => {
       anchor: {path: [0, 0, 2, 0], offset: 0},
       focus:  {path: [0, 0, 2, 0], offset: 0},
     });
-    expect(getRelevantBlockType(editor)).toEqual('check-list-item');
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
 
     tabRight(editor);
 

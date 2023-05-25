@@ -27,12 +27,6 @@ function getRelevantBlockType(editor) {
       return 'multiple';
     } else {
       switch (block.type) {
-        case 'list-item':
-          if ('checked' in block) {
-            return 'check-list-item';
-          } else {
-            return 'list-item';
-          }
         case 'table-row':
           if (blockPath.length >= 2) {
             const parent = SlateNode.parent(editor, blockPath);
