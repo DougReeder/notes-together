@@ -979,6 +979,20 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                     editor.insertText('\n');
                   }
                   break;
+                case ' ':
+                  if (isHotkey("shift+ ", { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    const checkListItemResult = Editor.above(editor, {
+                      match: n => 'list-item' === n.type && 'checked' in n,
+                      mode: 'lowest'
+                    });
+                    if (checkListItemResult) {
+                      Transforms.setNodes(editor, {checked: ! checkListItemResult[0].checked},
+                        { at: checkListItemResult[1] });
+                    }
+                  }
+                  break;
                 case 'i':
                   if (isHotkey('mod+i', { byKey: true }, evt)) {
                     evt.preventDefault()

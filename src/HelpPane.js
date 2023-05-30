@@ -153,6 +153,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <caption>Inside editor</caption>
           <tbody>
             <tr><td>ctrl+return or ⌘⏎</td><td>line break</td></tr>
+            <tr><td>shift+space ⇧␠</td><td>toggle checkbox</td></tr>
             <tr><td>ctrl+B or ⌘B</td><td>bold text</td></tr>
             <tr><td>ctrl+I or ⌘I</td><td>italic text</td></tr>
             <tr><td>ctrl+` or ⌘`</td><td>monospaced phrase</td></tr>
