@@ -100,7 +100,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>How do I avoid altering a note by mistake?</h4>
         <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.4ex'}}/> select <b>Lock note <Lock style={{position: 'relative', bottom: '-0.4ex'}}/></b>.</p>
-        <p>Checklist items can be checked or cleared, even when a note is locked.</p>
+        <p>Sequence items can be checked or cleared, even when a note is locked.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>

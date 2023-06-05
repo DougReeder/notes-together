@@ -143,7 +143,7 @@ spam *frotz
       ]}]);
   });
 
-  it("should convert MD checklist to Slate check-list", () => {
+  it("should convert MD checklist to Slate sequence-list", () => {
     const editor = withHtml(withReact(createEditor()));
     const mdText = `  - uno 
 
@@ -160,7 +160,7 @@ spam *frotz
     const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
-      {type: "check-list", children: [
+      {type: "sequence-list", children: [
         {type: 'list-item', children: [   // leans on normalizer to fix this
             {text: "uno"},
           ]},
@@ -633,14 +633,14 @@ let a = b**c, x = y**z;
 3. troi`);
   });
 
-  it("should serialize checklists", () => {
+  it("should serialize sequence list", () => {
     const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: "bulleted-list", "listStart": 1, children: [
           {type: 'list-item', children: [{text: "eins"}]},
           {type: 'list-item', children: [
               {type: 'paragraph', children: [{text: "zwei"}]},
-              {type: 'check-list', children: [
+              {type: 'sequence-list', children: [
                   {type: 'list-item', checked: false, children: [{text: "zwei A"}]},
                   {type: 'list-item', checked: true,  children: [
                       {type: 'paragraph', children: [

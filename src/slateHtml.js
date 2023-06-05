@@ -107,7 +107,7 @@ function withHtml(editor) {   // defines Slate plugin
           case 'numbered-list':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'list-item', children: []};
             break;
-          case 'check-list':   // an inline shouldn't be a child of this, but...
+          case 'sequence-list':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'list-item', checked: false, children: []};
             break;
           case 'table-row':   // an inline shouldn't be a child of this, but...
@@ -149,11 +149,11 @@ function withHtml(editor) {   // defines Slate plugin
       return;
     }
 
-    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list', 'check-list'], true)) {
+    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list', 'sequence-list'], true)) {
       return;
     }
 
-    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list', 'check-list'], 'list-item')) {
+    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list', 'sequence-list'], 'list-item')) {
       return;
     }
 
@@ -262,7 +262,7 @@ function withHtml(editor) {   // defines Slate plugin
             console.warn(`removed blank orphan:`, node);
             return true;
           } else {
-            const parent = {type: 'checked' in node ? 'check-list' : parentTypes[0], children: []};
+            const parent = {type: 'checked' in node ? 'sequence-list' : parentTypes[0], children: []};
             Transforms.wrapNodes(editor, parent, {at: path});
             console.warn(`wrapped orphan with ${parent}:`, node);
             return true;
@@ -291,7 +291,7 @@ function withHtml(editor) {   // defines Slate plugin
               isChanged = true;
             } else {
               if (['paragraph', 'quote','heading-one','heading-two','heading-three'].includes(child.type)) {
-                if ('check-list' === node.type) {
+                if ('sequence-list' === node.type) {
                   Transforms.setNodes(editor, {type: childType, checked: false}, {at: childPath});
                 } else {
                   Transforms.setNodes(editor, {type: childType}, {at: childPath});
@@ -299,7 +299,7 @@ function withHtml(editor) {   // defines Slate plugin
                 console.warn(`changed type to ${childType}:`, child);
                 isChanged = true;
               } else {
-                const item = 'check-list' === node.type ?
+                const item = 'sequence-list' === node.type ?
                     {type: childType, checked: false, children: []} :
                     {type: childType, children: []};
                 Transforms.wrapNodes(editor, item, {at: childPath});
@@ -307,7 +307,7 @@ function withHtml(editor) {   // defines Slate plugin
                 isChanged = true;
               }
             }
-          } else if ('check-list' === node.type && !('checked' in child)) {
+          } else if ('sequence-list' === node.type && !('checked' in child)) {
             Transforms.setNodes(editor, {checked: false}, {at: childPath});
             console.warn(`added 'checked' property to:`, child);
           }
@@ -895,7 +895,7 @@ function deserializeHtml(html, editor) {
         if ('LI' === nodeName && (isChecklistStack[isChecklistStack.length-1] || 'INPUT' === firstChild.nodeName && 'checkbox' === firstChild.type)) {
           attrs.checked = Boolean(firstChild.checked);
         } else if (('UL' === nodeName || 'OL' === nodeName) && isChecklistStack[isChecklistStack.length-1]) {
-          attrs.type = 'check-list';
+          attrs.type = 'sequence-list';
         }
 
         if ('TABLE' === nodeName) {
@@ -958,8 +958,8 @@ const RenderingElement = props => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
-    case 'check-list':
-      return <ul className="checklist" {...attributes}>{children}</ul>
+    case 'sequence-list':
+      return <ol className="checklist" {...attributes}>{children}</ol>
     case 'heading-one':
       return <h1 {...attributes}>{children}</h1>
     case 'heading-two':
@@ -1168,9 +1168,8 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         case 'bulleted-list':
           return `<ul>${children}</ul>`;
         case 'numbered-list':
+        case 'sequence-list':
           return `<ol>${children}</ol>`;
-        case 'check-list':
-          return `<ul>${children}</ul>`;
         case 'list-item':
           if ('checked' in slateNode) {
             if (slateNode.checked) {

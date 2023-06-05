@@ -283,7 +283,7 @@ function slateType(mdNode, isChecklist) {
       return 'paragraph';
     case 'list':
       if (isChecklist) {
-        return 'check-list';
+        return 'sequence-list';
       } else if (mdNode.ordered) {
         return 'numbered-list';
       } else {

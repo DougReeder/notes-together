@@ -338,7 +338,7 @@ it('renders error if note missing', async () => {
     expect(screen.getByRole('menuitem', {name: "Paragraph"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "• Bulleted List"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Numbered List"})).toBeVisible();
-    expect(screen.getByRole('menuitem', {name: "✔️ Checklist"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "✔️ Sequence"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Table"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Block Quote"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Monospaced"})).toBeVisible();

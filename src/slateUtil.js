@@ -45,7 +45,7 @@ function getRelevantBlockType(editor) {
   }
 }
 
-const LIST_TYPES = ['numbered-list', 'bulleted-list', 'check-list', 'list-item'];
+const LIST_TYPES = ['numbered-list', 'bulleted-list', 'sequence-list', 'list-item'];
 const TABLE_TYPES = ['table', 'table-row', 'table-cell'];
 const COMPOUND_TYPES = [...LIST_TYPES, ...TABLE_TYPES];
 // wrapping with compound type is handled by other code
@@ -122,9 +122,9 @@ function changeBlockType(editor, newType) {
       const newProperties = {
         type: isTypeSame ? 'paragraph' : newIsList ? 'list-item' : newIsTable ? 'table-cell' : newType,
       }
-      if ('check-list' === newType) {
+      if ('sequence-list' === newType) {
         newProperties.checked = false;
-      } else if ('check-list' === block.type) {
+      } else if ('sequence-list' === block.type) {
         Transforms.unsetNodes(editor, 'checked', {
           match: (n, p) => p.length === changePathLength});
       }
@@ -158,7 +158,7 @@ function insertListAfter(editor, newType) {
 
 function insertCheckListAfter(editor) {
   insertAfter(editor,
-    {type: 'check-list', children: [{type: 'list-item', checked: false, children: [{text: ""}]}]},
+    {type: 'sequence-list', children: [{type: 'list-item', checked: false, children: [{text: ""}]}]},
     [0, 0]);
 }
 
@@ -255,7 +255,7 @@ function tabRight(editor) {
       } else if ('list-item' === candidate.type) {
         nestListItems(editor, firstPath, candidatePath);
         return;
-      } else if (['bulleted-list', 'numbered-list', 'check-list'].includes(candidate.type)) {
+      } else if (['bulleted-list', 'numbered-list', 'sequence-list'].includes(candidate.type)) {
         nestListItems(editor, firstPath, firstPath.slice(0, candidatePath.length+1));
         return;
       }
@@ -273,7 +273,7 @@ function tabRight(editor) {
         if (SlateRange.isCollapsed(editor.selection) && 'paragraph' === candidate.type) {
           Transforms.setNodes(editor, {type: 'quote'}, {match: (n, p) => candidatePath.length === p.length});
           return;
-        } else if (['heading-one', 'heading-two', 'heading-three', 'paragraph', 'bulleted-list', 'numbered-list', 'check-list', 'table', 'quote', 'code'].includes(candidate.type)) {
+        } else if (['heading-one', 'heading-two', 'heading-three', 'paragraph', 'bulleted-list', 'numbered-list', 'sequence-list', 'table', 'quote', 'code'].includes(candidate.type)) {
           const wrapDepth = Math.max(blockPath.length, 1);
           Transforms.wrapNodes(editor, {type: 'quote'}, {match: (n, p) => wrapDepth === p.length});
           return;
@@ -303,7 +303,7 @@ function nestListItems(editor, firstPath, sourceItemPath) {
   // If a list exists at the destination, moves source items to it.
   let [sibling, siblingPath] = Editor.previous(editor, {at: sourceItemPath});
   for (const [child, childPath] of SlateNode.children(editor, siblingPath, {reverse: true})) {
-    if (['bulleted-list', 'numbered-list', 'check-list'].includes(child.type)) {
+    if (['bulleted-list', 'numbered-list', 'sequence-list'].includes(child.type)) {
       const destination = [...childPath, child.children.length];
       Editor.withoutNormalizing(editor, () => {
         Transforms.moveNodes(editor, {
@@ -311,7 +311,7 @@ function nestListItems(editor, firstPath, sourceItemPath) {
           to: destination,
           match: (n, p) => p.length === sourceItemPath.length
         });
-        if ('check-list' === child.type) {
+        if ('sequence-list' === child.type) {
           Transforms.setNodes(editor, {checked: false}, {
             at: destination,
             match: (n,p) => p.length === destination.length && !('checked' in n)});
@@ -432,7 +432,7 @@ function unnestListItem(editor, firstPath, childItem, childItemPath) {
     Transforms.moveNodes(editor, {at: sourceRange, to: itemDestination,
       match: (n,p) => childItemPath.length === p.length});
     const parentList = SlateNode.ancestor(editor, parentItemPath.slice(0, -1));
-    if ('check-list' === parentList.type) {
+    if ('sequence-list' === parentList.type) {
       Transforms.setNodes(editor, {checked: false}, {
         at: itemDestination,
         match: (n,p) => p.length === itemDestination.length && !('checked' in n)});
@@ -443,7 +443,7 @@ function unnestListItem(editor, firstPath, childItem, childItemPath) {
       // moves sub-sub-list items (if any) to sub-list
       const maybeListPath = [...itemDestination, childItem.children.length - 1];
       const maybeList = SlateNode.get(editor, maybeListPath);
-      if (['bulleted-list', 'numbered-list', 'check-list'].includes(maybeList.type)) {
+      if (['bulleted-list', 'numbered-list', 'sequence-list'].includes(maybeList.type)) {
         Transforms.moveNodes(editor, {
           at: maybeListPath,
           match: (n, p) => maybeListPath.length + 1 === p.length,

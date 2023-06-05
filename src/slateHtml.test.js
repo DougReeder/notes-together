@@ -260,13 +260,13 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
-  it("should ensure a nonempty checklist item is a direct child of check-list", () => {
+  it("should ensure a nonempty checklist item is a direct child of a checklist", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'list-item', checked: false, children: [{text: "baz"}]},
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: true, children: [{text: "frotz"}]},
         ]},
       {type: 'quote', children: [
@@ -277,28 +277,28 @@ describe("HTML plugin normalizer", () => {
 
     Editor.normalize(editor, {force: true});
 
-    expect(editor.children[0].type).toEqual('check-list');
+    expect(editor.children[0].type).toEqual('sequence-list');
     expect(editor.children[0].children[0].type).toEqual('list-item');
     expect(editor.children[0].children[0].checked).toEqual(false);
     expect(editor.children[0].children[0].children).toEqual([{text: "baz"}]);
-    expect(editor.children[1].type).toEqual('check-list');
+    expect(editor.children[1].type).toEqual('sequence-list');
     expect(editor.children[1].children[0].type).toEqual('list-item');
     expect(editor.children[1].children[0].checked).toEqual(true);
     expect(editor.children[1].children[0].children).toEqual([{text: "frotz"}]);
     expect(editor.children[2].type).toEqual('quote');
-    expect(editor.children[2].children[0].type).toEqual('check-list');
+    expect(editor.children[2].children[0].type).toEqual('sequence-list');
     expect(editor.children[2].children[0].children[0].type).toEqual('list-item');
     expect(editor.children[2].children[0].children[0].checked).toEqual(false);
     expect(editor.children[2].children[0].children[0].children).toEqual([{text: "lek"}]);
     expect(editor.children.length).toEqual(3);
   });
 
-  it("should remove a blank checklist item that is not a direct child of check-list", () => {
+  it("should remove a blank checklist item that is not a direct child of sequence-list", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [{text: "quux"}]},
         ]},
       {type: 'list-item', checked: true, children: [{text: "\n"}]},
@@ -311,7 +311,7 @@ describe("HTML plugin normalizer", () => {
     Editor.normalize(editor, {force: true});
 
     expect(editor.children).toEqual([
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [{text: "quux"}]},
         ]},
       {type: 'quote', children: [
@@ -320,13 +320,13 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
-  it("should ensure all children of check-lists are check-list-items", () => {
+  it("should ensure all children of a checklist are list items w/ checked property", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'quote', children: [
-          {type: 'check-list', children: [
+          {type: 'sequence-list', children: [
               {type: 'heading-one', children: [{text: "\v"}]},
               {type: 'heading-one', children: [
                   {text: "Cras porta" },
@@ -358,7 +358,7 @@ describe("HTML plugin normalizer", () => {
     Editor.normalize(editor, {force: true});
 
     expect(editor.children[0].type).toEqual('quote');
-    expect(editor.children[0].children[0].type).toEqual('check-list');
+    expect(editor.children[0].children[0].type).toEqual('sequence-list');
     expect(editor.children[0].children[0].children[0].type).toEqual('list-item');
     expect(editor.children[0].children[0].children[0].checked).toEqual(false);
     expect(editor.children[0].children[0].children[0].children).toEqual([
@@ -415,13 +415,13 @@ describe("HTML plugin normalizer", () => {
     expect(editor.children[0].children[0].children.length).toEqual(8);
   });
 
-  it("should remove a check-list with no check-list-items and no non-blank children", () => {
+  it("should remove a sequence-list with no sequence-list-items and no non-blank children", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
       {type: 'quote', children: [
-          {type: 'check-list', children: [
+          {type: 'sequence-list', children: [
               {type: 'heading-one', children: [{text: "\v"}]},
               {type: 'code', children: [{text: "\n"}]},
               {type: 'paragraph', children: [{text: ""}]},
@@ -2107,12 +2107,12 @@ describe("insertBreak", () => {
     });
   }
 
-  it("should divide check-list, when in empty item", () => {
+  it("should divide sequence-list, when in empty item", () => {
     window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: true, children: [{text: "uno"}]},
           {type: 'list-item', checked: false, children: [{text: "dos"}]},
           {type: 'list-item', checked: true, children: [{text: ""}]},
@@ -2133,12 +2133,12 @@ describe("insertBreak", () => {
     editor.insertBreak();
 
     expect(editor.children).toEqual([
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: true, children: [{text: "uno"}]},
           {type: 'list-item', checked: false, children: [{text: "dos"}]},
         ]},
       {type: 'paragraph', children: [{text: ""}]},
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [
               {type: 'image', url: "https://example.wa.us/", title: "fourth item", children: [
                   {text: "cuatro"}
@@ -2154,12 +2154,12 @@ describe("insertBreak", () => {
     expect(editor.selection).toHaveProperty('focus.offset', 0);
   });
 
-  it("should create unchecked item, when in non-blank check-list item", () => {
+  it("should create unchecked item, when in non-blank sequence-list item", () => {
     window.postMessage = jest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
           {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
         ]},
@@ -2173,7 +2173,7 @@ describe("insertBreak", () => {
     editor.insertBreak();
 
     expect(editor.children).toEqual([
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
           {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
           {type: 'list-item', checked: false, children: [{text: ""}]},
@@ -2272,17 +2272,17 @@ describe("serializeHtml", () => {
     ])).toEqual("first line <br />  indented second line<em>book title</em>");
   });
 
-  it("should encode checklists", () => {
+  it("should encode sequence list", () => {
     const html = serializeHtml([
-      {type: 'check-list', children: [
+      {type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [{text: "kohlrabi"}]},
           {type: 'list-item', checked: true, children: [{text: "daikon"}]},
       ]}
     ]);
-    expect(html).toEqual(`<ul><li><input type="checkbox"/>kohlrabi</li><li><input type="checkbox" checked/>daikon</li></ul>`);
+    expect(html).toEqual(`<ol><li><input type="checkbox"/>kohlrabi</li><li><input type="checkbox" checked/>daikon</li></ol>`);
 
     const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual(`<ul><li><input type="checkbox" />kohlrabi</li><li><input type="checkbox" checked />daikon</li></ul>`);
+    expect(cleanHtml).toEqual(`<ol><li><input type="checkbox" />kohlrabi</li><li><input type="checkbox" checked />daikon</li></ol>`);
   });
 
   it("should encode code blocks", () => {
@@ -3066,10 +3066,10 @@ describe("serializeHtml and deserializeHtml", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip checklists", () => {
+  it("should round-trip sequence list", () => {
     const original = [
       {
-        type: 'check-list', children: [
+        type: 'sequence-list', children: [
           {type: 'list-item', checked: false, children: [
               {text: "Integer nec"},
             ]
