@@ -143,7 +143,7 @@ spam *frotz
       ]}]);
   });
 
-  it("should convert MD checklist to Slate sequence-list", () => {
+  it("should convert MD unordered checklist to Slate task-list", () => {
     const editor = withHtml(withReact(createEditor()));
     const mdText = `  - uno 
 
@@ -160,7 +160,7 @@ spam *frotz
     const slateNodes = deserializeMarkdown(mdText, editor);
 
     expect(slateNodes).toEqual([
-      {type: "sequence-list", children: [
+      {type: "task-list", children: [
         {type: 'list-item', children: [   // leans on normalizer to fix this
             {text: "uno"},
           ]},
@@ -179,6 +179,44 @@ spam *frotz
               ]},
           ]},
       ]}]);
+  });
+
+  it("should convert MD ordered checklist to Slate sequence-list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const mdText = `  1. uno 
+
+  2.  [ ]  dos A
+
+      dos B   
+
+  3. [x] tres
+ 
+  4. cuatro
+        1. cuatro alpha
+        2. cuatro beta`;
+
+    const slateNodes = deserializeMarkdown(mdText, editor);
+
+    expect(slateNodes).toEqual([
+      {type: "sequence-list", listStart: 1, children: [
+          {type: 'list-item', children: [   // leans on normalizer to fix this
+              {text: "uno"},
+            ]},
+          {type: 'list-item', checked: false, children: [
+              {type: 'paragraph', children: [{text: " dos A"}]},
+              {type: 'paragraph', children: [{text: "dos B"}]},
+            ]},
+          {type: 'list-item', checked: true, children: [
+              {text: "tres"},
+            ]},
+          {type: 'list-item', checked: false, children: [
+              {type: 'paragraph', children: [{text: "cuatro"}]},
+              {type: 'numbered-list', listStart: 1, children: [
+                  {type: 'list-item', children: [{text: "cuatro alpha"}]},
+                  {type: 'list-item', children: [{text: "cuatro beta"}]},
+                ]},
+            ]},
+        ]}]);
   });
 
   it("should discard empty link", () => {
@@ -633,14 +671,14 @@ let a = b**c, x = y**z;
 3. troi`);
   });
 
-  it("should serialize sequence list", () => {
+  it("should serialize task list", () => {
     const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: "bulleted-list", "listStart": 1, children: [
           {type: 'list-item', children: [{text: "eins"}]},
           {type: 'list-item', children: [
               {type: 'paragraph', children: [{text: "zwei"}]},
-              {type: 'sequence-list', children: [
+              {type: 'task-list', children: [
                   {type: 'list-item', checked: false, children: [{text: "zwei A"}]},
                   {type: 'list-item', checked: true,  children: [
                       {type: 'paragraph', children: [
@@ -1244,6 +1282,94 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
             {type: "paragraph", children: [{text: "vide quomodo currunt"}]}
           ]},
       ]}];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a task list containing a bulleted list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "task-list", children: [
+          {type: 'list-item', checked: false, children: [{text: "un gato"}]},
+          {type: 'list-item', checked: true, children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'bulleted-list', children: [
+                  {type: 'list-item', children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', checked: false, children: [{text: "tres ratones"}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a sequence list containing a numbered list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "sequence-list", listStart: 1, children: [
+          {type: 'list-item', checked: false, children: [{text: "un gato"}]},
+          {type: 'list-item', checked: true, children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'numbered-list', listStart: 1, children: [
+                  {type: 'list-item', children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', checked: false, children: [{text: "tres ratones"}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a bulleted list containing a task list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "bulleted-list", children: [
+          {type: 'list-item', children: [{text: "un gato"}]},
+          {type: 'list-item', children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'task-list', children: [
+                  {type: 'list-item', checked: false, children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', checked: true, children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', children: [{text: "tres ratones"}]},
+        ]},
+    ];
+
+    const mdText = serializeMarkdown(editor, original);
+    const reloaded = deserializeMarkdown(mdText, editor);
+
+    expect(reloaded).toEqual(original);
+  });
+
+  it("should round-trip a sequence list containing a task list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const original = [
+      {type: "sequence-list", listStart: 1, children: [
+          {type: 'list-item', checked: false, children: [{text: "un gato"}]},
+          {type: 'list-item', checked: true, children: [
+              {type: 'paragraph', children: [{text: "dos perros"}]},
+              {type: 'task-list', children: [
+                  {type: 'list-item', checked: false, children: [{text: "Mexicana sin pelo"}]},
+                  {type: 'list-item', checked: true, children: [{text: "Labrador retriever"}]},
+                ]},
+            ]},
+          {type: 'list-item', checked: false, children: [{text: "tres ratones"}]},
+        ]},
+    ];
 
     const mdText = serializeMarkdown(editor, original);
     const reloaded = deserializeMarkdown(mdText, editor);

@@ -166,54 +166,96 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
-  it("should ensure all children of lists are list-items", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-            {type: 'heading-one', children: [{text: "\t"}]},
-            {type: 'heading-one', children: [
-                {text: "elvis"},
-                {text: "lives!", superscript: true}
-            ]},
-            {type: 'paragraph', children: [{text: "hut one"}]},
-            {type: 'code', children: [{text: "\n"}]},
-            {type: 'list-item', children: [{text: "hut two"}]},
-            {type: 'list-item', children: [{text: ""}]},
-            {text: 'hike!'},
-            {type: 'image',
-              url: 'https://mozilla.org/?x=шеллы',
-              title: "Slice of grapefruit",
-              children: [
-                {text: "Grapefruit slice", bold: true},
-                {text: " atop a pile of other slices"}
-              ]
-            },
-            {type: 'link', url: 'https://example.org/', children: [
-                {text: "description of", strikethrough: true},
-                {text: "contents"}
-            ]},
-          ]},
-      ]},
-    ];
-    editor.selection = null;
-
-    Editor.normalize(editor, {force: true});
-
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'list-item', children: [
-                {text: "elvis"},
-                {text: "lives!", superscript: true}
+  for (const listType of ['bulleted-list', 'numbered-list']) {
+    it(`should ensure all children of a ${listType} are list-items`, () => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: listType, children: [
+              {type: 'heading-one', children: [{text: "\t"}]},
+              {type: 'heading-one', children: [
+                  {text: "elvis"},
+                  {text: "lives!", superscript: true}
               ]},
-              {type: 'list-item', children: [{text: "hut one"}]},
+              {type: 'paragraph', children: [{text: "hut one"}]},
+              {type: 'code', children: [{text: "\n"}]},
               {type: 'list-item', children: [{text: "hut two"}]},
               {type: 'list-item', children: [{text: ""}]},
-              {type: 'list-item', children: [{text: 'hike!'}]},
-              {type: 'list-item', children: [
+              {text: 'hike!'},
+              {type: 'image',
+                url: 'https://mozilla.org/?x=шеллы',
+                title: "Slice of grapefruit",
+                children: [
+                  {text: "Grapefruit slice", bold: true},
+                  {text: " atop a pile of other slices"}
+                ]
+              },
+              {type: 'link', url: 'https://example.org/', children: [
+                  {text: "description of", strikethrough: true},
+                  {text: "contents"}
+              ]},
+            ]},
+        ]},
+      ];
+      editor.selection = null;
+
+      Editor.normalize(editor, {force: true});
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', children: [
+                  {text: "elvis"},
+                  {text: "lives!", superscript: true}
+                ]},
+                {type: 'list-item', children: [{text: "hut one"}]},
+                {type: 'list-item', children: [{text: "hut two"}]},
+                {type: 'list-item', children: [{text: ""}]},
+                {type: 'list-item', children: [{text: 'hike!'}]},
+                {type: 'list-item', children: [
+                  {type: 'image',
+                    url: 'https://mozilla.org/?x=шеллы',
+                    title: "Slice of grapefruit",
+                    children: [
+                      {text: "Grapefruit slice", bold: true},
+                      {text: " atop a pile of other slices"}
+                    ]
+                  },
+                ]},
+                {type: 'list-item', children: [
+                  {text: ""},
+                  {type: 'link', url: 'https://example.org/', children: [
+                      {text: "description of", strikethrough: true},
+                      {text: "contents"}
+                  ]},
+                  {text: ""}
+                ]},
+              ]},
+          ]},
+      ]);
+    });
+  }
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should ensure all children of a ${listType} are list-items`, () => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'heading-one', children: [{text: "\t"}]},
+                {type: 'heading-one', children: [
+                    {text: "elvis"},
+                    {text: "lives!", superscript: true}
+                  ]},
+                {type: 'paragraph', children: [{text: "hut one"}]},
+                {type: 'code', children: [{text: "\n"}]},
+                {type: 'list-item', checked: true, children: [{text: "hut two"}]},
+                {type: 'list-item', checked: true, children: [{text: ""}]},
+                {text: 'hike!'},
                 {type: 'image',
                   url: 'https://mozilla.org/?x=шеллы',
                   title: "Slice of grapefruit",
@@ -222,43 +264,77 @@ describe("HTML plugin normalizer", () => {
                     {text: " atop a pile of other slices"}
                   ]
                 },
-              ]},
-              {type: 'list-item', children: [
-                {text: ""},
                 {type: 'link', url: 'https://example.org/', children: [
                     {text: "description of", strikethrough: true},
                     {text: "contents"}
-                ]},
-                {text: ""}
+                  ]},
               ]},
-            ]},
-        ]},
-    ]);
-  });
+          ]},
+      ];
+      editor.selection = null;
 
-  it("should remove a list with no list-items and no non-blank children", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'heading-one', children: [{text: "\t"}]},
-              {type: 'code', children: [{text: "\n"}]},
-              {type: 'paragraph', children: [{text: ""}]},
-            ]},
-        ]},
-    ];
-    editor.selection = null;
+      Editor.normalize(editor, {force: true});
 
-    Editor.normalize(editor, {force: true});
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: false, children: [
+                    {text: "elvis"},
+                    {text: "lives!", superscript: true}
+                  ]},
+                {type: 'list-item', checked: false, children: [{text: "hut one"}]},
+                {type: 'list-item', checked: true, children: [{text: "hut two"}]},
+                {type: 'list-item', checked: true, children: [{text: ""}]},
+                {type: 'list-item', checked: false, children: [{text: 'hike!'}]},
+                {type: 'list-item', checked: false, children: [
+                    {type: 'image',
+                      url: 'https://mozilla.org/?x=шеллы',
+                      title: "Slice of grapefruit",
+                      children: [
+                        {text: "Grapefruit slice", bold: true},
+                        {text: " atop a pile of other slices"}
+                      ]
+                    },
+                  ]},
+                {type: 'list-item', checked: false, children: [
+                    {text: ""},
+                    {type: 'link', url: 'https://example.org/', children: [
+                        {text: "description of", strikethrough: true},
+                        {text: "contents"}
+                      ]},
+                    {text: ""}
+                  ]},
+              ]},
+          ]},
+      ]);
+    });
+  }
 
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {text: ""}
-        ]},
-    ]);
-  });
+  for (const listType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
+    it(`should remove a  ${listType} list with no list-items and no non-blank children`, () => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'heading-one', children: [{text: "\t"}]},
+                {type: 'code', children: [{text: "\n"}]},
+                {type: 'paragraph', children: [{text: ""}]},
+              ]},
+          ]},
+      ];
+      editor.selection = null;
+
+      Editor.normalize(editor, {force: true});
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {text: ""}
+          ]},
+      ]);
+    });
+  }
 
   it("should ensure a nonempty checklist item is a direct child of a checklist", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -320,124 +396,102 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
-  it("should ensure all children of a checklist are list items w/ checked property", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'heading-one', children: [{text: "\v"}]},
-              {type: 'heading-one', children: [
-                  {text: "Cras porta" },
-                  {text: "orci ac", superscript: true}
-                ]},
-              {type: 'paragraph', children: [{text: "felis dictum"}]},
-              {type: 'code', children: [{text: "\n"}]},
-              {type: 'list-item', checked: false, children: [{text: "vitae dapibus"}]},
-              {type: 'list-item', checked: true, children: [{text: ""}]},
-              {type: 'list-item', children: [{text: "non erat"}]},
-              {text: 'leo efficitur'},
-              {type: 'image',
-                url: 'https://example.org?y=Donec iaculis',
-                title: "sem sit amet ",
-                children: [
-                  {text: "porta placerat", bold: true},
-                  {text: " erat nunc elementum"}
-                ]
-              },
-              {type: 'link', url: 'https://example.org/', children: [
-                  {text: "et dapibus", strikethrough: true},
-                  {text: "quam augue"}
-                ]},
-            ]},
-        ]},
-    ];
-    editor.selection = null;
-
-    Editor.normalize(editor, {force: true});
-
-    expect(editor.children[0].type).toEqual('quote');
-    expect(editor.children[0].children[0].type).toEqual('sequence-list');
-    expect(editor.children[0].children[0].children[0].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[0].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[0].children).toEqual([
-      {text: "Cras porta" },
-      {text: "orci ac", superscript: true}
-    ]);
-    expect(editor.children[0].children[0].children[1].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[1].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[1].children).toEqual([
-      {text: "felis dictum"}
-    ]);
-    expect(editor.children[0].children[0].children[2].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[2].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[2].children).toEqual([
-      {text: "vitae dapibus"}
-    ]);
-    expect(editor.children[0].children[0].children[3].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[3].checked).toEqual(true);
-    expect(editor.children[0].children[0].children[3].children).toEqual([
-      {text: ""}
-    ]);
-    expect(editor.children[0].children[0].children[4].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[4].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[4].children).toEqual([
-      {text: "non erat"}
-    ]);
-    expect(editor.children[0].children[0].children[5].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[5].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[5].children).toEqual([
-      {text: 'leo efficitur'}
-    ]);
-    expect(editor.children[0].children[0].children[6].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[6].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[6].children).toEqual([
-      {type: 'image',
-        url: 'https://example.org?y=Donec iaculis',
-        title: "sem sit amet ",
-        children: [
-          {text: "porta placerat", bold: true},
-          {text: " erat nunc elementum"}
-        ]
-      }
-    ]);
-    expect(editor.children[0].children[0].children[7].type).toEqual('list-item');
-    expect(editor.children[0].children[0].children[7].checked).toEqual(false);
-    expect(editor.children[0].children[0].children[7].children).toEqual([
-      {text: ""},
-      {type: 'link', url: 'https://example.org/', children: [
-          {text: "et dapibus", strikethrough: true},
-          {text: "quam augue"}
-        ]},
-      {text: ""}
-    ]);
-    expect(editor.children[0].children[0].children.length).toEqual(8);
-  });
-
-  it("should remove a sequence-list with no sequence-list-items and no non-blank children", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'heading-one', children: [{text: "\v"}]},
-              {type: 'code', children: [{text: "\n"}]},
-              {type: 'paragraph', children: [{text: ""}]},
-            ]},
-        ]},
-    ];
-    editor.selection = null;
-
-    Editor.normalize(editor, {force: true});
-
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {text: ""}
-        ]},
-    ]);
-  });
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should ensure all children of a ${listType} are list items w/ checked property`, () => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'heading-one', children: [{text: "\v"}]},
+                {type: 'heading-one', children: [
+                    {text: "Cras porta" },
+                    {text: "orci ac", superscript: true}
+                  ]},
+                {type: 'paragraph', children: [{text: "felis dictum"}]},
+                {type: 'code', children: [{text: "\n"}]},
+                {type: 'list-item', checked: false, children: [{text: "vitae dapibus"}]},
+                {type: 'list-item', checked: true, children: [{text: ""}]},
+                {type: 'list-item', children: [{text: "non erat"}]},
+                {text: 'leo efficitur'},
+                {type: 'image',
+                  url: 'https://example.org?y=Donec iaculis',
+                  title: "sem sit amet ",
+                  children: [
+                    {text: "porta placerat", bold: true},
+                    {text: " erat nunc elementum"}
+                  ]
+                },
+                {type: 'link', url: 'https://example.org/', children: [
+                    {text: "et dapibus", strikethrough: true},
+                    {text: "quam augue"}
+                  ]},
+              ]},
+          ]},
+      ];
+      editor.selection = null;
+  
+      Editor.normalize(editor, {force: true});
+  
+      expect(editor.children[0].type).toEqual('quote');
+      expect(editor.children[0].children[0].type).toEqual(listType);
+      expect(editor.children[0].children[0].children[0].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[0].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[0].children).toEqual([
+        {text: "Cras porta" },
+        {text: "orci ac", superscript: true}
+      ]);
+      expect(editor.children[0].children[0].children[1].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[1].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[1].children).toEqual([
+        {text: "felis dictum"}
+      ]);
+      expect(editor.children[0].children[0].children[2].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[2].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[2].children).toEqual([
+        {text: "vitae dapibus"}
+      ]);
+      expect(editor.children[0].children[0].children[3].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[3].checked).toEqual(true);
+      expect(editor.children[0].children[0].children[3].children).toEqual([
+        {text: ""}
+      ]);
+      expect(editor.children[0].children[0].children[4].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[4].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[4].children).toEqual([
+        {text: "non erat"}
+      ]);
+      expect(editor.children[0].children[0].children[5].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[5].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[5].children).toEqual([
+        {text: 'leo efficitur'}
+      ]);
+      expect(editor.children[0].children[0].children[6].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[6].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[6].children).toEqual([
+        {type: 'image',
+          url: 'https://example.org?y=Donec iaculis',
+          title: "sem sit amet ",
+          children: [
+            {text: "porta placerat", bold: true},
+            {text: " erat nunc elementum"}
+          ]
+        }
+      ]);
+      expect(editor.children[0].children[0].children[7].type).toEqual('list-item');
+      expect(editor.children[0].children[0].children[7].checked).toEqual(false);
+      expect(editor.children[0].children[0].children[7].children).toEqual([
+        {text: ""},
+        {type: 'link', url: 'https://example.org/', children: [
+            {text: "et dapibus", strikethrough: true},
+            {text: "quam augue"}
+          ]},
+        {text: ""}
+      ]);
+      expect(editor.children[0].children[0].children.length).toEqual(8);
+    });
+  }
 
   it("should remove all blank links", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -2107,84 +2161,88 @@ describe("insertBreak", () => {
     });
   }
 
-  it("should divide sequence-list, when in empty item", () => {
-    window.postMessage = jest.fn();
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: true, children: [{text: "uno"}]},
-          {type: 'list-item', checked: false, children: [{text: "dos"}]},
-          {type: 'list-item', checked: true, children: [{text: ""}]},
-          {type: 'list-item', checked: false, children: [
-              {type: 'image', url: "https://example.wa.us/", title: "fourth item", children: [
-                  {text: "cuatro"}
-                ]},
-            ]},
-          {type: 'list-item', checked: true, children: [{text: "cinco"}]},
-        ]},
-    ];
-    editor.selection = {
-      anchor: {path: [0, 2, 0], offset: 0},
-      focus: {path: [0, 2, 0], offset: 0},
-    };
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should divide ${listType}, when in empty item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: listType, children: [
+            {type: 'list-item', checked: true, children: [{text: "uno"}]},
+            {type: 'list-item', checked: false, children: [{text: "dos"}]},
+            {type: 'list-item', checked: true, children: [{text: ""}]},
+            {type: 'list-item', checked: false, children: [
+                {type: 'image', url: "https://example.wa.us/", title: "fourth item", children: [
+                    {text: "cuatro"}
+                  ]},
+              ]},
+            {type: 'list-item', checked: true, children: [{text: "cinco"}]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 2, 0], offset: 0},
+        focus: {path: [0, 2, 0], offset: 0},
+      };
 
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    editor.insertBreak();
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      editor.insertBreak();
 
-    expect(editor.children).toEqual([
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: true, children: [{text: "uno"}]},
-          {type: 'list-item', checked: false, children: [{text: "dos"}]},
-        ]},
-      {type: 'paragraph', children: [{text: ""}]},
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: false, children: [
-              {type: 'image', url: "https://example.wa.us/", title: "fourth item", children: [
-                  {text: "cuatro"}
-                ]},
-            ]},
-          {type: 'list-item', checked: true, children: [{text: "cinco"}]},
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('paragraph');
-    expect(editor.selection).toHaveProperty('anchor.path', [1, 0]);
-    expect(editor.selection).toHaveProperty('anchor.offset', 0);
-    expect(editor.selection).toHaveProperty('focus.path', [1, 0]);
-    expect(editor.selection).toHaveProperty('focus.offset', 0);
-  });
-
-  it("should create unchecked item, when in non-blank sequence-list item", () => {
-    window.postMessage = jest.fn();
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
-          {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
-        ]},
-    ];
-    editor.selection = {
-      anchor: {path: [0, 1, 0], offset: 16},
-      focus: {path: [0, 1, 0], offset: 16},
-    };
-
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    editor.insertBreak();
-
-    expect(editor.children).toEqual([
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
-          {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
-          {type: 'list-item', checked: false, children: [{text: ""}]},
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    expect(editor.selection).toEqual({
-      anchor: {path: [0, 2, 0], offset: 0},
-      focus: {path: [0, 2, 0], offset: 0},
+      expect(editor.children).toEqual([
+        {type: listType, children: [
+            {type: 'list-item', checked: true, children: [{text: "uno"}]},
+            {type: 'list-item', checked: false, children: [{text: "dos"}]},
+          ]},
+        {type: 'paragraph', children: [{text: ""}]},
+        {type: listType, children: [
+            {type: 'list-item', checked: false, children: [
+                {type: 'image', url: "https://example.wa.us/", title: "fourth item", children: [
+                    {text: "cuatro"}
+                  ]},
+              ]},
+            {type: 'list-item', checked: true, children: [{text: "cinco"}]},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('paragraph');
+      expect(editor.selection).toHaveProperty('anchor.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('anchor.offset', 0);
+      expect(editor.selection).toHaveProperty('focus.path', [1, 0]);
+      expect(editor.selection).toHaveProperty('focus.offset', 0);
     });
-  });
+  }
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should create unchecked item, when in non-blank ${listType} item`, () => {
+      window.postMessage = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: listType, children: [
+            {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
+            {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 1, 0], offset: 16},
+        focus: {path: [0, 1, 0], offset: 16},
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      editor.insertBreak();
+
+      expect(editor.children).toEqual([
+        {type: listType, children: [
+            {type: 'list-item', checked: false, children: [{text: "primer elemento"}]},
+            {type: 'list-item', checked: true, children: [{text: "segundo elemento"}]},
+            {type: 'list-item', checked: false, children: [{text: ""}]},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      expect(editor.selection).toEqual({
+        anchor: {path: [0, 2, 0], offset: 0},
+        focus: {path: [0, 2, 0], offset: 0},
+      });
+    });
+  }
 
   for (const type of ['heading-one', 'heading-two', 'heading-three', 'quote', 'thematic-break']) {
     it(`should produce paragraph when selection at end of ${type}`, () => {
@@ -2283,6 +2341,19 @@ describe("serializeHtml", () => {
 
     const cleanHtml = sanitizeHtml(html, semanticOnly);
     expect(cleanHtml).toEqual(`<ol><li><input type="checkbox" />kohlrabi</li><li><input type="checkbox" checked />daikon</li></ol>`);
+  });
+
+  it("should encode task list", () => {
+    const html = serializeHtml([
+      {type: 'task-list', children: [
+          {type: 'list-item', checked: false, children: [{text: "Maecenas porttitor"}]},
+          {type: 'list-item', checked: true, children: [{text: "libero ac"}]},
+        ]}
+    ]);
+    expect(html).toEqual(`<ul><li><input type="checkbox"/>Maecenas porttitor</li><li><input type="checkbox" checked/>libero ac</li></ul>`);
+
+    const cleanHtml = sanitizeHtml(html, semanticOnly);
+    expect(cleanHtml).toEqual(`<ul><li><input type="checkbox" />Maecenas porttitor</li><li><input type="checkbox" checked />libero ac</li></ul>`);
   });
 
   it("should encode code blocks", () => {
@@ -3014,83 +3085,61 @@ describe("serializeHtml and deserializeHtml", () => {
     expect(reloaded).toEqual(original);
   });
 
-  it("should round-trip unordered lists of text and paragraphs", () => {
-    const original = [
-      {
-        type: 'bulleted-list', children: [
-          {type: 'list-item', children: [
-              {text: " rise anew "},
-            ]
-          },
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [
-                  {text: "something borrowed ", bold: true},
-                  {text: "something blue"},
-              ]},
-            ]
-          },
-        ]
-      },
-    ];
-
-    let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
-
-    expect(reloaded).toEqual(original);
-  });
-
-  it("should round-trip ordered lists of paragraphs and text", () => {
-    const original = [
-      {
-        type: 'numbered-list', children: [
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [
-                  {text: "something borrowed ", bold: true},
-                  {text: "something blue"},
+  for (const listType of ['bulleted-list', 'numbered-list']) {
+    it(`should round-trip a ${listType} containing text and paragraphs`, () => {
+      const original = [
+        {
+          type: listType, children: [
+            {type: 'list-item', children: [
+                {text: " rise anew "},
+              ]
+            },
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "something borrowed ", bold: true},
+                    {text: "something blue"},
                 ]},
-            ]
-          },
-          {type: 'list-item', children: [
-              {text: " rise anew "},
-            ]
-          },
-        ]
-      },
-    ];
+              ]
+            },
+          ]
+        },
+      ];
 
-    let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+      let html = serializeHtml(original);
+      html = sanitizeHtml(html, semanticOnly);
+      const reloaded = deserializeHtml(html, editor);
 
-    expect(reloaded).toEqual(original);
-  });
+      expect(reloaded).toEqual(original);
+    });
+  }
 
-  it("should round-trip sequence list", () => {
-    const original = [
-      {
-        type: 'sequence-list', children: [
-          {type: 'list-item', checked: false, children: [
-              {text: "Integer nec"},
-            ]
-          },
-          {type: 'list-item', checked: true, children: [
-              {type: 'paragraph', children: [
-                  {text: "felis semper", bold: true},
-                  {text: " lectus dapibus"},
-                ]},
-            ]
-          },
-        ]
-      },
-    ];
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should round-trip a ${listType} containing text and paragraphs`, () => {
+      const original = [
+        {
+          type: listType, children: [
+            {type: 'list-item', checked: false, children: [
+                {text: "Integer nec"},
+              ]
+            },
+            {type: 'list-item', checked: true, children: [
+                {type: 'paragraph', children: [
+                    {text: "felis semper", bold: true},
+                    {text: " lectus dapibus"},
+                  ]},
+              ]
+            },
+          ]
+        },
+      ];
 
-    let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+      let html = serializeHtml(original);
+      html = sanitizeHtml(html, semanticOnly);
+      const reloaded = deserializeHtml(html, editor);
 
-    expect(reloaded).toEqual(original);
-  });
+      expect(reloaded).toEqual(original);
+    });
+  }
 
   it("should round-trip hierarchies of ordered and unordered lists", () => {
     const original = [
@@ -3118,6 +3167,100 @@ describe("serializeHtml and deserializeHtml", () => {
 
     expect(reloaded).toEqual(original);
   });
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should round-trip a ${listType} containing a plain list`, () => {
+      const original = [
+        {type: listType, children: [
+            {type: 'list-item', checked: false, children: [
+                {text: " first "},
+              ]},
+            {type: 'list-item', checked: true, children: [
+                {type: 'bulleted-list', children: [
+                    {type: 'list-item', children: [
+                        {text: " second A ", bold: true},
+                      ]},
+                    {type: 'list-item', children: [
+                        {text: " second B"},
+                      ]},
+                  ]},
+              ]},
+          ]
+        },
+      ];
+
+      let html = serializeHtml(original);
+      html = sanitizeHtml(html, semanticOnly);
+      const reloaded = deserializeHtml(html, editor);
+
+      expect(reloaded).toEqual(original);
+    });
+  }
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should round-trip a plain list containing a ${listType}`, () => {
+      const original = [
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [
+                {text: " first "},
+              ]},
+            {type: 'list-item', children: [
+                {type: listType, children: [
+                    {type: 'list-item', checked: false, children: [
+                        {text: ""},
+                        {text: " second A ", bold: true},
+                      ]},
+                    {type: 'list-item', checked: true, children: [
+                        {text: " second B"},
+                      ]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [
+                {text: " third "},
+              ]},
+          ]
+        },
+      ];
+
+      let html = serializeHtml(original);
+      html = sanitizeHtml(html, semanticOnly);
+      const reloaded = deserializeHtml(html, editor);
+
+      expect(reloaded).toEqual(original);
+    });
+  }
+
+  for (const outerListType of ['task-list', 'sequence-list']) {
+    for (const innerListType of ['task-list', 'sequence-list']) {
+      it(`should round-trip a ${outerListType} containing a ${innerListType}`, () => {
+        const original = [
+          {type: outerListType, children: [
+              {type: 'list-item', checked: false, children: [
+                  {text: " first "},
+                ]},
+              {type: 'list-item', checked: true, children: [
+                  {type: innerListType, children: [
+                      {type: 'list-item', checked: false, children: [
+                          {text: ""},
+                          {text: " second A ", bold: true},
+                        ]},
+                      {type: 'list-item', checked: true, children: [
+                          {text: " second B"},
+                        ]},
+                    ]},
+                ]},
+            ]
+          },
+        ];
+
+        let html = serializeHtml(original);
+        html = sanitizeHtml(html, semanticOnly);
+        const reloaded = deserializeHtml(html, editor);
+
+        expect(reloaded).toEqual(original);
+      });
+    }
+  }
 
   it("should round-trip hierarchies of tables", () => {
     const original = [

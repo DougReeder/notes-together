@@ -84,7 +84,8 @@ const BLOCK_TYPE_DISPLAY = {
   'paragraph': "Paragraph",
   'bulleted-list': <><b>•</b><span> Bulleted List</span></>,
   'numbered-list': "Numbered List",
-  'sequence-list': "✔️ Sequence",
+  'task-list': "✔️ Task List",
+  'sequence-list': "✔️ Sequence",
   'list-item': "List Item",
   'table': "Table",
   'table-row': "Table Row",   // not supposed to be returned, currently
@@ -104,7 +105,8 @@ const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'paragraph', label: "Paragraph"},
   {cmd: 'bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
   {cmd: 'numbered-list', label: "Numbered List"},
-  {cmd: 'sequence-list', label: "✔️ Sequence"},
+  {cmd: 'task-list', label: "✔️ Task List"},
+  {cmd: 'sequence-list', label: "✔️ Sequence"},
   {cmd: 'table', label: "Table"},
   {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
@@ -442,8 +444,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         case 'insert-numbered-list':
           insertListAfter(editor, 'numbered-list');
           return;
+        case 'insert-task-list':
+          insertCheckListAfter(editor, 'task-list');
+          return;
         case 'insert-sequence-list':
-          insertCheckListAfter(editor);
+          insertCheckListAfter(editor, 'sequence-list');
           return;
         case 'insert-table':
           insertTableAfter(editor);
@@ -460,6 +465,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           case 'heading-three':
           case 'bulleted-list':
           case 'numbered-list':
+          case 'task-list':
           case 'sequence-list':
           case 'table':
           case 'quote':
@@ -523,6 +529,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             );
             Transforms.select(editor, path);
             return;
+          case 'task-list':
           case 'sequence-list':
             Transforms.insertNodes(editor,
                 {type: targetType, children: [
@@ -742,6 +749,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           break;
         case 'bulleted-list':
         case 'numbered-list':
+        case 'task-list':
         case 'sequence-list':
         case 'table':
         case 'table-row':
@@ -1036,7 +1044,14 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   break;
                 case '[':
                   if (isHotkey('mod+[', { byKey: true }, evt) ||
-                      isHotkey('mod+shift+[', { byKey: true }, evt)) {
+                    isHotkey('mod+shift+[', { byKey: true }, evt)) {
+                    evt.preventDefault();
+                    changeBlockType(editor, 'task-list');
+                  }
+                  break;
+                case ']':
+                  if (isHotkey('mod+]', { byKey: true }, evt) ||
+                    isHotkey('mod+shift+]', { byKey: true }, evt)) {
                     evt.preventDefault();
                     changeBlockType(editor, 'sequence-list');
                   }
@@ -1113,7 +1128,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           {cmd: 'insert-paragraph', label: "Paragraph"},
           {cmd: 'insert-bulleted-list', label: <><b>•</b><span> Bulleted List</span></>},
           {cmd: 'insert-numbered-list', label: "Numbered List"},
-          {cmd: 'insert-sequence-list', label: "✔️ Sequence"},
+          {cmd: 'insert-task-list', label: "✔️ Task List"},
+          {cmd: 'insert-sequence-list', label: "✔️ Sequence"},
           {cmd: 'insert-table', label: "Table"}
       );
     }

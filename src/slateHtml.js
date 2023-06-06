@@ -23,7 +23,7 @@ import {useSelected, useFocused, useSlateStatic, useReadOnly, ReactEditor} from 
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
-import {getCommonBlock, coerceToPlainText} from "./slateUtil";
+import {getCommonBlock, coerceToPlainText, toggleCheckListItem} from "./slateUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
 
 function isEmpty(node) {
@@ -107,6 +107,7 @@ function withHtml(editor) {   // defines Slate plugin
           case 'numbered-list':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'list-item', children: []};
             break;
+          case 'task-list':   // an inline shouldn't be a child of this, but...
           case 'sequence-list':   // an inline shouldn't be a child of this, but...
             wrapBlock = {type: 'list-item', checked: false, children: []};
             break;
@@ -149,11 +150,11 @@ function withHtml(editor) {   // defines Slate plugin
       return;
     }
 
-    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list', 'sequence-list'], true)) {
+    if (ChildDeleteOrWrap('list-item', ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list'], true)) {
       return;
     }
 
-    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list', 'sequence-list'], 'list-item')) {
+    if (ParentDeleteSetOrWrap(['bulleted-list', 'numbered-list', 'task-list', 'sequence-list'], 'list-item')) {
       return;
     }
 
@@ -280,6 +281,7 @@ function withHtml(editor) {   // defines Slate plugin
           return true;
         }
 
+        const isChecklist = ['task-list', 'sequence-list'].includes(node.type);
         let isChanged = false;
         for (let i=node.children.length-1; i>=0; --i) {
           const child = node.children[i];
@@ -291,7 +293,7 @@ function withHtml(editor) {   // defines Slate plugin
               isChanged = true;
             } else {
               if (['paragraph', 'quote','heading-one','heading-two','heading-three'].includes(child.type)) {
-                if ('sequence-list' === node.type) {
+                if (isChecklist) {
                   Transforms.setNodes(editor, {type: childType, checked: false}, {at: childPath});
                 } else {
                   Transforms.setNodes(editor, {type: childType}, {at: childPath});
@@ -299,7 +301,7 @@ function withHtml(editor) {   // defines Slate plugin
                 console.warn(`changed type to ${childType}:`, child);
                 isChanged = true;
               } else {
-                const item = 'sequence-list' === node.type ?
+                const item = isChecklist ?
                     {type: childType, checked: false, children: []} :
                     {type: childType, children: []};
                 Transforms.wrapNodes(editor, item, {at: childPath});
@@ -307,7 +309,7 @@ function withHtml(editor) {   // defines Slate plugin
                 isChanged = true;
               }
             }
-          } else if ('sequence-list' === node.type && !('checked' in child)) {
+          } else if (isChecklist && !('checked' in child)) {
             Transforms.setNodes(editor, {checked: false}, {at: childPath});
             console.warn(`added 'checked' property to:`, child);
           }
@@ -894,7 +896,9 @@ function deserializeHtml(html, editor) {
 
         if ('LI' === nodeName && (isChecklistStack[isChecklistStack.length-1] || 'INPUT' === firstChild.nodeName && 'checkbox' === firstChild.type)) {
           attrs.checked = Boolean(firstChild.checked);
-        } else if (('UL' === nodeName || 'OL' === nodeName) && isChecklistStack[isChecklistStack.length-1]) {
+        } else if ('UL' === nodeName && isChecklistStack[isChecklistStack.length-1]) {
+          attrs.type = 'task-list';
+        } else if ('OL' === nodeName && isChecklistStack[isChecklistStack.length-1]) {
           attrs.type = 'sequence-list';
         }
 
@@ -958,6 +962,8 @@ const RenderingElement = props => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
+    case 'task-list':
+      return <ul className="checklist" {...attributes}>{children}</ul>
     case 'sequence-list':
       return <ol className="checklist" {...attributes}>{children}</ol>
     case 'heading-one':
@@ -1036,13 +1042,11 @@ const CheckListItemElement = ({ attributes, children, element }) => {
           type="checkbox"
           checked={checked}
           onChange={evt => {
-            const path = ReactEditor.findPath(editor, element)
-            const newProperties = {
-              checked: evt.target.checked,
-            }
-            Transforms.setNodes(editor, newProperties, { at: path });
             evt.stopPropagation();
             ReactEditor.blur(editor);
+
+            const path = ReactEditor.findPath(editor, element);
+            toggleCheckListItem(editor, path, evt.target.checked);
           }}
         />
       </span>
@@ -1166,6 +1170,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
           inCodeBlock = false;
           return `<pre><code>${children}</code></pre>`;
         case 'bulleted-list':
+        case 'task-list':
           return `<ul>${children}</ul>`;
         case 'numbered-list':
         case 'sequence-list':

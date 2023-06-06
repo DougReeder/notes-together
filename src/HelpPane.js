@@ -100,7 +100,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>How do I avoid altering a note by mistake?</h4>
         <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.4ex'}}/> select <b>Lock note <Lock style={{position: 'relative', bottom: '-0.4ex'}}/></b>.</p>
-        <p>Sequence items can be checked or cleared, even when a note is locked.</p>
+        <p>Task List and Sequence items can be checked or cleared, even when a note is locked.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
         <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
@@ -160,7 +160,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
             <tr><td>ctrl+8 or shift+ctrl+* or ctrl+- or shift-ctrl+-<br/>or ⌘8 or ⇧⌘* or ⌘- or ⇧⌘-</td><td>bulleted list</td></tr>
             <tr><td>ctrl+1 or shift+ctrl+1 or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
-            <tr><td>ctrl+[ or shift+ctrl+[ or ⌘[ or ⇧⌘[</td><td>checklist</td></tr>
+            <tr><td>ctrl+[ or shift+ctrl+[ or ⌘[</td><td>task list</td></tr>
+            <tr><td>ctrl+] or shift+ctrl+] or ⌘]</td><td>sequence</td></tr>
             <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>
             <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
             <tr><td>shift+ctrl+S or ⇧⌘S</td><td>subheading</td></tr>

@@ -10,7 +10,8 @@ import {
   insertListAfter,
   insertTableAfter,
   tabLeft,
-  tabRight
+  tabRight,
+  toggleCheckListItem
 } from "./slateUtil";
 import {createEditor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
@@ -91,85 +92,62 @@ describe("getRelevantBlockType", () => {
     expect(type).toEqual('list-item');
   });
 
-  it("should return numbered-list for a selection with multiple list-items", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      { type: "numbered-list", children: [
-          {type: "list-item", children: [
-              {text: "first item"}
-            ]},
-          {type: "list-item", children: [
-              {text: "second item"}
-            ]},
-          {type: "list-item", children: [
-              {text: "third item"}
-            ]},
-        ]},
-    ];
-    editor.selection = {
-      anchor: { path: [0, 1, 0], offset: 7 },
-      focus:  { path: [0, 2, 0], offset: 5 },
-    };
+  for (const blockType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
+    it(`should return ${blockType} for a selection of multiple items in a ${blockType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        { type: blockType, children: [
+            {type: "list-item", children: [
+                {text: "first item"}
+              ]},
+            {type: "list-item", children: [
+                {text: "second item"}
+              ]},
+            {type: "list-item", children: [
+                {text: "third item"}
+              ]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: { path: [0, 1, 0], offset: 7 },
+        focus:  { path: [0, 2, 0], offset: 5 },
+      };
 
-    const type = getRelevantBlockType(editor);
+      const type = getRelevantBlockType(editor);
 
-    expect(type).toEqual('numbered-list');
-  });
+      expect(type).toEqual(blockType);
+    });
+  }
 
-  it("should return bulleted-list for a selection of multiple list-item in a list in a block quote", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      { type: "quote", children: [
-          { type: "bulleted-list", children: [
-              {type: "list-item", children: [
-                  {text: "first item"}
-                ]},
-              {type: "list-item", children: [
-                  {text: "second item"}
-                ]},
-              {type: "list-item", children: [
-                  {text: "third item"}
-                ]},
-            ]},
-        ]},
-    ];
-    editor.selection = {
-      anchor: { path: [0, 0, 0, 0], offset: 6 },
-      focus:  { path: [0, 0, 1, 0], offset: 6 },
-    };
+  for (const blockType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
+    it(`should return ${blockType} for a selection of multiple items in a ${blockType} in a block quote`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: "quote", children: [
+            {type: blockType, children: [
+                {type: "list-item", checked: false, children: [
+                    {text: "first item"}
+                  ]},
+                {type: "list-item", checked: false, children: [
+                    {text: "second item"}
+                  ]},
+                {type: "list-item", checked: false, children: [
+                    {text: "third item"}
+                  ]},
+              ]},
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 0, 1, 0], offset: 6},
+        focus: {path: [0, 0, 2, 0], offset: 5},
+      };
 
-    const type = getRelevantBlockType(editor);
+      const type = getRelevantBlockType(editor);
 
-    expect(type).toEqual('bulleted-list');
-  });
-
-  it("should return sequence-list for a selection of multiple items in a sequence-list", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      { type: "quote", children: [
-          { type: "sequence-list", children: [
-              {type: "list-item", checked: false, children: [
-                  {text: "first item"}
-                ]},
-              {type: "list-item", checked: false, children: [
-                  {text: "second item"}
-                ]},
-              {type: "list-item", checked: false, children: [
-                  {text: "third item"}
-                ]},
-            ]},
-        ]},
-    ];
-    editor.selection = {
-      anchor: { path: [0, 0, 1, 0], offset: 6 },
-      focus:  { path: [0, 0, 2, 0], offset: 5 },
-    };
-
-    const type = getRelevantBlockType(editor);
-
-    expect(type).toEqual('sequence-list');
-  });
+      expect(type).toEqual(blockType);
+    });
+  }
 
   it("should return image when selection wholly in image in table cell", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -624,69 +602,110 @@ describe("changeBlockType", () => {
     expect(getRelevantBlockType(editor)).toEqual('numbered-list');
   });
 
-  it("should convert numbered-list to sequence-list", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'list-item', children: [{text: "Morbi lobortis"}]},
-              {type: 'list-item', children: [{text: "lorem elit"}]},
-              {type: 'list-item', children: [{text: "eget imperdiet"}]},
-            ]}
-        ]},
-    ];
-    editor.selection = {
-      anchor: { path: [0, 0, 0, 0], offset: 0 },
-      focus:  { path: [0, 0, 2, 0], offset: 14 },
-    };
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should convert numbered-list to ${blockType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: 'numbered-list', children: [
+                {type: 'list-item', children: [{text: "Morbi lobortis"}]},
+                {type: 'list-item', children: [{text: "lorem elit"}]},
+                {type: 'list-item', children: [{text: "eget imperdiet"}]},
+              ]}
+          ]},
+      ];
+      editor.selection = {
+        anchor: {path: [0, 0, 0, 0], offset: 0},
+        focus: {path: [0, 0, 2, 0], offset: 14},
+      };
 
-    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
-    changeBlockType(editor, 'sequence-list');
+      expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+      changeBlockType(editor, blockType);
 
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'list-item', checked: false, children: [{text: "Morbi lobortis"}]},
-              {type: 'list-item', checked: false, children: [{text: "lorem elit"}]},
-              {type: 'list-item', checked: false, children: [{text: "eget imperdiet"}]},
-            ]}
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('sequence-list');
-  });
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: blockType, children: [
+                {type: 'list-item', checked: false, children: [{text: "Morbi lobortis"}]},
+                {type: 'list-item', checked: false, children: [{text: "lorem elit"}]},
+                {type: 'list-item', checked: false, children: [{text: "eget imperdiet"}]},
+              ]}
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+    });
+  }
 
-  it("should convert sequence list to clean numbered list", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'list-item', checked: false, children: [{text: "Cras aliquam"}]},
-              {type: 'list-item', checked: false, children: [{text: "egestas mattis"}]},
-              {type: 'list-item', checked: false, children: [{text: "Integer quis"}]},
-            ]}
-        ]},
-    ];
-    editor.selection = {
-      anchor: { path: [0, 0, 0, 0], offset: 0 },
-      focus:  { path: [0, 0, 2, 0], offset: 12 },
-    };
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should convert ${blockType} to clean numbered list`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: blockType, children: [
+                {type: 'list-item', checked: false, children: [{text: "Cras aliquam"}]},
+                {type: 'list-item', checked: false, children: [{text: "egestas mattis"}]},
+                {type: 'list-item', checked: false, children: [{text: "Integer quis"}]},
+              ]}
+          ]},
+      ];
+      editor.selection = {
+        anchor: { path: [0, 0, 0, 0], offset: 0 },
+        focus:  { path: [0, 0, 2, 0], offset: 12 },
+      };
 
-    expect(getRelevantBlockType(editor)).toEqual('sequence-list');
-    changeBlockType(editor, 'numbered-list');
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      changeBlockType(editor, 'numbered-list');
 
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'list-item', children: [{text: "Cras aliquam"}]},
-              {type: 'list-item', children: [{text: "egestas mattis"}]},
-              {type: 'list-item', children: [{text: "Integer quis"}]},
-            ]}
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('numbered-list');
-  });
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: 'numbered-list', children: [
+                {type: 'list-item', children: [{text: "Cras aliquam"}]},
+                {type: 'list-item', children: [{text: "egestas mattis"}]},
+                {type: 'list-item', children: [{text: "Integer quis"}]},
+              ]}
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+    });
+  }
+
+  for (const {oldListType, newListType} of [
+    {oldListType: 'task-list', newListType: 'sequence-list'},
+    {oldListType: 'sequence-list', newListType: 'task-list'}
+  ]) {
+    it(`should convert ${oldListType} to ${newListType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: oldListType, children: [
+                {type: 'list-item', checked: true, children: [{text: "risus fermentum"}]},
+                {type: 'list-item', checked: false, children: [{text: "Nunc neque nulla"}]},
+                {type: 'list-item', checked: true, children: [{text: "maximus vitae"}]},
+              ]}
+          ]},
+      ];
+      editor.selection = {
+        anchor: { path: [0, 0, 0, 0], offset: 0 },
+        focus:  { path: [0, 0, 2, 0], offset: 13 },
+      };
+
+      expect(getRelevantBlockType(editor)).toEqual(oldListType);
+      changeBlockType(editor, newListType);
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: newListType, children: [
+                {type: 'list-item', checked: true, children: [{text: "risus fermentum"}]},
+                {type: 'list-item', checked: false, children: [{text: "Nunc neque nulla"}]},
+                {type: 'list-item', checked: true, children: [{text: "maximus vitae"}]},
+              ]}
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual(newListType);
+    });
+  }
 
   it("should change table-cell to un-nested numbered-list", () =>{
     const editor = withHtml(withReact(createEditor()));
@@ -930,61 +949,65 @@ describe("changeBlockType", () => {
     expect(getRelevantBlockType(editor)).toEqual('paragraph');
   });
 
-  it("should unwrap bulleted list when 'bulleted-list' is reverted", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [
-              {text: "Some item"},
-            ]},
-          {type: 'list-item', children: [
-              {text: "Another item"},
-            ]},
-        ]},
-    ];
-    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 0}, focus: {path: [0, 1, 0], offset: 12}});
+  for (const blockType of ['bulleted-list', 'numbered-list']) {
+    it(`should unwrap ${blockType} when ${blockType} is reverted`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: blockType, children: [
+            {type: 'list-item', children: [
+                {text: "Some item"},
+              ]},
+            {type: 'list-item', children: [
+                {text: "Another item"},
+              ]},
+          ]},
+      ];
+      Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 0}, focus: {path: [0, 1, 0], offset: 12}});
 
-    expect(getRelevantBlockType(editor)).toEqual('bulleted-list');
-    changeBlockType(editor, 'bulleted-list');
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      changeBlockType(editor, blockType);
 
-    expect(editor.children).toEqual([
-      {type: 'paragraph', children: [
-          {text: "Some item"},
-        ]},
-      {type: 'paragraph', children: [
-          {text: "Another item"},
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('multiple');
-  });
+      expect(editor.children).toEqual([
+        {type: 'paragraph', children: [
+            {text: "Some item"},
+          ]},
+        {type: 'paragraph', children: [
+            {text: "Another item"},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('multiple');
+    });
+  }
 
-  it("should unwrap sequence list and remove 'checked' property when 'sequence-list' is reverted", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: false, children: [
-              {text: "odio facilisis"},
-            ]},
-          {type: 'list-item', checked: true, children: [
-              {text: "In tincidunt"},
-            ]},
-        ]},
-    ];
-    Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 0}, focus: {path: [0, 1, 0], offset: 12}});
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should unwrap ${blockType} and remove 'checked' property when ${blockType} is reverted`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: blockType, children: [
+            {type: 'list-item', checked: false, children: [
+                {text: "odio facilisis"},
+              ]},
+            {type: 'list-item', checked: true, children: [
+                {text: "In tincidunt"},
+              ]},
+          ]},
+      ];
+      Transforms.select(editor, {anchor: {path: [0, 0, 0], offset: 0}, focus: {path: [0, 1, 0], offset: 12}});
 
-    expect(getRelevantBlockType(editor)).toEqual('sequence-list');
-    changeBlockType(editor, 'sequence-list');
+      expect(getRelevantBlockType(editor)).toEqual(blockType);
+      changeBlockType(editor, blockType);
 
-    expect(editor.children).toEqual([
-      {type: 'paragraph', children: [
-          {text: "odio facilisis"},
-        ]},
-      {type: 'paragraph', children: [
-          {text: "In tincidunt"},
-        ]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('multiple');
-  });
+      expect(editor.children).toEqual([
+        {type: 'paragraph', children: [
+            {text: "odio facilisis"},
+          ]},
+        {type: 'paragraph', children: [
+            {text: "In tincidunt"},
+          ]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('multiple');
+    });
+  }
 
   it("should unwrap table when 'table' is reverted (table-row being common block)", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -1096,51 +1119,6 @@ describe("insertListAfter", () => {
                 ]},
               {type: 'numbered-list', children: [
                   {type: 'list-item', children: [
-                      {text: ""},
-                    ]},
-                ]},
-            ]},
-          {type: 'list-item', children: [{text: "other"}]},
-        ]},
-      {type: 'code', children: [{text: "end"}]},
-    ]);
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 1, 0, 0]);
-    expect(editor.selection).toHaveProperty('focus.path', [1, 1, 1, 0, 0]);
-  });
-
-  it("should insert sequence-list in list item after text, selection collapsed", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      {type: 'quote', children: [{text: "convallis ultrices"}]},
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "Duis eleifend"}]},
-          {type: 'list-item', children: [
-              {text: "ante-"},
-              {text: "ne plus ultra", bold: true},
-              {text: "post-"},
-            ]},
-          {type: 'list-item', children: [{text: "other"}]},
-        ]},
-      {type: 'code', children: [{text: "end"}]},
-    ];
-    Transforms.select(editor, {anchor: {path: [1, 1, 1], offset: 3}, focus: {path: [1, 1, 1], offset: 3}});
-
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    insertCheckListAfter(editor);
-
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [{text: "convallis ultrices"}]},
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "Duis eleifend"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [
-                  {text: "ante-"},
-                  {text: "ne plus ultra", bold: true},
-                  {text: "post-"},
-                ]},
-              {type: 'sequence-list', children: [
-                  {type: 'list-item', checked: false, children: [
                       {text: ""},
                     ]},
                 ]},
@@ -1321,6 +1299,119 @@ describe("insertListAfter", () => {
   });
 });
 
+describe("insertChecklistAfter", () => {
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should insert ${blockType} in list item after text, selection collapsed`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: 'quote', children: [{text: "convallis ultrices"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "Duis eleifend"}]},
+            {type: 'list-item', children: [
+                {text: "ante-"},
+                {text: "ne plus ultra", bold: true},
+                {text: "post-"},
+              ]},
+            {type: 'list-item', children: [{text: "other"}]},
+          ]},
+        {type: 'code', children: [{text: "end"}]},
+      ];
+      Transforms.select(editor, {anchor: {path: [1, 1, 1], offset: 3}, focus: {path: [1, 1, 1], offset: 3}});
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      insertCheckListAfter(editor, blockType);
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [{text: "convallis ultrices"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "Duis eleifend"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "ante-"},
+                    {text: "ne plus ultra", bold: true},
+                    {text: "post-"},
+                  ]},
+                {type: blockType, children: [
+                    {type: 'list-item', checked: false, children: [
+                        {text: ""},
+                      ]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "other"}]},
+          ]},
+        {type: 'code', children: [{text: "end"}]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 1, 0, 0]);
+      expect(editor.selection).toHaveProperty('focus.path', [1, 1, 1, 0, 0]);
+    });
+  }
+
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should insert ${blockType} in list item after blocks, selection expanded`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: 'quote', children: [{text: "beginning"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "something"}]},
+            {type: 'list-item', children: [
+                {type: 'heading-three', children: [
+                    {text: "erste"},
+                  ]},
+                {type: 'quote', children: [
+                    {text: "zwitte"},
+                  ]},
+                {type: 'code', children: [
+                    {text: "dritte"},
+                  ]},
+                {type: 'paragraph', children: [
+                    {text: "vierte"},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "other"}]},
+          ]},
+        {type: 'code', children: [{text: "end"}]},
+      ];
+      Transforms.select(editor, {anchor: {path: [1, 1, 1, 0], offset: 3}, focus: {path: [1, 1, 2, 0], offset: 3}});
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      insertCheckListAfter(editor, blockType);
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [{text: "beginning"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "something"}]},
+            {type: 'list-item', children: [
+                {type: 'heading-three', children: [
+                    {text: "erste"},
+                  ]},
+                {type: 'quote', children: [
+                    {text: "zwitte"},
+                  ]},
+                {type: 'code', children: [
+                    {text: "dritte"},
+                  ]},
+                {type: blockType, children: [
+                    {type: 'list-item', checked: false, children: [
+                        {text: ""},
+                      ]},
+                  ]},
+                {type: 'paragraph', children: [
+                    {text: "vierte"},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "other"}]},
+          ]
+        },
+        {type: 'code', children: [{text: "end"}]},
+      ]);
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      expect(editor.selection).toHaveProperty('anchor.path', [1, 1, 3, 0, 0]);
+      expect(editor.selection).toHaveProperty('focus.path', [1, 1, 3, 0, 0]);
+    });
+  }
+});
+
 describe("insertTableAfter", () => {
   it("should insert table after blocks, selection expanded", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -1429,45 +1520,47 @@ describe("getSelectedListItem", () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it("should return list and path if selection in list at any level", () => {
-    console.error = jest.fn();
-    const editor = withHtml(withReact(createEditor()));
-    editor.children = [
-      {type: 'heading-three', children: [{text: "Nunc nulla diam, maximus in rutrum vitae"}]},
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "Aliquam at arcu sed magna tempor cursus"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [
-                  {text: "Nullam dapibus pharetra urna"},
-                ]},
-              {type: 'table', children: [
-                  {type: 'table-row', children: [
-                      {type: 'table-cell', children: [
-                          {text: "Nam a fermentum lectus."},
-                        ]},
-                      {type: 'table-cell', children: [
-                          {text: "Donec aliquam at enim at aliquet."},
-                        ]},
-                    ]}
-                ]}
-            ]},
-          {type: 'list-item', children: [{text: "Nunc ultrices arcu eu mi fermentum"}]},
-        ]
-      },
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [1, 1, 1, 0, 1, 0], offset: 25},
-      focus:  {path: [1, 1, 1, 0, 1, 0], offset: 25},
-    });
+  for (const blockType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
+    it(`should return list and path if selection in ${blockType} at any level`, () => {
+      console.error = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: 'heading-three', children: [{text: "Nunc nulla diam, maximus in rutrum vitae"}]},
+        {type: blockType, children: [
+            {type: 'list-item', children: [{text: "Aliquam at arcu sed magna tempor cursus"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "Nullam dapibus pharetra urna"},
+                  ]},
+                {type: 'table', children: [
+                    {type: 'table-row', children: [
+                        {type: 'table-cell', children: [
+                            {text: "Nam a fermentum lectus."},
+                          ]},
+                        {type: 'table-cell', children: [
+                            {text: "Donec aliquam at enim at aliquet."},
+                          ]},
+                      ]}
+                  ]}
+              ]},
+            {type: 'list-item', children: [{text: "Nunc ultrices arcu eu mi fermentum"}]},
+          ]
+        },
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 1, 0, 1, 0], offset: 25},
+        focus: {path: [1, 1, 1, 0, 1, 0], offset: 25},
+      });
 
-    expect(getRelevantBlockType(editor)).toEqual('table-cell');
-    const [selectedListItem, selectedListItemPath] = getSelectedListItem(editor);
-    expect(selectedListItem).toHaveProperty('type', 'list-item');
-    expect(selectedListItem).toHaveProperty('children.length', 2);
-    expect(Array.isArray(selectedListItemPath)).toBeTruthy();
-    expect(selectedListItemPath).toHaveLength(2);
-    expect(console.error).not.toHaveBeenCalled();
-  });
+      expect(getRelevantBlockType(editor)).toEqual('table-cell');
+      const [selectedListItem, selectedListItemPath] = getSelectedListItem(editor);
+      expect(selectedListItem).toHaveProperty('type', 'list-item');
+      expect(selectedListItem).toHaveProperty('children.length', 2);
+      expect(Array.isArray(selectedListItemPath)).toBeTruthy();
+      expect(selectedListItemPath).toHaveLength(2);
+      expect(console.error).not.toHaveBeenCalled();
+    });
+  }
 });
 
 describe("getSelectedTable", () => {
@@ -1597,75 +1690,118 @@ describe("tabRight", () => {
     });
   });
 
-  it("should create a sublist of same type", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "aleph"}]},
-          {type: 'list-item', children: [{text: "beis"}, {text: "BEIS", bold: true}]},
-          {type: 'list-item', children: [{text: "veis"}]},
-          {type: 'list-item', children: [{text: "gimmel"}]},
-        ]},
-    ];
-    Transforms.select(editor, {anchor: {path: [0, 2, 0], offset: 4}, focus: {path: [0, 2, 0], offset: 4}});
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  for (const blockType of ['bulleted-list', 'numbered-list']) {
+    it(`should create a ${blockType} sublist in ${blockType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: blockType, children: [
+            {type: 'list-item', children: [{text: "aleph"}]},
+            {type: 'list-item', children: [{text: "beis"}, {text: "BEIS", bold: true}]},
+            {type: 'list-item', children: [{text: "veis"}]},
+            {type: 'list-item', children: [{text: "gimmel"}]},
+          ]},
+      ];
+      Transforms.select(editor, {anchor: {path: [0, 2, 0], offset: 4}, focus: {path: [0, 2, 0], offset: 4}});
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
 
-    tabRight(editor);
+      tabRight(editor);
 
-    expect(editor.children).toEqual([
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "aleph"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "beis"}, {text: "BEIS", bold: true}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [{text: "veis"}]},
-                ]},
-            ]},
-          {type: 'list-item', children: [{text: "gimmel"}]},
-        ]},
-    ]);
-    expect(editor.selection).toEqual({
-      anchor: {path: [0, 1, 1, 0, 0], offset: 4},
-      focus: {path: [0, 1, 1, 0, 0], offset: 4},
+      expect(editor.children).toEqual([
+        {type: blockType, children: [
+            {type: 'list-item', children: [{text: "aleph"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "beis"}, {text: "BEIS", bold: true}]},
+                {type: blockType, children: [
+                    {type: 'list-item', children: [{text: "veis"}]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "gimmel"}]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [0, 1, 1, 0, 0], offset: 4},
+        focus: {path: [0, 1, 1, 0, 0], offset: 4},
+      });
     });
-  });
+  }
 
-  it("should move to existing sublist of different type", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "apple"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "banana"}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [{text: "banana split"}]},
-                ]},
-            ]},
-          {type: 'list-item', children: [{text: "cake"}]},
-          {type: 'list-item', children: [{text: "dessert"}]},
-        ]},
-    ];
-    Transforms.select(editor, {anchor: {path: [0, 2, 0], offset: 4}, focus: {path: [0, 2, 0], offset: 4}});
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
+  for (const blockType of ['task-list', 'sequence-list']) {
+    it(`should create a ${blockType} sublist in ${blockType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: blockType, children: [
+            {type: 'list-item', checked: false, children: [{text: "aleph"}]},
+            {type: 'list-item', checked: true, children: [{text: "beis"}, {text: "BEIS", bold: true}]},
+            {type: 'list-item', checked: true, children: [{text: "veis"}]},
+            {type: 'list-item', checked: true, children: [{text: "gimmel"}]},
+          ]},
+      ];
+      Transforms.select(editor, {anchor: {path: [0, 2, 0], offset: 4}, focus: {path: [0, 2, 0], offset: 4}});
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
 
-    tabRight(editor);
+      tabRight(editor);
 
-    expect(editor.children).toEqual([
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "apple"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "banana"}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [{text: "banana split"}]},
-                  {type: 'list-item', children: [{text: "cake"}]},
-                ]},
-            ]},
-          {type: 'list-item', children: [{text: "dessert"}]},
-        ]},
-    ]);
-  });
+      expect(editor.children).toEqual([
+        {type: blockType, children: [
+            {type: 'list-item', checked: false, children: [{text: "aleph"}]},
+            {type: 'list-item', checked: true, children: [
+                {type: 'paragraph', children: [{text: "beis"}, {text: "BEIS", bold: true}]},
+                {type: blockType, children: [
+                    {type: 'list-item', checked: true, children: [{text: "veis"}]},
+                  ]},
+              ]},
+            {type: 'list-item', checked: true, children: [{text: "gimmel"}]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [0, 1, 1, 0, 0], offset: 4},
+        focus: {path: [0, 1, 1, 0, 0], offset: 4},
+      });
+    });
+  }
+
+  for (const {outerListType, innerListType} of [
+    {outerListType: 'bulleted-list', innerListType: 'numbered-list'},
+    {outerListType: 'numbered-list', innerListType: 'bulleted-list'}
+  ]) {
+    it(`should move ${outerListType} item to existing sublist of ${innerListType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: outerListType, children: [
+            {type: 'list-item', children: [{text: "apple"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "banana"}]},
+                {type: innerListType, children: [
+                    {type: 'list-item', children: [{text: "banana split"}]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "cake"}]},
+            {type: 'list-item', children: [{text: "dessert"}]},
+          ]},
+      ];
+      Transforms.select(editor, {anchor: {path: [0, 2, 0], offset: 4}, focus: {path: [0, 2, 0], offset: 4}});
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+
+      tabRight(editor);
+
+      expect(editor.children).toEqual([
+        {type: outerListType, children: [
+            {type: 'list-item', children: [{text: "apple"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "banana"}]},
+                {type: innerListType, children: [
+                    {type: 'list-item', children: [{text: "banana split"}]},
+                    {type: 'list-item', children: [{text: "cake"}]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "dessert"}]},
+          ]},
+      ]);
+    });
+  }
 
   it("should create a sublist of same type, with all selected items", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -1786,91 +1922,93 @@ describe("tabRight", () => {
     ]);
   });
 
-  it("should change regular list items to checklist items", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'list-item', children: [{text: "quis leo"}, {text: "QUIS LEO", bold: true}]},
-              {type: 'list-item', children: [
-                  {type: 'paragraph', children: [{text: "vel aliquet"}]},
-                  {type: 'sequence-list', children: [
-                      {type: 'list-item', checked: true, children: [{text: "Vestibulum eget"}]},
-                    ]},
-                ]},
-              {type: 'list-item', children: [{text: "mobilis in mobili"}]},
-              {type: 'list-item', children: [{text: "semper lacus"}]},
-            ]},
-        ]},
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [0, 0, 2, 0], offset: 0},
-      focus:  {path: [0, 0, 2, 0], offset: 0},
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should change regular list items to ${listType} items`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: 'numbered-list', children: [
+                {type: 'list-item', children: [{text: "quis leo"}, {text: "QUIS LEO", bold: true}]},
+                {type: 'list-item', children: [
+                    {type: 'paragraph', children: [{text: "vel aliquet"}]},
+                    {type: listType, children: [
+                        {type: 'list-item', checked: true, children: [{text: "Vestibulum eget"}]},
+                      ]},
+                  ]},
+                {type: 'list-item', children: [{text: "mobilis in mobili"}]},
+                {type: 'list-item', children: [{text: "semper lacus"}]},
+              ]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [0, 0, 2, 0], offset: 0},
+        focus:  {path: [0, 0, 2, 0], offset: 0},
+      });
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+
+      tabRight(editor);
+
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: 'numbered-list', children: [
+                {type: 'list-item', children: [{text: "quis leo"}, {text: "QUIS LEO", bold: true}]},
+                {type: 'list-item', children: [
+                    {type: 'paragraph', children: [{text: "vel aliquet"}]},
+                    {type: listType, children: [
+                        {type: 'list-item', checked: true, children: [{text: "Vestibulum eget"}]},
+                        {type: 'list-item', checked: false, children: [{text: "mobilis in mobili"}]},
+                      ]},
+                  ]},
+                {type: 'list-item', children: [{text: "semper lacus"}]},
+              ]},
+          ]},
+      ]);
     });
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
 
-    tabRight(editor);
+    it(`should change ${listType} items to regular list items`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: true, children: [{text: "vehicula nisl"}]},
+                {type: 'list-item', checked: true, children: [
+                    {type: 'paragraph', children: [{text: "Fusce volutpat"}]},
+                    {type: 'numbered-list', children: [
+                        {type: 'list-item', children: [{text: "condimentum rutrum"}]},
+                      ]},
+                  ]},
+                {type: 'list-item', checked: true, children: [{text: "This one is moved"}]},
+                {type: 'list-item', checked: true, children: [{text: "Quisque justo"}]},
+              ]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [0, 0, 2, 0], offset: 0},
+        focus: {path: [0, 0, 2, 0], offset: 0},
+      });
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
 
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {type: 'numbered-list', children: [
-              {type: 'list-item', children: [{text: "quis leo"}, {text: "QUIS LEO", bold: true}]},
-              {type: 'list-item', children: [
-                  {type: 'paragraph', children: [{text: "vel aliquet"}]},
-                  {type: 'sequence-list', children: [
-                      {type: 'list-item', checked: true, children: [{text: "Vestibulum eget"}]},
-                      {type: 'list-item', checked: false, children: [{text: "mobilis in mobili"}]},
-                    ]},
-                ]},
-              {type: 'list-item', children: [{text: "semper lacus"}]},
-            ]},
-        ]},
-    ]);
-  });
+      tabRight(editor);
 
-  it("should change sequence list items to regular list items", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'list-item', checked: true, children: [{text: "vehicula nisl"}]},
-              {type: 'list-item', checked: true, children: [
-                  {type: 'paragraph', children: [{text: "Fusce volutpat"}]},
-                  {type: 'numbered-list', children: [
-                      {type: 'list-item', children: [{text: "condimentum rutrum"}]},
-                    ]},
-                ]},
-              {type: 'list-item', checked: true, children: [{text: "This one is moved"}]},
-              {type: 'list-item', checked: true, children: [{text: "Quisque justo"}]},
-            ]},
-        ]},
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [0, 0, 2, 0], offset: 0},
-      focus:  {path: [0, 0, 2, 0], offset: 0},
+      expect(editor.children).toEqual([
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: true, children: [{text: "vehicula nisl"}]},
+                {type: 'list-item', checked: true, children: [
+                    {type: 'paragraph', children: [{text: "Fusce volutpat"}]},
+                    {type: 'numbered-list', children: [
+                        {type: 'list-item', children: [{text: "condimentum rutrum"}]},
+                        {type: 'list-item', children: [{text: "This one is moved"}]},
+                      ]},
+                  ]},
+                {type: 'list-item', checked: true, children: [{text: "Quisque justo"}]},
+              ]},
+          ]},
+      ]);
     });
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-
-    tabRight(editor);
-
-    expect(editor.children).toEqual([
-      {type: 'quote', children: [
-          {type: 'sequence-list', children: [
-              {type: 'list-item', checked: true, children: [{text: "vehicula nisl"}]},
-              {type: 'list-item', checked: true, children: [
-                  {type: 'paragraph', children: [{text: "Fusce volutpat"}]},
-                  {type: 'numbered-list', children: [
-                      {type: 'list-item', children: [{text: "condimentum rutrum"}]},
-                      {type: 'list-item', children: [{text: "This one is moved"}]},
-                    ]},
-                ]},
-              {type: 'list-item', checked: true, children: [{text: "Quisque justo"}]},
-            ]},
-        ]},
-    ]);
-  });
+  }
 
   it("move collapsed selection in table to beginning of next column of table", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -2303,187 +2441,253 @@ describe("tabRight", () => {
 });
 
 describe("tabLeft", () => {
-  it("should do nothing if list item not in sub-list", () => {
-    console.info = jest.fn();
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    const nodes = [
-      {type: 'heading-two', children: [{text: "Vestibulum sollicitudin dignissim justo placerat cursus."}]},
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "unchanged"}]},
-          {type: 'list-item', children: [{text: "unaltered"}]},
-          {type: 'list-item', children: [{text: "unaffected"}]},
-        ]},
-    ];
-    editor.children = nodes;
-    Transforms.select(editor, {
-      anchor: {path: [1, 1, 0], offset: 2},
-      focus:  {path: [1, 1, 0], offset: 2},
+  for (const listType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
+    it(`should do nothing if ${listType} item not in sub-list`, () => {
+      console.info = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      const nodes = [
+        {type: 'heading-two', children: [{text: "Vestibulum sollicitudin dignissim justo placerat cursus."}]},
+        {type: listType, children: [
+            {type: 'list-item', children: [{text: "unchanged"}]},
+            {type: 'list-item', children: [{text: "unaltered"}]},
+            {type: 'list-item', children: [{text: "unaffected"}]},
+          ]},
+      ];
+      editor.children = nodes;
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 0], offset: 2},
+        focus: {path: [1, 1, 0], offset: 2},
+      });
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      tabLeft(editor);
+
+      expect(editor.children).toEqual(nodes);
+      expect(editor.selection).toEqual({
+        anchor: {path: [1, 1, 0], offset: 2},
+        focus: {path: [1, 1, 0], offset: 2},
+      });
     });
 
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    tabLeft(editor);
+    it(`should do nothing if middle item in ${listType} sub-list`, () => {
+      console.info = jest.fn();
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      const nodes = [
+        {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "this"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "won't"}]},
+                {type: listType, children: [
+                    {type: 'list-item', children: [{text: " change"}]},
+                    {type: 'list-item', children: [{text: " at", italic: true}]},
+                    {type: 'list-item', children: [{text: " all"}]},
+                  ]},
 
-    expect(editor.children).toEqual(nodes);
-    expect(editor.selection).toEqual({
-      anchor: {path: [1, 1, 0], offset: 2},
-      focus:  {path: [1, 1, 0], offset: 2},
+              ]},
+            {type: 'list-item', children: [{text: "Nope!"}]},
+          ]},
+      ];
+      editor.children = nodes;
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 1, 1], offset: 2},
+        focus:  {path: [1, 1, 1, 1], offset: 2},
+      });
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      tabLeft(editor);
+
+      expect(editor.children).toEqual(nodes);
+      expect(editor.selection).toEqual({
+        anchor: {path: [1, 1, 1, 1], offset: 2},
+        focus:  {path: [1, 1, 1, 1], offset: 2},
+      });
     });
-  });
+  }
 
-  it("should do nothing if middle item in sub-list", () => {
-    console.info = jest.fn();
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    const nodes = [
-      {type: 'heading-two', children: [{text: "Vivamus id ligula justo."}]},
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "this"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "won't"}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [{text: " change"}]},
-                  {type: 'list-item', children: [{text: " at"}]},
-                  {type: 'list-item', children: [{text: " all"}]},
-                ]},
+  for (const listType of ['bulleted-list', 'numbered-list']) {
+    it(`should make first item in ${listType} sub-list a new item in parent list`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "static"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "still "}, {text: "top-level", bold: true}]},
+                {type: listType, children: [
+                    {type: 'list-item', children: [
+                        {text: "changes to "},
+                        {text: "top-level", bold: true},
+                      ]},
+                    {type: 'list-item', children: [
+                        {text: "remains "},
+                        {text: "sub-item", bold: true},
+                      ]},
+                  ]},
 
-            ]},
-          {type: 'list-item', children: [{text: "Nope!"}]},
-        ]},
-    ];
-    editor.children = nodes;
-    Transforms.select(editor, {
-      anchor: {path: [1, 1, 1, 1], offset: 2},
-      focus:  {path: [1, 1, 1, 1], offset: 2},
+              ]},
+            {type: 'list-item', children: [{text: "unmoved"}]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 1, 0, 0], offset: 7},
+        focus:  {path: [1, 1, 1, 0, 0], offset: 7},
+      });
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      tabLeft(editor);
+
+      expect(editor.children).toEqual([
+        {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "static"}]},
+            {type: 'list-item', children: [{text: "still "}, {text: "top-level", bold: true}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "changes to "},
+                    {text: "top-level", bold: true},
+                  ]},
+                {type: listType, children: [
+                    {type: 'list-item', children: [
+                        {text: "remains "},
+                        {text: "sub-item", bold: true},
+                      ]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "unmoved"}]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [1, 2, 0, 0], offset: 0},
+        focus:  {path: [1, 2, 0, 0], offset: 0},
+      });
     });
+  }
 
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    tabLeft(editor);
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should make first item in ${listType} sub-list a new item in parent list`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "static"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "still "}, {text: "top-level", bold: true}]},
+                {type: listType, children: [
+                    {type: 'list-item', checked: true, children: [
+                        {text: "changes to "},
+                        {text: "top-level", bold: true},
+                      ]},
+                    {type: 'list-item', checked: true, children: [
+                        {text: "remains "},
+                        {text: "sub-item", bold: true},
+                      ]},
+                  ]},
 
-    expect(editor.children).toEqual(nodes);
-    expect(editor.selection).toEqual({
-      anchor: {path: [1, 1, 1, 1], offset: 2},
-      focus:  {path: [1, 1, 1, 1], offset: 2},
+              ]},
+            {type: 'list-item', children: [{text: "unmoved"}]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 1, 0, 0], offset: 7},
+        focus:  {path: [1, 1, 1, 0, 0], offset: 7},
+      });
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      tabLeft(editor);
+
+      expect(editor.children).toEqual([
+        {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
+        {type: 'bulleted-list', children: [
+            {type: 'list-item', children: [{text: "static"}]},
+            {type: 'list-item', children: [{text: "still "}, {text: "top-level", bold: true}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [
+                    {text: "changes to "},
+                    {text: "top-level", bold: true},
+                  ]},
+                {type: listType, children: [
+                    {type: 'list-item', checked: true, children: [
+                        {text: "remains "},
+                        {text: "sub-item", bold: true},
+                      ]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [{text: "unmoved"}]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [1, 2, 0, 0], offset: 0},
+        focus:  {path: [1, 2, 0, 0], offset: 0},
+      });
     });
-  });
+  }
 
-  it("should make first item in sub-list a new item in parent list", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "static"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "still "}, {text: "top-level", bold: true}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [
-                      {text: "changes to "},
-                      {text: "top-level", bold: true},
-                    ]},
-                  {type: 'list-item', children: [
-                      {text: "remains "},
-                      {text: "sub-item", bold: true},
-                    ]},
-                ]},
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should make first item in sub-list a new item in parent ${listType}`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'heading-two', children: [{text: "volutpat nec"}]},
+        {type: listType, children: [
+            {type: 'list-item', checked: true, children: [{text: "dui sit amet"}]},
+            {type: 'list-item', checked: true, children: [
+                {type: 'paragraph', children: [{text: "vehicula sagittis"}]},
+                {type: 'numbered-list', children: [
+                    {type: 'list-item', children: [
+                        {text: "moves to "},
+                        {text: "top-level", bold: true},
+                      ]},
+                    {type: 'list-item', children: [
+                        {text: "stays in "},
+                        {text: "sub-list", bold: true},
+                      ]},
+                  ]},
 
-            ]},
-          {type: 'list-item', children: [{text: "unmoved"}]},
-        ]},
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [1, 1, 1, 0, 0], offset: 7},
-      focus:  {path: [1, 1, 1, 0, 0], offset: 7},
+              ]},
+            {type: 'list-item', checked: true, children: [{text: "Aenean nec"}]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [1, 1, 1, 0, 0], offset: 7},
+        focus:  {path: [1, 1, 1, 0, 0], offset: 7},
+      });
+
+      expect(getRelevantBlockType(editor)).toEqual('list-item');
+      tabLeft(editor);
+
+      expect(editor.children).toEqual([
+        {type: 'heading-two', children: [{text: "volutpat nec"}]},
+        {type: listType, children: [
+            {type: 'list-item', checked: true, children: [{text: "dui sit amet"}]},
+            {type: 'list-item', checked: true, children: [
+                {text: "vehicula sagittis"},
+              ]},
+            {type: 'list-item', checked: false, children: [
+                {type: 'paragraph', children: [
+                    {text: "moves to "},
+                    {text: "top-level", bold: true},
+                  ]},
+                {type: 'numbered-list', children: [
+                    {type: 'list-item', children: [
+                        {text: "stays in "},
+                        {text: "sub-list", bold: true},
+                      ]},
+                  ]},
+              ]},
+            {type: 'list-item', checked: true, children: [{text: "Aenean nec"}]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [1, 2, 0, 0], offset: 0},
+        focus:  {path: [1, 2, 0, 0], offset: 0},
+      });
     });
-
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    tabLeft(editor);
-
-    expect(editor.children).toEqual([
-      {type: 'heading-two', children: [{text: "Pellentesque eu tellus accumsan"}]},
-      {type: 'bulleted-list', children: [
-          {type: 'list-item', children: [{text: "static"}]},
-          {type: 'list-item', children: [{text: "still "}, {text: "top-level", bold: true}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [
-                  {text: "changes to "},
-                  {text: "top-level", bold: true},
-                ]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [
-                      {text: "remains "},
-                      {text: "sub-item", bold: true},
-                    ]},
-                ]},
-            ]},
-          {type: 'list-item', children: [{text: "unmoved"}]},
-        ]},
-    ]);
-    expect(editor.selection).toEqual({
-      anchor: {path: [1, 2, 0, 0], offset: 0},
-      focus:  {path: [1, 2, 0, 0], offset: 0},
-    });
-  });
-
-  it("should make first item in sub-list a new item in parent sequence-list", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'heading-two', children: [{text: "volutpat nec"}]},
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: true, children: [{text: "dui sit amet"}]},
-          {type: 'list-item', checked: true, children: [
-              {type: 'paragraph', children: [{text: "vehicula sagittis"}]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [
-                      {text: "moves to "},
-                      {text: "top-level", bold: true},
-                    ]},
-                  {type: 'list-item', children: [
-                      {text: "stays in "},
-                      {text: "sub-list", bold: true},
-                    ]},
-                ]},
-
-            ]},
-          {type: 'list-item', checked: true, children: [{text: "Aenean nec"}]},
-        ]},
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [1, 1, 1, 0, 0], offset: 7},
-      focus:  {path: [1, 1, 1, 0, 0], offset: 7},
-    });
-
-    expect(getRelevantBlockType(editor)).toEqual('list-item');
-    tabLeft(editor);
-
-    expect(editor.children).toEqual([
-      {type: 'heading-two', children: [{text: "volutpat nec"}]},
-      {type: 'sequence-list', children: [
-          {type: 'list-item', checked: true, children: [{text: "dui sit amet"}]},
-          {type: 'list-item', checked: true, children: [
-              {text: "vehicula sagittis"},
-            ]},
-          {type: 'list-item', checked: false, children: [
-              {type: 'paragraph', children: [
-                  {text: "moves to "},
-                  {text: "top-level", bold: true},
-                ]},
-              {type: 'numbered-list', children: [
-                  {type: 'list-item', children: [
-                      {text: "stays in "},
-                      {text: "sub-list", bold: true},
-                    ]},
-                ]},
-            ]},
-          {type: 'list-item', checked: true, children: [{text: "Aenean nec"}]},
-        ]},
-    ]);
-    expect(editor.selection).toEqual({
-      anchor: {path: [1, 2, 0, 0], offset: 0},
-      focus:  {path: [1, 2, 0, 0], offset: 0},
-    });
-  });
+  }
 
   it("should move item which contains whole selection", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -2825,60 +3029,62 @@ describe("tabLeft", () => {
     });
   });
 
-  it("should make last item in sequence-list a new item in parent ordered-list, keeping its children", () => {
-    const editor = withHtml(withReact(createEditor()));
-    editor.subtype = 'html;hint=SEMANTIC';
-    editor.children = [
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "alpha"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "beta parent"}]},
-              {type: 'sequence-list', children: [
-                  {type: 'list-item', checked: false, children: [{text: "gamma erste kind"}]},
-                  {type: 'list-item', checked: true, children: [{text: "delta mittel kind"}]},
-                  {type: 'list-item', checked: false, children: [
-                      {type: 'quote', children: [{text: "epsilon letzte kind"}]},
-                      {type: 'bulleted-list', children: [
-                          {type: 'list-item', children: [{text: "zeta uno"}]},
-                          {type: 'list-item', children: [{text: "eta dos"}]},
-                        ]},
-                    ]},
-                ]},
-            ]},
-        ]},
-    ];
-    Transforms.select(editor, {
-      anchor: {path: [0, 1, 1, 2, 0, 0], offset: 3},
-      focus:  {path: [0, 1, 1, 2, 0, 0], offset: 3},
-    });
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`should make last item in ${listType} a new item in parent ordered-list, keeping its children`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.subtype = 'html;hint=SEMANTIC';
+      editor.children = [
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [{text: "alpha"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "beta parent"}]},
+                {type: listType, children: [
+                    {type: 'list-item', checked: false, children: [{text: "gamma erste kind"}]},
+                    {type: 'list-item', checked: true, children: [{text: "delta mittel kind"}]},
+                    {type: 'list-item', checked: false, children: [
+                        {type: 'quote', children: [{text: "epsilon letzte kind"}]},
+                        {type: 'bulleted-list', children: [
+                            {type: 'list-item', children: [{text: "zeta uno"}]},
+                            {type: 'list-item', children: [{text: "eta dos"}]},
+                          ]},
+                      ]},
+                  ]},
+              ]},
+          ]},
+      ];
+      Transforms.select(editor, {
+        anchor: {path: [0, 1, 1, 2, 0, 0], offset: 3},
+        focus:  {path: [0, 1, 1, 2, 0, 0], offset: 3},
+      });
 
-    expect(getRelevantBlockType(editor)).toEqual('quote');
-    tabLeft(editor);
+      expect(getRelevantBlockType(editor)).toEqual('quote');
+      tabLeft(editor);
 
-    expect(editor.children).toEqual([
-      {type: 'numbered-list', children: [
-          {type: 'list-item', children: [{text: "alpha"}]},
-          {type: 'list-item', children: [
-              {type: 'paragraph', children: [{text: "beta parent"}]},
-              {type: 'sequence-list', children: [
-                  {type: 'list-item', checked: false, children: [{text: "gamma erste kind"}]},
-                  {type: 'list-item', checked: true, children: [{text: "delta mittel kind"}]},
-                ]},
-            ]},
-          {type: 'list-item', children: [
-              {type: 'quote', children: [{text: "epsilon letzte kind"}]},
-              {type: 'bulleted-list', children: [
-                  {type: 'list-item', children: [{text: "zeta uno"}]},
-                  {type: 'list-item', children: [{text: "eta dos"}]},
-                ]},
-            ]},
-        ]},
-    ]);
-    expect(editor.selection).toEqual({
-      anchor: {path: [0, 2, 0, 0], offset: 0},
-      focus:  {path: [0, 2, 0, 0], offset: 0},
+      expect(editor.children).toEqual([
+        {type: 'numbered-list', children: [
+            {type: 'list-item', children: [{text: "alpha"}]},
+            {type: 'list-item', children: [
+                {type: 'paragraph', children: [{text: "beta parent"}]},
+                {type: listType, children: [
+                    {type: 'list-item', checked: false, children: [{text: "gamma erste kind"}]},
+                    {type: 'list-item', checked: true, children: [{text: "delta mittel kind"}]},
+                  ]},
+              ]},
+            {type: 'list-item', children: [
+                {type: 'quote', children: [{text: "epsilon letzte kind"}]},
+                {type: 'bulleted-list', children: [
+                    {type: 'list-item', children: [{text: "zeta uno"}]},
+                    {type: 'list-item', children: [{text: "eta dos"}]},
+                  ]},
+              ]},
+          ]},
+      ]);
+      expect(editor.selection).toEqual({
+        anchor: {path: [0, 2, 0, 0], offset: 0},
+        focus:  {path: [0, 2, 0, 0], offset: 0},
+      });
     });
-  });
+  }
 
   it("move collapsed selection in table to beginning of previous column or row of table", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -3239,6 +3445,207 @@ describe("tabLeft", () => {
     expect(editor.children).toEqual(originalNodes);
     expect(editor.selection).toEqual(originalSelection);
   });
+});
+
+describe("toggleCheckListItem", () => {
+  it("should move newly-checked task item to end", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "target"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
+              {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 1], true);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
+              {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
+              {type: 'list-item', checked: true, children: [{text: "target"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it("shouldn't move newly-checked sequence item", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "target"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
+              {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 1], true);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: true, children: [{text: "target"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
+              {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`shouldn't move newly-checked ${listType} item already at end`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: 'heading-one', children: [{text: "a volutpat."}]},
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+                {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+                {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+                {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
+              ]},
+          ]},
+      ];
+
+      toggleCheckListItem(editor, [1, 0, 3], true);
+
+      expect(editor.children).toEqual([
+        {type: 'heading-one', children: [{text: "a volutpat."}]},
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+                {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+                {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+                {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
+              ]},
+          ]},
+      ]);
+    });
+  }
+
+  it("should move newly-unchecked task item before first checked item", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "ad litora torquent per conubia"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "per inceptos"}]},
+              {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
+              {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
+              {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
+              {type: 'list-item', checked: true, children: [{text: "moved"}]},
+              {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 4], false);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "ad litora torquent per conubia"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "per inceptos"}]},
+              {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
+              {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
+              {type: 'list-item', checked: false, children: [{text: "moved"}]},
+              {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
+              {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it("shouldn't move newly-unchecked sequence item", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "ad litora torquent per conubia"}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "per inceptos"}]},
+              {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
+              {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
+              {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
+              {type: 'list-item', checked: true, children: [{text: "unchecked"}]},
+              {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 4], false);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "ad litora torquent per conubia"}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "per inceptos"}]},
+              {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
+              {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
+              {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
+              {type: 'list-item', checked: false, children: [{text: "unchecked"}]},
+              {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  for (const listType of ['task-list', 'sequence-list']) {
+    it(`shouldn't move newly-unchecked ${listType} item already before first remaining checked item`, () => {
+      const editor = withHtml(withReact(createEditor()));
+      editor.children = [
+        {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+                {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+                {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+                {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
+                {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+                {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+              ]},
+          ]},
+      ];
+
+      toggleCheckListItem(editor, [1, 0, 3], false);
+
+      expect(editor.children).toEqual([
+        {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+        {type: 'quote', children: [
+            {type: listType, children: [
+                {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+                {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+                {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+                {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
+                {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+                {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+              ]},
+          ]},
+      ]);
+    });
+  }
+
 });
 
 describe("flipTableRowsToColumns", () => {

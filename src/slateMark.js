@@ -270,24 +270,16 @@ function slateType(mdNode, isChecklist) {
           return 'heading-one';
         case 2:
           return 'heading-two';
-        case 3:
-          return 'heading-three';
-        case 4:
-          return 'heading-three';
-        case 5:
-          return 'heading-three';
         default:
           return 'heading-three';
       }
     case 'paragraph':
       return 'paragraph';
     case 'list':
-      if (isChecklist) {
-        return 'sequence-list';
-      } else if (mdNode.ordered) {
-        return 'numbered-list';
+      if (mdNode.ordered) {
+        return isChecklist ? 'sequence-list' : 'numbered-list';
       } else {
-        return 'bulleted-list';
+        return isChecklist ? 'task-list' : 'bulleted-list';
       }
     case 'listItem':
       return 'list-item';
@@ -408,6 +400,8 @@ function serializeMarkdown(editor, slateNodes) {
         switch (slateNode.type) {   // before children
           case 'bulleted-list':
           case 'numbered-list':
+          case 'task-list':
+          case 'sequence-list':
             if (hierarchy.some(container => 'list-item' === container.type)) {
               break;
             }
@@ -490,8 +484,8 @@ function serializeMarkdown(editor, slateNodes) {
           if (hasChildItem || isContinuation) {
             prefix += "    ";
           } else {
-            const listParent = hierarchy.findLast(container => ['bulleted-list', 'numbered-list'].includes(container.type))
-            if ('bulleted-list' === listParent.type) {
+            const listParent = hierarchy.findLast(container => ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list'].includes(container.type))
+            if (['bulleted-list', 'task-list'].includes(listParent.type)) {
               prefix += "* ";
             } else {
               prefix += (ancestor.ind + 1) + ". ";
