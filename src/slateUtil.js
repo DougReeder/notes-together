@@ -508,8 +508,14 @@ function toggleCheckListItem(editor, path, checked) {
   const list = SlateNode.parent(editor, path);
   if ('task-list' === list.type) {
     if (checked) {
+      Transforms.setNodes(editor, {strikethrough: true},
+        {at: path, match: (n,p) => SlateText.isText(n) && p.length > path.length});
+
       finalPath = [...path.slice(0, -1), list.children.length - 1];
     } else {
+      Transforms.unsetNodes(editor, 'strikethrough',
+        {at: path, match: (n,p) => SlateText.isText(n) && p.length > path.length});
+
       let firstCheckedInd = 0;
       while (false === list.children[firstCheckedInd].checked &&
       firstCheckedInd < list.children.length - 1) {

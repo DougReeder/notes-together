@@ -265,7 +265,7 @@ function withHtml(editor) {   // defines Slate plugin
           } else {
             const parent = {type: 'checked' in node ? 'sequence-list' : parentTypes[0], children: []};
             Transforms.wrapNodes(editor, parent, {at: path});
-            console.warn(`wrapped orphan with ${parent}:`, node);
+            console.warn("wrapped orphan with", parent, ":", node);
             return true;
           }
         }
@@ -1031,7 +1031,7 @@ const ImageElement = ({ attributes, children, element }) => {
 const CheckListItemElement = ({ attributes, children, element }) => {
   const editor = useSlateStatic();
   const readOnly = useReadOnly();
-  const { checked } = element
+  const { checked } = element;
   return (
     <li
       className="checkListItem"

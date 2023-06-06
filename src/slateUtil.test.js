@@ -3455,7 +3455,10 @@ describe("toggleCheckListItem", () => {
       {type: 'quote', children: [
           {type: 'task-list', children: [
               {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
-              {type: 'list-item', checked: false, children: [{text: "target"}]},
+              {type: 'list-item', checked: false, children: [
+                  {text: "target"},
+                  {text: "item", bold: true}
+                ]},
               {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
               {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
               {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
@@ -3475,7 +3478,10 @@ describe("toggleCheckListItem", () => {
               {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
               {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
               {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
-              {type: 'list-item', checked: true, children: [{text: "target"}]},
+              {type: 'list-item', checked: true, children: [
+                  {text: "target", strikethrough: true},
+                  {text: "item", bold: true, strikethrough: true}
+                ]},
             ]},
         ]},
     ]);
@@ -3514,36 +3520,65 @@ describe("toggleCheckListItem", () => {
     ]);
   });
 
-  for (const listType of ['task-list', 'sequence-list']) {
-    it(`shouldn't move newly-checked ${listType} item already at end`, () => {
-      const editor = withHtml(withReact(createEditor()));
-      editor.children = [
-        {type: 'heading-one', children: [{text: "a volutpat."}]},
-        {type: 'quote', children: [
-            {type: listType, children: [
-                {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
-                {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
-                {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
-                {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
-              ]},
-          ]},
-      ];
+  it(`shouldn't move newly-checked task list item already at end`, () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "a volutpat."}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+              {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+              {type: 'list-item', checked: false, children: [
+                {text: "this shouldn't move"}]},
+            ]},
+        ]},
+    ];
 
-      toggleCheckListItem(editor, [1, 0, 3], true);
+    toggleCheckListItem(editor, [1, 0, 3], true);
 
-      expect(editor.children).toEqual([
-        {type: 'heading-one', children: [{text: "a volutpat."}]},
-        {type: 'quote', children: [
-            {type: listType, children: [
-                {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
-                {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
-                {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
-                {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
-              ]},
-          ]},
-      ]);
-    });
-  }
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "a volutpat."}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+              {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+              {type: 'list-item', checked: true, children: [
+                {text: "this shouldn't move", strikethrough: true}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it(`shouldn't move newly-checked sequence list item already at end`, () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "a volutpat."}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+              {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+              {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 3], true);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "a volutpat."}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "Nam vel eros"}]},
+              {type: 'list-item', checked: false, children: [{text: "eu mauris"}]},
+              {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
+            ]},
+        ]},
+    ]);
+  });
 
   it("should move newly-unchecked task item before first checked item", () => {
     const editor = withHtml(withReact(createEditor()));
@@ -3555,7 +3590,7 @@ describe("toggleCheckListItem", () => {
               {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
               {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
               {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
-              {type: 'list-item', checked: true, children: [{text: "moved"}]},
+              {type: 'list-item', checked: true, children: [{text: "moved", strikethrough: true}]},
               {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
             ]},
         ]},
@@ -3588,7 +3623,8 @@ describe("toggleCheckListItem", () => {
               {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
               {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
               {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
-              {type: 'list-item', checked: true, children: [{text: "unchecked"}]},
+              {type: 'list-item', checked: true, children: [
+                {text: "unchecked", strikethrough: true}]},
               {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
             ]},
         ]},
@@ -3604,47 +3640,79 @@ describe("toggleCheckListItem", () => {
               {type: 'list-item', checked: false, children: [{text: "Curabitur gravida"}]},
               {type: 'list-item', checked: false, children: [{text: "mi eu urna laoreet"}]},
               {type: 'list-item', checked: true, children: [{text: "sit amet pulvinar"}]},
-              {type: 'list-item', checked: false, children: [{text: "unchecked"}]},
+              {type: 'list-item', checked: false, children: [
+                {text: "unchecked", strikethrough: true}]},
               {type: 'list-item', checked: true, children: [{text: "Curabitur at augue"}]},
             ]},
         ]},
     ]);
   });
 
-  for (const listType of ['task-list', 'sequence-list']) {
-    it(`shouldn't move newly-unchecked ${listType} item already before first remaining checked item`, () => {
-      const editor = withHtml(withReact(createEditor()));
-      editor.children = [
-        {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
-        {type: 'quote', children: [
-            {type: listType, children: [
-                {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
-                {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
-                {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
-                {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
-                {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
-                {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
-              ]},
-          ]},
-      ];
+  it(`shouldn't move newly-unchecked task list item already before first remaining checked item`, () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+              {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+              {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+              {type: 'list-item', checked: true, children: [{text: "this shouldn't move", strikethrough: true}]},
+              {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+              {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+            ]},
+        ]},
+    ];
 
-      toggleCheckListItem(editor, [1, 0, 3], false);
+    toggleCheckListItem(editor, [1, 0, 3], false);
 
-      expect(editor.children).toEqual([
-        {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
-        {type: 'quote', children: [
-            {type: listType, children: [
-                {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
-                {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
-                {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
-                {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
-                {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
-                {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
-              ]},
-          ]},
-      ]);
-    });
-  }
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+              {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+              {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+              {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
+              {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+              {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it(`shouldn't move newly-unchecked sequence list item already before first remaining checked item`, () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+              {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+              {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+              {type: 'list-item', checked: true, children: [{text: "this shouldn't move"}]},
+              {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+              {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+            ]},
+        ]},
+    ];
+
+    toggleCheckListItem(editor, [1, 0, 3], false);
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "ac mi feugiat"}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "consectetur at eget"}]},
+              {type: 'list-item', checked: false, children: [{text: "Duis tincidunt"}]},
+              {type: 'list-item', checked: false, children: [{text: "gravida sapien"}]},
+              {type: 'list-item', checked: false, children: [{text: "this shouldn't move"}]},
+              {type: 'list-item', checked: true, children: [{text: "Cras maximus"}]},
+              {type: 'list-item', checked: true, children: [{text: "eget sapien"}]},
+            ]},
+        ]},
+    ]);
+  });
 
 });
 

@@ -3124,8 +3124,8 @@ describe("serializeHtml and deserializeHtml", () => {
             },
             {type: 'list-item', checked: true, children: [
                 {type: 'paragraph', children: [
-                    {text: "felis semper", bold: true},
-                    {text: " lectus dapibus"},
+                    {text: "felis semper", bold: true, strikethrough: true},
+                    {text: " lectus dapibus", strikethrough: true},
                   ]},
               ]
             },
