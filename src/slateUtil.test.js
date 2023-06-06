@@ -2,7 +2,7 @@
 
 import {
   changeBlockType,
-  changeContentType,
+  changeContentType, deleteCompletedTasks,
   flipTableRowsToColumns,
   getRelevantBlockType,
   getSelectedListItem,
@@ -3714,6 +3714,57 @@ describe("toggleCheckListItem", () => {
     ]);
   });
 
+});
+
+describe("deleteCompletedTasks", () => {
+  it("should delete checked Task items", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc", strikethrough: true}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo", strikethrough: true}]},
+            ]},
+        ]},
+    ];
+
+    deleteCompletedTasks(editor)
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+            ]},
+        ]},
+    ]);
+  });
+
+  it("should not change a Sequence list", () => {
+    const editor = withHtml(withReact(createEditor()));
+    const originalNodes = [
+      {type: 'heading-one', children: [{text: "Class aptent taciti sociosqu "}]},
+      {type: 'quote', children: [
+          {type: 'sequence-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "Donec imperdiet"}]},
+              {type: 'list-item', checked: false, children: [{text: "target"}]},
+              {type: 'list-item', checked: false, children: [{text: "eros sit"}]},
+              {type: 'list-item', checked: true, children: [{text: "amet nunc"}]},
+              {type: 'list-item', checked: true, children: [{text: "non commodo"}]},
+              {type: 'list-item', checked: true, children: [{text: "mauris pulvinar."}]},
+            ]},
+        ]},
+    ];
+    editor.children = originalNodes.slice(0);
+
+    deleteCompletedTasks(editor);
+
+    expect(editor.children).toEqual(originalNodes);
+  });
 });
 
 describe("flipTableRowsToColumns", () => {

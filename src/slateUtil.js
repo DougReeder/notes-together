@@ -531,6 +531,12 @@ function toggleCheckListItem(editor, path, checked) {
   Transforms.setNodes(editor, {checked: checked}, { at: finalPath });
 }
 
+function deleteCompletedTasks(editor) {
+  Transforms.removeNodes(editor, {at: [],
+      match: (n,p) => 'list-item' === n.type &&
+        'task-list' === SlateNode.parent(editor, p).type && true === n.checked});
+}
+
 function flipTableRowsToColumns(editor) {
   const [selectedTable, selectedTablePath] = getSelectedTable(editor);
   const oldNumRow = selectedTable.children.length;
@@ -618,4 +624,4 @@ function coerceToPlainText(editor) {
   });
 }
 
-export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertCheckListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, getSelectedQuote, tabRight, tabLeft, toggleCheckListItem, flipTableRowsToColumns, changeContentType, coerceToPlainText};
+export {getRelevantBlockType, changeBlockType, getCommonBlock, insertListAfter, insertCheckListAfter, insertTableAfter, insertAfter, getSelectedListItem, getSelectedTable, getSelectedQuote, tabRight, tabLeft, toggleCheckListItem, deleteCompletedTasks, flipTableRowsToColumns, changeContentType, coerceToPlainText};

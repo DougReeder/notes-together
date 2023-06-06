@@ -29,7 +29,7 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import {
-  AddCircleOutline, Lock,
+  AddCircleOutline, DeleteOutline, Lock,
   MoreVert,
   Photo,
   Redo,
@@ -57,7 +57,7 @@ import {
   flipTableRowsToColumns,
   insertAfter,
   getSelectedQuote,
-  insertCheckListAfter
+  insertCheckListAfter, deleteCompletedTasks
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -929,6 +929,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             save(noteDate, true);
           }}>
             Lock note <Lock/>
+          </MenuItem>
+          <MenuItem onClick={evt => {
+            setDetailsMenuAnchorEl(null);
+            deleteCompletedTasks(editor);
+          }}>
+            Delete completed Tasks <DeleteOutline/>
           </MenuItem>
           <MenuItem onClick={evt => {
             Transforms.unsetNodes(editor, ['deleted', 'inserted'], {
