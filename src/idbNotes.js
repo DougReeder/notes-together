@@ -102,13 +102,16 @@ function createWelcomeNote(transaction) {
 
   const tutorialContent = `
 <h1>Welcome to Notes Together!</h1>
-<p>Change paragraphs to <b>headings</b>, <b>lists</b>, and <b>tables</b> using the <i>Block Type</i> menu above. Break up existing blocks by selecting text, then selecting from the Block Type menu.</p>
-<p>To start typing <b>bold</b> or <i>italic</i> text, select from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</p>
-<p><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</p>
-<p>To <b>Undo</b> or <b>Redo</b>, use the <i>Editor menu</i> <b>⋮</b>︎. <b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste files...</i>.</p>
-<p><b>Insert links</b> by dragging the URL (or the icon next to it) from a browser. Right-click to follow links.</p>
-<p><b>Keyboard shortcuts</b> are listed in <i>Help</i> in the Application menu ☰.</p>
-<p><i>Try out the editor features with this note, and delete it when you're finished.</i></p>
+<ul>
+<li><input type="checkbox">Change one or more paragraphs to <b>headings</b>, <b>lists</b>, or <b>tables</b> using the <i>Block Type</i> menu above. Or break up existing blocks by selecting text, then selecting from the Block Type menu.</li>
+<li><input type="checkbox">Start typing <b>bold</b> or <i>italic</i> text, by selecting from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</li>
+<li><input type="checkbox"><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</li>
+<li><input type="checkbox"><b>Undo</b> or <b>Redo</b>, using the <i>Editor menu</i> <b>⋮</b>︎.</li>
+<li><input type="checkbox"><b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste files...</i> from the <i>Editor menu</i> <b>⋮</b>︎.
+<li><input type="checkbox"><b>Insert a link</b> by dragging the URL (or the icon next to it) from a browser. Right-click to follow a link.
+<li><input type="checkbox">Try the <b>Keyboard shortcuts</b> listed in <i>Help</i> in the Application menu ☰.</li>
+<li><input type="checkbox">Delete this note when you're finished.</li>
+</ul>
 <hr>
 
 <h1>Why remoteStorage?</h1>
@@ -123,10 +126,10 @@ function createWelcomeNote(transaction) {
 </ul>
 <p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
-<ol>
-<li>Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations).</li>
-<li>Use the widget in the lower left of the list pane to connect.</li>
-</ol>
+<ul>
+<li><input type="checkbox">Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations).</li>
+<li><input type="checkbox">Use the widget in the lower left of the list pane to connect.</li>
+</ul>
 <p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>
 <hr>
 <p><em>remote storage</em></p>`;
