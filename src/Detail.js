@@ -57,7 +57,7 @@ import {
   flipTableRowsToColumns,
   insertAfter,
   getSelectedQuote,
-  insertCheckListAfter, deleteCompletedTasks
+  insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -1002,8 +1002,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                       mode: 'lowest'
                     });
                     if (checkListItemResult) {
-                      Transforms.setNodes(editor, {checked: ! checkListItemResult[0].checked},
-                        { at: checkListItemResult[1] });
+                      toggleCheckListItem(editor, checkListItemResult[1], ! checkListItemResult[0].checked)
                     }
                   }
                   break;
