@@ -29,7 +29,7 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import {
-  AddCircleOutline, DeleteOutline, Lock,
+  AddCircleOutline, DeleteOutline, GridOn, Lock,
   MoreVert,
   Photo,
   Redo,
@@ -87,7 +87,7 @@ const BLOCK_TYPE_DISPLAY = {
   'task-list': "✔️ Task List",
   'sequence-list': "✔️ Sequence",
   'list-item': "List Item",
-  'table': "Table",
+  'table': <>Table <GridOn/></>,
   'table-row': "Table Row",   // not supposed to be returned, currently
   'table-cell': "Table Cell",
   'quote': <><span/><span>Block Quote</span></>,
@@ -107,7 +107,7 @@ const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'numbered-list', label: "Numbered List"},
   {cmd: 'task-list', label: "✔️ Task List"},
   {cmd: 'sequence-list', label: "✔️ Sequence"},
-  {cmd: 'table', label: "Table"},
+  {cmd: 'table', label: <>Table <GridOn/></>},
   {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
 ];
@@ -1135,7 +1135,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           {cmd: 'insert-numbered-list', label: "Numbered List"},
           {cmd: 'insert-task-list', label: "✔️ Task List"},
           {cmd: 'insert-sequence-list', label: "✔️ Sequence"},
-          {cmd: 'insert-table', label: "Table"}
+          {cmd: 'insert-table', label: <>Table <GridOn/></>}
       );
     }
     if (table) {
