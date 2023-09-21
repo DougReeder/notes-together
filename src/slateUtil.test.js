@@ -2,7 +2,7 @@
 
 import {
   changeBlockType,
-  changeContentType, deleteCompletedTasks,
+  changeContentType, DEFAULT_TABLE, deleteCompletedTasks,
   flipTableRowsToColumns,
   getRelevantBlockType,
   getSelectedListItem,
@@ -462,26 +462,31 @@ describe("changeBlockType", () => {
                       {text: "We own the idea of the idea of America"}
                     ]},
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
                   {text: "second paragraph"},
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
                   {text: "first item"},
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
                   {text: "second item"}
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
                   {text: "some heading"}
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
@@ -491,6 +496,7 @@ describe("changeBlockType", () => {
                     ]},
                   {text: "last sentence"},
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
           {type: 'table-row', children: [
               {type: 'table-cell', children: [
@@ -498,6 +504,7 @@ describe("changeBlockType", () => {
                       {text: "Keep a stiff upper lip!"}
                     ]},
                 ]},
+              {type: 'table-cell', children: [{text: ""}]},
             ]},
         ]},
       { type: "paragraph",
@@ -505,7 +512,11 @@ describe("changeBlockType", () => {
           {text: "last paragraph"}
         ]},
     ]);
-    expect(getRelevantBlockType(editor)).toEqual('table');
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 0, 1, 0], offset: 0},
+      focus: {path: [1, 0, 1, 0], offset: 0},
+    });
   });
 
   it("should split text nodes (and leave rump lists as bulleted)", () => {
@@ -1009,6 +1020,162 @@ describe("changeBlockType", () => {
     });
   }
 
+  it("should change blank paragraph to table with 2 rows and 2 columns", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-one', children: [{text: "Some Topic"}]},
+      {type: 'paragraph', children: [{text: "  \t"}, {bold: true, text: "\r"}]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 0], offset: 0}, focus: {path: [1, 1], offset: 1}});
+
+    expect(getRelevantBlockType(editor)).toEqual('paragraph');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      {type: 'heading-one', children: [{text: "Some Topic"}]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "  \t"}, {bold: true, text: "\r"}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: ""}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]}
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 0, 1, 0], offset: 0},
+      focus: {path: [1, 0, 1, 0], offset: 0},
+    });
+  });
+
+  it("should change blank list items to table w/ 2 columns", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-three', children: [{text: "elk"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "first"}]},
+              {type: 'list-item', checked: false, children: [{text: "  \t"}, {bold: true, text: "\v\n"}]},
+              {type: 'list-item', checked: false, children: [{text: "   "}]},
+              {type: 'list-item', checked: true, children: [{text: "last"}]},
+            ]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 0, 2, 0], offset: 3}, focus: {path: [1, 0, 1, 0], offset: 0}});
+
+    expect(getRelevantBlockType(editor)).toEqual('task-list');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      {type: 'heading-three', children: [{text: "elk"}]},
+      {type: 'quote', children: [
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: false, children: [{text: "first"}]},
+            ]},
+          {type: 'table', children: [
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [{text: "  \t"}, {bold: true, text: "\v\n"}]},
+                  {type: 'table-cell', children: [{text: ""}]},
+                ]},
+              {type: 'table-row', children: [
+                  {type: 'table-cell', children: [{text: "   "}]},
+                  {type: 'table-cell', children: [{text: ""}]},
+                ]}
+            ]},
+          {type: 'task-list', children: [
+              {type: 'list-item', checked: true, children: [{text: "last"}]},
+            ]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 1, 0, 1, 0], offset: 0},
+      focus: {path: [1, 1, 0, 1, 0], offset: 0},
+    });
+  });
+
+  it("should replace list item at end to table with 2 rows and 2 columns", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-two', children: [{text: "The Author"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "non-blank item"}]},
+          {type: 'list-item', children: [{text: "  \t"}, {bold: true, text: "\v"}]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 1, 0], offset: 1}, focus: {path: [1, 1, 0], offset: 1}});
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      {type: 'heading-two', children: [{text: "The Author"}]},
+      {type: 'bulleted-list', children: [
+          {type: 'list-item', children: [{text: "non-blank item"}]},
+        ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "  \t"}, {bold: true, text: "\v"}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: ""}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]}
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toEqual({
+      anchor: {path: [2, 0, 1, 0], offset: 0},
+      focus: {path: [2, 0, 1, 0], offset: 0},
+    });
+  });
+
+  it("should change list items to 1st column of 2-column table", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'heading-three', children: [{text: "gnu"}]},
+      {type: 'sequence-list', children: [
+          {type: 'list-item', checked: false, children: [{text: "erste"}]},
+          {type: 'list-item', checked: true, children: [{text: "zwitte"}, {bold: true, text: "\t"}]},
+          {type: 'list-item', checked: false, children: [{text: "dritte"}]},
+          {type: 'list-item', checked: true, children: [{text: "letzte"}]},
+        ]},
+    ];
+    Transforms.select(editor, {anchor: {path: [1, 2, 0], offset: 6}, focus: {path: [1, 1, 0], offset: 0}});
+
+    expect(getRelevantBlockType(editor)).toEqual('sequence-list');
+    changeBlockType(editor, 'table');
+
+    expect(editor.children).toEqual([
+      {type: 'heading-three', children: [{text: "gnu"}]},
+      {type: 'sequence-list', children: [
+          {type: 'list-item', checked: false, children: [{text: "erste"}]},
+        ]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "zwitte"}, {bold: true, text: "\t"}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]},
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "dritte"}]},
+              {type: 'table-cell', children: [{text: ""}]},
+            ]},
+        ]},
+      {type: 'sequence-list', children: [
+          {type: 'list-item', checked: true, children: [{text: "letzte"}]},
+        ]},
+    ]);
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    expect(editor.selection).toEqual({
+      anchor: {path: [2, 0, 1, 0], offset: 0},
+      focus: {path: [2, 0, 1, 0], offset: 0},
+    });
+  });
+
   it("should unwrap table when 'table' is reverted (table-row being common block)", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -1456,16 +1623,7 @@ describe("insertTableAfter", () => {
               {type: 'code', children: [
                   {text: "dritte"},
                 ]},
-              {type: 'table', children: [
-                  {type: 'table-row', children: [
-                      {type: 'table-cell', children: [{text: "", bold: true}]},
-                      {type: 'table-cell', children: [{text: "", bold: true}]},
-                    ]},
-                  {type: 'table-row', children: [
-                      {type: 'table-cell', children: [{text: ""}]},
-                      {type: 'table-cell', children: [{text: ""}]},
-                    ]},
-                ]},
+              DEFAULT_TABLE,
               {type: 'paragraph', children: [
                   {text: "vierte"},
                 ]},

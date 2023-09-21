@@ -1217,4 +1217,4 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
   }
 }
 
-export {withHtml, deserializeHtml, RenderingElement, ImageElement, Leaf, serializeHtml};
+export {isBlank, withHtml, deserializeHtml, RenderingElement, ImageElement, Leaf, serializeHtml};

@@ -57,7 +57,7 @@ import {
   flipTableRowsToColumns,
   insertAfter,
   getSelectedQuote,
-  insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem
+  insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -475,7 +475,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             // A void block is inserted, rather than changing a text block to it.
           case 'insert-thematic-break':
             if ('thematic-break' !== relevantBlockType) {
-              if (! SlateRange.isCollapsed(editor.selection)) {
+              if (SlateRange.isExpanded(editor.selection)) {
                 const point = SlateRange.end(editor.selection);
                 Transforms.setSelection(editor, {anchor: point, focus: point});
               }
@@ -641,16 +641,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   function appendTable(path) {
     Transforms.insertNodes(editor, [
-          {type: 'table', children: [
-              {type: 'table-row', children: [
-                  {type: 'table-cell', children: [{text: "", bold: true}]},
-                  {type: 'table-cell', children: [{text: "", bold: true}]},
-                ]},
-              {type: 'table-row', children: [
-                  {type: 'table-cell', children: [{text: ""}]},
-                  {type: 'table-cell', children: [{text: ""}]},
-                ]},
-            ]},
+          DEFAULT_TABLE,
           { type: 'paragraph', children: [   // TODO: handle via normalization
               {text: ""}
             ]}

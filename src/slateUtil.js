@@ -39,7 +39,7 @@ function getRelevantBlockType(editor) {
       }
     }
   } catch (err) {
-    console.error("while getting relevant block:", err);
+    console.error("while getting relevant block type:", err);
     Transforms.deselect(editor);
     return 'n/a';
   }
@@ -50,7 +50,22 @@ const TABLE_TYPES = ['table', 'table-row', 'table-cell'];
 const COMPOUND_TYPES = [...LIST_TYPES, ...TABLE_TYPES];
 // wrapping with compound type is handled by other code
 const IMAGE_WRAP_TYPES = ['quote', 'list-item', 'table-cell'];
+export const DEFAULT_TABLE = {type: 'table', children: [
+    {type: 'table-row', children: [
+        {type: 'table-cell', children: [{text: "", bold: true}]},
+        {type: 'table-cell', children: [{text: "", bold: true}]},
+      ]},
+    {type: 'table-row', children: [
+        {type: 'table-cell', children: [{text: ""}]},
+        {type: 'table-cell', children: [{text: ""}]},
+      ]},
+  ]};
 
+/**
+ * Mutates block type, un-nesting and re-nesting as necessary.
+ * @param {Editor} editor
+ * @param {string} newType
+ */
 function changeBlockType(editor, newType) {
   Editor.withoutNormalizing(editor, () => {
     Transforms.setSelection(editor, Editor.unhangRange(editor, editor.selection, {voids: true}))
@@ -151,10 +166,23 @@ function changeBlockType(editor, newType) {
         });
       } else if (newIsTable) {
         Transforms.wrapNodes(editor, {type: 'table', children: []});
-        const [, tablePath] = Editor.above(editor, {at: editor.selection.focus.path, match: n => 'table' === n.type});
-        for (const [, cellPath] of SlateNode.children(editor, tablePath)) {
-          Transforms.wrapNodes(editor, {type: 'table-row', children: []}, {at: cellPath});
+        const [table, tablePath] = Editor.above(editor, {at: editor.selection.focus.path, match: n => 'table' === n.type});
+        if (table.children.length < 2) {   // adds second row
+          const insertPath = [...tablePath, 1];
+          Transforms.insertNodes(editor, {type: 'table-cell', children: [{text: ""}]}, {at: insertPath});
         }
+        for (const [, cellPath] of SlateNode.children(editor, tablePath)) {
+          // adds blank second column
+          const siblingPath = [...cellPath.slice(0, -1), cellPath.at(-1) + 1];
+          Transforms.insertNodes(editor, {type: 'table-cell', children: [{text: ""}]}, {at: siblingPath});
+          // re-nests cells in rows
+          const range = {
+            anchor: Editor.start(editor, cellPath),
+            focus: Editor.end(editor, siblingPath)
+          }
+          Transforms.wrapNodes(editor, {type: 'table-row', children: []}, {at: range});
+        }
+        Transforms.select(editor, [...tablePath, 0, 1, 0]);   // top-right
       }
     }
   });
@@ -173,17 +201,7 @@ function insertCheckListAfter(editor, newType) {
 }
 
 function insertTableAfter(editor) {
-  insertAfter(editor,{type: 'table', children: [
-      {type: 'table-row', children: [
-          {type: 'table-cell', children: [{text: "", bold: true}]},
-          {type: 'table-cell', children: [{text: "", bold: true}]},
-        ]},
-      {type: 'table-row', children: [
-          {type: 'table-cell', children: [{text: ""}]},
-          {type: 'table-cell', children: [{text: ""}]},
-        ]},
-    ]},
-      [0, 0, 0]);
+  insertAfter(editor, DEFAULT_TABLE, [0, 0, 0]);
 }
 
 function insertAfter(editor, newNodes, selectionPathFromInsert) {
