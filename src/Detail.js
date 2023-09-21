@@ -125,6 +125,7 @@ const NO_SELECTION_MENU = [
 ];
 
 const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
+const UNEXPECTED_ERROR = "Switch to another note, then back.";
 
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
@@ -553,7 +554,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
       } catch (err) {
         console.error("while executing block command:", err);
-        transientMsg(err.message, err.severity || 'error');
+        transientMsg(UNEXPECTED_ERROR, err.severity || 'error');
       }
     });
     setBlockTypeMenuAnchorEl(null);
@@ -1197,7 +1198,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       await editor.insertData(dataTransfer);
     } catch (err) {
       console.error("while pasting files:", err);
-      transientMsg("Switch to another note, then back.");
+      transientMsg(UNEXPECTED_ERROR);
     } finally {
       pasteFileInput.current.value = "";
     }
