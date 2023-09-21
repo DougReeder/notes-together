@@ -278,7 +278,16 @@ function tabRight(editor) {
       if ('table-cell' === candidate.type) {
         const endPnt = Editor.end(editor, candidatePath);
         const afterPnt = Editor.after(editor, endPnt);
-        Transforms.select(editor, {anchor: afterPnt, focus: afterPnt});
+        if (afterPnt) {
+          Transforms.select(editor, {anchor: afterPnt, focus: afterPnt});
+        } else {   // at end; so append paragraph
+          const appendPath = [editor.children.length];
+          Transforms.insertNodes(editor,
+            {type: 'paragraph', children: [{text: ""}]},
+            {at: appendPath}
+          );
+          Transforms.select(editor, appendPath);
+        }
         return;
       } else if ('list-item' === candidate.type) {
         nestListItems(editor, firstPath, candidatePath);

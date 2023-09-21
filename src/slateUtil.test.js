@@ -13,7 +13,7 @@ import {
   tabRight,
   toggleCheckListItem
 } from "./slateUtil";
-import {createEditor, Transforms} from 'slate'
+import {createEditor, Editor, Transforms} from 'slate'
 import {withHtml} from "./slateHtml";
 import {withReact} from "slate-react";
 import {init} from "./storage";
@@ -2272,6 +2272,37 @@ describe("tabRight", () => {
     expect(editor.selection).toEqual({
       anchor: { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
       focus:  { path: [0, 0, 1, 0, 0, 0, 0], offset: 0 },
+    });
+  });
+
+  it("appends paragraph when in table at end of document", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    const nodes = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "Vestibulum nec erat"}]},
+              {type: 'table-cell', children: [{text: "id purus mattis"}]},
+            ]},
+        ]},
+    ];
+    editor.children = nodes;
+    const lastPoint = Editor.end(editor, []);
+    editor.selection = {
+      anchor: JSON.parse(JSON.stringify(lastPoint)),
+      focus:  JSON.parse(JSON.stringify(lastPoint))
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    tabRight(editor);
+
+    expect(editor.children).toEqual([
+      ...nodes,
+      {type: 'paragraph', children: [{text: ""}]}
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 0], offset: 0},
+      focus:  {path: [1, 0], offset: 0},
     });
   });
 
