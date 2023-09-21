@@ -3338,6 +3338,37 @@ describe("tabLeft", () => {
     });
   });
 
+  it("prepends paragraph when in table at beginning of document", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    const nodes = [
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', children: [{text: "Vestibulum nec erat"}]},
+              {type: 'table-cell', children: [{text: "id purus mattis"}]},
+            ]},
+        ]},
+    ];
+    editor.children = nodes;
+    const firstPoint = Editor.start(editor, []);
+    editor.selection = {
+      anchor: JSON.parse(JSON.stringify(firstPoint)),
+      focus:  JSON.parse(JSON.stringify(firstPoint))
+    };
+
+    expect(getRelevantBlockType(editor)).toEqual('table-cell');
+    tabLeft(editor);
+
+    expect(editor.children).toEqual([
+      {type: 'paragraph', children: [{text: ""}]},
+      ...nodes
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [0, 0], offset: 0},
+      focus:  {path: [0, 0], offset: 0},
+    });
+  });
+
   it("should change block quote to paragraph", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';

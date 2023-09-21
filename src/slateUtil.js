@@ -389,7 +389,16 @@ function tabLeft(editor) {
         if ('table-cell' === candidate.type) {
           const startPnt = Editor.start(editor, candidatePath);
           const beforePnt = Editor.before(editor, startPnt);
-          Transforms.select(editor, {anchor: beforePnt, focus: beforePnt});
+          if (beforePnt) {
+            Transforms.select(editor, {anchor: beforePnt, focus: beforePnt});
+          } else {   // at beginning; so prepend paragraph
+            const prependPath = [0];
+            Transforms.insertNodes(editor,
+              {type: 'paragraph', children: [{text: ""}]},
+              {at: prependPath}
+            );
+            Transforms.select(editor, prependPath);
+          }
           return;
         } else if ('list-item' === candidate.type) {
           if (candidatePath.length < 4) continue;
