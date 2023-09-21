@@ -396,6 +396,30 @@ describe("HTML plugin normalizer", () => {
     ]);
   });
 
+  it("should not wrap a non-list-item with a checked property in a list", () => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const editor = withHtml(withReact(createEditor()));
+    editor.subtype = 'html;hint=SEMANTIC';
+    editor.children = [
+      {type: 'quote', children: [{text: "first quote"}]},
+      {type: 'table-cell', checked: true, children: [{text: "mutant"}]},
+      {type: 'quote', children: [{text: "last quote"}]},
+    ];
+    editor.selection = null;
+
+    Editor.normalize(editor, {force: true});
+
+    expect(editor.children).toEqual([
+      {type: 'quote', children: [{text: "first quote"}]},
+      {type: 'table', children: [
+          {type: 'table-row', children: [
+              {type: 'table-cell', checked: true, children: [{text: "mutant"}]},
+            ]},
+        ]},
+      {type: 'quote', children: [{text: "last quote"}]},
+    ]);
+  });
+
   for (const listType of ['task-list', 'sequence-list']) {
     it(`should ensure all children of a ${listType} are list items w/ checked property`, () => {
       jest.spyOn(console, 'warn').mockImplementation(() => {});

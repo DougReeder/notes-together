@@ -244,7 +244,14 @@ function withHtml(editor) {   // defines Slate plugin
 
     normalizeNode(entry);
 
-    /** deletes or wraps child not in proper parent */
+    /**
+     * deletes or wraps child not in proper parent
+     *
+     * @param {string} childType
+     * @param {[string]} parentTypes starting with unchecked types, ending with checked
+     * @param {boolean} deleteIfEmpty
+     * @returns {boolean}
+     */
     function ChildDeleteOrWrap(childType, parentTypes, deleteIfEmpty) {
       if (node.type === childType) {
         let parent = undefined;
@@ -257,13 +264,14 @@ function withHtml(editor) {   // defines Slate plugin
             console.warn(`removed empty child:`, node);
             return true;
           }
-        } else {
+        } else {   // child is orphaned
           if (isBlank(node)) {
             Transforms.removeNodes(editor, {at: path});
             console.warn(`removed blank orphan:`, node);
             return true;
           } else {
-            const parent = {type: 'checked' in node ? 'sequence-list' : parentTypes[0], children: []};
+            const parentType = 'checked' in node ? parentTypes[parentTypes.length-1] : parentTypes[0];
+            const parent = {type: parentType, children: []};
             Transforms.wrapNodes(editor, parent, {at: path});
             console.warn("wrapped orphan with", parent, ":", node);
             return true;
