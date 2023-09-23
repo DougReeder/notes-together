@@ -136,6 +136,27 @@ function changeBlockType(editor, newType) {
       }
     }
 
+    if (LIST_TYPES.slice(0, -1).includes(block.type) && SlateRange.isExpanded(editor.selection)) {
+      // re-wraps fragments of lists from which the selection is being removed
+      const rangeBefore = {
+        anchor: Editor.start(editor, SlateRange.start(editor.selection).path.slice(0, changePathLength)),
+        focus: Editor.start(editor, editor.selection)
+      }
+      if (SlateRange.isExpanded(rangeBefore)) {
+        Transforms.wrapNodes(editor, {type: block.type, children: []},
+        {at: rangeBefore, match: (n, p) => p.length === changePathLength, split: true});
+      }
+
+      const rangeAfter = {
+        anchor: Editor.end(editor, editor.selection),
+        focus: Editor.end(editor, SlateRange.end(editor.selection).path.slice(0, changePathLength))
+      }
+      if (SlateRange.isExpanded(rangeAfter)) {
+        Transforms.wrapNodes(editor, {type: block.type, children: []},
+        {at: rangeAfter, match: (n, p) => p.length === changePathLength, split: true});
+      }
+    }
+
     if (isTypeSame && (COMPOUND_TYPES.includes(newType) || changePathLength > 1)) {
       // de-formats
       Transforms.unwrapNodes(editor, {
@@ -234,6 +255,11 @@ function insertAfter(editor, newNodes, selectionPathFromInsert) {
   });
 }
 
+/**
+ * Finds the smallest block Element that contains the selection.
+ * @param {Editor} editor
+ * @returns {{block: BaseEditor | BaseElement, blockPath: number[]}}
+ */
 function getCommonBlock(editor) {
   const range = Editor.unhangRange(editor, editor.selection, {voids: true});
 

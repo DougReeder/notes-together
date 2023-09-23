@@ -519,7 +519,7 @@ describe("changeBlockType", () => {
     });
   });
 
-  it("should split text nodes (and leave rump lists as bulleted)", () => {
+  it("should split text nodes (and leave rump lists same type)", () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
@@ -552,7 +552,7 @@ describe("changeBlockType", () => {
     changeBlockType(editor, 'quote');
 
     expect(editor.children).toEqual([
-      {type: 'bulleted-list', children: [
+      {type: 'numbered-list', children: [
           {type: 'list-item', children: [
               {text: "start of first "},
             ]},
@@ -577,7 +577,7 @@ describe("changeBlockType", () => {
               {text: "end"},
             ]},
         ]},
-      {type: 'bulleted-list', children: [
+      {type: 'numbered-list', children: [
           {type: 'list-item', children: [
               {type: 'paragraph', children: [
                   {text: " of last item"},
@@ -586,7 +586,6 @@ describe("changeBlockType", () => {
         ]},
     ]);
     expect(getRelevantBlockType(editor)).toEqual('multiple');
-    expect(console.warn).toHaveBeenCalled();
   });
 
   it("should convert bulleted-list to numbered-list", () => {
@@ -1227,7 +1226,7 @@ describe("changeBlockType", () => {
             ]},
         ]},
     ];
-    Transforms.select(editor, {anchor: {path: [0, 0, 0, 1, 0, 0], offset: 1}, focus: {path: [0, 0, 0, 1, 1, 0], offset: 2}});
+    Transforms.select(editor, {anchor: {path: [0, 0, 0, 1, 0, 0], offset: 0}, focus: {path: [0, 0, 0, 1, 1, 0], offset: 3}});
 
     expect(getRelevantBlockType(editor)).toEqual('numbered-list');
     changeBlockType(editor, 'numbered-list');
