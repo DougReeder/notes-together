@@ -75,7 +75,8 @@ function changeBlockType(editor, newType) {
 
     let {block, blockPath} = getCommonBlock(editor);
     let changePathLength = Editor.isEditor(block) ? 1 : blockPath.length;
-    const allowSplit = SlateRange.isExpanded(editor.selection) && 'image' !== block.type;
+    const allowSplitInWrap = 'image' !== block.type;
+    const allowSplitInSet = SlateRange.isExpanded(editor.selection) && 'image' !== block.type;
     let oldHasChecklist = false;
     for (const [node] of Editor.nodes(editor, {
       match: (n, p) => p.length === changePathLength
@@ -83,6 +84,16 @@ function changeBlockType(editor, newType) {
       if (['task-list', 'sequence-list'].includes(node.type)) {
         oldHasChecklist = true;
         break;
+      }
+    }
+    if ('list-item' === block.type) {
+      for (const [node] of Editor.nodes(editor, {
+        match: (n, p) => p.length === changePathLength-1
+      })) {
+        if (['task-list', 'sequence-list'].includes(node.type)) {
+          oldHasChecklist = true;
+          break;
+        }
       }
     }
 
@@ -115,23 +126,23 @@ function changeBlockType(editor, newType) {
     Transforms.unwrapNodes(editor, {
       mode: 'highest',
       match: (n, p) => p.length === changePathLength && COMPOUND_TYPES.includes(n.type),
-      split: allowSplit,
+      split: allowSplitInWrap,
     });
     for (const [node, path] of Editor.nodes(editor, {
       mode: 'highest',
       match: (n, p) => p.length === changePathLength+1 &&
           TABLE_TYPES.includes(n.type),
-      split: allowSplit,
+      split: allowSplitInWrap,
     })) {
       if (SlateElement.isElement(node) && Editor.hasBlocks(editor, node)) {
         Transforms.unwrapNodes(editor, {
           at: path,
-          split: allowSplit
+          split: allowSplitInWrap
         });
       } else {
         Transforms.setNodes(editor, {type: 'paragraph'}, {
           at: path,
-          split: allowSplit
+          split: allowSplitInSet
         });
       }
     }
@@ -161,7 +172,7 @@ function changeBlockType(editor, newType) {
       // de-formats
       Transforms.unwrapNodes(editor, {
         match: (n, p) => p.length === changePathLength,
-        split: allowSplit});
+        split: allowSplitInWrap});
     } else {
       // here's where the actual block change is done
       const newProperties = {
@@ -176,7 +187,7 @@ function changeBlockType(editor, newType) {
       }
       Transforms.setNodes(editor, newProperties, {
         match: (n, p) => p.length === changePathLength && 'image' !== n.type,
-        split: allowSplit
+        split: allowSplitInSet
       });
 
       // wraps new compound types

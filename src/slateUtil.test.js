@@ -588,7 +588,7 @@ describe("changeBlockType", () => {
     expect(getRelevantBlockType(editor)).toEqual('multiple');
   });
 
-  it("should convert bulleted-list to numbered-list", () => {
+  it("should convert selected bulleted-list to numbered-list", () => {
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'bulleted-list', children: [
@@ -610,6 +610,38 @@ describe("changeBlockType", () => {
         ]}
     ]);
     expect(getRelevantBlockType(editor)).toEqual('numbered-list');
+  });
+
+  it("when selection is collapsed in list item, should convert without converting other items", () => {
+    const editor = withHtml(withReact(createEditor()));
+    editor.children = [
+      {type: 'task-list', children: [
+          {type: 'list-item', checked: false, children: [{text: "aardvark"}]},
+          {type: 'list-item', checked: true, children: [{text: "baboon"}]},
+          {type: 'list-item', checked: true, children: [{text: "caiman"}]},
+        ]}
+    ];
+    Transforms.select(editor, {path: [0, 1, 0], offset: 3});
+
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
+    changeBlockType(editor, 'numbered-list');
+
+    expect(editor.children).toEqual([
+      {type: 'task-list', children: [
+          {type: 'list-item', checked: false, children: [{text: "aardvark"}]},
+        ]},
+      {type: 'numbered-list', children: [
+          {type: 'list-item', children: [{text: "baboon"}]},
+        ]},
+      {type: 'task-list', children: [
+          {type: 'list-item', checked: true, children: [{text: "caiman"}]},
+        ]}
+    ]);
+    expect(editor.selection).toEqual({
+      anchor: {path: [1, 0, 0], offset: 3},
+      focus: {path: [1, 0, 0], offset: 3}
+    });
+    expect(getRelevantBlockType(editor)).toEqual('list-item');
   });
 
   for (const blockType of ['task-list', 'sequence-list']) {
