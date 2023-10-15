@@ -1,6 +1,6 @@
 import {init} from "./storage";
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import App from './App';
 import './index.css';
 import '@fontsource/roboto';
@@ -79,8 +79,8 @@ const theme = createTheme({
   },
 });
 
-ReactDOM.render(
-  <React.StrictMode>
+const root = createRoot(document.getElementById('root'));
+root.render(  <React.StrictMode>
     <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
       <BrowserRouter>
         <StyledEngineProvider injectFirst>
@@ -91,7 +91,6 @@ ReactDOM.render(
       </BrowserRouter>
     </SnackbarProvider>
   </React.StrictMode>,
-  document.getElementById('root')
 );
 
 // If you want to start measuring performance in your app, pass a function

@@ -42,6 +42,7 @@ describe("urlSubstitutions", () => {
     jest.spyOn(global, 'fetch').mockImplementation(() => {
       return Promise.reject("probe")
     });
+    clearSubstitutions();
     const objectUrl = 'blob:http://192.168.1.5:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5';
 
     addSubstitution(objectUrl);

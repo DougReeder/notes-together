@@ -1,3 +1,5 @@
+// Copyright © 2021-2023 Doug Reeder
+
 import {createMemoryNote} from './Note';
 import {
   init,
@@ -201,9 +203,12 @@ function App() {
         });
       }
 
-      // console.info("remoteStorage displaying login widget");
-      const widget = new Widget(remoteStorage);
-      widget.attach('panelMain');   // login
+      const widget = document.getElementById('remotestorage-widget');
+      if (!widget) {
+        // console.info("remoteStorage displaying login widget");
+        const widget = new Widget(remoteStorage);
+        widget.attach('panelMain');   // login
+      }
 
       await combineTagsWithSuggestions();
      }
