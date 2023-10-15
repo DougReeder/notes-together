@@ -1,5 +1,5 @@
 // FileImport.js - file import dialog & functions
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021-2023 Doug Reeder
 
 import {extractUserMessage} from "./util/extractUserMessage";
 import {
@@ -26,6 +26,7 @@ import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
   const [isMarkdownColumnShown, setIsMarkdownColumnShown] = useState(true);
+  const [skipReview, setSkipReview] = useState(false);
   const importPhase = useRef('');   // PREPARING, ACTIVE, or DONE
   const numNotesCreated = useRef(0);
   const lastSuccessfulFileName = useRef("");
@@ -65,7 +66,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
 
       setIsMarkdownColumnShown(isMarkdownColumnRequired);
       if (!isReviewRequired) {
-        importBtnRef.current?.click();
+        setSkipReview(true);
       }
     }
     determineParseTypes(files).catch(err => {
@@ -74,6 +75,13 @@ function FileImport({files, isMultiple, doCloseImport}) {
         message: "Import those files one by one."}, window?.location?.origin);
     })
   }, [files]);
+
+  useEffect(() => {
+    if ('PREPARING' === importPhase.current && skipReview) {
+      console.log("clicking import button for user")
+      importBtnRef.current?.click();
+    }
+  }, [skipReview]);
 
   function handleToggleMarkdown(i, evt, isMarkdown) {
     imports[i].isMarkdown = isMarkdown;
@@ -175,7 +183,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
           <Typography id="import-title" sx={{ ml: 2, flex: "0 0 auto" }} variant="h6">
             {dialogTitle}
           </Typography>
-          <Button ref={importBtnRef} variant="contained" color="secondary" autoFocus disabled={'DONE' === importPhase.current} style={{marginRight: '1ch', backgroundColorX: '#e0e0e0', colorX: 'black'}} onClick={handleImportOrCancel}>
+          <Button ref={importBtnRef} variant="contained" color="secondary" disabled={'DONE' === importPhase.current} style={{marginRight: '1ch', backgroundColorX: '#e0e0e0', colorX: 'black'}} onClick={handleImportOrCancel}>
             {'PREPARING' === importPhase.current ? "Import" : "Cancel"}
           </Button>
         </Toolbar>
