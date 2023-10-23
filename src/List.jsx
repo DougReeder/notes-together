@@ -165,7 +165,7 @@ function List(props) {
     if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
       return;
     }
-    switch (evt.code) {   // eslint-disable-line default-case
+    switch (evt.code) {
       case 'ArrowDown':
         if (evt.shiftKey) {
           incrementSelectedNote(+5);
@@ -215,7 +215,7 @@ function List(props) {
           evt.stopPropagation();
           evt.preventDefault();
           try {
-            switch (actionToConfirm.current) {   // eslint-disable-line default-case
+            switch (actionToConfirm.current) {
               case 'DELETE':
                 await deleteNote(selectedNoteId);
                 break;
@@ -260,7 +260,7 @@ function List(props) {
     if (evt.isComposing || evt.keyCode === 229) {
       return;
     }
-    switch (evt.code) {   // eslint-disable-line default-case
+    switch (evt.code) {
       case 'Escape':
         inactivateAndActivateItemButtons(evt, null);
         break;

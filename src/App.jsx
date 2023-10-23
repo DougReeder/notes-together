@@ -23,7 +23,6 @@ import {
   MenuItem,
   Snackbar, Toolbar
 } from "@mui/material";
-import makeStyles from '@mui/styles/makeStyles';
 import Slide from '@mui/material/Slide';
 import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -39,28 +38,6 @@ import {setEquals} from "./util/setUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
 
-const useStyles = makeStyles((theme) => ({
-  appbar: {
-    '& input': {
-      marginLeft: '1.5ch',
-      flex: '1 1 auto',
-      minWidth: '10ch',
-      fontSize: '18px',
-    },
-    '& .count': {
-      marginLeft: '1.5ch',
-      marginRight: '1.5ch',
-      minWidth: '3ch',
-      textAlign: 'center',
-    },
-    '& .workingInBackground': {
-      width: '48px',
-      height: '48px',
-      textAlign: 'center',
-      paddingTop: '10px',
-    },
-  },
-}));
 
 function App() {
   // TODO: replace string with set of normalized search terms
@@ -141,7 +118,7 @@ function App() {
   const externalChangeListener = evt => {
     if (evt.origin !== window.location.origin) return;
 
-    switch (evt.data?.kind) {   // eslint-disable-line default-case
+    switch (evt.data?.kind) {
       case 'NOTE_CHANGE':
         const notesDeleted = evt.data?.notesDeleted || {};
         if (notesDeleted.hasOwnProperty(selectedNoteId)) {
@@ -211,14 +188,13 @@ function App() {
       }
 
       await combineTagsWithSuggestions();
-     }
+    }
     startup().catch(err => {
       console.error("during startup:", err);
       window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
         message: "Error starting up - restart your browser"}, window?.location?.origin);
     });
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, []);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const keyListener = useCallback(evt => {
@@ -240,13 +216,13 @@ function App() {
       return;
     }
     if ('Enter' === evt.code) {
-       searchRef.current?.blur();
+      searchRef.current?.blur();
     }
     if (document.activeElement && document.activeElement !== document.body &&
-        'OL' !== document.activeElement.tagName) {
+      'OL' !== document.activeElement.tagName) {
       return;
     }
-    switch (evt.code) {   // eslint-disable-line default-case
+    switch (evt.code) {
       case 'ArrowRight':
         if ('LIST' === mustShowPanel) {
           setMustShowPanel('DETAIL');
@@ -378,8 +354,8 @@ function App() {
       const saveResult = await saveTag(searchWords, searchStr);
       await combineTagsWithSuggestions();
       const message = 'string' === typeof saveResult ?
-          `Saved tag “${searchStr}”` :
-          `Updated tag “${saveResult?.original}” to “${searchStr}”`
+        `Saved tag “${searchStr}”` :
+        `Updated tag “${saveResult?.original}” to “${searchStr}”`
       window.postMessage({kind: 'TRANSIENT_MSG', message, severity: 'success'}, window?.location?.origin);
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
@@ -479,15 +455,13 @@ function App() {
     setTransientErr(null);
   }
 
-  const classes = useStyles();
-
   return <>
     <Helmet>
-      <title>{'production' !== process.env.NODE_ENV ? "[dev] " : ""}Notes Together{searchStr ? ": " + searchStr : ""}</title>
+      <title>{import.meta.env.VITE_APP_TITLE}{searchStr ? ": " + searchStr : ""}</title>
     </Helmet>
     <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
       <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
-        <AppBar position="sticky" className={classes.appbar}>
+        <AppBar position="sticky" className="appbar">
           <Toolbar>
             <input type="search" placeholder="Enter search or select tag" maxLength={1000}
                    value={searchStr} list="searchSuggestions" enterKeyHint="Search" ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>
@@ -496,10 +470,10 @@ function App() {
             </datalist>
             <div className="count" title="Count of matching notes" draggable="true" onDragStart={openTestMenu}>{count}</div>
             <Menu
-                id="testMenu"
-                anchorEl={testMenuAnchorEl}
-                open={Boolean(testMenuAnchorEl)}
-                onClose={closeTestMenu}
+              id="testMenu"
+              anchorEl={testMenuAnchorEl}
+              open={Boolean(testMenuAnchorEl)}
+              onClose={closeTestMenu}
             >
               <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
               <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
@@ -509,8 +483,8 @@ function App() {
             {numBackgroundTasks > 0 ?
               <div className="workingInBackground"><CircularProgress /></div> :
               <IconButton onClick={openAppMenu} title="Open application menu" size="large">
-              <MenuIcon/>
-            </IconButton>
+                <MenuIcon/>
+              </IconButton>
             }
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                   onClose={setAppMenuAnchorEl.bind(this, null)}>
@@ -540,9 +514,9 @@ function App() {
       <div className="separator"></div>
       <div className="panel panelDetail">
         {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchWords={searchWords}
-                                             focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
-                                             setMustShowPanel={setMustShowPanel}></Detail> :
-            <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
+                                            focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
+                                            setMustShowPanel={setMustShowPanel}></Detail> :
+          <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
         }
       </div>
     </div>

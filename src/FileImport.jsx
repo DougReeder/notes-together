@@ -120,7 +120,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
         record.isImporting = false
         setImports([...imports]);
         if ('ACTIVE' !== importPhase.current) {
-          break;
+          break;   // eslint-disable-line no-unsafe-finally
         }
       }
     }
@@ -145,14 +145,13 @@ function FileImport({files, isMultiple, doCloseImport}) {
     return function removeKeyListener() {
       fileDlg?.removeEventListener('keydown', keyListener);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileDlgRef.current, keyListener]); // eslint-disable-line react-hooks/exhaustive-deps
 
   let dialogTitle;
   if ('DONE' === importPhase.current) {
     dialogTitle = 1 === numNotesCreated.current ?
-        "Imported 1 Note" :
-        `Imported ${numNotesCreated.current} Notes`;
+      "Imported 1 Note" :
+      `Imported ${numNotesCreated.current} Notes`;
   } else if ('ACTIVE' === importPhase.current) {
     dialogTitle = "Importing...";
   } else {   // PREPARING
@@ -176,8 +175,8 @@ function FileImport({files, isMultiple, doCloseImport}) {
       <AppBar>
         <Toolbar>
           <IconButton edge="start" color="inherit"
-              title="Close" size="large"
-              onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)}>
+                      title="Close" size="large"
+                      onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)}>
             <CloseIcon />
           </IconButton>
           <Typography id="import-title" sx={{ ml: 2, flex: "0 0 auto" }} variant="h6">
@@ -236,8 +235,8 @@ async function determineParseType(file) {
     return {file, parseType: 'text/html'};
   } else {
     if (!file.type.startsWith('text') &&
-        !allowedFileTypesNonText.includes(file.type) &&
-        !(!file.type && allowedExtensions.includes(extension))) {
+      !allowedFileTypesNonText.includes(file.type) &&
+      !(!file.type && allowedExtensions.includes(extension))) {
       console.error(`Not importable: “${file.name}” "${file.type}"`);
       return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
     }
@@ -468,7 +467,7 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   const lastLine = lines[lines.length - 1].trim();
   let dateValue = Date.parse(lastLine);
   if (/^\d\d\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(T[\d:.Z+-➖]{2,24})?$/.test(lastLine) &&
-      !isNaN(dateValue)) {
+    !isNaN(dateValue)) {
     --lines.length;
   } else {
     dateValue = noteDefaultDateValue;

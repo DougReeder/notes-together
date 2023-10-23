@@ -19,41 +19,30 @@ Using
 Development Setup
 -----------------
 
-Ensure your version of Node is v14 or later, and npm is v8 or later.
+Ensure your version of Node is v20 or later, and npm is v8 or later.
 
 Development
 -----------
-cd to the directory, then
+cd to the project directory, then
 `npm install` to retrieve dependencies
 
 `npm run test` to run automated tests
 
-`npm run start` to run it locally
+`npm run dev` to run it locally
 
 `npm run build` to build for production and push to the beta-testing server at `notes-together.surge.sh`
 
+`npm run lint` to check for minor source code issues
+
+`npm run preview` to locally preview production build
+
 `npm run deploy` to copy the built version to the production server at `https://notestogether.hominidsoftware.com`
 
-### Code Splitting
+# React + Vite
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### Analyzing the Bundle Size
+Currently, two official plugins are available:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh

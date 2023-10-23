@@ -634,7 +634,7 @@ async function deleteExtraSearches(numToDelete) {
       try {
         const cursor = evt.target.result;
         if (cursor) {
-          console.info(`discarding search “${cursor.value?.original}” ${cursor.value?.count} ${cursor.value?.score}`);
+          console.info(`discarding seldom-used search “${cursor.value?.original}” ${cursor.value?.count} ${cursor.value?.score}`);
           const deleteRequest = cursor.delete();
           deleteRequest.onsuccess = function () {
             if (++numDeleted >= numToDelete) {

@@ -350,7 +350,7 @@ describe("changeBlockType", () => {
   });
 
   it("should wrap image with bulleted list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'quote', children: [
@@ -520,7 +520,7 @@ describe("changeBlockType", () => {
   });
 
   it("should split text nodes (and leave rump lists same type)", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'numbered-list', children: [
@@ -878,7 +878,7 @@ describe("changeBlockType", () => {
   });
 
   it("should convert nested table & numbered-list to un-nested bulleted-list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'table', children: [
@@ -1671,7 +1671,7 @@ describe("insertTableAfter", () => {
 
 describe("getSelectedListItem", () => {
   it("should return falsy if no selection", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'heading-two', children: [{text: "Vivamus dapibus nunc vitae sapien fermentum"}]},
@@ -1689,7 +1689,7 @@ describe("getSelectedListItem", () => {
   });
 
   it("should return falsy if not in list", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'heading-three', children: [{text: "Cras sed viverra ante"}]},
@@ -1711,7 +1711,7 @@ describe("getSelectedListItem", () => {
 
   for (const blockType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
     it(`should return list and path if selection in ${blockType} at any level`, () => {
-      console.error = jest.fn();
+      console.error = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.children = [
         {type: 'heading-three', children: [{text: "Nunc nulla diam, maximus in rutrum vitae"}]},
@@ -1754,7 +1754,7 @@ describe("getSelectedListItem", () => {
 
 describe("getSelectedTable", () => {
   it("should return falsy if no selection", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     const nodes = [
       {type: 'heading-two', children: [{text: "Sed sed velit quis mauris accumsan aliquet."}]},
@@ -1773,7 +1773,7 @@ describe("getSelectedTable", () => {
   });
 
   it("should return falsy if not in table", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     const nodes = [
       {type: 'heading-two', children: [{text: "Sed sed velit quis mauris accumsan aliquet."}]},
@@ -1795,7 +1795,7 @@ describe("getSelectedTable", () => {
   });
 
   it("should return table and path if selection in table at any level", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.children = [
       {type: 'table', children: [
@@ -1849,7 +1849,7 @@ describe("getSelectedTable", () => {
 
 describe("tabRight", () => {
   it("should insert space (not create sublist) if first item in list", () => {
-    console.info = jest.fn();
+    console.info = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     const nodes = [
@@ -2663,7 +2663,7 @@ describe("tabRight", () => {
 describe("tabLeft", () => {
   for (const listType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
     it(`should do nothing if ${listType} item not in sub-list`, () => {
-      console.info = jest.fn();
+      console.info = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       const nodes = [
@@ -2691,7 +2691,7 @@ describe("tabLeft", () => {
     });
 
     it(`should do nothing if middle item in ${listType} sub-list`, () => {
-      console.info = jest.fn();
+      console.info = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       const nodes = [
@@ -4204,7 +4204,7 @@ describe("flipTableRowsToColumns", () => {
   });
 });
 
-xdescribe("changeContentType", () => {
+describe.skip("changeContentType", () => {
   beforeAll(() => {
     return init("testStorageDb");
   });
@@ -4353,7 +4353,7 @@ xdescribe("changeContentType", () => {
   });
 
   it("should convert Markdown to plain text & remove markup", async () => {
-    console.info = jest.fn();
+    console.info = vitest.fn();
     const oldSubtype = 'markdown;hint=COMMONMARK';
     const editor = withHtml(withReact(createEditor()));
     editor.children = [

@@ -25,6 +25,7 @@ import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
 import {getCommonBlock, coerceToPlainText, toggleCheckListItem} from "./slateUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
+import PropTypes from "prop-types";
 
 function isEmpty(node) {
   if (Text.isText(node)) {
@@ -95,7 +96,6 @@ function withHtml(editor) {   // defines Slate plugin
         const nodeRef = Editor.pathRef(editor, path);
 
         let wrapBlock;
-        // eslint-disable-next-line default-case
         switch (SlateNode.get(editor, Path.parent(path))?.type) {
           case 'list-item':
           case 'table-cell':
@@ -1020,6 +1020,18 @@ const RenderingElement = props => {
   }
 }
 
+RenderingElement.propTypes = {
+  attributes: PropTypes.shape({
+    'data-slate-node': PropTypes.string.isRequired,
+    'data-slate-inline': PropTypes.bool,
+    'data-slate-void': PropTypes.bool,
+    dir: PropTypes.string,
+    ref: PropTypes.any,
+  }),
+  children: PropTypes.any,
+  element: PropTypes.object,
+};
+
 const ImageElement = ({ attributes, children, element }) => {
   const selected = useSelected();
   const focused = useFocused();
@@ -1035,6 +1047,18 @@ const ImageElement = ({ attributes, children, element }) => {
       </div>
   )
 }
+
+ImageElement.propTypes = {
+  attributes: PropTypes.shape({
+    'data-slate-node': PropTypes.string.isRequired,
+    'data-slate-inline': PropTypes.bool,
+    'data-slate-void': PropTypes.bool,
+    dir: PropTypes.string,
+    ref: PropTypes.any,
+  }),
+  children: PropTypes.any,
+  element: PropTypes.object,
+};
 
 const CheckListItemElement = ({ attributes, children, element }) => {
   const editor = useSlateStatic();
@@ -1064,6 +1088,18 @@ const CheckListItemElement = ({ attributes, children, element }) => {
     </li>
   )
 }
+
+CheckListItemElement.propTypes = {
+  attributes: PropTypes.shape({
+    'data-slate-node': PropTypes.string.isRequired,
+    'data-slate-inline': PropTypes.bool,
+    'data-slate-void': PropTypes.bool,
+    dir: PropTypes.string,
+    ref: PropTypes.any,
+  }),
+  children: PropTypes.any,
+  element: PropTypes.object,
+};
 
 const Leaf = ({ attributes, children, leaf }) => {
   let markup = <span {...attributes}
@@ -1111,6 +1147,12 @@ const Leaf = ({ attributes, children, leaf }) => {
   return markup;
 }
 
+Leaf.propTypes = {
+  attributes: PropTypes.object,
+  children: PropTypes.any,
+  leaf: PropTypes.object,
+};
+
 
 function serializeHtml(slateNodes, substitutions = new Map()) {
   let inCodeBlock = false;
@@ -1156,7 +1198,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         }
       }
 
-      switch (slateNode.type) {   // eslint-disable-line default-case
+      switch (slateNode.type) {
         case 'code':
           inCodeBlock = true;
       }

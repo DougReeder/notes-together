@@ -18,7 +18,7 @@ ${navigator.language}
 ${navigator.userAgentData?.platform || ''}
 mobile: ${navigator.userAgentData?.mobile || ''}` +
 (navigator.userAgentData?.brands || []).map(item => '\n' + item.brand + ' ' + item.version));
-
+  /* eslint-disable react/no-unescaped-entities */
   return <>
     <AppBar>
       <Toolbar style={{justifyContent: 'flex-start'}}>
@@ -222,6 +222,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
       </div>
     </Box>
   </>;
+  /* eslint-enable react/no-unescaped-entities */
 }
 
 HelpPane.propTypes = {

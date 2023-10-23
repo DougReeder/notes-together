@@ -39,7 +39,7 @@ async function changeHandler(evt) {
     switch (dataType) {
       case 'note':   // saved by Notes Together
       case 'text':   // saved by Litewrite
-        switch (evt.origin) {   // eslint-disable-line default-case
+        switch (evt.origin) {
           case 'remote':
             if (evt.newValue) {   // create or update
               // console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
@@ -139,7 +139,7 @@ async function changeHandler(evt) {
         }
         break;
       case 'savedSearch':
-        switch (evt.origin) {   // eslint-disable-line default-case
+        switch (evt.origin) {
           case 'remote':
             console.info("remoteStorage incoming savedSearch", evt.relativePath, evt.oldValue, evt.newValue);
             window.postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);

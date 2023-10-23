@@ -7,7 +7,6 @@ import {TITLE_MAX} from "./Note";
 import decodeEntities from "./util/decodeEntities";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 
-// eslint-disable-next-line
 const semanticOnly = {
   allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'ul', 'ol',
     'header', 'footer', 'main', 'section', 'aside',

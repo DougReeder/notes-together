@@ -63,19 +63,11 @@ import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
-import makeStyles from '@mui/styles/makeStyles';
 import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 
-
-const useStyles = makeStyles((theme) => ({
-  widgetAppBar: {
-    marginLeft: '1.5ch',
-    marginRight: '1.5ch',
-  },
-}));
 
 const BLOCK_TYPE_DISPLAY = {
   'heading-one': <h1>Title</h1>,
@@ -130,7 +122,6 @@ const UNEXPECTED_ERROR = "Switch to another note, then back.";
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
 function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel}) {
-  const classes = useStyles();
 
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
@@ -206,10 +197,14 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           boxRef.current.scrollTop = 0;
           replaceNote(theNote);
 
-          if ('function' === typeof focusOnLoadCB) {
-            focusOnLoadCB();
-            ReactEditor.focus(editor);
-            Transforms.select(editor, Editor.start(editor, []));
+          try {
+            if ('function' === typeof focusOnLoadCB) {
+              focusOnLoadCB();
+              ReactEditor.focus(editor);
+              Transforms.select(editor, Editor.start(editor, []));
+            }
+          } catch (err) {   // TODO: Why does this happen in prod build?
+            console.error(`while focusing after replacing:`, err);
           }
         } else {
           const err = new Error("no note with id=" + noteId);
@@ -432,7 +427,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
       previousSelection.current = null;
 
-      // eslint-disable-next-line default-case
       switch (targetType) {
         case 'insert-paragraph':
           insertAfter(editor,
@@ -698,13 +692,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
         <Toolbar>{outBtn}</Toolbar>
       </AppBar>
-      <div style={{width: '100%', height: '100%', backgroundImage: 'url(' + process.env.PUBLIC_URL + '/icons/NotesTogether-icon-gray.svg)',
+      <div style={{width: '100%', height: '100%', backgroundImage: 'url(/icons/NotesTogether-icon-gray.svg)',
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
     </>);
   } else {
     const dateControl = editor.subtype?.startsWith('html') ?
         <DateCompact date={noteDate} onChange={handleDateChange}/> :
-        <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} className={classes.widgetAppBar}/>;
+        <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} style={{marginLeft: '1.5ch', marginRight: '1.5ch'}}/>;
 
     function handleMarkItem(mark) {
       queueMicrotask(() => {
@@ -849,7 +843,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
+        <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize", marginLeft: '1.5ch', marginRight: '1.5ch'}} title="Change content type" onClick={prepareContentTypeDialog}>{typeLabel}</Button>
       </>);
     }
 
@@ -969,7 +963,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               try {
-              switch (evt.key) {   // eslint-disable-line default-case
+              switch (evt.key) {
                 case 'Tab':
                   if (!evt.shiftKey) {
                     evt.preventDefault();
@@ -1256,6 +1250,11 @@ Detail.propTypes = {
   focusOnLoadCB: PropTypes.func,
   setMustShowPanel: PropTypes.func,
 };
+
+ErrorFallback.propTypes = {
+  error: Error,
+  resetErrorBoundary: Function
+}
 
 export default Detail;
 export {saveFn};

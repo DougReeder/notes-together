@@ -479,7 +479,7 @@ describe("storage", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      console.error = jest.fn();
+      console.error = vitest.fn();
 
       const deleteResult = await deleteNote(NIL);
       expect(deleteResult).toContain(NIL);
@@ -548,7 +548,7 @@ describe("storage", () => {
     });
 
     it("should retain a modified note which was deleted on another device", async () => {
-      console.warn = jest.fn();
+      console.warn = vitest.fn();
 
       const id = generateTestId();
       const localNote = {
@@ -629,7 +629,7 @@ describe("storage", () => {
       expect(retrieved.isLocked).toEqual(localNote.isLocked);
     });
 
-    xit("should merge a conflicted HTML note", async () => {
+    it.skip("should merge a conflicted HTML note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -661,7 +661,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted text note", async () => {
+    it.skip("should merge a conflicted text note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -693,7 +693,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted local HTML / remote text note as HTML", async () => {
+    it.skip("should merge a conflicted local HTML / remote text note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -728,7 +728,7 @@ Finance: we can't afford it.</ins>`);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted local text / remote HTML note as HTML", async () => {
+    it.skip("should merge a conflicted local text / remote HTML note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -762,8 +762,8 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming upsert", async () => {
-      console.info = jest.fn();
-      window.postMessage = jest.fn();
+      console.info = vitest.fn();
+      window.postMessage = vitest.fn();
 
       const original = "Man Cave ";
       const remoteSavedSearch = {
@@ -780,9 +780,9 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming conflict", async () => {
-      console.warn = jest.fn();
-      console.info = jest.fn();
-      window.postMessage = jest.fn();
+      console.warn = vitest.fn();
+      console.info = vitest.fn();
+      window.postMessage = vitest.fn();
 
       const original = "Man Cave ";
       const remoteSavedSearch = {
@@ -794,12 +794,9 @@ Finance: we can't afford it.</ins>`);
         oldValue: false,
         newValue: remoteSavedSearch}
       );
-      await new Promise((resolve) => {
-        requestIdleCallback(() => {
-          setTimeout(() => {
-            resolve();
-          }, 10);
-        });
+      await waitFor(async () => {
+        const {originalTags} = await listTags();
+        expect(originalTags.length).toBeGreaterThan(0);
       });
 
       const {originalTags, normalizedTags} = await listTags();
@@ -846,19 +843,17 @@ Finance: we can't afford it.</ins>`);
       await upsertNote(createTestNote(note3.content));
     });
 
-    it("should return all notes when no words in search string", done => {
+    it("should return all notes when no words in search string", () => new Promise(done => {
       findStubs(parseWords(" .@ *) -—-"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) { return done(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(36);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -890,21 +885,19 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }));
 
-    it("should return stubs containing words which start with the only search word", done => {
+    it("should return stubs containing words which start with the only search word", () => new Promise(done => {
       findStubs(parseWords("th"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) { return done(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(24);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -936,21 +929,19 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }));
 
-    it("should return stubs containing words which start with each of the search words", done => {
+    it("should return stubs containing words which start with each of the search words", () => new Promise( done => {
       findStubs(parseWords("th don"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) { return done(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(13);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -985,7 +976,7 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }));
   });
 
   describe("findStubs (max)", () => {
@@ -1001,7 +992,7 @@ Finance: we can't afford it.</ins>`);
       }
     });
 
-    it("should return 500 stubs when search string is empty", done => {
+    it("should return 500 stubs when search string is empty", () => new Promise(done => {
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1010,12 +1001,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1038,9 +1027,9 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }));
 
-    it("should return 500 stubs with multiple search words", done => {
+    it("should return 500 stubs with multiple search words", () => new Promise(done => {
       findStubs(parseWords("Some-thin rathE s.h.o.r."), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1049,12 +1038,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1077,12 +1064,10 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }));
   });
 
-  xdescribe("findStubs (stress)", () => {
-    jest.setTimeout(30000);
-
+  describe.skip("findStubs (stress)", () => {
     const content = `<h1>In Congress, July 4, 1776</h1>
 <p><b>The unanimous Declaration of the thirteen united States of America</b>, When in the Course of human events, it becomes necessary for one people to dissolve the political bands which have connected them with another, and to assume among the powers of the earth, the separate and equal station to which the Laws of Nature and of Nature's God entitle them, a decent respect to the opinions of mankind requires that they should declare the causes which impel them to the separation.</p>
 <p>We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.—That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed, —That whenever any Form of Government becomes destructive of these ends, it is the Right of the People to alter or to abolish it, and to institute new Government, laying its foundation on such principles and organizing its powers in such form, as to them shall seem most likely to effect their Safety and Happiness. Prudence, indeed, will dictate that Governments long established should not be changed for light and transient causes; and accordingly all experience hath shewn, that mankind are more disposed to suffer, while evils are sufferable, than to right themselves by abolishing the forms to which they are accustomed. But when a long train of abuses and usurpations, pursuing invariably the same Object evinces a design to reduce them under absolute Despotism, it is their right, it is their duty, to throw off such Government, and to provide new Guards for their future security.—Such has been the patient sufferance of these Colonies; and such is now the necessity which constrains them to alter their former Systems of Government. The history of the present King of Great Britain is a history of repeated injuries and usurpations, all having in direct object the establishment of an absolute Tyranny over these States. To prove this, let Facts be submitted to a candid world.</p>
@@ -1107,9 +1092,9 @@ Finance: we can't afford it.</ins>`);
       for (let i = 0; i < 600; ++i) {
         await upsertNote(createMemoryNote(generateTestId(), content, null, 'text/html;hint=SEMANTIC'));
       }
-    });
+    }, 30_000);
 
-    it("should return a maximum of 500 stubs when search string is empty", done => {
+    it("should return a maximum of 500 stubs when search string is empty", () => new Promise(done => {
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1118,12 +1103,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1143,9 +1126,9 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }), 30_000);
 
-    it("should return a maximum of 500 stubs with multiple search words", done => {
+    it("should return a maximum of 500 stubs with multiple search words", () => new Promise(done => {
       const searchWords = parseWords("177 congres declaratio governmen self-eviden");
       findStubs(searchWords, callback);
 
@@ -1155,12 +1138,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1180,7 +1161,7 @@ Finance: we can't afford it.</ins>`);
           done(err2);
         }
       }
-    });
+    }), 30_000);
   });
 
 
@@ -1269,6 +1250,7 @@ Finance: we can't afford it.</ins>`);
         try {
           await deleteTag(parseWords(searchStr), searchStr);
         } catch (err) {
+          // continue regardless of error
         }
       }
     });

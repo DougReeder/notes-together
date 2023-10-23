@@ -6,7 +6,6 @@ import {updateListWithChanges} from "./listUtil";
 import {createMemoryNote} from "./Note";
 import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
-import {v4 as uuidv4} from "uuid";
 
 
 const startDate = Date.parse('2016-01-01');

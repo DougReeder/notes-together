@@ -1,4 +1,4 @@
-// Copyright © 202-2023 Doug Reeder under the MIT License
+// Copyright © 2022-2023 Doug Reeder under the MIT License
 
 import {withHtml, deserializeHtml, serializeHtml} from "./slateHtml";
 import sanitizeHtml from "sanitize-html";
@@ -108,7 +108,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should ensure a nonempty list-item is a direct child of bulleted-list or numbered-list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -140,7 +140,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should remove a blank list-item that is not a direct child of bulleted-list or numbered-list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -168,7 +168,7 @@ describe("HTML plugin normalizer", () => {
 
   for (const listType of ['bulleted-list', 'numbered-list']) {
     it(`should ensure all children of a ${listType} are list-items`, () => {
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      vitest.spyOn(console, 'warn').mockImplementation(() => {});
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -240,7 +240,7 @@ describe("HTML plugin normalizer", () => {
 
   for (const listType of ['task-list', 'sequence-list']) {
     it(`should ensure all children of a ${listType} are list-items`, () => {
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      vitest.spyOn(console, 'warn').mockImplementation(() => {});
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -312,7 +312,7 @@ describe("HTML plugin normalizer", () => {
 
   for (const listType of ['bulleted-list', 'numbered-list', 'task-list', 'sequence-list']) {
     it(`should remove a  ${listType} list with no list-items and no non-blank children`, () => {
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      vitest.spyOn(console, 'warn').mockImplementation(() => {});
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -337,7 +337,7 @@ describe("HTML plugin normalizer", () => {
   }
 
   it("should ensure a nonempty checklist item is a direct child of a checklist", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -370,7 +370,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should remove a blank checklist item that is not a direct child of sequence-list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -397,7 +397,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should not wrap a non-list-item with a checked property in a list", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -422,7 +422,7 @@ describe("HTML plugin normalizer", () => {
 
   for (const listType of ['task-list', 'sequence-list']) {
     it(`should ensure all children of a ${listType} are list items w/ checked property`, () => {
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      vitest.spyOn(console, 'warn').mockImplementation(() => {});
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -754,7 +754,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should delete tables with no table-rows and no non-blank children", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [{type: 'numbered-list', children: [
@@ -776,7 +776,7 @@ describe("HTML plugin normalizer", () => {
   });
 
   it("should delete tables with no columns", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [{type: 'numbered-list', children: [
@@ -801,7 +801,7 @@ describe("HTML plugin normalizer", () => {
 
 describe("HTML plugin insertData", () => {
   it("should prefer pasting HTML into rich text, & paste as rich text", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -840,8 +840,8 @@ describe("HTML plugin insertData", () => {
   });
 
   it("should prefer pasting URLs, over plain text, into rich text", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -890,8 +890,8 @@ http://www.example.com`);
 
 
   it("should paste URL list files into rich text", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -938,7 +938,7 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
   });
 
   it("should paste Markdown files into rich text", async () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -990,7 +990,7 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
   });
 
   it("should paste plain text into rich text and match style", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -1026,8 +1026,8 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
   });
 
   it("should paste a graphic file into rich text as rich text, replacing a blank paragraph", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -1087,8 +1087,8 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
   });
 
   it("should paste a graphic file into rich text as rich text, replacing text", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -1149,7 +1149,7 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
 
 
   it("should prefer pasting plain text into plain text", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -1187,8 +1187,8 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
 
 
   it("should prefer pasting HTML into Markdown", () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1233,8 +1233,8 @@ http://iana.org`], "organizations.uri", {type: 'text/uri-list'});
   });
 
   it("should prefer pasting URI lists, over text, into Markdown", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1282,7 +1282,7 @@ https://www.example.org`);
   });
 
   it("should paste text into Markdown", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1326,7 +1326,7 @@ https://www.example.org`);
   });
 
   it("should paste a text file into Markdown", async () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1371,8 +1371,8 @@ https://www.example.org`);
   });
 
   it("should paste an HTML file into Markdown as Markdown", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1420,8 +1420,8 @@ https://www.example.org`);
   });
 
   it("should paste a graphic file into Markdown as Markdown", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'markdown';
     editor.children = [
@@ -1472,7 +1472,7 @@ https://www.example.org`);
 
 
   it("should paste an HTML file into plain text as plain text", async () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -1519,7 +1519,7 @@ https://www.example.org`);
   });
 
   it("should paste a Markdown file into plain text as Markdown", async () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -1582,8 +1582,8 @@ https://www.example.org`);
   });
 
   it("should paste a graphic file into plain text as a file name", async () => {
-    jest.spyOn(console, 'info').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'info').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
     editor.children = [
@@ -1647,8 +1647,8 @@ https://www.example.org`);
   });
 
   it("should post a message if the paste type isn't handled", async () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    window.postMessage = jest.fn();
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
+    window.postMessage = vitest.fn();
 
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = undefined;
@@ -1669,7 +1669,7 @@ describe("insertBreak", () => {
   /** These block types all change the next block to paragraph. 'code' does not. */
   for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
     it(`should add another ${blockType}, in a table cell`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -1736,7 +1736,7 @@ describe("insertBreak", () => {
   }
 
   it("should wrap existing text in split paragraphs, in a table cell", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -1802,7 +1802,7 @@ describe("insertBreak", () => {
   /** These block types all change the next block to paragraph. 'code' does not. */
   for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
     it(`should not replace a trailing blank ${blockType} with a list item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -1863,7 +1863,7 @@ describe("insertBreak", () => {
   /** These block types all change the next block to paragraph. 'code' does not. */
   for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote']) {
     it(`should not replace an interior empty ${blockType} with a list item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -1959,7 +1959,7 @@ describe("insertBreak", () => {
 
   for (const blockType of ['heading-one', 'heading-two', 'heading-three', 'paragraph', 'quote', 'code']) {
     it(`should replace a trailing empty ${blockType} with a list item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -2039,7 +2039,7 @@ describe("insertBreak", () => {
   }
 
   it("should not duplicate an image", () => {
-    window.postMessage = jest.fn();
+    window.postMessage = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     editor.subtype = 'html;hint=SEMANTIC';
     editor.children = [
@@ -2092,7 +2092,7 @@ describe("insertBreak", () => {
 
   for (const listType of ['bulleted-list', 'numbered-list']) {
     it(`should divide ${listType}, when in empty item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -2187,7 +2187,7 @@ describe("insertBreak", () => {
 
   for (const listType of ['task-list', 'sequence-list']) {
     it(`should divide ${listType}, when in empty item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -2236,7 +2236,7 @@ describe("insertBreak", () => {
 
   for (const listType of ['task-list', 'sequence-list']) {
     it(`should create unchecked item, when in non-blank ${listType} item`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -2270,7 +2270,7 @@ describe("insertBreak", () => {
 
   for (const type of ['heading-one', 'heading-two', 'heading-three', 'quote', 'thematic-break']) {
     it(`should produce paragraph when selection at end of ${type}`, () => {
-      window.postMessage = jest.fn();
+      window.postMessage = vitest.fn();
       const editor = withHtml(withReact(createEditor()));
       editor.subtype = 'html;hint=SEMANTIC';
       editor.children = [
@@ -2458,7 +2458,7 @@ describe("serializeHtml", () => {
   });
 
   it("should drop images containing an object URL with no substitution", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
 
     const html = serializeHtml([{
       type: 'image',
