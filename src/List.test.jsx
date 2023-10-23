@@ -1,10 +1,11 @@
 // List.test.js - automated tests for List component for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021,2023 Doug Reeder
 
 import {
   render,
   screen, waitForElementToBeRemoved,
 } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
 import auto from "fake-indexeddb/auto.js";
@@ -15,14 +16,14 @@ import React from "react";
 let mockStubList = [];
 let mockIsFirstLaunch = false;
 
-jest.mock('./storage', () => ({
+vitest.mock('./storage', () => ({
   init: () => {return Promise.resolve({isFirstLaunch: mockIsFirstLaunch})},
   findStubs: (searchWords, callback) => {
     setTimeout(() => {
       callback(null, mockStubList, {isPartial: false, isFinal: false});
     }, 4);
   },
-  deleteNote: jest.fn().mockResolvedValue([undefined, 42]),
+  deleteNote: vitest.fn().mockResolvedValue([undefined, 42]),
 }));
 
 describe("List", () => {
@@ -37,7 +38,7 @@ describe("List", () => {
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
   });
 
@@ -55,7 +56,7 @@ describe("List", () => {
     const closeBtn = screen.getByRole('button', {name: "Close"});
     expect(closeBtn).toBeVisible();
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
   });
 
@@ -112,7 +113,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  handleSelect={mockHandleSelect}
@@ -120,7 +121,7 @@ describe("List", () => {
     const items = await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{ArrowDown}');
+    await userEvent.keyboard('{ArrowDown}');
     expect(mockHandleSelect).toHaveBeenCalledWith('0b6b89c8-8aca-43de-8c7b-72095380682b', 'DETAIL');
   });
 
@@ -128,7 +129,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  handleSelect={mockHandleSelect}
@@ -136,7 +137,7 @@ describe("List", () => {
     const items = await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{ArrowUp}');
+    await userEvent.keyboard('{ArrowUp}');
     expect(mockHandleSelect).toHaveBeenCalledWith('ca5a278b-1959-45da-9431-d3bd856c8733', 'DETAIL');
   });
 
@@ -144,7 +145,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId='0b6b89c8-8aca-43de-8c7b-72095380682b'
@@ -153,7 +154,7 @@ describe("List", () => {
     const items = await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{ArrowDown}');
+    await userEvent.keyboard('{ArrowDown}');
     expect(mockHandleSelect).toHaveBeenCalledWith('615df9ff-89ab-4d51-b64d-0e82b2dfc2b6', null);
   });
 
@@ -161,7 +162,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
@@ -170,7 +171,7 @@ describe("List", () => {
     const items = await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{ArrowUp}');
+    await userEvent.keyboard('{ArrowUp}');
     expect(mockHandleSelect).toHaveBeenCalledWith('cba4c6fd-abf4-4f68-91ab-979fdf233606', null);
   });
 
@@ -178,7 +179,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId={null}
@@ -188,7 +189,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Backspace}');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
@@ -197,7 +198,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
@@ -207,14 +208,14 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Backspace}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     const cancelBtn = screen.getByRole('button', {name: "Cancel"});
     expect(cancelBtn).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    userEvent.click(cancelBtn);
+    await userEvent.click(cancelBtn);
     expect(deleteNote).not.toHaveBeenCalled();
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -224,7 +225,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
     const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
 
     render(<List changeCount={() => {}}
@@ -235,14 +236,14 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Delete}');
+    await userEvent.keyboard('{Delete}');
     const deleteBtn = screen.getByRole('button', {name: "Delete"});
     expect(deleteBtn).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    userEvent.click(deleteBtn);
+    await userEvent.click(deleteBtn);
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
     // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -252,7 +253,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
     const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
 
     render(<List changeCount={() => {}}
@@ -263,13 +264,13 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Backspace}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{Enter}');
+    await userEvent.keyboard('{Enter}');
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
     // mock deleteNote can't call postMessage
   });
@@ -278,7 +279,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
     const someNoteId = 'f5af3107-fc12-4291-88ff-e0d64b962e49';
 
     render(<List changeCount={() => {}}
@@ -289,13 +290,13 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Delete}');
+    await userEvent.keyboard('{Delete}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    userEvent.keyboard(' ');
+    await userEvent.keyboard(' ');
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
     // mock deleteNote can't call postMessage
   });
@@ -304,7 +305,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
@@ -314,12 +315,12 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Backspace}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    userEvent.keyboard('{Escape}');
+    await userEvent.keyboard('{Escape}');
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
@@ -329,7 +330,7 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const mockHandleSelect = jest.fn();
+    const mockHandleSelect = vitest.fn();
 
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
@@ -339,7 +340,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    userEvent.dblClick(items[1]);
+    await userEvent.dblClick(items[1]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
   });

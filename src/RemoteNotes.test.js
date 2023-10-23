@@ -125,7 +125,6 @@ describe("RemoteNotes", () => {
             const pr1 = remoteStorage.documents.upsert(createMemoryNote(id1, text1.slice(0, i), date1));
             const pr2 = remoteStorage.documents.upsert(createMemoryNote(id2, text2.slice(0, i), date2));
             const pr3 = remoteStorage.documents.upsert(createMemoryNote(id3, text3.slice(0, i), date3));
-            /* eslint-disable jest/no-conditional-expect */
             if (i < maxLength) {
               await expect(pr1).resolves.toBeTruthy();
               await expect(pr2).resolves.toBeTruthy();
@@ -139,7 +138,6 @@ describe("RemoteNotes", () => {
               expect(cleanNotes[2]?.content).toEqual(text3);
               resolve();
             }
-            /* eslint-enable jest/no-conditional-expect */
           } catch (err) {
             reject(err);
           }
@@ -196,7 +194,7 @@ describe("RemoteNotes", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      console.error = jest.fn();
+      console.error = vitest.fn();
 
       await expect(remoteStorage.documents.delete(NIL)).resolves.toBeTruthy();
 

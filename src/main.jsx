@@ -1,12 +1,13 @@
 import {init} from "./storage";
 import React from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App';
 import './index.css';
 import '@fontsource/roboto';
-import {SnackbarProvider} from "notistack";
+import ReactDOM from 'react-dom/client';
 import {BrowserRouter} from "react-router-dom";
-import {ThemeProvider, StyledEngineProvider, createTheme} from '@mui/material/styles';
+import {SnackbarProvider} from "notistack";
+import {ThemeProvider, createTheme} from '@mui/material/styles';
+import App from './App.jsx';
+import './index.css';
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -78,16 +79,14 @@ const theme = createTheme({
   },
 });
 
-const root = createRoot(document.getElementById('root'));
-root.render(  <React.StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
       <BrowserRouter>
-        <StyledEngineProvider injectFirst>
-          <ThemeProvider theme={theme}>
-            <App />
-          </ThemeProvider>
-        </StyledEngineProvider>
+        <ThemeProvider theme={theme}>
+          <App />
+        </ThemeProvider>
       </BrowserRouter>
     </SnackbarProvider>
   </React.StrictMode>,
-);
+)

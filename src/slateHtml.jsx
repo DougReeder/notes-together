@@ -96,7 +96,6 @@ function withHtml(editor) {   // defines Slate plugin
         const nodeRef = Editor.pathRef(editor, path);
 
         let wrapBlock;
-        // eslint-disable-next-line default-case
         switch (SlateNode.get(editor, Path.parent(path))?.type) {
           case 'list-item':
           case 'table-cell':
@@ -1061,7 +1060,6 @@ ImageElement.propTypes = {
   element: PropTypes.object,
 };
 
-
 const CheckListItemElement = ({ attributes, children, element }) => {
   const editor = useSlateStatic();
   const readOnly = useReadOnly();
@@ -1090,6 +1088,18 @@ const CheckListItemElement = ({ attributes, children, element }) => {
     </li>
   )
 }
+CheckListItemElement.propTypes = {
+  attributes: PropTypes.shape({
+    'data-slate-node': PropTypes.string.isRequired,
+    'data-slate-inline': PropTypes.bool,
+    'data-slate-void': PropTypes.bool,
+    dir: PropTypes.string,
+    ref: PropTypes.any,
+  }),
+  children: PropTypes.any,
+  element: PropTypes.object,
+};
+
 CheckListItemElement.propTypes = {
   attributes: PropTypes.shape({
     'data-slate-node': PropTypes.string.isRequired,
@@ -1199,7 +1209,7 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         }
       }
 
-      switch (slateNode.type) {   // eslint-disable-line default-case
+      switch (slateNode.type) {
         case 'code':
           inCodeBlock = true;
       }

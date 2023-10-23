@@ -1,5 +1,5 @@
 // FileImport.test.js - automated tests for importing notes from files
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021-2023 Doug Reeder
 
 import auto from "fake-indexeddb/auto.js";
 import {init, getNote} from "./storage";
@@ -8,9 +8,9 @@ import {
   render,
   screen, waitFor
 } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import {validate as uuidValidate} from "uuid";
-import {TITLE_MAX} from "./Note";
 import {dataURItoFile} from "./util/testUtil";
 
 describe("checkForMarkdown", () => {
@@ -340,7 +340,7 @@ yucking my yum
   });
 
   it("should continue after refusing to create a text note longer than 60,000 characters", async () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
 
     const content0 = 'before\n';
     const date0 = '2006-02-14T07:00:00Z';
@@ -594,13 +594,13 @@ const pngFile = dataURItoFile(dataUrlDot, 'dot.png', fileDatePng);
 const fiveFiles = [htmlFile, binaryFile, markdownFile, markDownInTextFile, textFile];
 
 describe("FileImport", () => {
-  jest.setTimeout(30_000);
+  // jest.setTimeout(30_000);
   beforeAll(() => {
     return init("testStorageDb");
   });
 
   it("should not render dialog when no files supplied", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     const {queryAllByRole} = render(<FileImport files={[]} isMultiple={true} doCloseImport={mockCloseImport}/>);
 
@@ -610,7 +610,7 @@ describe("FileImport", () => {
   });
 
   it("should render one row for each file supplied & allow closing", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={[htmlFile, binaryFile, rtfFile, markdownFile, markDownInTextFile, textFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
@@ -653,12 +653,12 @@ describe("FileImport", () => {
     expect(cells[17].textContent).toEqual("");
     expect(cells.length).toEqual(6*3);
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
   });
 
   it("should not render Markdown column when not needed", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={[htmlFile, binaryFile, rtfFile, pngFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
@@ -684,12 +684,12 @@ describe("FileImport", () => {
     expect(cells[7].textContent).toEqual("");
     expect(cells.length).toEqual(4*2);
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
   });
 
   it("should import & summarize results", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
@@ -723,7 +723,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("");
     expect(cells.length).toEqual(5*3);
 
-    userEvent.click(screen.getByRole('button', {name: "Import"}));
+    await userEvent.click(screen.getByRole('button', {name: "Import"}));
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
@@ -734,12 +734,12 @@ describe("FileImport", () => {
     expect(cells[11].textContent).toEqual("1 note");
     expect(cells[14].textContent).toEqual("1 note");
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
   });
 
   it("should allow changing Markdown flags before importing", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={fiveFiles} isMultiple={true} doCloseImport={mockCloseImport}/>);
 
@@ -774,12 +774,12 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("");
     expect(cells.length).toEqual(5*3);
 
-    userEvent.click(mdInTextCheckbox);
+    await userEvent.click(mdInTextCheckbox);
     expect(mdInTextCheckbox.checked).toEqual(false);
-    userEvent.click(textCheckbox);
+    await userEvent.click(textCheckbox);
     expect(textCheckbox.checked).toEqual(true);
 
-    userEvent.click(importBtn);
+    await userEvent.click(importBtn);
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
@@ -790,12 +790,12 @@ describe("FileImport", () => {
     expect(cells[11].textContent).toEqual("2 notes");
     expect(cells[14].textContent).toEqual("2 notes");
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
   });
 
   it("should import single notes from text & Markdown files when flagged", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={fiveFiles} isMultiple={false} doCloseImport={mockCloseImport}/>);
 
@@ -829,7 +829,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("");
     expect(cells.length).toEqual(5*3);
 
-    userEvent.click(screen.getByRole('button', {name: "Import"}));
+    await userEvent.click(screen.getByRole('button', {name: "Import"}));
     expect(mockCloseImport).not.toHaveBeenCalled();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeEnabled();
 
@@ -840,12 +840,12 @@ describe("FileImport", () => {
     expect(cells[11].textContent).toEqual("1 note");
     expect(cells[14].textContent).toEqual("1 note");
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
   });
 
   it("should skip review, when all files are readable, an importable type, and not text", async () => {
-    const mockCloseImport = jest.fn();
+    const mockCloseImport = vitest.fn();
 
     render(<FileImport files={[htmlFile, markdownFile]} isMultiple={false} doCloseImport={mockCloseImport}/>);
     await waitFor(() => expect(screen.getByRole('dialog', {name: "Imported 2 Notes"})).toBeVisible())
@@ -862,7 +862,7 @@ describe("FileImport", () => {
     expect(cells.length).toEqual(2*3);
     expect(mockCloseImport).not.toHaveBeenCalled();
 
-    userEvent.click(closeBtn);
+    await userEvent.click(closeBtn);
     expect(mockCloseImport).toHaveBeenCalledWith("Burroughs.md", expect.anything());
   });
 });

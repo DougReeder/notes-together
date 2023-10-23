@@ -40,11 +40,10 @@ if (!global.requestIdleCallback) {
 
 let db;
 
-beforeAll(done => {
-  initDb("testDb").then(({indexedDb}) => {
+beforeAll(async () => {
+  return initDb("testDb").then(({indexedDb}) => {
     db = indexedDb;
     // console.log("fake db:", db.name, db.version, db.objectStoreNames);
-    done();
   });
 });
 
@@ -202,19 +201,17 @@ describe("findStubs", () => {
     await upsertNoteDb(createIndexedNote(text3, date));
   });
 
-  it("should return all notes when no words in search string", done => {
+  it("should return all notes when no words in search string", () => new Promise(done => {
     findStubs(parseWords(" .@ *) -—-"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
       try {
         if (!isFinal) {
-          /* eslint-disable jest/no-conditional-expect */
           expect(matched.length).toBeGreaterThan(0);
           expect(matched.length).toBeLessThan(36);
           expect(isPartial).toBeTruthy();
           expect(isSearch).toBeFalsy();
-          /* eslint-enable jest/no-conditional-expect */
           return;
         }
 
@@ -246,21 +243,19 @@ describe("findStubs", () => {
         done(err2);
       }
     }
-  });
+  }));
 
-  it("should return notes containing words which start with each of the search words", done => {
+  it("should return notes containing words which start with each of the search words", () => new Promise(done =>  {
     findStubs(parseWords("th don"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
       if (err) { return done(err) }
       try {
         if (!isFinal) {
-          /* eslint-disable jest/no-conditional-expect */
           expect(matched.length).toBeGreaterThan(0);
           expect(matched.length).toBeLessThan(13);
           expect(isPartial).toBeTruthy();
           expect(isSearch).toBeTruthy();
-          /* eslint-enable jest/no-conditional-expect */
           return;
         }
 
@@ -289,7 +284,7 @@ describe("findStubs", () => {
         done(err2);
       }
     }
-  });
+  }));
 });
 
 describe("findNoteIds", () => {
@@ -380,7 +375,7 @@ function createIndexedNote(content, date, isLocked = false) {
 
 
 describe("checkPointSearch", () => {
-  jest.setTimeout(30000);
+  // jest.setTimeout(30000);
   beforeEach(deleteSearchCheckpoints);
 
   it("should throw error when not passed a Set of words", async () => {

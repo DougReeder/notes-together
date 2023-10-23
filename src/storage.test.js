@@ -479,7 +479,7 @@ describe("storage", () => {
     });
 
     it("should succeed in deleting non-existent note", async () => {
-      console.error = jest.fn();
+      console.error = vitest.fn();
 
       const deleteResult = await deleteNote(NIL);
       expect(deleteResult).toContain(NIL);
@@ -548,7 +548,7 @@ describe("storage", () => {
     });
 
     it("should retain a modified note which was deleted on another device", async () => {
-      console.warn = jest.fn();
+      console.warn = vitest.fn();
 
       const id = generateTestId();
       const localNote = {
@@ -762,8 +762,8 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming upsert", async () => {
-      console.info = jest.fn();
-      window.postMessage = jest.fn();
+      console.info = vitest.fn();
+      window.postMessage = vitest.fn();
 
       const original = "Man Cave ";
       const remoteSavedSearch = {
@@ -780,9 +780,9 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should create a savedSearch from incoming conflict", async () => {
-      console.warn = jest.fn();
-      console.info = jest.fn();
-      window.postMessage = jest.fn();
+      console.warn = vitest.fn();
+      console.info = vitest.fn();
+      window.postMessage = vitest.fn();
 
       const original = "Man Cave ";
       const remoteSavedSearch = {
@@ -850,12 +850,10 @@ Finance: we can't afford it.</ins>`);
         if (err) { return fail(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(36);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -896,12 +894,10 @@ Finance: we can't afford it.</ins>`);
         if (err) { return fail(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(24);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -942,12 +938,10 @@ Finance: we can't afford it.</ins>`);
         if (err) { return fail(err) }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(13);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1007,12 +1001,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1046,12 +1038,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1078,8 +1068,6 @@ Finance: we can't afford it.</ins>`);
   });
 
   describe.skip("findStubs (stress)", () => {
-    jest.setTimeout(30000);
-
     const content = `<h1>In Congress, July 4, 1776</h1>
 <p><b>The unanimous Declaration of the thirteen united States of America</b>, When in the Course of human events, it becomes necessary for one people to dissolve the political bands which have connected them with another, and to assume among the powers of the earth, the separate and equal station to which the Laws of Nature and of Nature's God entitle them, a decent respect to the opinions of mankind requires that they should declare the causes which impel them to the separation.</p>
 <p>We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.—That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed, —That whenever any Form of Government becomes destructive of these ends, it is the Right of the People to alter or to abolish it, and to institute new Government, laying its foundation on such principles and organizing its powers in such form, as to them shall seem most likely to effect their Safety and Happiness. Prudence, indeed, will dictate that Governments long established should not be changed for light and transient causes; and accordingly all experience hath shewn, that mankind are more disposed to suffer, while evils are sufferable, than to right themselves by abolishing the forms to which they are accustomed. But when a long train of abuses and usurpations, pursuing invariably the same Object evinces a design to reduce them under absolute Despotism, it is their right, it is their duty, to throw off such Government, and to provide new Guards for their future security.—Such has been the patient sufferance of these Colonies; and such is now the necessity which constrains them to alter their former Systems of Government. The history of the present King of Great Britain is a history of repeated injuries and usurpations, all having in direct object the establishment of an absolute Tyranny over these States. To prove this, let Facts be submitted to a candid world.</p>
@@ -1115,12 +1103,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeFalsy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1140,7 +1126,7 @@ Finance: we can't afford it.</ins>`);
           fail(err2);
         }
       }
-    }));
+    }), 30_000);
 
     it("should return a maximum of 500 stubs with multiple search words", () => new Promise((done, fail) => {
       const searchWords = parseWords("177 congres declaratio governmen self-eviden");
@@ -1152,12 +1138,10 @@ Finance: we can't afford it.</ins>`);
         }
         try {
           if (!isFinal) {
-            /* eslint-disable jest/no-conditional-expect */
             expect(matched.length).toBeGreaterThan(0);
             expect(matched.length).toBeLessThan(500);
             expect(isPartial).toBeTruthy();
             expect(isSearch).toBeTruthy();
-            /* eslint-enable jest/no-conditional-expect */
             return;
           }
 
@@ -1177,7 +1161,7 @@ Finance: we can't afford it.</ins>`);
           fail(err2);
         }
       }
-    }));
+    }), 30_000);
   });
 
 
@@ -1266,6 +1250,7 @@ Finance: we can't afford it.</ins>`);
         try {
           await deleteTag(parseWords(searchStr), searchStr);
         } catch (err) {
+          // continue regardless of error
         }
       }
     });

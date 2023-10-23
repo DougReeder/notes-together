@@ -257,7 +257,7 @@ spam *frotz
   });
 
   it("should pull definition into link reference", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     const mdText = `For information, see the [Markdown][md] reference.
 For the same information, see the [][md] reference.
@@ -284,7 +284,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should parse autolinks", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const mdText = `before <http://foo.bar.baz> between <MAILTO:FOO@BAR.BAZ> after`;
     const slateNodes = deserializeMarkdown(mdText);
 
@@ -305,7 +305,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should parse GFM tables", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `
 | Name | Occupation |
@@ -353,7 +353,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should parse GFM tables without leading & trailing pipes", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `
  Framework | Notes 
@@ -383,7 +383,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should extract text of HTML that's not specially handled", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "something <samp>special</samp> for you";
 
@@ -399,7 +399,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply superscript tag to enclosed text", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "M<sup>lle</sup> Juliet";
 
@@ -414,7 +414,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply subscript tag to enclosed text", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "Mason & Jones<sub>MJ</sub> found no such relationship";
 
@@ -429,7 +429,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply underline tag to enclosed text", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "the word <u>cheif</u> is misspelled";
 
@@ -444,7 +444,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should apply strikethrough tag to enclosed text", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = "shall <s>not</s> be accepted";
 
@@ -459,7 +459,7 @@ For no information, see the [fake][nomatch] reference!
   });
 
   it("should recognize break tag", () => {
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vitest.spyOn(console, 'warn').mockImplementation(() => {});
     const editor = withHtml(withReact(createEditor()));
     const mdText = `grault garply
 baz **qux<br />quux** corge`;
@@ -479,7 +479,7 @@ baz **qux<br />quux** corge`;
   });
 
   it("should parse definition list as paragraphs and block quotes", () => {
-    console.error = jest.fn();
+    console.error = vitest.fn();
     const editor = withHtml(withReact(createEditor()));
     const mdText = `<dl>
   <dt>Danish axe</dt>
@@ -934,7 +934,6 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
     const original = [
       {type: 'paragraph', children: [
           {text: "JavaScript uses the backtick to delimit template literals: "},
-          // eslint-disable-next-line no-template-curly-in-string
           {text: "let template = `page ${n}`;", code: true},
           {text: " which are useful"},
         ]}

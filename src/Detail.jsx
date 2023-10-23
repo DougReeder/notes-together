@@ -195,10 +195,14 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           boxRef.current.scrollTop = 0;
           replaceNote(theNote);
 
-          if ('function' === typeof focusOnLoadCB) {
-            focusOnLoadCB();
-            ReactEditor.focus(editor);
-            Transforms.select(editor, Editor.start(editor, []));
+          try {
+            if ('function' === typeof focusOnLoadCB) {
+              focusOnLoadCB();
+              ReactEditor.focus(editor);
+              Transforms.select(editor, Editor.start(editor, []));
+            }
+          } catch (err) {   // TODO: Why does this happen in prod build?
+            console.error(`while focusing after replacing:`, err);
           }
         } else {
           const err = new Error("no note with id=" + noteId);
@@ -420,7 +424,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
       previousSelection.current = null;
 
-      // eslint-disable-next-line default-case
       switch (targetType) {
         case 'insert-paragraph':
           insertAfter(editor,
@@ -686,7 +689,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
         <Toolbar>{outBtn}</Toolbar>
       </AppBar>
-      <div style={{width: '100%', height: '100%', backgroundImage: 'url(' + process.env.PUBLIC_URL + '/icons/NotesTogether-icon-gray.svg)',
+      <div style={{width: '100%', height: '100%', backgroundImage: 'url(/icons/NotesTogether-icon-gray.svg)',
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
     </>);
   } else {
@@ -957,7 +960,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             className={editor.subtype?.startsWith('html') ? null : "unformatted"}
             onKeyDown={evt => {
               try {
-              switch (evt.key) {   // eslint-disable-line default-case
+              switch (evt.key) {
                 case 'Tab':
                   if (!evt.shiftKey) {
                     evt.preventDefault();
@@ -1249,5 +1252,6 @@ ErrorFallback.propTypes = {
   error: Error,
   resetErrorBoundary: Function
 }
+
 export default Detail;
 
