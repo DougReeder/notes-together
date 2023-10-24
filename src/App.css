@@ -19,6 +19,7 @@ body {
 
 .panelContainer {
   height: 100vh;
+  height: 100dvh;
   touch-action: none;
   overflow-x: hidden;
 
@@ -28,6 +29,7 @@ body {
 
 .panel, .separator {
   height: 100vh;
+  height: 100dvh;
 }
 
 .separator {
