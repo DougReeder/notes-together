@@ -63,19 +63,11 @@ import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
-import makeStyles from '@mui/styles/makeStyles';
 import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 
-
-const useStyles = makeStyles((theme) => ({
-  widgetAppBar: {
-    marginLeft: '1.5ch',
-    marginRight: '1.5ch',
-  },
-}));
 
 const BLOCK_TYPE_DISPLAY = {
   'heading-one': <h1>Title</h1>,
@@ -130,8 +122,6 @@ const UNEXPECTED_ERROR = "Switch to another note, then back.";
 let saveFn;   // Exposes side door for testing (rather than hidden button).
 
 function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel}) {
-  const classes = useStyles();
-
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -704,7 +694,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   } else {
     const dateControl = editor.subtype?.startsWith('html') ?
         <DateCompact date={noteDate} onChange={handleDateChange}/> :
-        <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} className={classes.widgetAppBar}/>;
+        <Input type="date" value={dateStr} title="Change date" onChange={handleDateChange} style={{marginLeft: '1.5ch', marginRight: '1.5ch'}}/>;
 
     function handleMarkItem(mark) {
       queueMicrotask(() => {
@@ -849,7 +839,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         typeLabel = editor.subtype + " text";
       }
       formatControls = (<>
-        <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize"}} title="Change content type" onClick={prepareContentTypeDialog} className={classes.widgetAppBar}>{typeLabel}</Button>
+        <Button variant="outlined" style={{color: "black", borderColor: "black", textTransform: "capitalize", marginLeft: '1.5ch', marginRight: '1.5ch'}} title="Change content type" onClick={prepareContentTypeDialog}>{typeLabel}</Button>
       </>);
     }
 

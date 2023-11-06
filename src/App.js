@@ -21,7 +21,6 @@ import {
   MenuItem,
   Snackbar, Toolbar
 } from "@mui/material";
-import makeStyles from '@mui/styles/makeStyles';
 import Slide from '@mui/material/Slide';
 import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -37,28 +36,6 @@ import {setEquals} from "./util/setUtil";
 import {extractUserMessage} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
 
-const useStyles = makeStyles((theme) => ({
-  appbar: {
-    '& input': {
-      marginLeft: '1.5ch',
-      flex: '1 1 auto',
-      minWidth: '10ch',
-      fontSize: '18px',
-    },
-    '& .count': {
-      marginLeft: '1.5ch',
-      marginRight: '1.5ch',
-      minWidth: '3ch',
-      textAlign: 'center',
-    },
-    '& .workingInBackground': {
-      width: '48px',
-      height: '48px',
-      textAlign: 'center',
-      paddingTop: '10px',
-    },
-  },
-}));
 
 function App() {
   // TODO: replace string with set of normalized search terms
@@ -474,7 +451,6 @@ function App() {
     setTransientErr(null);
   }
 
-  const classes = useStyles();
 
   return <>
     <Helmet>
@@ -482,7 +458,7 @@ function App() {
     </Helmet>
     <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
       <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
-        <AppBar position="sticky" className={classes.appbar}>
+        <AppBar position="sticky" className="appbar">
           <Toolbar>
             <input type="search" placeholder="Enter search or select tag" maxLength={1000}
                    value={searchStr} list="searchSuggestions" enterKeyHint="Search" ref={searchRef} onChange={onSearchChange} onBlur={handleSearchBlur} role="search"/>

@@ -9,7 +9,6 @@
     "@fontsource/roboto": "^4.5.3",
     "@mui/icons-material": "^5.5.0",
     "@mui/material": "^5.5.0",
-    "@mui/styles": "^5.5.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
     "@svgr/webpack": "^6.2.1",
     "@typescript-eslint/eslint-plugin": "^4.33.0",

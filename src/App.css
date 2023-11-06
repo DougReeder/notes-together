@@ -116,10 +116,29 @@ body {
 }
 
 
+.appbar input {
+  margin-left: 1.5ch;
+  flex: 1 1 auto;
+  min-width: 10ch;
+  font-size: 18px;
+}
+.appbar .count {
+  margin-left: 1.5ch;
+  margin-right: 1.5ch;
+  min-width: 3ch;
+  text-align: center;
+}
+.appbar .workingInBackground {
+  width: 48px;
+  height: 48px;
+  text-align: center;
+  padding-top: 10px;
+}
+
 .MuiMenuItem-root {
   font-size: 1.1rem;
   white-space: normal !important;
-  justify-content: space-between;
+  justify-content: space-between !important;
 }
 .MuiMenuItem-root.pseudoDisabled {
   color: silver;
