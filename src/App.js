@@ -8,7 +8,6 @@ import {
 } from './storage';
 import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo, useReducer} from 'react';
-import {Helmet} from "react-helmet"
 import {useSearchParams} from "react-router-dom";
 import List from './List';
 import Detail from './Detail'
@@ -57,6 +56,10 @@ function App() {
     }
     setSearchParams(new URLSearchParams({words}));
   }
+
+  useEffect(() => {
+    document.title = ('production' !== process.env.NODE_ENV ? "[dev] " : "") + "Notes Together" + (searchStr ? `: ${searchStr}` : "");
+  },[searchStr])
 
   const [count, setCount] = useState(" ");
   const changeCount = (value, isPartial) => setCount(isPartial ? ">" + value : String(value));
@@ -453,9 +456,6 @@ function App() {
 
 
   return <>
-    <Helmet>
-      <title>{'production' !== process.env.NODE_ENV ? "[dev] " : ""}Notes Together{searchStr ? ": " + searchStr : ""}</title>
-    </Helmet>
     <div className={'LIST' === mustShowPanel ? "App panelContainer" : "App panelContainer right"} role="application">
       <div className="panel panelMain" id="panelMain" onDragEnter={preventDefault} onDragOver={preventDefault} onDrop={handleDrop}>
         <AppBar position="sticky" className="appbar">
