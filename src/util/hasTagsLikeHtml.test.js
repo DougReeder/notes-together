@@ -23,11 +23,11 @@ describe("hasTagsLikeHtml", () => {
     expect(hasTagsLikeHtml('text/plain;charset=ISO-8859-1')).toBeFalsy();
   });
 
-  xit("should map SVG as having tags", () => {
+  it.skip("should map SVG as having tags", () => {
     expect(hasTagsLikeHtml("image/svg+xml")).toBeTruthy();
   });
 
-  xit("should map XML as having tags", () => {
+  it.skip("should map XML as having tags", () => {
     expect(hasTagsLikeHtml("text/xml;charset=ISO-8859-1")).toBeTruthy();
   });
 

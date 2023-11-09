@@ -629,7 +629,7 @@ describe("storage", () => {
       expect(retrieved.isLocked).toEqual(localNote.isLocked);
     });
 
-    xit("should merge a conflicted HTML note", async () => {
+    it.skip("should merge a conflicted HTML note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -661,7 +661,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted text note", async () => {
+    it.skip("should merge a conflicted text note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -693,7 +693,7 @@ describe("storage", () => {
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted local HTML / remote text note as HTML", async () => {
+    it.skip("should merge a conflicted local HTML / remote text note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -728,7 +728,7 @@ Finance: we can't afford it.</ins>`);
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    xit("should merge a conflicted local text / remote HTML note as HTML", async () => {
+    it.skip("should merge a conflicted local text / remote HTML note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -794,12 +794,9 @@ Finance: we can't afford it.</ins>`);
         oldValue: false,
         newValue: remoteSavedSearch}
       );
-      await new Promise((resolve) => {
-        requestIdleCallback(() => {
-          setTimeout(() => {
-            resolve();
-          }, 10);
-        });
+      await waitFor(async () => {
+        const {originalTags} = await listTags();
+        expect(originalTags.length).toBeGreaterThan(0);
       });
 
       const {originalTags, normalizedTags} = await listTags();
@@ -846,11 +843,11 @@ Finance: we can't afford it.</ins>`);
       await upsertNote(createTestNote(note3.content));
     });
 
-    it("should return all notes when no words in search string", done => {
+    it("should return all notes when no words in search string", () => new Promise((done, fail) => {
       findStubs(parseWords(" .@ *) -—-"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
-        if (err) { return done(err) }
+        if (err) { return fail(err) }
         try {
           if (!isFinal) {
             /* eslint-disable jest/no-conditional-expect */
@@ -887,16 +884,16 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeFalsy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
 
-    it("should return stubs containing words which start with the only search word", done => {
+    it("should return stubs containing words which start with the only search word", () => new Promise((done, fail) => {
       findStubs(parseWords("th"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
-        if (err) { return done(err) }
+        if (err) { return fail(err) }
         try {
           if (!isFinal) {
             /* eslint-disable jest/no-conditional-expect */
@@ -933,16 +930,16 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeTruthy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
 
-    it("should return stubs containing words which start with each of the search words", done => {
+    it("should return stubs containing words which start with each of the search words", () => new Promise((done, fail) => {
       findStubs(parseWords("th don"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
-        if (err) { return done(err) }
+        if (err) { return fail(err) }
         try {
           if (!isFinal) {
             /* eslint-disable jest/no-conditional-expect */
@@ -982,10 +979,10 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeTruthy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
   });
 
   describe("findStubs (max)", () => {
@@ -1001,12 +998,12 @@ Finance: we can't afford it.</ins>`);
       }
     });
 
-    it("should return 500 stubs when search string is empty", done => {
+    it("should return 500 stubs when search string is empty", () => new Promise((done, fail) => {
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) {
-          return done(err)
+          return fail(err)
         }
         try {
           if (!isFinal) {
@@ -1035,17 +1032,17 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeFalsy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
 
-    it("should return 500 stubs with multiple search words", done => {
+    it("should return 500 stubs with multiple search words", () => new Promise((done, fail) => {
       findStubs(parseWords("Some-thin rathE s.h.o.r."), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) {
-          return done(err)
+          return fail(err)
         }
         try {
           if (!isFinal) {
@@ -1074,13 +1071,13 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeTruthy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
   });
 
-  xdescribe("findStubs (stress)", () => {
+  describe.skip("findStubs (stress)", () => {
     jest.setTimeout(30000);
 
     const content = `<h1>In Congress, July 4, 1776</h1>
@@ -1107,14 +1104,14 @@ Finance: we can't afford it.</ins>`);
       for (let i = 0; i < 600; ++i) {
         await upsertNote(createMemoryNote(generateTestId(), content, null, 'text/html;hint=SEMANTIC'));
       }
-    });
+    }, 60_000);
 
-    it("should return a maximum of 500 stubs when search string is empty", done => {
+    it("should return a maximum of 500 stubs when search string is empty", () => new Promise((done, fail) => {
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) {
-          return done(err)
+          return fail(err)
         }
         try {
           if (!isFinal) {
@@ -1140,18 +1137,18 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeFalsy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
 
-    it("should return a maximum of 500 stubs with multiple search words", done => {
+    it("should return a maximum of 500 stubs with multiple search words", () => new Promise((done, fail) => {
       const searchWords = parseWords("177 congres declaratio governmen self-eviden");
       findStubs(searchWords, callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
         if (err) {
-          return done(err)
+          return fail(err)
         }
         try {
           if (!isFinal) {
@@ -1177,10 +1174,10 @@ Finance: we can't afford it.</ins>`);
           expect(isSearch).toBeTruthy();
           done();
         } catch (err2) {
-          done(err2);
+          fail(err2);
         }
       }
-    });
+    }));
   });
 
 

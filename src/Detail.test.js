@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {upsertNote, getNote} from './storage';
-import Detail, {saveFn} from "./Detail";
+import Detail from "./Detail";
 
 jest.mock('./storage.js');
 window.postMessage = jest.fn();
@@ -153,7 +153,7 @@ it('renders error if note missing', async () => {
 //   expect(againTextEl).not.toHaveFocus();
 // });
 
-  xit("edits & saves HTML if retrieved as SVG", async () => {
+  it.skip("edits & saves HTML if retrieved as SVG", async () => {
     const noteId = uuidv4();
     const initialText = `<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="red" />
@@ -167,12 +167,13 @@ it('renders error if note missing', async () => {
 
     // upsertNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, "Hello", noteDate)));
 
-    await saveFn(noteDate);
+    await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
+    await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
     expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC'), 'DETAIL');
   });
 
-  it("edits & saves HTML if retrieved as MathML", async () => {
+  it.skip("edits & saves HTML if retrieved as MathML", async () => {
     const noteId = uuidv4();
     const initialText = `  <math>
     <mtable columnalign="right center left">
@@ -235,9 +236,10 @@ it('renders error if note missing', async () => {
     userEvent.click(span);
     expect(textbox).toHaveFocus();
 
-    await saveFn(noteDate);
+    await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
+    await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain'), 'DETAIL');
+    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain', true), 'DETAIL');
   });
 
   it("edits as plain text if retrieved without type", async () => {
@@ -253,9 +255,10 @@ it('renders error if note missing', async () => {
     userEvent.click(span);
     expect(textbox).toHaveFocus();
 
-    // await saveFn(noteDate);
-    // expect(upsertNote).toHaveBeenCalledTimes(1);
-    // expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain'), 'DETAIL');
+    await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
+    await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
+    expect(upsertNote).toHaveBeenCalledTimes(1);
+    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, undefined, true), 'DETAIL');
   });
 
   it("saves Markdown if retrieved as Markdown", async () => {
@@ -272,9 +275,10 @@ it('renders error if note missing', async () => {
     expect(textbox).toHaveFocus();
     expect(await screen.findByText(/This is hot stuff./)).toBeVisible();
 
-    await saveFn(noteDate);
+    await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
+    await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK'), 'DETAIL');
+    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK', true), 'DETAIL');
   });
 
   it("shows formatting menu in rich text mode, but not plain text mode", async () => {

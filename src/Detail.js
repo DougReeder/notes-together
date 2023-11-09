@@ -119,7 +119,6 @@ const NO_SELECTION_MENU = [
 const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
 const UNEXPECTED_ERROR = "Switch to another note, then back.";
 
-let saveFn;   // Exposes side door for testing (rather than hidden button).
 
 function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel}) {
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
@@ -336,7 +335,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
     }, 1500);
   }
-  saveFn = save;
 
   const [noteErr, setNoteErr] = useState();
 
@@ -1247,6 +1245,9 @@ Detail.propTypes = {
   setMustShowPanel: PropTypes.func,
 };
 
+ErrorFallback.propTypes = {
+  error: Error,
+  resetErrorBoundary: Function
+}
 export default Detail;
-export {saveFn};
 

@@ -4204,7 +4204,7 @@ describe("flipTableRowsToColumns", () => {
   });
 });
 
-xdescribe("changeContentType", () => {
+describe.skip("changeContentType", () => {
   beforeAll(() => {
     return init("testStorageDb");
   });
