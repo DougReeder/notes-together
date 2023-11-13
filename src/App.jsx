@@ -30,7 +30,6 @@ import {Alert, AlertTitle} from '@mui/material';
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
-import {visualViewportMatters} from "./util";
 import HelpPane from "./HelpPane";
 import {Delete, DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
@@ -138,10 +137,10 @@ function App() {
         break;
       case 'TRANSIENT_MSG':
         enqueueSnackbar(evt.data?.message || "Close and re-open this tab", {
-          anchorOrigin: {horizontal: 'right', vertical: visualViewportMatters() ? 'top' : 'bottom'},
+          anchorOrigin: {horizontal: 'right', vertical: 'bottom'},
           variant: evt.data?.severity || 'error',
           autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 4000 : 8000,
-          key: evt.data?.key,
+          disableWindowBlurListener: true,
           TransitionComponent: Slide,
         });
         break;

@@ -198,16 +198,16 @@ function initRemote() {
 
     let lastNotificationTime = 0;
     let lastSyncErrTime = 0;
-    const INITIAL_NOTIFICATION_TIMEOUT = 10_000;
+    const INITIAL_NOTIFICATION_TIMEOUT = 60_000;
     let notificationTimeout = INITIAL_NOTIFICATION_TIMEOUT;
     const TEN_MINUTES = 10 * 60 * 1000;
 
     remoteStorage.on('error', function (err) {
-      console.error("remoteStorage error:" /*, err?.name, err?.message*/ , err);
+      // console.error("remoteStorage error:" /*, err?.name, err?.message*/ , err);
       if ('Unauthorized' === err?.name) { return; }
       if ("SyncError" === err?.name) {
-        const timeDiff = Date.now() - lastNotificationTime;
-        if (timeDiff > notificationTimeout - 5000) {
+        const timeDiff = Date.now() - lastNotificationTime + 8000;
+        if (timeDiff > notificationTimeout) {
           window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: 'warning'}, window?.location?.origin);
           lastNotificationTime = Date.now();
 

@@ -81,7 +81,7 @@ const theme = createTheme({
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SnackbarProvider maxSnack={3} autoHideDuration={8000} dense={true} preventDuplicate={true}>
+    <SnackbarProvider maxSnack={3} dense={true} preventDuplicate={true}>
       <BrowserRouter>
         <ThemeProvider theme={theme}>
           <App />
