@@ -35,7 +35,18 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "screenshots": [
+    {
+      "label": "search",
+      "src": "screenshots/search-wide.png",
+      "type": "image/png",
+      "sizes": "1282x968",
+      "form_factor": "wide"
+    }
+  ],
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#94bbe6",
   "background_color": "white",

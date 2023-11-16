@@ -33,4 +33,4 @@ Header always set Referrer-Policy 'no-referrer'
 
 5. Search the **other** configuration files for Apache for lines containing `Alias`, to ensure that the directory `/icons/` isn't aliased to something else.
 
-
+6. To `/etc/mime.types`, add the line `application/manifest+json			webmanifest`

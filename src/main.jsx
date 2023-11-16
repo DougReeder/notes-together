@@ -8,6 +8,7 @@ import {SnackbarProvider} from "notistack";
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import App from './App.jsx';
 import './index.css';
+import { registerSW } from "virtual:pwa-register";
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -90,3 +91,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </SnackbarProvider>
   </React.StrictMode>,
 )
+
+if ("serviceWorker" in navigator && !/localhost/.test(window.location)) {
+  registerSW();
+}
