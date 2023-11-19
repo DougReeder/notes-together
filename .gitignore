@@ -12,6 +12,12 @@
 dist
 dist-ssr
 *.local
+public/generated-icons/apple-touch-icon-180x180.png
+public/generated-icons/favicon.ico
+public/generated-icons/maskable-icon-512x512.png
+public/generated-icons/pwa-192x192.png
+public/generated-icons/pwa-512x512.png
+public/generated-icons/pwa-64x64.png
 
 # misc
 .DS_Store
