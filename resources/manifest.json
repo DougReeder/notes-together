@@ -75,5 +75,6 @@
   "theme_color": "#94bbe6",
   "background_color": "white",
   "categories": ["productivity", "lifestyle", "education", "business"],
-  "lang": "en-US"
+  "lang": "en-US",
+  "related_applications": [{"platform": "webapp", "url": "https://notestogether.hominidsoftware.com/manifest.webmanifest"}]
 }

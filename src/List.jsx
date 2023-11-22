@@ -13,6 +13,7 @@ import {Button, IconButton} from "@mui/material";
 import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage} from "./util/extractUserMessage";
+import checkIfInstallRecommended from "./webappInstall";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
@@ -423,6 +424,8 @@ function List(props) {
     if (isFirstLaunch && notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
       listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>);
     }
+
+    checkIfInstallRecommended(notes.length, isFirstLaunch).catch(console.error);
   } else {
     if (searchWords.size > 0) {
       listItems = <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>

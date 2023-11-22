@@ -9,6 +9,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import App from './App.jsx';
 import './index.css';
 import { registerSW } from "virtual:pwa-register";
+import {visualViewportMatters} from "./util.js";
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -82,7 +83,7 @@ const theme = createTheme({
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SnackbarProvider maxSnack={3} dense={true} preventDuplicate={true}>
+    <SnackbarProvider maxSnack={3} dense={visualViewportMatters()} preventDuplicate={true}>
       <BrowserRouter>
         <ThemeProvider theme={theme}>
           <App />
