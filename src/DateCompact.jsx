@@ -3,7 +3,7 @@
 
 import PropTypes from 'prop-types';
 import {Button, Dialog, DialogActions, DialogContent, Input} from "@mui/material";
-import React, {useState} from "react";
+import {useState} from "react";
 
 const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -23,7 +23,7 @@ function DateCompact({date, onChange}) {
   const [isOpen, setIsOpen] = useState(false);
   const [dateValue, setDateValue] = useState('');
 
-  function handleDateClick(evt) {
+  function handleDateClick(_evt) {
     setIsOpen(true);
     const monthStr = ("0" + (date?.getMonth()+1)).slice(-2);
     const dayOfMonthStr = ("0" + date?.getDate()).slice(-2);
@@ -37,14 +37,14 @@ function DateCompact({date, onChange}) {
     <Dialog
         id="date-dialog"
         open={isOpen}
-        onClose={evt => setIsOpen(false)}
+        onClose={_evt => setIsOpen(false)}
     >
       <DialogContent>
         <Input type="date" value={dateValue} onChange={evt => setDateValue(evt.target.value)}/>
       </DialogContent>
       <DialogActions>
-        <Button onClick={evt => setIsOpen(false)}>Cancel</Button>
-        <Button onClick={evt => {
+        <Button onClick={_evt => setIsOpen(false)}>Cancel</Button>
+        <Button onClick={_evt => {
           onChange({target: {value: dateValue}});
           setIsOpen(false);
         }}>Set</Button>

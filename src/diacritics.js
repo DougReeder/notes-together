@@ -1177,7 +1177,7 @@ function removeDiacritics(str) {
     let i = chars.length - 1, altered = false, ch;
     for (; i >= 0; i--) {
         ch = chars[i];
-        if (diacritics.hasOwnProperty(ch)) {
+        if (Object.hasOwn(diacritics, ch)) {
             chars[i] = diacritics[ch];
             altered = true;
         }

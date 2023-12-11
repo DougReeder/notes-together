@@ -4,7 +4,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
 import PropTypes from 'prop-types';
-import React from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import {KeyboardVoice, Lock, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
 import "./HelpPane.css";

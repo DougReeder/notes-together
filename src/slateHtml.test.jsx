@@ -5,8 +5,7 @@ import sanitizeHtml from "sanitize-html";
 import {semanticOnly} from "./sanitizeNote";
 import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
-import {base64DecToArr} from "./util/testUtil";
-import {getRelevantBlockType, getCommonBlock} from "./slateUtil";
+import {getRelevantBlockType} from "./slateUtil";
 
 class DataTransfer {
   constructor() {
@@ -19,7 +18,7 @@ class DataTransfer {
   }
 
   get items() {
-    return Array.from(this._items).map(([type, data]) => {return {kind: 'string', type}});
+    return Array.from(this._items).map(([type, _data]) => {return {kind: 'string', type}});
   }
 
   setData(type, data) {

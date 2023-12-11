@@ -76,11 +76,11 @@ const semanticOnly = {
     'i': 'em',
     'b': 'strong',
     'svg': function(tagName, attribs) {
-      if (! attribs.hasOwnProperty('viewBox')) {
-        if (! attribs.hasOwnProperty('width') ) {
+      if (! Object.hasOwn(attribs, 'viewBox')) {
+        if (! Object.hasOwn(attribs, 'width') ) {
           attribs.width = '100%';
         }
-        if (! attribs.hasOwnProperty('height')) {
+        if (! Object.hasOwn(attribs, 'height')) {
           attribs.height = '50vw';   // about as tall as wide
         }
         attribs.preserveAspectRatio = 'xMidYMid meet';

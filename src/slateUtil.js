@@ -667,7 +667,7 @@ async function changeContentType(editor, oldSubtype, newSubtype) {
 function coerceToPlainText(editor) {
   const imageElmnts = Editor.nodes(editor, {
     at: [],
-    match: (node, path) => 'image' === node.type,
+    match: (node, _path) => 'image' === node.type,
   });
   for (const nodeEntry of imageElmnts) {
     const altText = SlateNode.string(nodeEntry[0]) || nodeEntry[0].title || /\/([^/]+)$/.exec(nodeEntry[0].url)?.[1] || "☹︎";
@@ -693,7 +693,7 @@ function coerceToPlainText(editor) {
 
   Transforms.unsetNodes(editor, ['type', 'url', 'title'], {
     at: [],
-    match: (node, path) => SlateElement.isElement(node)
+    match: (node, _path) => SlateElement.isElement(node)
   });
 }
 

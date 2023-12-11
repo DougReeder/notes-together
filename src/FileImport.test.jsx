@@ -1,7 +1,7 @@
 // FileImport.test.js - automated tests for importing notes from files
 // Copyright © 2021-2023 Doug Reeder
 
-import auto from "fake-indexeddb/auto.js";
+import _ from "fake-indexeddb/auto.js";
 import {init, getNote} from "./storage";
 import FileImport, {checkForMarkdown, importFromFile} from "./FileImport";
 import {

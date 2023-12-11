@@ -351,7 +351,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (evt.origin !== window.location.origin || evt.data?.kind !== 'NOTE_CHANGE' ||
           'DETAIL' === evt.data?.initiator) return;
       const notesChanged = evt.data?.notesChanged || {};
-      if (! notesChanged.hasOwnProperty(noteId)) return;
+      if (! Object.hasOwn(notesChanged, noteId)) return;
       // console.log("Detail externalChange", notesChanged);
 
       setIsLoading(true);
@@ -764,7 +764,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             anchorEl={blockTypeMenuAnchorEl}
             keepMounted
             open={Boolean(blockTypeMenuAnchorEl)}
-            onClose={evt => {
+            onClose={_evt => {
               setBlockTypeMenuAnchorEl(null);
               previousSelection.current = null;
               queueMicrotask(() => {
@@ -793,7 +793,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             anchorEl={markMenuAnchorEl}
             keepMounted
             open={Boolean(markMenuAnchorEl)}
-            onClose={evt => {
+            onClose={_evt => {
               setMarkMenuAnchorEl(null);
               previousSelection.current = null;
               queueMicrotask(() => {
@@ -847,7 +847,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     if (isLocked) {
       noteControls = <>
         <div style={{margin: '0 1em'}}>{noteDate.toDateString()}</div>
-        <IconButton title="Unlock note" size="large" onClick={evt => {
+        <IconButton title="Unlock note" size="large" onClick={_evt => {
           setIsLocked(false);
           save(noteDate, false);
         }}><Lock/></IconButton>
@@ -867,26 +867,26 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             anchorEl={detailsMenuAnchorEl}
             keepMounted
             open={Boolean(detailsMenuAnchorEl)}
-            onClose={evt => {
+            onClose={_evt => {
               previousSelection.current = null;
               setDetailsMenuAnchorEl(null)
             }}
         >
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             previousSelection.current = null;
             editor.undo();
             setDetailsMenuAnchorEl(null);
           }}>
             Undo &nbsp;<Undo/>
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             previousSelection.current = null;
             editor.redo();
             setDetailsMenuAnchorEl(null);
           }}>
             Redo &nbsp;<Redo/>
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             if (!editor.selection && previousSelection.current) {
               Transforms.select(editor, previousSelection.current);
             }
@@ -896,7 +896,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           }}>
             Paste files...
           </MenuItem>
-          <MenuItem disabled={!selectedTable} onClick={evt => {
+          <MenuItem disabled={!selectedTable} onClick={_evt => {
             if (!editor.selection && previousSelection.current) {
               Transforms.select(editor, previousSelection.current);
             }
@@ -906,20 +906,20 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           }}>
             Flip Table Rows To Columns
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             setDetailsMenuAnchorEl(null);
             setIsLocked(true);
             save(noteDate, true);
           }}>
             Lock note <Lock/>
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             setDetailsMenuAnchorEl(null);
             deleteCompletedTasks(editor);
           }}>
             Delete completed Tasks <DeleteOutline/>
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             Transforms.unsetNodes(editor, ['deleted', 'inserted'], {
               at: [],
               match: node => Text.isText(node),
@@ -929,7 +929,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           }}>
             Clear Deleted &amp; Inserted styles
           </MenuItem>
-          <MenuItem onClick={evt => {
+          <MenuItem onClick={_evt => {
             previousSelection.current = null;
             setDetailsMenuAnchorEl(null);
             prepareContentTypeDialog();

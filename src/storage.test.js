@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
-import auto from "fake-indexeddb/auto.js";
+import _ from "fake-indexeddb/auto.js";
 import {
   init,
   parseWords,
@@ -13,7 +13,7 @@ import {
   findStubs,
   changeHandler,
   saveTag,
-  listTags, deleteTag, WORD_LENGTH_MAX, TAG_LENGTH_MAX
+  listTags, deleteTag, TAG_LENGTH_MAX
 } from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";

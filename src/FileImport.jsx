@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
 import CloseIcon from '@mui/icons-material/Close';
 import {isLikelyMarkdown} from "./util";
@@ -269,7 +269,7 @@ function checkForMarkdown(file) {
       const isLikely = isLikelyMarkdown(text);
       resolve(isLikely);
     };
-    reader.onerror = evt => {
+    reader.onerror = _evt => {
       reject(reader.error);
     };
     reader.readAsText(file);
@@ -321,7 +321,7 @@ function importFromFile(file, parseType, isMultiple) {
           reject(err);
         }
       };
-      reader.onerror = evt => {
+      reader.onerror = _evt => {
         reject(reader.error);
       };
       reader.readAsText(file);

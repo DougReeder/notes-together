@@ -450,7 +450,7 @@ function deleteNoteDb(id) {
       const transaction = db.transaction('note', "readwrite");
       const itemStore = transaction.objectStore("note");
       const deleteRequest = itemStore['delete'](id);
-      deleteRequest.onsuccess = function (evt) {
+      deleteRequest.onsuccess = function (_evt) {
         try {
           // noteService.setFirstUnexportedChange().then(function (prefResult) {
           const notesDeleted = {};

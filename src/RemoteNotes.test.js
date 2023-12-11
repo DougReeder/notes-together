@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {createMemoryNote} from "./Note";
-import auto from "fake-indexeddb/auto.js";
+import _ from "fake-indexeddb/auto.js";
 import RemoteStorage from "remotestoragejs";
 import RemoteNotes from "./RemoteNotes";
 import {NIL, validate as uuidValidate} from "uuid";

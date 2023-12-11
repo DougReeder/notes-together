@@ -48,7 +48,7 @@ async function checkIfInstallRecommended(notesLength, isFirstLaunch) {
     } else if (/\bMobile\b/.test(navigator.userAgent) &&
       /\bFirefox\/[\d.]+\b/.test(navigator.userAgent) &&
       ! /\bSeamonkey\/[\d.]+\b/.test(navigator.userAgent)) {   // not Seamonkey
-      promptString = 'For easy access and a separate window, from the Firefox menu select "Install"';
+      promptString = 'For easy access and a separate window, from the Firefox (meatball) menu select "Install"';
     }   // else not installable, at least not now
 
     if (promptString) {

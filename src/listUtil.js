@@ -38,9 +38,9 @@ function updateListWithChanges(oldNotes, notesChanged, notesDeleted, searchWords
   const listChanges = new Set();
   // updates and/or deletes old notes
   oldNotes.forEach((note) => {
-    if (notesDeleted.hasOwnProperty(note.id)) {
+    if (Object.hasOwn(notesDeleted, note.id)) {
       listChanges.add(note.id);   // doesn't add to newNotes
-    } else if (notesChanged.hasOwnProperty(note.id)) {
+    } else if (Object.hasOwn(notesChanged, note.id)) {
       // TODO: verify that it still matches search string
       newNotes.push(notesChanged[note.id]);
       listChanges.add(note.id);

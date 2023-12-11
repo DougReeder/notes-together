@@ -4,7 +4,7 @@
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
 import {findStubs, deleteNote, init} from "./storage";
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
@@ -30,7 +30,7 @@ function List(props) {
     // console.log("launching search")
     findStubs(searchWords, callback);
 
-    function callback(err, notes, {isPartial, isFinal} = {}) {
+    function callback(err, notes, {isPartial, _isFinal} = {}) {
       try {
         if (err) {
           return setListErr(err);
@@ -337,6 +337,7 @@ function List(props) {
       setIsFirstLaunch(isFirstLaunch);
     }
     checkFirstLaunch().catch(err => {
+      console.error("Error launching:", err);
       window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
         message: "Error launching - restart your browser."}, window?.location?.origin);
     });

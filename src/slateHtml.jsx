@@ -1,7 +1,6 @@
 // slateHtml.js - constants & functions to customize Slate for HTML/JSX
 // Copyright © 2021-2023 Doug Reeder under the MIT License
 
-import React from "react";
 import { jsx } from 'slate-hyperscript';
 import escapeHtml from 'escape-html'
 import sanitizeHtml from "sanitize-html";
@@ -200,7 +199,7 @@ function withHtml(editor) {   // defines Slate plugin
         const row = node.children[r];
         let isHeader;
         if (0 === r) {
-          const textDescendantEntries = SlateNode.descendants(row.children[row.children.length - 1], {pass: ([n, p]) => SlateText.isText(n)});
+          const textDescendantEntries = SlateNode.descendants(row.children[row.children.length - 1], {pass: ([n, _p]) => SlateText.isText(n)});
           isHeader = Boolean(textDescendantEntries.next()?.value?.[0]?.bold);
         } else {
           isHeader = false;

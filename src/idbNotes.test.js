@@ -4,7 +4,7 @@
 import generateTestId from "./util/generateTestId";
 import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 import {createMemoryNote} from "./Note";
-import auto from "fake-indexeddb/auto.js";
+import _ from "fake-indexeddb/auto.js";
 import {
   initDb,
   findStubs,

@@ -15,7 +15,7 @@ let previousStoreObjectPrms = Promise.resolve();
 
 const RemoteNotes = {
   name: 'documents',
-  builder: function (privateClient, publicClient) {
+  builder: function (privateClient, _publicClient) {
     privateClient.declareType('note', {
       "type": "object",
       "properties": {

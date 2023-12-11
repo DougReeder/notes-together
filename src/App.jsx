@@ -123,7 +123,7 @@ function App() {
     switch (evt.data?.kind) {
       case 'NOTE_CHANGE':
         const notesDeleted = evt.data?.notesDeleted || {};
-        if (notesDeleted.hasOwnProperty(selectedNoteId)) {
+        if (Object.hasOwn(notesDeleted, selectedNoteId)) {
           console.info("selected note deleted", notesDeleted);
           setSelectedNoteId(null);
         }
@@ -272,13 +272,13 @@ function App() {
   const [importFiles, setImportFiles] = useState([]);
   const [isImportMultiple, setIsImportMultiple] = useState(false);
 
-  function handleImportFileSingle(evt) {
+  function handleImportFileSingle(_evt) {
     setIsImportMultiple(false);
     fileInput.current.click();
     setAppMenuAnchorEl(null);
   }
 
-  function handleImportFileMultiple(evt) {
+  function handleImportFileMultiple(_evt) {
     setIsImportMultiple(true);
     fileInput.current.click();
     setAppMenuAnchorEl(null);
@@ -376,7 +376,7 @@ function App() {
     }
   }
 
-  async function handleDeleteSelected(evt) {
+  async function handleDeleteSelected(_evt) {
     if (selectedNoteId) {
       try {
         await deleteNote(selectedNoteId);
@@ -453,7 +453,7 @@ function App() {
 
   const [transientErr, setTransientErr] = useState(null);
 
-  function handleSnackbarClose(evt) {
+  function handleSnackbarClose(_evt) {
     setTransientErr(null);
   }
 

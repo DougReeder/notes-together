@@ -5,7 +5,6 @@ import generateTestId from "./util/generateTestId";
 import {sanitizeNote} from "./sanitizeNote";
 import {createMemoryNote} from "./Note";
 import {parseWords} from "./storage";
-import {v4 as uuidv4} from "uuid";
 
 
 describe("sanitizeNote", () => {

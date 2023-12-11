@@ -8,10 +8,9 @@ import {
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
-import auto from "fake-indexeddb/auto.js";
+import _ from "fake-indexeddb/auto.js";
 import {deleteNote} from './storage';
 import List from "./List";
-import React from "react";
 
 let mockStubList = [];
 let mockIsFirstLaunch = false;
@@ -90,7 +89,7 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
 
-    const {container} = render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     const items = await screen.findAllByRole('listitem');
     expect(items.length).toEqual(8);
@@ -118,7 +117,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
     await userEvent.keyboard('{ArrowDown}');
@@ -134,7 +133,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
     await userEvent.keyboard('{ArrowUp}');
@@ -151,7 +150,7 @@ describe("List", () => {
                  selectedNoteId='0b6b89c8-8aca-43de-8c7b-72095380682b'
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
     await userEvent.keyboard('{ArrowDown}');
@@ -168,7 +167,7 @@ describe("List", () => {
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
     await userEvent.keyboard('{ArrowUp}');
@@ -185,7 +184,7 @@ describe("List", () => {
                  selectedNoteId={null}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
@@ -204,7 +203,7 @@ describe("List", () => {
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
@@ -232,7 +231,7 @@ describe("List", () => {
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
@@ -260,7 +259,7 @@ describe("List", () => {
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
@@ -286,7 +285,7 @@ describe("List", () => {
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
@@ -311,7 +310,7 @@ describe("List", () => {
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
                  setTransientErr={() => {}}></List>);
-    const items = await screen.findAllByRole('listitem');
+    await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 

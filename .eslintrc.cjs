@@ -18,7 +18,10 @@ module.exports = {
     'no-case-declarations': 'off',
     'no-irregular-whitespace': 'off',
     'no-inner-declarations': 'off',
-    'no-unused-vars': 'warn',
+    'no-unused-vars': ['warn', {
+      "varsIgnorePattern": "^_+$",
+      "argsIgnorePattern": "^_"
+    }],
     'no-regex-spaces': 'off',
     'no-prototype-builtins': 'warn',
     'react-refresh/only-export-components': [

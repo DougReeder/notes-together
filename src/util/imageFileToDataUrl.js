@@ -34,7 +34,7 @@ function evaluateImage(blob, objectURL) {
     const img = new Image();
     img.src = objectURL;
 
-    img.onload = async function (evt) {   // 'this' is the img
+    img.onload = async function (_evt) {   // 'this' is the img
       // Modern browsers respect the orientation data in EXIF.
       // console.log("img onload size:", this.width, this.height);
 
