@@ -1,0 +1,51 @@
+GET https://notes-together.surge.sh/assets/index-bd53d349.js
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.13 (Java/17.0.5)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-12-06T112849.200.js
+
+###
+
+GET https://notes-together.surge.sh/assets/index-d9828fdb.js
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.13 (Java/17.0.5)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-12-06T112824.404.html
+
+###
+
+GET https://notes-together.surge.sh/assets/index-d9828fdb.js
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.13 (Java/17.0.5)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-12-06T112745.404.html
+
+###
+
+GET https://notes-together.surge.sh/assets/index-d9828fdb.js
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.13 (Java/17.0.5)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-12-06T112356.200.js
+
+###
+
+GET https://notes-together.surge.sh/assets/index-d9828fdb.js
+User-Agent: Mozilla/5.0 (Android 14; Mobile; rv:120.0) Gecko/120.0 Firefox/120.0
+Accept: */*
+Accept-Language: en-US
+Accept-Encoding: gzip, deflate, br
+Referer: https://notes-together.surge.sh/
+Sec-Fetch-Dest: script
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Connection: keep-alive
+
+<> 2023-12-06T111956.200.js
+
+###
+
