@@ -103,26 +103,26 @@ function createWelcomeNote(transaction) {
   const tutorialContent = `
 <h1>Welcome to Notes Together!</h1>
 <ul>
-<li><input type="checkbox">Change one or more paragraphs to <b>headings</b>, <b>lists</b>, or <b>tables</b> using the <i>Block Type</i> menu above. Or break up existing blocks by selecting text, then selecting from the Block Type menu.</li>
+<li><input type="checkbox">Change one or more paragraphs to <b>headings</b>, <b>lists</b>, or <b>tables</b> using the <i>Block Type</i> menu ▭ above. Or break up existing blocks by selecting text, then selecting from the Block Type menu.</li>
 <li><input type="checkbox">Start typing <b>bold</b> or <i>italic</i> text, by selecting from the <i>Text Style</i> menu ➚. Or select text, then select from the Text Style menu.</li>
 <li><input type="checkbox"><b>Change the date</b> to any value that helps you find the note (or order your notes) by clicking on the date ↖.</li>
 <li><input type="checkbox"><b>Undo</b> or <b>Redo</b>, using the <i>Editor menu</i> <b>⋮</b>︎.</li>
 <li><input type="checkbox"><b>Insert a picture or diagram</b> by pasting it, drag and dropping it, or using <i>Paste files...</i> from the <i>Editor menu</i> <b>⋮</b>︎.
 <li><input type="checkbox"><b>Insert a link</b> by dragging the URL (or the icon next to it) from a browser. Right-click to follow a link.
 <li><input type="checkbox">Try the <b>Keyboard shortcuts</b> listed in <i>Help</i> in the Application menu ☰.</li>
-<li><input type="checkbox">Delete this note when you're finished.</li>
+<li><input type="checkbox">Delete this note when you're finished, by double-clicking or long-pressing it in the list pane.</li>
 </ul>
 <hr>
 
 <h1>Why remoteStorage?</h1>
 <p><a href="https://remotestorage.io/" target="_blank"  rel="noreferrer">remoteStorage</a> is a protocol that puts you in control of your data.</p>
 <ul>
-<li>If you stop using an app, your data won't be deleted.  Whenever you like, you can start using the app again, and your data will be there.</li>
-<li>If an app shuts down, your data won't be deleted. If an app changes in ways you don't like, you can deny permission for it to use your data. If there's a successor app (from the same or a different organization) you can choose whether to let it use your data.</li>
-<li>The data from one app can be used by other apps, with <b>your</b> permission. The other apps <b>don't</b> need permission from the first app.</li>
-<li>Your data is available on any OS or device - you're not locked in.</li>
+<li>If you stop using a webapp, your data won't be deleted.  Whenever you like, you can start using the webapp again, and your data will be there.</li>
+<li>If a webapp shuts down, your data won't be deleted. If a webapp changes in ways you don't like, you can deny permission for it to use your data. If there's a successor webapp (from the same or a different organization) you can choose whether to let it use your data.</li>
+<li>The data from one webapp can be used by other webapps, with <b>your</b> permission. The other webapps <b>don't</b> need permission from the first webapp.</li>
+<li>Your data is available on any OS or device — you're not locked in.</li>
 <li>You choose which provider stores your data online, and can move to another provider at any time. (If you have a Dropbox or Google Drive account, you can use that, with some limitations.) You (or a friend) could even set up your own server.</li>
-<li>You can use one remoteStorage account with many apps, so you have fewer passwords to remember.</li>
+<li>You can use one remoteStorage account with many webapps, so you have fewer passwords to remember.</li>
 </ul>
 <p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
@@ -132,31 +132,34 @@ function createWelcomeNote(transaction) {
 </ul>
 <p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>
 <hr>
-<p><em>remote storage</em></p>`;
+<p><em>remote storage, orientation, tutorial, training, introduction</em></p>`;
 
   const tutorialNote = createMemoryNote(idTut, tutorialContent, new Date('2013-07-01T12:00Z'), 'text/html;hint=SEMANTIC');
   tutorialNote.title = "Welcome to Notes Together!\nWhy remoteStorage?";
   tutorialNote.wordArr = ["WELCOME", "NOTES", "TOGETHER", "TYPE", "MENU",
-    "CREATE", "HEADINGS", "LISTS", "QUOTES", "BLOCKS", "SELECTING",
+    "CREATE", "HEADINGS", "LISTS", "TABLES", "QUOTES", "BLOCKS", "SELECTING",
     "EXISTING", "TEXT", "STYLE", "BOLD", "ITALIC", "DATE", "CHANGE",
-    "FIND", "ORDER", "EDITOR", "PERMISSION",
-    "UNDO", "REDO", "PASTE", "FILES", "PLAIN", "MARKUP", "MARKDOWN",
-    "IMPORTING", "RICH", "WYSIWYG", "CHANGING", "CONVERT", "COMMONMARK",
+    "FIND", "ORDER", "EDITOR", "PERMISSION", "PARAGRAPHS", "TYPING",
+    "UNDO", "REDO", "COPY", "PASTE", "PASTING", "FILES", "PLAIN", "MARKUP", "MARKDOWN",
+    "IMPORTING", "RICHTEXT", "WYSIWYG", "CHANGING", "CONVERT", "COMMONMARK",
     "RIGHTCLICK", "FOLLOW", "LINKS", "PREVIOUS", "PARAGRAPH",
     "KEYBOARD", "SHORTCUTS", "COMMANDS", "HELP", "APPLICATION",
     "FEATURES", "DELETE", "FINISHED", "TUTORIAL",
+    "INSERT", "PICTURE", "DIAGRAM", "LINK", "DRAGGING", "URL", "LONGPRESSING",
 
     "WHY", "REMOTESTORAGE", "PROTOCOL", "IN", "CONTROL",
-    "YOUR", "DATA", "ONE", "ACCOUNT", "APPS", "FEWER", "PASSWORDS", "REMEMBER",
+    "YOUR", "DATA", "ONE", "ACCOUNT", "APPS", "WEBAPPS", "FEWER", "PASSWORDS", "REMEMBER",
     "KINDS", "REVOKE", "ACCESS", "AT", "ANY", "TIME", "STILL", "AVAILABLE",
     "STOP", "USING", "SHUT", "DOWN", "START", "AGAIN", "DEFUNCT", "SUCCESSORS",
-    "OS", "LOCKED",
+    "OS", "LOCKED", "DROPBOX", "GOOGLE", "DRIVE",
     "CHOOSE", "PROVIDER", "STORES", "ONLINE", "FRIEND", "SET", "UP",
-    "OWN", "SERVER", "AUTOMATICALLY", "SYNCS", "BETWEEN", "DEVICES",
-    "WORK", "OFFLINE", "BACK", "SYNCED",
+    "OWN", "SERVER", "AUTOMATICALLY", "SYNCS", "SYNCED", "BETWEEN", "DEVICES",
+    "WORK", "OFFLINE", "BACK", "NATIVE", "THIRDPARTY",
     "WIDGET", "LOWER", "LEFT", "PANE", "CONNECT",
     "DOCUMENTS", "DIRECTORY", "COMPATABILITY", "OLDER", "NOTETAKING",
-    "LITEWRITE", "WHENEVER", "LIKE", "STORAGE", "CHOICE"
+    "LITEWRITE", "WHENEVER", "LIKE", "STORAGE", "CHOICE",
+
+    "ORIENTATION", "TRAINING", "INTRODUCTION"
   ];
 
   const noteStore = transaction.objectStore("note");
