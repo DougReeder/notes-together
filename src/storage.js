@@ -317,7 +317,7 @@ function parseWords(text) {
 
 function normalizeWord(word) {
   // ASCII, Unicode, no-break & soft hyphens
-  word = word.toUpperCase().replace(/^[-‐‑­_ '.^]+|[-‐‑­_ '.^]+$|-|‐|‑|­|_| |\^/g, "");
+  word = word.toUpperCase().replace(/^['.]+|['.]+$|-|‐|‑|­|_| | | |\^/g, "");
   if (/^[\d.]+$/.test(word)) {   // word containing only digits and decimal points
     word = word.replace(/\.{3,}/g, "..");
   } else {

@@ -106,12 +106,13 @@ describe("storage", () => {
     });
 
     it("forms words using non-breaking space, then drops them", async () => {
-      const wordArr = Array.from(parseWords("USD 350 million 100 km § 3.2"));
+      const wordArr = Array.from(parseWords("USD 350 million § 3.2 100 km 12 34 56"));
 
       expect(wordArr).toContain("USD350MILLION");
-      expect(wordArr).toContain("100KM");
       expect(wordArr).toContain("3.2");
-      expect(wordArr.length).toEqual(3);
+      expect(wordArr).toContain("100KM");
+      expect(wordArr).toContain("123456");
+      expect(wordArr.length).toEqual(4);
     });
 
     it("forms words using carets, then drops them; coerces superscript characters to regular digits", async () => {

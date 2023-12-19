@@ -75,8 +75,15 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How closely must search words match the text?</h4>
         <ul>
           <li>Upper- and lower-case don’t matter, so “scuba” matches “SCUBA”.</li>
-          <li>Dashes, periods, underscores and carets are dropped, so “playgroup” matches “play-group” and “phd” matches “Ph.D.”</li>
-          <li>Decimal points in numbers are <i>not</i> dropped, so “25” doesn't match “2.5”.</li>
+          <li>Dashes, periods, underscores and non-breaking spaces are dropped, so
+            <ul>
+              <li>“playgroup” matches “play-group”</li>
+              <li>“phd” matches “Ph.D.</li>
+              <li>“linenumber” matches “__LINE_NUMBER__”</li>
+              <li>“14inch” matches “14␣inch” (and “14-inch”) but not “14 inch” (but searching for “14” or “inch” <i>will</i> find a note containing “14 inch”).</li>
+            </ul>
+          </li>
+          <li>Decimal points in numbers <i>are not</i> dropped, so “25” doesn't match “2.5”.</li>
           <li>“Words” consist only of letters, digits and apostrophes, so
             <ul>
               <li>“john@example.com” is two separate words (which match “john” or “examplecom”)</li>
@@ -91,7 +98,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <li>“strasse” matches “Straße”, “thath” matches “Það”, “aelfred” matches “Ælfred” and so forth.</li>
           {/*<li>Superscript and subscript digits match normal digits, so “h2o” matches “H₂O”</li>*/}
           <li>If there’s a latin or greek letter that doesn’t match the way it should, please send a support e-mail.</li>
-          <li>Synonyms do <strong>not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
+          <li>Synonyms <strong>do not</strong> match.  You may find it useful to add synonyms of key words at the end of your notes.</li>
         </ul>
 
         <h4>Can I change the order of notes?</h4>
