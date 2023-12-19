@@ -942,7 +942,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     }
 
     content = (<>
-      <Slate editor={editor} value={editorValue} onChange={handleSlateChange} >
+      <Slate editor={editor} initialValue={editorValue} onChange={handleSlateChange} >
         <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
           <Toolbar>
             {outBtn}
