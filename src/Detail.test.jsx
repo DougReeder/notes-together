@@ -1,16 +1,22 @@
 import {v4 as uuidv4} from "uuid";
-import {createMemoryNote} from './Note';
+import {SerializedNote} from './Note';
 import {
+  fireEvent,
   render,
   screen,
-  waitFor,
+  waitFor, within,
 } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
-import {upsertNote, getNote} from './storage';
+import {getNote, upsertNote} from './storage';
 import Detail from "./Detail";
+import generateTestId from "./util/generateTestId.js";
 
-vitest.mock('./storage.js');
+vi.mock('./storage.js', async () => {
+  const storage = await vi.importActual('./storage.js')
+
+  return { ...storage, getNote: vi.fn(), upsertNote: vi.fn() }
+})
 window.postMessage = vitest.fn();
 
 global.queueMicrotask = function (f) {
@@ -32,7 +38,7 @@ describe("Details component", () => {
     const noteId = uuidv4();
     const noteText = "<h2>A Relic</h2><li>YESTERDAY I found in a cupboard";
     const noteDate = new Date(2021, 9, 31);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', noteText, noteDate)));
 
     render(<Detail noteId={noteId}></Detail>);
     const textbox = await screen.findByRole('textbox');
@@ -53,7 +59,7 @@ describe("Details component", () => {
     const noteId = uuidv4();
     const noteText = "ballistic phonon transport\n# Modern Physics";
     const noteDate = new Date(2021, 9, 31);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/markdown;hint=COMMONMARK')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/markdown;hint=COMMONMARK', '', noteText, noteDate)));
 
     render(<Detail noteId={noteId}></Detail>);
     const textbox = await screen.findByRole('textbox');
@@ -73,11 +79,11 @@ describe("Details component", () => {
     const noteId = uuidv4();
     const initialText = "";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'application/example')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'application/example', '', initialText, noteDate)));
 
     render(<Detail noteId={noteId}></Detail>);
 
-    const textEl = await screen.findByText(/Can't display “application\/example” note/);
+    const textEl = await screen.findByText(/Can't handle “application\/example” note/);
     expect(textEl).toBeInTheDocument();
     expect(textEl).not.toHaveFocus();
     expect(await screen.queryByTitle('Block type')).not.toBeInTheDocument();
@@ -88,7 +94,7 @@ describe("Details component", () => {
     const noteId = uuidv4();
     const noteText = "Dogcatcher Emeritus";
     const noteDate = new Date(2021, 3, 15);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate)));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, undefined, '', noteText, noteDate)));
 
     const {findByText, rerender} = render(<Detail noteId={noteId}></Detail>);
     const textEl = await findByText(noteText);
@@ -152,13 +158,44 @@ it('renders error if note missing', async () => {
 //   expect(againTextEl).not.toHaveFocus();
 // });
 
+  it("edits & saves HTML on date change if retrieved as HTML", async () => {
+    const user = userEvent.setup();
+
+    const noteId = generateTestId();
+    const initialText = `  <p>  Proin sagittis quam sit amet eros dictum  </p>  `;
+    const oldDate = new Date(1979, 7, 22);
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', initialText, oldDate)));
+    render(<Detail noteId={noteId}></Detail>);
+
+    expect(await screen.findByRole('textbox')).toBeVisible();
+    expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();   // block type
+
+    await user.click(await screen.findByRole('button', {name: "1979"}));
+
+    const dialog = await screen.findByRole('dialog');
+    const input = within(dialog).getByDisplayValue('1979-08-22');
+    const newDateStr = "2005-10-30";
+    fireEvent.change(input, { target: { value: newDateStr } });
+
+    await user.click(await within(dialog).findByRole('button', {name: "Set"}));
+
+    expect(upsertNote).toHaveBeenCalledTimes(1);
+    const partialNote = {id: noteId, mimeType: "text/html;hint=SEMANTIC",
+      title: "Proin sagittis quam sit amet eros dictum",
+      content: "<p> Proin sagittis quam sit amet eros dictum </p>",
+      date: new Date(2005, 10-1, 30, oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds(), oldDate.getMilliseconds()),
+      isLocked: false,
+      wordArr: ['PROIN', 'SAGITTIS', 'QUAM', 'SIT', 'AMET', 'EROS', 'DICTUM']};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
+  });
+
   it.skip("edits & saves HTML if retrieved as SVG", async () => {
     const noteId = uuidv4();
     const initialText = `<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="red" />
         </svg>`;
     const noteDate = new Date(1976, 6, 4);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'image/svg+xml')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'image/svg+xml', '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     expect(await screen.findByRole('textbox')).toBeVisible();
@@ -169,11 +206,12 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC'), 'DETAIL');
+    const partialNote = {id: noteId, mimeType: "text/html;hint=SEMANTIC", title: expect.any(String), content: expect.any(String), date: noteDate, isLocked: true, wordArr: []};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
   it("edits & saves HTML if retrieved as MathML", async () => {
-    const noteId = uuidv4();
+    const noteId = generateTestId();
     const initialText = `  <math>
     <mtable columnalign="right center left">
       <mtr>
@@ -211,7 +249,7 @@ it('renders error if note missing', async () => {
         </mtd>
       </mtr>`;
     const noteDate = new Date(2012, 2, 27);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'application/mathml+xml')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'application/mathml+xml', '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     expect(await screen.findByRole('textbox')).toBeVisible();
@@ -220,14 +258,15 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, expect.anything(), noteDate, 'text/html;hint=SEMANTIC', true), 'DETAIL');
+    const partialNote = {id: noteId, mimeType: "text/html;hint=SEMANTIC", title: expect.any(String), content: "      (  a  +  b  )   2     =     c  2  +  4  ⋅  (  1  2   a  b  )  ", date: noteDate, isLocked: true, wordArr: []};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
   it("edits & saves plain text if retrieved as plain text", async () => {
     const noteId = uuidv4();
     const initialText = "Goodbye, Lenin";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'text/plain')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/plain', '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     const textbox = await screen.findByRole('textbox');
@@ -238,15 +277,17 @@ it('renders error if note missing', async () => {
 
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
+
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/plain', true), 'DETAIL');
+    const partialNote = {id: noteId, mimeType: "text/plain", title: "Goodbye, Lenin", content: "Goodbye, Lenin", date: noteDate, isLocked: true, wordArr: ["GOODBYE", "LENIN"]};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
   it("edits as plain text if retrieved without type", async () => {
     const noteId = uuidv4();
     const initialText = "Aloha";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate)));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, undefined, '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     const textbox = await screen.findByRole('textbox');
@@ -258,14 +299,15 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, undefined, true), 'DETAIL');
+    const partialNote = {id: noteId, mimeType: "", title: "Aloha", content: "Aloha", date: noteDate, isLocked: true, wordArr: ["ALOHA"]};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
   it("saves Markdown if retrieved as Markdown", async () => {
     const noteId = uuidv4();
     const initialText = "# Vaporware\nThis is hot stuff.";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/markdown;hint=COMMONMARK', '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     const textbox = await screen.findByRole('textbox');
@@ -278,14 +320,15 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    expect(upsertNote).toHaveBeenLastCalledWith(createMemoryNote(noteId, initialText, noteDate, 'text/markdown;hint=COMMONMARK', true), 'DETAIL');
+    const partialNote = {id: noteId, mimeType: "text/markdown;hint=COMMONMARK", title: "Vaporware\nThis is hot stuff.", content: "# Vaporware\nThis is hot stuff.", date: noteDate, isLocked: true, wordArr: ["VAPORWARE", "THIS", "IS", "HOT", "STUFF"]};
+    expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
   it("shows formatting menu in rich text mode, but not plain text mode", async () => {
     const noteId = uuidv4();
     const initialText = "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium";
     const noteDate = new Date(1980, 11, 20);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, initialText, noteDate, 'text/plain')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/plain', '', initialText, noteDate)));
     render(<Detail noteId={noteId}></Detail>);
 
     // waits for content type button to be visible
@@ -331,7 +374,7 @@ it('renders error if note missing', async () => {
     const noteId = uuidv4();
     const noteText = "<p>outside</p><table><tr><td><p>just paragraph</p><ul><li>also list</li></ul></td></tr></table>";
     const noteDate = new Date(2022, 8, 4);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', noteText, noteDate)));
 
     render(<Detail noteId={noteId}></Detail>);
     await screen.findByRole('textbox');
@@ -375,7 +418,7 @@ it('renders error if note missing', async () => {
     const noteId = uuidv4();
     const noteText = "<p>Some paragraph</p>";
     const noteDate = new Date(2022, 8, 3);
-    getNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, noteText, noteDate, 'text/html;hint=SEMANTIC')));
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', noteText, noteDate)));
 
     render(<Detail noteId={noteId}></Detail>);
     const textbox = await screen.findByRole('textbox');

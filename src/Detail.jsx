@@ -1,14 +1,12 @@
 // noinspection ExceptionCaughtLocallyJS
 
 import {validate as uuidValidate} from 'uuid';
-import {createMemoryNote} from './Note';
-import {semanticOnly} from './sanitizeNote';
+import {NodeNote} from './Note';
 import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
 import useViewportScrollCoords from './web-api-hooks/useViewportScrollCoords';
-import {getNote, upsertNote, normalizeWord} from './storage';
-import sanitizeHtml from 'sanitize-html';
+import {getNote, normalizeWord, upsertNote} from './storage';
 import "./Detail.css";
 import {
   AppBar,
@@ -42,7 +40,7 @@ import {Alert, AlertTitle} from '@mui/material';
 import {createEditor, Editor, Node as SlateNode, Range as SlateRange, Transforms, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
-import {withHtml, deserializeHtml, RenderingElement, Leaf, serializeHtml} from './slateHtml';
+import {withHtml, RenderingElement, Leaf} from './slateHtml';
 import isHotkey from 'is-hotkey';
 import {
   getRelevantBlockType,
@@ -60,13 +58,13 @@ import {
   insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
-import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
-import {clearSubstitutions, currentSubstitutions} from "./urlSubstitutions";
+import {clearSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 
 const BLOCK_TYPE_DISPLAY = {
@@ -140,31 +138,21 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   const replaceNote = useCallback(theNote => {
     try {
-      let slateNodes;
-      if (hasTagsLikeHtml(theNote.mimeType)) {
-        editor.subtype = 'html;hint=SEMANTIC';
-        const html = sanitizeHtml(theNote.content, semanticOnly);
-        // console.log("sanitized HTML:", html.slice(0, 1024));
-        slateNodes = deserializeHtml(html, editor);
-      } else if (!theNote.mimeType || /^text\//.test(theNote.mimeType)) {
-        editor.subtype = /\/(.+)/.exec(theNote.mimeType)?.[1];
-        slateNodes = theNote.content.split("\n").map(line => {return {type: 'paragraph', children: [{text: line}]}});
-      } else {
-        throw new Error(`Can't display “${theNote.mimeType}” note`);
-      }
+      const nodeNote = deserializeNote(theNote);
+      editor.subtype = nodeNote.subtype;
       // console.log("initializing slateNodes:", slateNodes);
 
       // Editor can't be empty (though pasted content can be).
       // Does this here (rather than normalizeNode) so noteSubtype can be set.
-      if (0 === slateNodes.length) {
-        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+      if (0 === nodeNote.nodes.length) {
+        nodeNote.nodes.push({type: 'paragraph', children: [{text: ""}]});
       }
-      slateNodes[0].noteSubtype = editor.subtype;
+      nodeNote.nodes[0].noteSubtype = nodeNote.subtype;
 
       Transforms.deselect(editor);
       setEditableKey(Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER));
-      setEditorValue(slateNodes);
-      editor.children = slateNodes;
+      setEditorValue(nodeNote.nodes);
+      editor.children = nodeNote.nodes;
       saveOnAstChangeRef.current = false;
       Editor.normalize(editor, {force: true});
       setNoteDate(theNote.date);
@@ -322,15 +310,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   async function save(date, isLocked) {
     canSave.current = false;
-    let content;
-    if (editor.subtype?.startsWith('html')) {
-      content = serializeHtml(editor.children, await currentSubstitutions());
-      // console.log('save HTML:', noteId, editor.children, content.slice(0, 1024), date);
-    } else {
-      content = editor.children.map(node => SlateNode.string(node)).join('\n')
-      // console.log('save text:', noteId, editor.children, content, date);
-    }
-    await upsertNote(createMemoryNote(noteId, content, date, editor.subtype ? 'text/'+editor.subtype : undefined, isLocked), 'DETAIL');
+
+    const nodeNote = new NodeNote(noteId, editor.subtype, editor.children, date, isLocked);
+    await upsertNote(await serializeNote(nodeNote), 'DETAIL');
     setTimeout(async () => {
       canSave.current = true;
       if (shouldSave.current) {

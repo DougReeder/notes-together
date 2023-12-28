@@ -1,17 +1,15 @@
 // storage.js - abstraction for for RemoteStorage and IndexedDB for Notes Together
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021, 2023 Doug Reeder
 
 import removeDiacritics from "./diacritics";
 import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, findNoteIds, checkpointSearch, listSuggestions} from "./idbNotes";
 import RemoteStorage from 'remotestoragejs';
 import RemoteNotes from "./RemoteNotes";
-import {sanitizeNote} from "./sanitizeNote";
 // import {mergeConflicts} from "./mergeConflicts";
-// import {createMemoryNote} from "./Note";
 import decodeEntities from "./util/decodeEntities";
-// import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {extractUserMessage} from "./util/extractUserMessage";
 import {globalWordRE} from "./util";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 const WORD_LENGTH_MAX = 60;
 const TAG_LENGTH_MAX = 100;
@@ -43,7 +41,8 @@ async function changeHandler(evt) {
           case 'remote':
             if (evt.newValue) {   // create or update
               // console.log("remoteStorage incoming upsert:", evt.newValue.id, evt.newValue.title);
-              await upsertNote(evt.newValue, 'REMOTE');
+              const serializedNote = await serializeNote(deserializeNote(evt.newValue));   // title, wordArr
+              await upsertNote(serializedNote, 'REMOTE');
             } else {   // delete
               // console.log("remoteStorage incoming delete:", evt.oldValue?.id, evt.oldValue?.title);
               await deleteNoteDb(evt.oldValue.id);
@@ -57,16 +56,17 @@ async function changeHandler(evt) {
               console.warn("remoteStorage local change, remote delete:", evt.lastCommonValue, evt.oldValue, evt.newValue);
               requestIdleCallback(async () => {
                 try {
-                  const title = evt.oldValue?.title || evt.lastCommonValue?.title || "⛏";
+                  const serializedNote = await serializeNote(deserializeNote(evt.oldValue));   // title, wordArr
+                  const title = serializedNote.title || evt.lastCommonValue?.title || "[Untitled]";
                   const message = `Retaining “${title?.split('\n')[0]}”, which was deleted on another device`;
                   window.postMessage({
                     kind: 'TRANSIENT_MSG',
                     severity: 'warning',
                     message: message,
-                    key: evt.oldValue.id
+                    key: serializedNote.id
                   }, window?.location?.origin);
                   // initiator is **not** 'REMOTE' for this purpose
-                  await upsertNote(evt.oldValue);
+                  await upsertNote(serializedNote, undefined);
                 } catch (err) {
                   console.error("while handling local change, remote delete:", err);
                 }
@@ -75,16 +75,17 @@ async function changeHandler(evt) {
               console.warn("remoteStorage local delete, remote change:", evt.lastCommonValue, evt.oldValue, evt.newValue);
               requestIdleCallback(async () => {
                 try {
-                  const title = evt.newValue?.title || evt.lastCommonValue?.title || "⛏";
+                  const serializedNote = await serializeNote(deserializeNote(evt.newValue));   // title, wordArr
+                  const title = serializedNote.title || evt.lastCommonValue?.title || "[Untitled]";
                   const message = `Restoring “${title?.split('\n')[0]}”, which was edited on another device`;
                   window.postMessage({
                     kind: 'TRANSIENT_MSG',
                     severity: 'warning',
                     message: message,
-                    key: evt.newValue.id
+                    key: serializedNote.id
                   }, window?.location?.origin);
                   // initiator is **not** 'REMOTE' for this purpose
-                  await upsertNote(evt.newValue);
+                  await upsertNote(serializedNote, undefined);
                 } catch (err) {
                   console.error("while handling local delete, remote change:", err);
                 }
@@ -95,14 +96,19 @@ async function changeHandler(evt) {
                   evt.oldValue.mimeType === evt.newValue.mimeType &&
                   evt.oldValue.isLocked === evt.newValue.isLocked) {
                 console.warn("remoteStorage same change locally & remote:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-                await upsertNote(evt.newValue, 'DETAIL');   // doesn't re-render
+                const serializedNote = await serializeNote(deserializeNote(evt.newValue));   // title, wordArr
+                await upsertNote(serializedNote, 'DETAIL');   // doesn't re-render
                 break;
               }
               console.warn("remoteStorage changed on both:", evt.lastCommonValue, evt.oldValue, evt.newValue);
               // setTimeout(async () => {
               //   let cleanNote;
               //   try {
-              //     const mergedDate = evt.oldValue.date > evt.newValue.date ? evt.oldValue.date : evt.newValue.date;
+              //     const localNote = deserialize(evt.oldValue);
+              //     const remoteNote = deserialize(evt.newValue);
+              //     const oldDate = normalizeDate(evt.oldValue.date);
+              //     const newDate = normalizeDate(evt.newValue.date);
+              //     const mergedDate = oldDate > newDate ? oldDate : newDate;
               //     let mergedMimeType, documentHasTags;
               //     if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
               //       mergedMimeType = evt.oldValue.mimeType;
@@ -238,11 +244,16 @@ function initRemote() {
 
 /**
  * Inserts or updates a note in IDB and RemoteStorage, when needed.
- * @param memoryNote
- * @param initiator: 'REMOTE', 'DETAIL' or undefined
- * @return {Promise<{date: Date, id: number, content: string, title: string}>}
+ * @param {SerializedNote} serializedNote
+ * @param {String} [initiator] 'REMOTE', 'DETAIL' or undefined
+ * @return {Promise<SerializedNote>}
  */
-async function upsertNote(memoryNote, initiator) {
+async function upsertNote(serializedNote, initiator) {
+  if ('string' !== typeof serializedNote.title) { throw new Error("title must be string"); }
+  if ('string' !== typeof serializedNote.content) { throw new Error("content must be string"); }
+  if (! (serializedNote.date instanceof Date)) { throw new Error("date must be of type Date"); }
+  if (!Array.isArray(serializedNote.wordArr)) { throw new Error("wordArr must be array"); }
+
   if (!persistenceAttempted && 'REMOTE' !== initiator && !isFirstLaunch && navigator.storage?.persist) {
     persistenceAttempted = true;
     navigator.storage.persist().then(persistent => {
@@ -250,33 +261,14 @@ async function upsertNote(memoryNote, initiator) {
     });
   }
 
-  const wordSet = new Set();
-  const textFilter = function (text) {
-    for (const word of parseWords(text)) {
-      wordSet.add(word);
-    }
-    return text;
-  }
+  await upsertNoteDb(serializedNote, initiator);
 
-  let cleanNote;
-  if ('REMOTE' === initiator) {
-    cleanNote = sanitizeNote(memoryNote, textFilter);
-  } else {
+  if ('REMOTE' !== initiator) {
     const remoteStorage = await remotePrms;
-    cleanNote = await remoteStorage.documents.upsert(memoryNote, textFilter);
+    await remoteStorage.documents.upsert(serializedNote);
   }
 
-  for (let candidateWord of wordSet) {
-    for (let otherWord of wordSet) {
-      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
-        wordSet.delete(otherWord);
-      }
-    }
-  }
-  cleanNote.wordArr = Array.from(wordSet);
-
-  await upsertNoteDb(cleanNote, initiator);
-  return cleanNote;
+  return serializedNote;
 }
 
 
@@ -286,10 +278,11 @@ async function deleteNote(id, force) {
     const note = await getNoteDb(id);
     if (note?.isLocked) {
       const shortTitle = note.title?.split("\n")?.[0]?.slice(0, 24) + "...";
-      const message = `First, unlock “${shortTitle}”`;
+      const message = `not deleting “${shortTitle}” which is locked.`;
       console.info(message);
       const err = new Error(message);
       err.severity = 'info';
+      err.userMsg = `First, unlock “${shortTitle}”`;
       throw err;
     }
   }

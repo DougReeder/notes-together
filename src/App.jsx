@@ -1,6 +1,5 @@
 // Copyright © 2021-2023 Doug Reeder
 
-import {createMemoryNote} from './Note';
 import {
   init,
   upsertNote, deleteNote,
@@ -8,6 +7,7 @@ import {
   checkpointSearch, listSuggestions,
   saveTag, deleteTag, listTags
 } from './storage';
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo, useReducer} from 'react';
 import {useSearchParams} from "react-router-dom";
@@ -51,7 +51,7 @@ function App() {
     return {searchStr, searchWords};
   }, [searchParams]);
   const onSearchChange = evt => {
-    let words = evt.target.value?.trimLeft();
+    let words = evt.target.value?.trimStart();
     if (words.startsWith("━━━━━━━")) {
       words = "";
     }
@@ -100,7 +100,8 @@ function App() {
   const addNote = useCallback(async () => {
     try {
       const initialText = searchStr.trim() ? `<h1></h1><p></p><hr /><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
-      const newNote = createMemoryNote(null, initialText, null, 'text/html;hint=SEMANTIC');
+      const raw = {mimeType: 'text/html;hint=SEMANTIC', content: initialText};
+      const newNote = await serializeNote(deserializeNote(raw));
       // console.log("adding note:", newNote);
       await upsertNote(newNote);
       setMustShowPanel('DETAIL');
@@ -439,15 +440,23 @@ function App() {
 
   async function handleDeleteFillerNotes() {
     try {
+      console.group("Delete Filler Notes");
       setTestMenuAnchorEl(null);
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       for (const noteId of await findFillerNoteIds()) {
-        await deleteNote(noteId);
+        try {
+          await deleteNote(noteId);
+        } catch (err2) {
+          console.warn(`while deleting ${noteId}:`, err2);
+          window.postMessage({kind: 'TRANSIENT_MSG', severity: err2.severity, message: extractUserMessage(err2)}, window?.location?.origin);
+        }
       }
     } catch (err) {
-      setTransientErr(err);
+      console.warn("while deleting filler notes:", err);
+      window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
+      console.groupEnd();
     }
   }
 

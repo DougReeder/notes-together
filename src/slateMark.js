@@ -1,5 +1,5 @@
 // slateMark.js - constants & functions to customize Slate for Markdown
-// Copyright © 2021-2023 Doug Reeder under the MIT License
+// Copyright © 2021-2024 Doug Reeder under the MIT License
 
 import {adHocTextReplacements} from "./util";
 import {Element as SlateElement, Text as SlateText} from 'slate';
@@ -10,9 +10,9 @@ import {gfmTaskListItem} from 'micromark-extension-gfm-task-list-item';
 import {gfmTaskListItemFromMarkdown} from 'mdast-util-gfm-task-list-item';
 import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough'
 import {gfmStrikethroughFromMarkdown} from 'mdast-util-gfm-strikethrough'
-import {deserializeHtml} from "./slateHtml";
+import {deserializeHtml, INLINE_ELEMENTS} from "./slateHtml";
 
-function deserializeMarkdown(markdown, editor) {
+function deserializeMarkdown(markdown) {
   const root = fromMarkdown(markdown, {
     extensions: [gfmTable, gfmTaskListItem, gfmStrikethrough()],
     mdastExtensions: [gfmTableFromMarkdown, gfmTaskListItemFromMarkdown, gfmStrikethroughFromMarkdown]
@@ -224,7 +224,7 @@ function deserializeMarkdown(markdown, editor) {
                   slateNodes.push(textNode("\n", {italic, bold, superscript, subscript, underline, strikethrough, deleted, inserted}));
                   break;
                 default:
-                  const sNodes = deserializeHtml(mdNode.value, editor);
+                  const sNodes = deserializeHtml(mdNode.value);
                   slateNodes.push(...sNodes);
               }
               break;
@@ -332,7 +332,7 @@ function textNode(text, {italic, bold, code, superscript, subscript, underline, 
   return node;
 }
 
-function serializeMarkdown(editor, slateNodes) {
+function serializeMarkdown(slateNodes) {
   const hierarchy = [];
   let inCodeBlock = false;
   let tableRowNum = 0;
@@ -392,7 +392,7 @@ function serializeMarkdown(editor, slateNodes) {
         return string;
       }
     } else if (SlateElement.isElement(slateNode)) {
-      if (editor.isInline(slateNode)) {
+      if (INLINE_ELEMENTS.includes(slateNode?.type)) {
         const childrenText = slateNode.children.map(serializeSlateNode).join('');
         const titleMarkup = slateNode.title ? ` "${escapeMarkdown(slateNode.title)}"` : '';
         return `[${childrenText}](${escapeMarkdown(slateNode.url)}${titleMarkup})`;

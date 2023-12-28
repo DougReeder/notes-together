@@ -2,9 +2,9 @@
 // Copyright © 2021 Doug Reeder under the MIT License
 
 import {validate as uuidValidate} from 'uuid';
-import {sanitizeNote} from "./sanitizeNote";
 import {extractUserMessage} from "./util/extractUserMessage";
 import {TAG_LENGTH_MAX} from "./storage";
+import normalizeDate from "./util/normalizeDate.js";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
 const SAVED_SEARCH_PATH = 'notes/savedSearches/';
@@ -26,7 +26,7 @@ const RemoteNotes = {
         "content": {   // may contain semantic HTML tags
           "type": "string",
           "default": "",
-          "maxLength": 600000   // allows for one small raster image in a data URL
+          "maxLength": 600000   // allows for a data URL of one small raster image
         },
         "title": {
           "type": "string",
@@ -59,12 +59,6 @@ const RemoteNotes = {
     });
 
     privateClient.on('change', evt => {
-      if (evt.oldValue instanceof Object) {
-        evt.oldValue.date = new Date(evt.oldValue?.date || Date.now());
-      }
-      if (evt.newValue instanceof Object) {
-        evt.newValue.date = new Date(evt.newValue?.date || Date.now());
-      }
       for (const callback of subscriptions) {
         try {
           callback(evt);
@@ -78,22 +72,24 @@ const RemoteNotes = {
     return {
       exports: {
         // available as remoteStorage.documents.upsert();
-        upsert: async function (memoryNote, textFilter) {
+        upsert: async function (serializedNote) {
           // console.debug("documents.upsert", memoryNote);
-          const cleanNote = sanitizeNote(memoryNote, textFilter);
+          serializedNote.date = normalizeDate(serializedNote.date);
 
-          let remoteNote;
-          if (cleanNote.mimeType) {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), mimeType: cleanNote.mimeType, isLocked: cleanNote.isLocked, lastEdited: Date.now()};
-
-          } else {
-            remoteNote = {id: cleanNote.id, content: cleanNote.content, title: cleanNote.title, date: cleanNote.date.toISOString(), isLocked: cleanNote.isLocked, lastEdited: Date.now()};
+          const remoteNote = {
+            id: serializedNote.id,
+            ...(serializedNote.mimeType && { mimeType: serializedNote.mimeType }),
+            title: serializedNote.title ?? "[Untitled]",
+            content: serializedNote.content,
+            date: serializedNote.date.toISOString(),
+            isLocked: Boolean(serializedNote.isLocked),
+            lastEdited: Date.now(),
           }
           const path = 'notes/' + remoteNote.id;
           await Promise.allSettled([previousStoreObjectPrms]);
           previousStoreObjectPrms = privateClient.storeObject("note", path, remoteNote);
           await previousStoreObjectPrms;
-          return cleanNote;
+          return remoteNote;
         },
 
         // list: async function () {

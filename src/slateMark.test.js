@@ -1,9 +1,6 @@
-// Copyright © 2021-2023 Doug Reeder under the MIT License
+// Copyright © 2021-2024 Doug Reeder under the MIT License
 
 import {deserializeMarkdown, serializeMarkdown, escapeMarkdown} from "./slateMark";
-import {withHtml} from "./slateHtml";
-import {withReact} from "slate-react";
-import {createEditor} from "slate";
 
 describe("escapeMarkdown", () => {
   it("should escape only periods that look like ordered list items", () => {
@@ -34,11 +31,10 @@ describe("escapeMarkdown", () => {
 
 describe("deserializeMarkdown", () => {
   it("should parse character entities", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `23&ndash;45
 To be &mdash; or not to be`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [{text: `23–45 To be — or not to be`}]}
@@ -46,12 +42,11 @@ To be &mdash; or not to be`;
   });
 
   it("should collapse softbreak plus spacing to single space", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `foo 
   bar 
    spam`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [{text: `foo bar spam`}]}
@@ -59,12 +54,11 @@ To be &mdash; or not to be`;
   });
 
   it("should remove space after a hard break", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `waldo fred
 spam *frotz  
   nim* wibble`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -78,10 +72,9 @@ spam *frotz
   });
 
   it("should handle multiple mark types", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = 'plain *emphasized **also strongly emphasized ~~also strikethrough `also monospace` just three~~ just two** just emph* normal';
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect (slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -99,7 +92,6 @@ spam *frotz
   });
 
   it("should parse H3-H6 to heading-three", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `### third level
 #### fourth level
 
@@ -107,7 +99,7 @@ spam *frotz
 
 ###### sixth level`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'heading-three', children: [{text: `third level`}]},
@@ -118,7 +110,6 @@ spam *frotz
   });
 
   it("should convert MD unordered list to Slate bulleted list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `   * erste 
 
    *  zwitte A
@@ -127,7 +118,7 @@ spam *frotz
 
   *   dritte`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "bulleted-list", children: [
         {type: 'list-item', children: [
@@ -144,7 +135,6 @@ spam *frotz
   });
 
   it("should convert MD unordered checklist to Slate task-list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `  - uno 
 
   -  [ ]  dos A
@@ -157,7 +147,7 @@ spam *frotz
     - cuatro alpha
     - cuatro beta`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: "task-list", children: [
@@ -182,7 +172,6 @@ spam *frotz
   });
 
   it("should convert MD ordered checklist to Slate sequence-list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `  1. uno 
 
   2.  [ ]  dos A
@@ -195,7 +184,7 @@ spam *frotz
         1. cuatro alpha
         2. cuatro beta`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: "sequence-list", listStart: 1, children: [
@@ -220,19 +209,17 @@ spam *frotz
   });
 
   it("should discard empty link", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `[]( )`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([]);
   });
 
   it("should normalize link w/o link text", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `*plugh [](http://example.com/) xyzzy*`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: 'paragraph', children: [
         {text: "plugh ", italic: true},
@@ -244,10 +231,9 @@ spam *frotz
   });
 
   it("should retain link text of link w/o URL", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `**thud [waugh oh]( ) limber**`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: 'paragraph', children: [
         {text: "thud ", bold: true},
@@ -258,14 +244,13 @@ spam *frotz
 
   it("should pull definition into link reference", () => {
     console.error = vitest.fn();
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `For information, see the [Markdown][md] reference.
 For the same information, see the [][md] reference.
 For no information, see the [fake][nomatch] reference!  
 
  [md]: http://daringfireball.net/projects/markdown "Markdown [announcement post]"
 `;
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -306,7 +291,6 @@ For no information, see the [fake][nomatch] reference!
 
   it("should parse GFM tables", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `
 | Name | Occupation |
 |:-----|:----------:|
@@ -316,7 +300,7 @@ For no information, see the [fake][nomatch] reference!
 |
 | Aurthur [Conan Doyle](https://sf-encyclopedia.com/entry/doyle_arthur_conan) | Author |`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'table', children: [
@@ -354,14 +338,13 @@ For no information, see the [fake][nomatch] reference!
 
   it("should parse GFM tables without leading & trailing pipes", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `
  Framework | Notes 
 -----|----------:
  Mojo | webOS only 
  Enyo 1 | webOS \\| WebKit browser`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'table', children: [
@@ -384,10 +367,9 @@ For no information, see the [fake][nomatch] reference!
 
   it("should extract text of HTML that's not specially handled", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = "something <samp>special</samp> for you";
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "something "},
@@ -400,10 +382,9 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply superscript tag to enclosed text", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = "M<sup>lle</sup> Juliet";
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "M"},
@@ -415,10 +396,9 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply subscript tag to enclosed text", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = "Mason & Jones<sub>MJ</sub> found no such relationship";
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "Mason & Jones"},
@@ -430,10 +410,9 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply underline tag to enclosed text", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = "the word <u>cheif</u> is misspelled";
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "the word "},
@@ -445,10 +424,9 @@ For no information, see the [fake][nomatch] reference!
 
   it("should apply strikethrough tag to enclosed text", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = "shall <s>not</s> be accepted";
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([{type: "paragraph", children: [
         {text: "shall "},
@@ -460,11 +438,10 @@ For no information, see the [fake][nomatch] reference!
 
   it("should recognize break tag", () => {
     vitest.spyOn(console, 'warn').mockImplementation(() => {});
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `grault garply
 baz **qux<br />quux** corge`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -480,14 +457,13 @@ baz **qux<br />quux** corge`;
 
   it("should parse definition list as paragraphs and block quotes", () => {
     console.error = vitest.fn();
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `<dl>
   <dt>Danish axe</dt>
   <dt>poleaxe</dt>
   <dd>A somewhat larger axehead on a two-handed haft</dd>
 </dl>`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [{text: "Danish axe", bold: true}]},
@@ -498,12 +474,11 @@ baz **qux<br />quux** corge`;
   });
 
   it("should deserialize image in paragraph as separate block", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `before
 ![description](https://delta.edu/a.png "some title")
 after`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -517,14 +492,13 @@ after`;
   });
 
   it("should deserialize separate image as separate block", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `before
 
 ![description](https://chi.edu/b.gif "some title")
 
 after`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -540,10 +514,9 @@ after`;
   });
 
   it("should retain description text of image w/o URL", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `~~pre ![some thing]( ) post~~`;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -555,13 +528,12 @@ after`;
   });
 
   it("should pull definition into image reference", () => {
-    const editor = withHtml(withReact(createEditor()));
     const mdText = `prelude ![first reference][foo *bar*] first interlude ![foo *bar*] second interlude ![][foo *bar*] afterword
 
 [foo *bar*]: train.jpg "train & tracks"
 `;
 
-    const slateNodes = deserializeMarkdown(mdText, editor);
+    const slateNodes = deserializeMarkdown(mdText);
 
     expect(slateNodes).toEqual([
       {type: 'paragraph', children: [
@@ -580,12 +552,11 @@ after`;
 
 describe("serializeMarkdown", () => {
   it("should not escape inside code blocks", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
         {type: 'code', children: [{text: "let a = b**c, x = y**z;"}]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`\`\`\`
 let a = b**c, x = y**z;
@@ -593,29 +564,26 @@ let a = b**c, x = y**z;
   });
 
   // it("should escape asterisks outside code blocks", () => {
-  //   const editor = withHtml(withReact(createEditor()));
   //   const slateNodes = [
   //     {type: 'paragraph', children: [{text: "this *is not* italic"}]}
   //   ];
   //
-  //   const md = serializeMarkdown(editor, slateNodes);
+  //   const md = serializeMarkdown(slateNodes);
   //
   //   expect(md).toEqual(`this *is not\\* italic`);
   // });
 
   // it("should escape underscores outside code blocks", () => {
-  //   const editor = withHtml(withReact(createEditor()));
   //   const slateNodes = [
   //     {type: 'paragraph', children: [{text: "Use __FILE__ and __LINE__."}]}
   //   ];
   //
-  //   const md = serializeMarkdown(editor, slateNodes);
+  //   const md = serializeMarkdown(slateNodes);
   //
   //   expect(md).toEqual(`Use _\\_FILE\\_\\_ and \\_\\_LINE\\_\\_.`);
   // });
 
   it("should not escape underscores in inline code", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: 'paragraph', children: [
           {text: "Use "},
@@ -626,13 +594,12 @@ let a = b**c, x = y**z;
         ]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`Use \`__FILE__\` and \`__LINE__\`.`);
   });
 
   it("should serialize unordered lists", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: 'bulleted-list', children: [
         {type: 'list-item', children: [
@@ -648,14 +615,13 @@ let a = b**c, x = y**z;
       ]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`* erste
 * zwitte`);
   });
 
   it("should serialize ordered lists of simple items", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: "numbered-list", "listStart": 1, children: [
           {type: 'list-item', children: [{text: "un"}]},
@@ -664,7 +630,7 @@ let a = b**c, x = y**z;
         ]},
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`1. un
 2. deux
@@ -672,7 +638,6 @@ let a = b**c, x = y**z;
   });
 
   it("should serialize task list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: "bulleted-list", "listStart": 1, children: [
           {type: 'list-item', children: [{text: "eins"}]},
@@ -696,7 +661,7 @@ let a = b**c, x = y**z;
         ]},
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`* eins
 * zwei
@@ -709,7 +674,6 @@ let a = b**c, x = y**z;
   });
 
   it("should serialize hierarchical ordered lists with links", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: 'heading-one', children: [{text: "title phrase"}]},
       {type: 'heading-two', children: [{text: "heading phrase"}]},
@@ -745,7 +709,7 @@ let a = b**c, x = y**z;
         ]},
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`# title phrase
 
@@ -760,7 +724,6 @@ let a = b**c, x = y**z;
   });
 
   it("should serialize children of graphic as alt text", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       { type: 'image', url: 'http://example.com/pic', title: 'still life', children: [
           {text: "tromp "},
@@ -768,26 +731,24 @@ let a = b**c, x = y**z;
         ]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`![tromp **l'oeil**](http://example.com/pic "still life")`);
   });
 
   it("should omit title of graphic when empty", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       { type: 'image', url: 'https://example.com/other', children: [
           {text: "Not a pipe"},
         ]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`![Not a pipe](https://example.com/other)`);
   });
 
   it("should serialize hierarchical lists", () => {
-    const editor = withHtml(withReact(createEditor()));
     const slateNodes = [
       {type: 'bulleted-list', children: [
           {type: 'list-item', children: [
@@ -809,7 +770,7 @@ let a = b**c, x = y**z;
         ]}
     ];
 
-    const md = serializeMarkdown(editor, slateNodes);
+    const md = serializeMarkdown(slateNodes);
 
     expect(md).toEqual(`* un
     1. un un
@@ -818,7 +779,6 @@ let a = b**c, x = y**z;
   });
 
   it("should serialize tables", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [{text: "Nullam egestas odio nec velit."}]},
       {type: "table", children: [
@@ -858,7 +818,7 @@ let a = b**c, x = y**z;
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
+    const mdText = serializeMarkdown(original);
 
     expect(mdText).toEqual(`Nullam egestas odio nec velit.
 
@@ -873,7 +833,6 @@ let a = b**c, x = y**z;
   });
 
   it("should handle typeless blocks", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "paragraph", children: [
           {text: "Duis facilisis luctus dui eu tristique."}
@@ -888,7 +847,7 @@ let a = b**c, x = y**z;
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
+    const mdText = serializeMarkdown(original);
 
     expect(mdText).toEqual(`Duis facilisis luctus dui eu tristique.
 ![Sed eu dui in nunc elementum bibendum.](https://epsilon.org/pic.png)
@@ -899,7 +858,6 @@ Praesent in cursus purus, nec blandit ipsum.`);
 
 describe("serializeMarkdown & deserializeMarkdown", () => {
   it("should round-trip emphasis", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [
           {text: "Legano", italic: true},
@@ -908,14 +866,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   // it("should round-trip adjacent emphasis", () => {
-  //   const editor = withHtml(withReact(createEditor()));
   //   const original = [
   //     {type: 'paragraph', children: [
   //         {text: "al forno ", italic: true},
@@ -923,14 +880,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   //       ]}
   //   ];
   //
-  //   const mdText = serializeMarkdown(editor, original);
-  //   const reloaded = deserializeMarkdown(mdText, editor);
+  //   const mdText = serializeMarkdown(original);
+  //   const reloaded = deserializeMarkdown(mdText);
   //
   //   expect(reloaded).toEqual(original);
   // });
 
   it("should round-trip backticks in inline code", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [
           {text: "JavaScript uses the backtick to delimit template literals: "},
@@ -939,14 +895,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip superscripts and subscripts", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "paragraph", children: [
           {text: "The 4"},
@@ -958,14 +913,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip underline and strikethrough", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "paragraph", children: [
           {text: "My "},
@@ -976,14 +930,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip deleted and inserted text styles", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "paragraph", children: [
           {text: "We "},
@@ -993,14 +946,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip paragraphs", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [
           {text: "Use "},
@@ -1014,14 +966,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a heading followed by a paragraph", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'heading-one', children: [
           {text: "Some Dull Report"},
@@ -1036,14 +987,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip block quotes w/ multiple paragraphs", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'quote', children: [
           {type: 'paragraph', children: [
@@ -1055,14 +1005,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ]
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip links w/ marked-up content", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [
           {text: "The "},
@@ -1078,14 +1027,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]}
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip images", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'heading-one', children: [
           {text: "Pets"},
@@ -1101,14 +1049,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a thematic break", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'paragraph', children: [
           {text: "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?"},
@@ -1119,14 +1066,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a thematic break in a block quote", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'quote', children: [
           {type: 'paragraph', children: [
@@ -1139,14 +1085,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip two separate block quotes inside a block quote", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'quote', children: [
           {type: 'quote', children: [
@@ -1158,14 +1103,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a hierarchical bulleted list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "bulleted-list", children: [
           {type: 'list-item', children: [{text: "un gato"}]},
@@ -1180,8 +1124,8 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual([
       {type: "bulleted-list", children: [
@@ -1203,7 +1147,6 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   });
 
   it("should round-trip a numbered list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "numbered-list", "listStart": 1, children: [
           {type: 'list-item', children: [{text: "erste"}]},
@@ -1212,8 +1155,8 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual([
       {type: "numbered-list", "listStart": 1, children: [
@@ -1229,7 +1172,6 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
   });
 
   it("should round-trip a bulleted list of paragraphs", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {
         type: "bulleted-list", children: [
@@ -1261,14 +1203,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
       },
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip multiple paragraphs per list item", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [{type: "bulleted-list", children: [
         {type: 'list-item', children: [
             {text: "unus cattus"},
@@ -1282,14 +1223,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
           ]},
       ]}];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a task list containing a bulleted list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "task-list", children: [
           {type: 'list-item', checked: false, children: [{text: "un gato"}]},
@@ -1304,14 +1244,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a sequence list containing a numbered list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "sequence-list", listStart: 1, children: [
           {type: 'list-item', checked: false, children: [{text: "un gato"}]},
@@ -1326,14 +1265,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a bulleted list containing a task list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "bulleted-list", children: [
           {type: 'list-item', children: [{text: "un gato"}]},
@@ -1348,14 +1286,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a sequence list containing a task list", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "sequence-list", listStart: 1, children: [
           {type: 'list-item', checked: false, children: [{text: "un gato"}]},
@@ -1370,14 +1307,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a table", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'table', children: [
           {type: 'table-row', children: [
@@ -1411,14 +1347,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a table in a block quote", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: 'quote', children: [
           {type: 'table', children: [
@@ -1454,14 +1389,13 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });
 
   it("should round-trip a code block followed by a paragraph", () => {
-    const editor = withHtml(withReact(createEditor()));
     const original = [
       {type: "code", children: [
           {text: "let a = b - c;\nfoo(a);"},
@@ -1471,8 +1405,8 @@ describe("serializeMarkdown & deserializeMarkdown", () => {
         ]},
     ];
 
-    const mdText = serializeMarkdown(editor, original);
-    const reloaded = deserializeMarkdown(mdText, editor);
+    const mdText = serializeMarkdown(original);
+    const reloaded = deserializeMarkdown(mdText);
 
     expect(reloaded).toEqual(original);
   });

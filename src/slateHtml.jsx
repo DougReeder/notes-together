@@ -3,8 +3,6 @@
 
 import { jsx } from 'slate-hyperscript';
 import escapeHtml from 'escape-html'
-import sanitizeHtml from "sanitize-html";
-import {semanticOnly} from "./sanitizeNote";
 import {isLikelyMarkdown} from "./util";
 import {deserializeMarkdown, serializeMarkdown} from "./slateMark";
 import {
@@ -58,16 +56,13 @@ function isBlank(node) {
   }
 }
 
-function withHtml(editor) {   // defines Slate plugin
-  const {isInline, isVoid, normalizeNode, deleteBackward, deleteForward, insertBreak, insertData} = editor;
+const INLINE_ELEMENTS = ['link'];
+
+function withHtml(editor) {   // defines Slate plugin for Notes Together
+  const {isVoid, normalizeNode, deleteBackward, deleteForward, insertBreak, insertData} = editor;
 
   editor.isInline = element => {
-    switch (element?.type) {
-      case 'link':
-        return true;
-      default:
-        return isInline(element);
-    }
+    return INLINE_ELEMENTS.includes(element?.type);
   }
 
   editor.isVoid = element => {
@@ -566,9 +561,7 @@ function withHtml(editor) {   // defines Slate plugin
 
 
   function pasteHtmlToRichText(html) {
-    html = sanitizeHtml(html, semanticOnly);
-    // console.log("sanitized HTML", html.slice(0, 1024));
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
     // console.log("HTML -> slateNodes:", slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
@@ -596,7 +589,7 @@ function withHtml(editor) {   // defines Slate plugin
   }
 
   function pasteMarkdownToRichText(text) {
-    const slateNodes = deserializeMarkdown(text, editor);
+    const slateNodes = deserializeMarkdown(text);
     // console.log("MD -> slateNodes:", slateNodes);
     Editor.insertFragment(editor, slateNodes);
   }
@@ -628,9 +621,8 @@ function withHtml(editor) {   // defines Slate plugin
 
 
   function pasteHtmlToMarkdown(html) {
-    html = sanitizeHtml(html, semanticOnly);
-    const syntaxTree = deserializeHtml(html, editor);
-    const markdown = serializeMarkdown(editor, syntaxTree);
+    const syntaxTree = deserializeHtml(html);
+    const markdown = serializeMarkdown(syntaxTree);
     const lines = markdown.split('\n');
     console.info("HTML -> Markdown:", markdown);
 
@@ -676,8 +668,7 @@ function withHtml(editor) {   // defines Slate plugin
 
   function pasteHtmlToPlainText(html) {
     // console.log("HTML -> slateNodes -> coerceToPlainText");
-    html = sanitizeHtml(html, semanticOnly);
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
     Editor.withoutNormalizing(editor, () => {
       Editor.insertFragment(editor, slateNodes);
       coerceToPlainText(editor);
@@ -765,7 +756,7 @@ const TEXT_TAGS = {
   CAPTION: () => ({ bold: true }),   // also specially handled
 }
 
-function deserializeHtml(html, editor) {
+function deserializeHtml(html) {
   const parsed = new DOMParser().parseFromString(html, 'text/html');
 
   let activeMarkStack = [{}];
@@ -783,7 +774,7 @@ function deserializeHtml(html, editor) {
     console.error("isChecklistStack corrupt", isChecklistStack);
   }
   if (captionStack.length > 0) {
-    console.warning("unused caption:", captionStack);
+    console.warn("unused caption:", captionStack);
   }
 
   return slateNodes;
@@ -806,7 +797,7 @@ function deserializeHtml(html, editor) {
         return '';
       } else if (el.nodeName === 'BR') {
         return '\n'
-      } else if ('INPUT' === el.nodeName) {
+      } else if (['SCRIPT', 'NOSCRIPT', 'STYLE', 'INPUT', 'BUTTON', 'SELECT', 'NAV'].includes(el.nodeName)) {
         return '';
       }
 
@@ -820,6 +811,11 @@ function deserializeHtml(html, editor) {
       const firstChild = el.childNodes[0] || {};
 
       switch (nodeName) {
+        case 'IMG':
+          if (!el.src) {
+            return '';
+          }
+          break;
         case 'PRE':
           activeCodeBlockStack.push(true);
           break;
@@ -848,7 +844,7 @@ function deserializeHtml(html, editor) {
           .flat();
 
       const shouldChildrenBeBlocks = children.some(
-          child => SlateElement.isElement(child) && !editor.isInline(child)
+          child => SlateElement.isElement(child) && !INLINE_ELEMENTS.includes(child?.type)
       );
       if (shouldChildrenBeBlocks) {
         // drops blank leaves between blocks
@@ -864,7 +860,7 @@ function deserializeHtml(html, editor) {
         // creates blocks to contain Leaves
         children = children.map(child => {
           if (SlateElement.isElement(child)) {
-            if (editor.isInline(child)) {
+            if (INLINE_ELEMENTS.includes(child?.type)) {
               return {children: [child]};
             } else {
               return child;
@@ -1277,4 +1273,4 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
   }
 }
 
-export {isBlank, withHtml, deserializeHtml, RenderingElement, ImageElement, Leaf, serializeHtml};
+export {isBlank, INLINE_ELEMENTS, withHtml, deserializeHtml, RenderingElement, ImageElement, Leaf, serializeHtml};

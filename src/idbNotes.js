@@ -1,10 +1,10 @@
 // idbNotes.js - IndexedDB code for Notes Together
 // Should only be called by storage abstraction, not from front end.
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021-2024 Doug Reeder
 
 import {v4 as uuidv4} from "uuid";
 import {extractUserMessage} from "./util/extractUserMessage";
-import {createMemoryNote} from "./Note";
+import {SerializedNote} from "./Note.js";
 
 const FIRST_RESULTS_MS = 84;
 const MAX_NOTES_FOUND = 500;
@@ -126,17 +126,16 @@ function createWelcomeNote(transaction) {
 </ul>
 <p>remoteStorage automatically syncs your data between devices. You can still work when your device is offline. When your device is back online, changes will be synced.</p>
 <p>To use remoteStorage with Notes Together:</p>
-<ul>
+<ol>
 <li><input type="checkbox">Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations).</li>
 <li><input type="checkbox">Use the widget in the lower left of the list pane to connect.</li>
-</ul>
+</ol>
 <p>Notes Together uses the remoteStorage <b>documents</b> directory, for compatibility with Litewrite.</p>
 <hr>
 <p><em>remote storage, orientation, tutorial, training, introduction</em></p>`;
 
-  const tutorialNote = createMemoryNote(idTut, tutorialContent, new Date('2013-07-01T12:00Z'), 'text/html;hint=SEMANTIC');
-  tutorialNote.title = "Welcome to Notes Together!\nWhy remoteStorage?";
-  tutorialNote.wordArr = ["WELCOME", "NOTES", "TOGETHER", "TYPE", "MENU",
+  const title = "Welcome to Notes Together!\nWhy remoteStorage?";
+  const wordArr = ["WELCOME", "NOTES", "TOGETHER", "TYPE", "MENU",
     "CREATE", "HEADINGS", "LISTS", "TABLES", "QUOTES", "BLOCKS", "SELECTING",
     "EXISTING", "TEXT", "STYLE", "BOLD", "ITALIC", "DATE", "CHANGE",
     "FIND", "ORDER", "EDITOR", "PERMISSION", "PARAGRAPHS", "TYPING",
@@ -161,6 +160,7 @@ function createWelcomeNote(transaction) {
 
     "ORIENTATION", "TRAINING", "INTRODUCTION"
   ];
+  const tutorialNote = new SerializedNote(idTut, 'text/html;hint=SEMANTIC', title, tutorialContent, new Date('2013-07-01T12:00Z'), false, wordArr);
 
   const noteStore = transaction.objectStore("note");
     const putRequestTut = noteStore.put(tutorialNote);
@@ -395,6 +395,11 @@ function compareByDate(itemA, itemB) {
 }
 
 
+/**
+ * Retrieves note from IndexedDB (ignores remoteStorage)
+ * @param {string} id
+ * @returns {Promise<SerializedNote>}
+ * */
 function getNoteDb(id) {
   return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
@@ -416,7 +421,10 @@ function getNoteDb(id) {
 
 function upsertNoteDb(cleanNote, initiator) {
   return dbPrms.then(({indexedDb: db}) => {
-    if (!('wordArr' in cleanNote)) {
+    if ('string' !== typeof cleanNote.title) {
+      throw new Error("title required for list");
+    }
+    if (! Array.isArray(cleanNote.wordArr)) {
       throw new Error("wordArr required for full-text search");
     }
 

@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
-import {createMemoryNote} from "./Note";
+import {SerializedNote} from "./Note";
 import _ from "fake-indexeddb/auto.js";
 import {
   initDb,
@@ -15,8 +15,8 @@ import {
   listSuggestions,
   findNoteIds
 } from "./idbNotes";
-import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 if (!global.requestIdleCallback) {
   global.requestIdleCallback = function (callback, options) {
@@ -98,47 +98,63 @@ describe("upsertNoteDb", () => {
     await expect(upsertNoteDb({})).rejects.toThrow();
   });
 
+  it("should fail when passed a note without title", async () => {
+    const serializedNote = new SerializedNote(generateTestId(), undefined, undefined, "thing", new Date(), false, []);
+    await expect(upsertNoteDb(serializedNote)).rejects.toThrow('title');
+  });
+
   it("should fail when passed a note without wordArr", async () => {
-    const memNote = createMemoryNote(generateTestId(), "something");
-    await expect(upsertNoteDb(memNote)).rejects.toThrow('wordArr');
+    const serializedNote = new SerializedNote(generateTestId(), undefined, "", "something", new Date(), false);
+    await expect(upsertNoteDb(serializedNote)).rejects.toThrow('wordArr');
   });
 
   it("should insert a note",async () => {
     const originalId = generateTestId();
     const originalText = "Beggars <div>in Spain</div>";
     const originalDate = new Date(1997, 5, 16, 9);
-    const original = sanitizeNote(createMemoryNote(originalId, originalText, originalDate, 'text/html;hint=SEMANTIC'));
-    original.wordArr = ["BEGGARS", "IN", "SPAIN"];
+    const originalWordArr = ["BEGGARS", "IN", "SPAIN"];
+    const serializedNote = new SerializedNote(originalId, 'text/html;hint=SEMANTIC', "Beggars", originalText, originalDate, true, originalWordArr);
 
-    const savedNote = await upsertNoteDb(original);
+    const savedNote = await upsertNoteDb(serializedNote);
     expect(savedNote.id).toEqual(originalId);
+    expect(savedNote.mimeType).toEqual(serializedNote.mimeType);
+    expect(savedNote.title).toEqual(serializedNote.title);
     expect(savedNote.content).toEqual(originalText);
     expect(savedNote.date).toEqual(originalDate);
 
     const retrieved = await getNoteDb(originalId);
+    expect(retrieved.title).toEqual(serializedNote.title);
     expect(retrieved.content).toEqual(originalText);
     expect(retrieved.date).toEqual(originalDate);
-    expect(retrieved.wordArr).toEqual(original.wordArr);
+    expect(retrieved.isLocked).toEqual(serializedNote.isLocked);
+    expect(retrieved.wordArr).toEqual(originalWordArr);
     expect(retrieved.mimeType).toEqual('text/html;hint=SEMANTIC');
   });
 
   it("should update a note",async () => {
     const originalId = generateTestId();
+    const originalTitle = "Memory";
     const originalText = "In Memory Yet Green";
     const originalDate = new Date(2003, 2, 15);
-    const original = sanitizeNote(createMemoryNote(originalId, originalText, originalDate));
-    original.wordArr = ["IN", "MEMORY", "YET", "GREEN"];
-    await upsertNoteDb(original);
+    const originalWordArr = ["IN", "MEMORY", "YET", "GREEN"];
+    const originalNote = new SerializedNote(originalId, undefined, originalTitle, originalText, originalDate, false, originalWordArr);
 
+    await upsertNoteDb(originalNote);
+
+    const updatedMimeType = 'text/html;hint=SEMANTIC';
+    const updatedTitle = "In Joy Still Felt";
     const updatedText = "<h2>In Joy Still Felt</h2>";
     const updatedDate = new Date(2010, 3, 16);
-    const updated = sanitizeNote(createMemoryNote(originalId, updatedText, updatedDate, 'text/html;hint=SEMANTIC'));
-    updated.wordArr = ["IN", "JOY", "STILL", "FELT"];
-    await upsertNoteDb(updated);
+    const updatedWordArr = ["IN", "JOY", "STILL", "FELT"];
+    const updatedNote = new SerializedNote(originalId, updatedMimeType, updatedTitle, updatedText, updatedDate, true, updatedWordArr);
+
+    await upsertNoteDb(updatedNote);
 
     const retrieved = await getNoteDb(originalId);
+    expect(retrieved.title).toEqual(updatedTitle);
     expect(retrieved.content).toEqual(updatedText);
     expect(retrieved.date).toEqual(updatedDate);
+    expect(retrieved.isLocked).toEqual(true);
     expect(retrieved.wordArr).not.toContain("MEMORY");
     expect(retrieved.wordArr).not.toContain("YET");
     expect(retrieved.wordArr).not.toContain("GREEN");
@@ -147,7 +163,7 @@ describe("upsertNoteDb", () => {
     expect(retrieved.wordArr).toContain("STILL");
     expect(retrieved.wordArr).toContain("FELT");
     expect(retrieved.wordArr.length).toEqual(4);
-    expect(retrieved.mimeType).toEqual(updated.mimeType);
+    expect(retrieved.mimeType).toEqual(updatedMimeType);
   });
 });
 
@@ -158,9 +174,10 @@ describe("deleteNoteDb", () => {
 
   it("should remove note from storage", async () => {
     const id = generateTestId();
-    const note = sanitizeNote(createMemoryNote(id, "Aroint, thee, knave!"));
-    note.wordArr = ["AROINT", "THEE", "KNAVE"];
-    await upsertNoteDb(note);
+    const wordArr = ["AROINT", "THEE", "KNAVE"];
+    const serializedNote = new SerializedNote(id, undefined, "", "Aroint, thee, knave!", new Date(), false, wordArr);
+
+    await upsertNoteDb(serializedNote);
 
     const deletedId = await deleteNoteDb(id);
     expect(deletedId).toEqual(id);
@@ -177,9 +194,9 @@ describe("findStubs", () => {
   const text1 = "<h2>The world</h2> set free";
   const text1title = "The world";
   const text2 = "Math <th>is not</th> my favorite";
-  const text2title = "is not";
+  const text2title = "Math is not my favorite";
   const text3 = "I don't <pre>like thin crust</pre>";
-  const text3title = "like thin crust";
+  const text3title = "I don't\nlike thin crust";
 
    beforeAll(async () => {
     await deleteTestNotes();
@@ -187,18 +204,18 @@ describe("findStubs", () => {
     const date = new Date(2001, 0, 1);
     for (let i = 0; i < 11; ++i) {
       date.setTime(date.getTime() + 24*60*60*1000);
-      await upsertNoteDb(createIndexedNote(text1, date));
+      await upsertNoteDb(await createIndexedNote(text1, date));
       date.setTime(date.getTime() + 24*60*60*1000);
-      await upsertNoteDb(createIndexedNote(text2, date));
+      await upsertNoteDb(await createIndexedNote(text2, date));
       date.setTime(date.getTime() + 24*60*60*1000);
-      await upsertNoteDb(createIndexedNote(text3, date, 1 === i));
+      await upsertNoteDb(await createIndexedNote(text3, date, 1 === i));
     }
     date.setTime(date.getTime() + 24*60*60*1000);
-    await upsertNoteDb(createIndexedNote(text2, date));
+    await upsertNoteDb(await createIndexedNote(text2, date));
     date.setTime(date.getTime() + 24*60*60*1000);
-    await upsertNoteDb(createIndexedNote(text3, date));
+    await upsertNoteDb(await createIndexedNote(text3, date));
     date.setTime(date.getTime() + 24*60*60*1000);
-    await upsertNoteDb(createIndexedNote(text3, date));
+    await upsertNoteDb(await createIndexedNote(text3, date));
   });
 
   it("should return all notes when no words in search string", () => new Promise(done => {
@@ -301,13 +318,13 @@ describe("findNoteIds", () => {
   beforeAll(async () => {
     await deleteTestNotes();
 
-    await upsertNoteDb(createIndexedNote(text1, earlierDate));
-    await upsertNoteDb(createIndexedNote(text2, earlierDate));
-    await upsertNoteDb(createIndexedNote(text3, earlierDate));
+    await upsertNoteDb(await createIndexedNote(text1, earlierDate));
+    await upsertNoteDb(await createIndexedNote(text2, earlierDate));
+    await upsertNoteDb(await createIndexedNote(text3, earlierDate));
 
-    await upsertNoteDb(createIndexedNote(text2, laterDate));
-    await upsertNoteDb(createIndexedNote(text1, laterDate));
-    await upsertNoteDb(createIndexedNote(text3, laterDate));
+    await upsertNoteDb(await createIndexedNote(text2, laterDate));
+    await upsertNoteDb(await createIndexedNote(text1, laterDate));
+    await upsertNoteDb(await createIndexedNote(text3, laterDate));
   });
 
   it("should return all note IDs, by descending date order, when no search words", async () => {
@@ -348,29 +365,9 @@ describe("findNoteIds", () => {
   });
 });
 
-function createIndexedNote(content, date, isLocked = false) {
-  const memNote = createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC', isLocked);
-
-  const wordSet = new Set();
-  const textFilter = function (text) {
-    for (const word of parseWords(text)) {
-      wordSet.add(word);
-    }
-    return text;
-  }
-
-  const cleanNote = sanitizeNote(memNote, textFilter);
-
-  for (let candidateWord of wordSet) {
-    for (let otherWord of wordSet) {
-      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
-        wordSet.delete(otherWord);
-      }
-    }
-  }
-  cleanNote.wordArr = Array.from(wordSet);
-
-  return cleanNote;
+async function createIndexedNote(content, date, isLocked = false) {
+  const raw = {id: generateTestId(), mimeType: 'text/html;hint=SEMANTIC', content, date, isLocked};
+  return serializeNote(deserializeNote(raw));
 }
 
 

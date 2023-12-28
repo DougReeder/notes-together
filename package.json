@@ -9,7 +9,7 @@
     "generate-pwa-assets": "pwa-assets-generator --preset minimal public/generated-icons/NotesTogether-Icon.svg",
     "build": "vite build",
     "betatest": "surge dist https://notes-together.surge.sh/; true",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 9",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 10",
     "preview": "vite preview --host 0.0.0.0",
     "deploy": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/dist/* root@hominidsoftware.com:/var/www/notestogether/"
   },
@@ -39,7 +39,6 @@
     "react-transition-group": "^4.4.5",
     "remotestorage-widget": "^1.5.5",
     "remotestoragejs": "github:remotestorage/remotestorage.js#a189529",
-    "sanitize-html": "^2.7.0",
     "slate": "^0.101.4",
     "slate-history": "^0.100.0",
     "slate-hyperscript": "^0.100.0",

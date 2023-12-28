@@ -1,8 +1,8 @@
 // storage.test.js - automated tests for storage abstraction for Notes Together
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021-2023 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
-import {createMemoryNote} from "./Note";
+import {NodeNote, SerializedNote} from "./Note";
 import _ from "fake-indexeddb/auto.js";
 import {
   init,
@@ -19,6 +19,8 @@ import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL} from "uuid";
 import {waitFor} from "@testing-library/react";
+import {deserializeHtml} from "./slateHtml.jsx";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 
 if (!global.requestIdleCallback) {
@@ -328,73 +330,58 @@ describe("storage", () => {
 
   describe("upsertNote", () => {
     it("should fail storing when passed a non-object", async () => {
-      await expect(upsertNote()).rejects.toThrow();
+      await expect(upsertNote(undefined)).rejects.toThrow();
+    });
+
+    it("should fail storing when passed a note without valid id", async () => {
+      const serializedNote = new SerializedNote(undefined, '', '', "", new Date(), false, [])
+      await expect(upsertNote(serializedNote)).rejects.toThrow('id');
+    });
+
+    // mimeType can be string, undefined or null. Is it worth testing for that?
+
+    it("should fail storing when passed a note without title", async () => {
+      const serializedNote = new SerializedNote(generateTestId(), '', undefined, "something", new Date(), false, ['SOMETHING'])
+      await expect(upsertNote(serializedNote)).rejects.toThrow('title');
     });
 
     it("should fail storing when passed a note without content", async () => {
-      await expect(upsertNote({id:generateTestId()})).rejects.toThrow('content');
+      const serializedNote = new SerializedNote(generateTestId(), '', '', undefined, new Date(), false, [])
+
+      await expect(upsertNote(serializedNote)).rejects.toThrow('content');
     });
 
-    it("should reject storing notes with bad string dates", async () => {
-      const memNote = createMemoryNote(generateTestId(), "elbow");
-      memNote.date = "Tuesday";
+    it("should fail storing when passed a note with bad string date", async () => {
+      const serializedNote = new SerializedNote(generateTestId(), '', "elbow", "elbow", "Tuesday", false, []);
 
-      await expect(upsertNote(memNote)).rejects.toThrow("Invalid");
+      await expect(upsertNote(serializedNote)).rejects.toThrow("date");
     });
 
-    it("should extract normalized, minimal set of keywords from note", async () => {
-      const originalText = "food foolish <b>at</b> attention it's ...its";
-      const original = createMemoryNote(generateTestId(), originalText, null,'text/html;hint=SEMANTIC');
+    // isLocked is coerced to boolean; type not checked
 
-      const note = await upsertNote(original);
-      expect(note.content).toEqual("food foolish <strong>at</strong> attention it's ...its");
-      expect(note.wordArr).toContain("FOOD");
-      expect(note.wordArr).toContain("FOOLISH");
-      expect(note.wordArr).not.toContain("AT");
-      expect(note.wordArr).toContain("ATTENTION");
-      expect(note.wordArr).toContain("IT'S");
-      expect(note.wordArr).toContain("ITS");
-      expect(note.wordArr.length).toEqual(5);
-      expect(note.mimeType).toEqual(original.mimeType);
-      expect(note.isLocked).toEqual(original.isLocked);
-    });
-
-    it('should drop keywords that match the start of another keyword', async () => {
-      const originalText = "tar tarp tarpaulin workgroup workflow doorknob 2.10 2.10.3.8 door";
-      const original = createMemoryNote(generateTestId(), originalText, null, 'text/plain');
-
-      const cleanNote = await upsertNote(original);
-
-      expect(cleanNote.content).toEqual(originalText);
-      expect(cleanNote.wordArr).toContain("TARPAULIN");
-      expect(cleanNote.wordArr).not.toContain("TAR");
-      expect(cleanNote.wordArr).not.toContain("TARP");
-      expect(cleanNote.wordArr).toContain("WORKGROUP");
-      expect(cleanNote.wordArr).toContain("WORKFLOW");
-      expect(cleanNote.wordArr).not.toContain("WORK");
-      expect(cleanNote.wordArr).toContain("DOORKNOB");
-      expect(cleanNote.wordArr).not.toContain("DOOR");
-      expect(cleanNote.wordArr).toContain("2.10.3.8");
-      expect(cleanNote.wordArr).not.toContain("2.10");
-      expect(cleanNote.wordArr.length).toEqual(5);
-      expect(cleanNote.mimeType).toEqual(original.mimeType);
-      expect(cleanNote.isLocked).toEqual(original.isLocked);
+    it("should fail storing when passed a note without valid wordArr", async () => {
+      const serializedNote = new SerializedNote(generateTestId(), '', '', '', new Date(), false, {})
+      await expect(upsertNote(serializedNote)).rejects.toThrow('wordArr');
     });
 
     it("should insert a note",async () => {
       const originalId = generateTestId();
-      const originalText = "Simply <strike>unbearable";
+      const nodes = [{type: 'paragraph', children: [{text: "Simply "}, {text: "unbearable", strikethrough: true}]}];
       const originalDate = new Date(1997, 5, 16, 9);
-      const original = createMemoryNote(originalId, originalText, originalDate, 'text/html;hint=SEMANTIC');
+      const original = await serializeNote(new NodeNote(originalId, 'html;hint=SEMANTIC', nodes, originalDate, true));
 
       const savedNote = await upsertNote(original);
       expect(savedNote.id).toEqual(originalId);
+      expect(savedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
+      expect(savedNote.title).toEqual("Simply unbearable");
+      expect(savedNote.content).toEqual('<p>Simply <s>unbearable</s></p>');
       expect(savedNote.wordArr).toContain("SIMPLY");
       expect(savedNote.wordArr).toContain("UNBEARABLE");
       expect(savedNote.wordArr.length).toEqual(2);
 
       const retrieved = await getNote(originalId);
-      expect(retrieved.content.slice(0, originalText.length)).toEqual(originalText);
+      expect(retrieved.mimeType).toEqual('text/html;hint=SEMANTIC');
+      expect(retrieved.content).toEqual(original.content);
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("SIMPLY");
       expect(retrieved.wordArr).toContain("UNBEARABLE");
@@ -405,18 +392,21 @@ describe("storage", () => {
 
     it("should update a note",async () => {
       const originalId = generateTestId();
-      const originalText = "I. Asimov: A Memoir";
+      const nodes = [
+        {type: 'paragraph', children: [{text: "I. Asimov:"}]},
+        {type: 'paragraph', children: [{text: " A Memoir"}]},
+      ];
       const originalDate = new Date(2003, 2, 15);
-      const original = createMemoryNote(originalId, originalText, originalDate, 'text/plain');
+      const original = await serializeNote(new NodeNote(originalId, 'plain', nodes, originalDate, true));
 
       await upsertNote(original);
-      const updatedText = "<h2>Eleven Years of Trying</h2>";
+      const updatedNodes = [{type: 'heading-two', children: [{text: "Eleven Years of Trying"}]}];
       const updatedDate = new Date(2010, 3, 16);
-      const updated = createMemoryNote(originalId, updatedText, updatedDate, 'text/html;hint=SEMANTIC');
+      const updated = await serializeNote(new NodeNote(originalId, 'html;hint=SEMANTIC', updatedNodes, updatedDate, false))
       await upsertNote(updated, 'DETAIL');
 
       const retrieved = await getNote(originalId);
-      expect(retrieved.content).toEqual(updatedText);
+      expect(retrieved.content).toEqual("<h2>Eleven Years of Trying</h2>");
       expect(retrieved.date).toEqual(updatedDate);
       expect(retrieved.wordArr).not.toContain("I");
       expect(retrieved.wordArr).not.toContain("ASIMOV");
@@ -428,14 +418,14 @@ describe("storage", () => {
       expect(retrieved.wordArr).toContain("TRYING");
       expect(retrieved.wordArr.length).toEqual(4);
       expect(retrieved.mimeType).toEqual(updated.mimeType);
-      expect(retrieved.isLocked).toEqual(original.isLocked);
+      expect(retrieved.isLocked).toEqual(updated.isLocked);
     });
 
     it("should insert an indexed note only in IndexedDb, when initiator is REMOTE", async () => {
       const originalId = generateTestId();
-      const originalText = "offer of offertory off";
+      const nodes = [{type: 'paragraph', children: [{text: "offer of offertory off"}]}];
       const originalDate = new Date(1999, 8, 23, 17);
-      const original = createMemoryNote(originalId, originalText, originalDate);
+      const original = await serializeNote(new NodeNote(originalId, undefined, nodes, originalDate, false));
 
       const savedNote = await upsertNote(original, 'REMOTE');
       expect(savedNote.id).toEqual(originalId);
@@ -443,7 +433,7 @@ describe("storage", () => {
       expect(savedNote.wordArr.length).toEqual(1);
 
       const retrieved = await getNoteDb(originalId);
-      expect(retrieved.content.slice(0, originalText.length)).toEqual(originalText);
+      expect(retrieved.content).toEqual(original.content);
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("OFFERTORY");
       expect(retrieved.wordArr.length).toEqual(1);
@@ -471,7 +461,9 @@ describe("storage", () => {
 
     it("should remove note from storage", async () => {
       const id = generateTestId();
-      const note = createMemoryNote(id, "Aroint, thee, knave!")
+      const nodes = [{type: 'paragraph', children: [{text: "Aroint, thee, knave!"}]}];
+      const note = await serializeNote(new NodeNote(id, undefined, nodes));
+
       await upsertNote(note);
 
       const deleteResult = await deleteNote(id);
@@ -479,7 +471,7 @@ describe("storage", () => {
       await expect(getNote(id)).resolves.toBeUndefined();
     });
 
-    it("should succeed in deleting non-existent note", async () => {
+    it("should succeed in deleting non-existent note (and log error)", async () => {
       console.error = vitest.fn();
 
       const deleteResult = await deleteNote(NIL);
@@ -489,9 +481,12 @@ describe("storage", () => {
     });
 
     it("should not remove locked note from storage", async () => {
-      const savedNote = await upsertNote(createMemoryNote(generateTestId(), "Fusce vel maximus ipsum, at consequat dolor.", new Date(1983, 2, 26), 'text/html;hint=SEMANTIC', true));
+      const nodes = [{type: 'paragraph', children: [{text: "Fusce vel maximus ipsum, at consequat dolor."}]}];
+      const note = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, new Date(1983, 2, 26), true));
 
-      await expect(deleteNote(savedNote.id)).rejects.toThrow("First, unlock ");
+      const savedNote = await upsertNote(note)
+
+      await expect(deleteNote(savedNote.id)).rejects.toThrow("not deleting “Fusce vel maximus ipsum,...” which is locked.");
       await expect(getNote(savedNote.id)).resolves.toEqual(savedNote);
 
       savedNote.isLocked = false;
@@ -502,13 +497,13 @@ describe("storage", () => {
   });
 
   describe("changeHandler", () => {
-    it("should create a note from incoming upsert", async () => {
+    it("should create an HTML note from incoming upsert", async () => {
       const id = generateTestId();
       const remoteNote = {
         id: id,
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `Itaque earum rerum hic tenetur a sapiente delectus`,
-        date: new Date(1600, 2, 15),
+        date: new Date(1600, 2, 15).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -521,9 +516,42 @@ describe("storage", () => {
 
       const retrieved = await getNote(id);
       expect(retrieved.content).toEqual(remoteNote.content);
-      expect(retrieved.title).toEqual(remoteNote.title);
-      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.title).toEqual("Lorem ipsum dolor sit amet");
+      expect(retrieved.date).toEqual(new Date(remoteNote.date));
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+
+      const {remoteStorage} = await init();
+      await expect(remoteStorage.documents.get(id)).resolves.toBeUndefined();
+    });
+
+    it("should create a text note from incoming upsert (Litewrite)", async () => {
+      const id = generateTestId();
+      const date = new Date(1950, 0, 1);
+      const remoteNote = {
+        id: id,
+        content: ` Hi ho the dairy-o \n The farmer in the dell `,
+        title: 'mismatched title',
+        lastEdited: date.valueOf(),
+        cursorPos: 13,
+        public: null,
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
+      };
+      await changeHandler({origin: 'remote', oldValue: false, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(remoteNote.content);
+      expect(retrieved.title).toEqual('Hi ho the dairy-o\nThe farmer in the dell');
+      expect(retrieved.date).toEqual(date);
+      expect(retrieved.mimeType).toBeFalsy();
+      expect(retrieved.isLocked).toBeFalsy();
+
+      const {remoteStorage} = await init();
+      await expect(remoteStorage.documents.get(id)).resolves.toBeUndefined();
     });
 
     it("should delete a note from incoming delete", async () => {
@@ -532,11 +560,12 @@ describe("storage", () => {
         id: id,
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.`,
-        date: new Date(1918, 10, 11),
+        date: new Date(1918, 10, 11).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
-      await upsertNote(localNote);
+      const serializedNote = await serializeNote(deserializeNote(localNote));
+      await upsertNote(serializedNote);
       await changeHandler({origin: 'remote', oldValue: localNote, newValue: false});
       await new Promise((resolve) => {
         setTimeout(() => {
@@ -548,7 +577,7 @@ describe("storage", () => {
       expect(retrieved).toBeFalsy();
     });
 
-    it("should retain a modified note which was deleted on another device", async () => {
+    it("should retain a modified HTML note which was deleted on another device", async () => {
       console.warn = vitest.fn();
 
       const id = generateTestId();
@@ -556,7 +585,7 @@ describe("storage", () => {
         id: id,
         content: `<p> Lorem ipsum dolor sit amet </p>`,
         title: `Lorem ipsum dolor sit amet`,
-        date: new Date(1500, 0, 1),
+        date: new Date(1500, 0, 1).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         isLocked: false,
         '@context': "http://remotestorage.io/spec/modules/documents/note"
@@ -571,14 +600,44 @@ describe("storage", () => {
       const retrieved = await getNote(id);
       expect(retrieved.content).toEqual(localNote.content);
       expect(retrieved.title).toEqual(localNote.title);
-      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.date).toEqual(new Date(localNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
       expect(retrieved.isLocked).toEqual(localNote.isLocked);
 
       expect(console.warn).toHaveBeenCalledWith("remoteStorage local change, remote delete:", undefined, localNote, false);
     });
 
-    it("should restore a deleted note which was edited on another device", async () => {
+    it("should retain a modified text note which was deleted on another device", async () => {
+      console.warn = vitest.fn();
+
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: ` one space \n  two spaces  \n   three space   `,
+        title: `Lorem ipsum dolor sit amet`,
+        date: new Date(1812, 9, 22).toISOString(),
+        mimeType: 'text/plain',
+        isLocked: false,
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: false});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 30);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(localNote.content);
+      expect(retrieved.title).toEqual("one space\ntwo spaces");
+      expect(retrieved.date).toEqual(new Date(localNote.date));
+      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+      expect(retrieved.isLocked).toEqual(localNote.isLocked);
+
+      expect(console.warn).toHaveBeenCalledWith("remoteStorage local change, remote delete:", undefined, localNote, false);
+    });
+
+    it("should restore a deleted text note which was edited on another device", async () => {
       const id = generateTestId();
       const remoteNote = {
         id: id,
@@ -597,8 +656,8 @@ describe("storage", () => {
       const retrieved = await getNote(id);
       expect(retrieved.content).toEqual(remoteNote.content);
       expect(retrieved.title).toEqual(remoteNote.title);
-      // expect(retrieved.date).toEqual(remoteNote.date);
-      expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+      expect(Date.now() - retrieved.date).toBeLessThan(1000);
+      expect(retrieved.mimeType).toEqual('');
       expect(retrieved.isLocked).toEqual(remoteNote.isLocked);
     });
 
@@ -608,7 +667,7 @@ describe("storage", () => {
         id: id,
         content: `<h1>Duis ex elit</h1><p>Vestibulum nec massa eu, cursus porta augue.</p>`,
         title: `Duis ex elit`,
-        date: new Date(2021, 8, 1),
+        date: new Date(2021, 8, 1).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         isLocked: false,
         '@context': "http://remotestorage.io/spec/modules/documents/note"
@@ -625,7 +684,7 @@ describe("storage", () => {
       const retrieved = await getNote(id);
       expect(retrieved.content).toEqual(`<h1>Duis ex elit</h1><p>Vestibulum nec massa eu, cursus porta augue.</p>`);
       expect(retrieved.title).toEqual("Duis ex elit");
-      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.date).toEqual(new Date(remoteNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
       expect(retrieved.isLocked).toEqual(localNote.isLocked);
     });
@@ -636,7 +695,7 @@ describe("storage", () => {
         id: id,
         content: `<p><em>My Day</em></p><p>It was dull.</p>`,
         title: `My Day\nIt was dull.`,
-        date: new Date(2021, 8, 1),
+        date: new Date(2021, 8, 1).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -644,7 +703,7 @@ describe("storage", () => {
         id: id,
         content: `<p><i>My Day</i></p><p>It was great!</p>`,
         title: `My Day\nIt was great!`,
-        date: new Date(2021, 9, 1),
+        date: new Date(2021, 9, 1).toISOString(),
         mimeType: 'text/html',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -668,7 +727,7 @@ describe("storage", () => {
         id: id,
         content: `The movie was well-acted.`,
         title: `The movie was well-acted.`,
-        date: new Date(2020, 3, 1),
+        date: new Date(2020, 3, 1).toISOString(),
         mimeType: 'text/markdown;hint=COMMONMARK',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -676,7 +735,7 @@ describe("storage", () => {
         id: id,
         content: `The movie has good costuming.`,
         title: `The movie has good costuming.`,
-        date: new Date(2020, 0, 1),
+        date: new Date(2020, 0, 1).toISOString(),
         mimeType: 'text/plain;charset=UTF-8',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -700,7 +759,7 @@ describe("storage", () => {
         id: id,
         content: `<h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p>`,
         title: `Staff Meeting\nMary: let's do it!`,
-        date: new Date(2021, 8, 2),
+        date: new Date(2021, 8, 2).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -710,7 +769,7 @@ describe("storage", () => {
 John: let's be cautious
 Finance: we can't afford it.`,
         title: `Staff Meeting\nJohn: let's be cautious`,
-        date: new Date(2021, 8, 1),
+        date: new Date(2021, 8, 1).toISOString(),
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
       await new Promise((resolve) => {
@@ -735,7 +794,7 @@ Finance: we can't afford it.</ins>`);
         id: id,
         content: ` my notes on\n# Therapods `,
         title: `my notes on\n# Therapods`,
-        date: new Date(2010, 1, 14),
+        date: new Date(2010, 1, 14).toISOString(),
         mimeType: 'text/markdown;hint=COMMONMARK',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -743,7 +802,7 @@ Finance: we can't afford it.</ins>`);
         id: id,
         content: `<p>my notes on</p><h2>Therapods</h2>`,
         title: `Therapods\nmy notes on`,
-        date: new Date(2010, 0, 1),
+        date: new Date(2010, 0, 1).toISOString(),
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
@@ -812,20 +871,29 @@ Finance: we can't afford it.</ins>`);
   });
 
   describe("findStubs", () => {
-    const note1 = createMemoryNote(generateTestId(), "<h2>The world</h2> set free", new Date(2011, 0, 1), 'text/html;hint=SEMANTIC');
-    const note1title = "The world";
-    const note2 = createMemoryNote(generateTestId(), "Math <th>is not</th> my favorite", new Date(2012, 1, 2), 'text/html;hint=SEMANTIC');
-    const note2title = "is not";
-    const note3 = createMemoryNote(generateTestId(), "I don't <pre>like thin crust</pre>", new Date(2013, 2, 3), 'text/html;hint=SEMANTIC');
-    const note3title = "like thin crust";
+    let note1, note2, note3;
 
-    function createTestNote(content) {
+    function createTestNote(title, content, wordArr) {
       const startDate = new Date(2015, 0, 1);
       const date = new Date(startDate.getTime() + Math.random() * 7*24*60*60*1000);
-      return createMemoryNote(generateTestId(), content, date, 'text/html;hint=SEMANTIC');
+      return new SerializedNote(generateTestId(), 'text/html;hint=SEMANTIC', title, content, date, false, wordArr);
     }
 
     beforeAll(async () => {
+      const nodes1 = [
+        {type: 'heading-two', children: [{text: "The world"}]},
+        {type: 'paragraph', children: [{text: " set free"}]},
+      ];
+      note1 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes1, new Date(2011, 0, 1)));
+      const nodes2 = [
+        {type: 'paragraph', children: [{text: "Math "}, {text: "is not", bold: true}, {text: " my favorite"}, ]},
+      ];
+      note2 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes2, new Date(2012, 1, 2)));
+      const nodes3 = [
+        {type: 'paragraph', children: [{text: "I don't "}, {text: "like thin crust", code: true}]},
+      ];
+      note3 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes3, new Date(2013, 2, 3)));
+
       for (const noteId of await findFillerNoteIds()) {
         await deleteNote(noteId, true);
       }
@@ -835,13 +903,13 @@ Finance: we can't afford it.</ins>`);
       await upsertNote(note3);
 
       for (let i = 0; i < 10; ++i) {
-        await upsertNote(createTestNote(note1.content));
-        await upsertNote(createTestNote(note2.content));
-        await upsertNote(createTestNote(note3.content));
+        await upsertNote(createTestNote(note1.title, note1.content, note1.wordArr));
+        await upsertNote(createTestNote(note2.title, note2.content, note2.wordArr));
+        await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
       }
-      await upsertNote(createTestNote(note2.content));
-      await upsertNote(createTestNote(note3.content));
-      await upsertNote(createTestNote(note3.content));
+      await upsertNote(createTestNote(note2.title, note2.content, note2.wordArr));
+      await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
+      await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
     });
 
     it("should return all notes when no words in search string", () => new Promise((done, fail) => {
@@ -864,13 +932,13 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(36);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note1title ? 1 : 0) + acc;
+            return (item.title ===  note1.title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2title ? 1 : 0) + acc;
+            return (item.title === note2.title ? 1 : 0) + acc;
           }, 0)).toEqual(12);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3title ? 1 : 0) + acc;
+            return (item.title === note3.title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -908,13 +976,13 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(24);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note1title ? 1 : 0) + acc;
+            return (item.title ===  note1.title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2title ? 1 : 0) + acc;
+            return (item.title === note2.title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3title ? 1 : 0) + acc;
+            return (item.title === note3.title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -955,13 +1023,13 @@ Finance: we can't afford it.</ins>`);
           expect(testStubs.length).toEqual(13);
           expect(testStubIds.size).toEqual(13);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note1title ? 1 : 0) + acc;
+            return (item.title ===  note1.title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2title ? 1 : 0) + acc;
+            return (item.title === note2.title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3title ? 1 : 0) + acc;
+            return (item.title === note3.title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -981,15 +1049,16 @@ Finance: we can't afford it.</ins>`);
   });
 
   describe("findStubs (max)", () => {
-    const content = "something rather short";
-
     beforeAll(async () => {
+      const nodes = [{type: 'paragraph', children: [{text: "something rather short"}]}];
+      const note = await serializeNote(new NodeNote(generateTestId(), undefined, nodes));
+
       for (const noteId of await findFillerNoteIds()) {
         await deleteNote(noteId);
       }
 
       for (let i = 0; i < 500; ++i) {
-        await upsertNote(createMemoryNote(generateTestId(), content));
+        await upsertNote(new SerializedNote(generateTestId(), note.mimeType, note.title, note.content, note.date, note.isLocked, note.wordArr));
       }
     });
 
@@ -1084,6 +1153,7 @@ Finance: we can't afford it.</ins>`);
 <p>He has erected a multitude of New Offices, and sent hither swarms of Officers to harrass our people, and eat out their substance.
 <p>He has kept among us, in times of peace, Standing Armies without the Consent of our legislatures.
 `;
+    const nodes = deserializeHtml(content);
 
     beforeAll(async () => {
       for (const noteId of await findFillerNoteIds()) {
@@ -1091,7 +1161,8 @@ Finance: we can't afford it.</ins>`);
       }
 
       for (let i = 0; i < 600; ++i) {
-        await upsertNote(createMemoryNote(generateTestId(), content, null, 'text/html;hint=SEMANTIC'));
+        const nodeNote = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes)
+        await upsertNote(await serializeNote(nodeNote))
       }
     }, 60_000);
 
@@ -1117,7 +1188,7 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {
-            expect(stub.title).toMatch(/^In Congress, July 4, 1776\nThe unanimous Declaration of the thirteen united States of America, When in the Course of human events/);
+            expect(stub.title).toEqual("In Congress, July 4, 1776");
           }
 
           expect(isPartial).toBeTruthy();
@@ -1152,7 +1223,7 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(500);
           for (const stub of testStubs) {
-            expect(stub.title).toMatch(/^In Congress, July 4, 1776\nThe unanimous Declaration of the thirteen united States of America, When in the Course of human events/);
+            expect(stub.title).toEqual("In Congress, July 4, 1776");
           }
 
           expect(isPartial).toBeTruthy();

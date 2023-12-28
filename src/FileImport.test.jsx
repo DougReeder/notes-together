@@ -69,7 +69,7 @@ describe("importFromFile", () => {
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
     expect(retrievedNote.title).toEqual(`Some Topic`);
-    expect(retrievedNote.content).toEqual(fileContent + "<hr /><p><em>Lipsum.html</em></p>");
+    expect(retrievedNote.content).toEqual(fileContent.replace(/\n/g, '') + "<hr /><p><em>Lipsum.html</em></p>");
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
@@ -90,11 +90,8 @@ describe("importFromFile", () => {
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
-    expect(retrievedNote.title).toEqual(`No matter where you go, there you are.
-Buckaroo-Banzai.html`);
-    expect(retrievedNote.content).toEqual(`
-<blockquote>No matter where you go, there you are.</blockquote>
-<hr /><p><em>Buckaroo-Banzai.html</em></p>`);
+    expect(retrievedNote.title).toEqual(`Buckaroo-Banzai.html`);
+    expect(retrievedNote.content).toEqual(`<blockquote>No matter where you go, there you are.</blockquote><hr /><p><em>Buckaroo-Banzai.html</em></p>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
@@ -145,7 +142,7 @@ There's three things to say about this:
     const fileDate = '2021-10-01T13:00:00Z';
     const file = new File([fileContent], "review.t", {type: 'text/troff', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
+    const {noteIds, message} = await importFromFile(file, 'text/troff', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -153,7 +150,7 @@ There's three things to say about this:
 
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.mimeType).toEqual('text/troff');
     let titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toEqual("Popular Novel");
     expect(titleLines[1]).toEqual("Review copyright 2021 by Doug Reeder");
@@ -246,7 +243,7 @@ review.t`);
 
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     let titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toMatch(/^Subject Area/);
     expect(titleLines[1]).toMatch(/^Actual Title/);
@@ -256,7 +253,7 @@ review.t`);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toMatch(/^Item          Price      # In stock/);
     expect(titleLines[1]).toMatch(/^Juicy Apples  1.99       7/);
@@ -289,14 +286,14 @@ body text of second note
 
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     expect(retrievedNote.content).toEqual(content0);
     expect(retrievedNote.date).toEqual(new Date(date0));
     expect(retrievedNote.isLocked).toEqual(false);
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     expect(retrievedNote.content).toEqual(content1);
     expect(retrievedNote.date).toEqual(new Date(date1));
     expect(retrievedNote.isLocked).toEqual(false);
@@ -383,6 +380,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
   });
 
   it("should continue after refusing to create a Markdown note longer than 600,000 characters", async () => {
+    console.error = vitest.fn();
     const content0 = 'introduction\n';
     const date0 = '2006-02-14T07:00:00Z';
     let listLines = `1. A thing
@@ -407,7 +405,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
 
     let retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     expect(retrievedNote.title).toMatch(/^introduction\ninterminable.md/);
     expect(retrievedNote.content).toEqual(content0 + '\n------------------------------\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date0));
@@ -415,11 +413,13 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
 
     retrievedNote = await getNote(noteIds[1]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     expect(retrievedNote.title).toMatch(/^Lorem ipsum dolor sit amet, consectetur adipiscing elit/);
     expect(retrievedNote.content).toEqual(lipsum + '\n------------------------------\n*interminable.md*');
     expect(retrievedNote.date).toEqual(new Date(date2));
     expect(retrievedNote.isLocked).toEqual(false);
+
+    expect(console.error).toHaveBeenCalledWith("splitIntoNotes:", expect.any(Error));
   });
 
   it("should parse a non-plain text file as one note, with file name appended", async () => {
@@ -531,7 +531,7 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
 
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/markdown');
+    expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
     expect(retrievedNote.title).toMatch(/^Lorem Ipsum\n1. Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
     expect(retrievedNote.content).toEqual(fileContent + "\n\n------------------------------\ndivided.txt");
     expect(retrievedNote.date).toEqual(new Date(fileDate));

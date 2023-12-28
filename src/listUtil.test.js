@@ -3,51 +3,27 @@
 
 import generateTestId from "./util/generateTestId";
 import {updateListWithChanges} from "./listUtil";
-import {createMemoryNote} from "./Note";
-import {sanitizeNote} from "./sanitizeNote";
 import {parseWords} from "./storage";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 
 const startDate = Date.parse('2016-01-01');
-function createIndexedNote(content, date) {
-  if (!date) {
-    date = new Date(startDate + Math.random() * 31 * 24 * 60 * 60 * 1000);
-  }
-  const memNote = createMemoryNote(generateTestId(), content, date);
-
-  const wordSet = new Set();
-  const textFilter = function (text) {
-    for (const word of parseWords(text)) {
-      wordSet.add(word);
-    }
-    return text;
-  }
-
-  const cleanNote = sanitizeNote(memNote, textFilter);
-
-  for (let candidateWord of wordSet) {
-    for (let otherWord of wordSet) {
-      if (otherWord !== candidateWord && candidateWord.startsWith(otherWord)) {
-        wordSet.delete(otherWord);
-      }
-    }
-  }
-  cleanNote.wordArr = Array.from(wordSet);
-
-  return cleanNote;
+async function createIndexedNote(content, date = new Date(startDate + Math.random() * 31 * 24 * 60 * 60 * 1000), isLocked = false) {
+  const raw = {id: generateTestId(), content, date, isLocked};
+  return serializeNote(deserializeNote(raw));
 }
 
 
 describe("updateListWithChanges", () => {
-  it("should delete notes", () => {
-    const targetNoteA = createMemoryNote(generateTestId(), "second");
-    const targetNoteB = createMemoryNote(generateTestId(), "fourth");
+  it("should delete notes", async () => {
+    const targetNoteA = await serializeNote(deserializeNote({id: generateTestId(), content: "second"}));
+    const targetNoteB = await serializeNote(deserializeNote({id: generateTestId(), content: "fourth"}));
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "first"})),
       targetNoteA,
-      createMemoryNote(generateTestId(), "third"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "third"})),
       targetNoteB,
-      createMemoryNote(generateTestId(), "fifth"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "fifth"})),
     ];
     const notesDeleted = {};
     notesDeleted[targetNoteA.id] = true;
@@ -61,11 +37,11 @@ describe("updateListWithChanges", () => {
     expect(newNotes).not.toContain(targetNoteB);
   });
 
-  it("should not change list when other notes are deleted", () => {
+  it("should not change list when other notes are deleted", async () => {
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first"),
-      createMemoryNote(generateTestId(), "second"),
-      createMemoryNote(generateTestId(), "third"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "first"})),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "second"})),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "third"})),
     ];
     const notesDeleted = {};
     notesDeleted[generateTestId()] = true;
@@ -77,11 +53,11 @@ describe("updateListWithChanges", () => {
     expect(newNotes.length).toEqual(3);
   });
 
-  it("should delete note, even if it also is changed (no search words)", () => {
+  it("should delete note, even if it also is changed (no search words)", async () => {
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first"),
-      createMemoryNote(generateTestId(), "second"),
-      createMemoryNote(generateTestId(), "third"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "first"})),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "second"})),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "third"})),
     ];
 
     const notesDeleted = {};
@@ -96,14 +72,14 @@ describe("updateListWithChanges", () => {
     expect(newNotes).not.toContain(oldNotes[1]);
   });
 
-  it("should update existing note text (no search words)", () => {
-    const targetNote = createMemoryNote(generateTestId(), "second");
+  it("should update existing note text (no search words)", async () => {
+    const targetNote = await serializeNote(deserializeNote({id: generateTestId(), content: "second"}));
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "first"})),
       targetNote,
-      createMemoryNote(generateTestId(), "third"),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "third"})),
     ];
-    const updatedNote = sanitizeNote(createMemoryNote(targetNote.id, "new"));
+    const updatedNote = await serializeNote(deserializeNote({id: targetNote.id, content: "new"}));
     const notesChanged = {};
     notesChanged[updatedNote.id] = updatedNote;
 
@@ -115,14 +91,15 @@ describe("updateListWithChanges", () => {
     expect(newNotes).not.toContain(targetNote);
   });
 
-  it("should re-sort if date of existing note changes (no search words)", () => {
-    const targetNote = createMemoryNote(generateTestId(), "second", new Date(2000, 0, 20));
+  it("should re-sort if date of existing note changes (no search words)", async () => {
+    const raw = {id: generateTestId(), content: "second", date: new Date(2000, 0, 20)};
+    const targetNote = await serializeNote(deserializeNote(raw));
     const oldNotes = [
-      createMemoryNote(generateTestId(), "first", new Date(2000, 0, 30)),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "first", date: new Date(2000, 0, 30)})),
       targetNote,
-      createMemoryNote(generateTestId(), "third", new Date(2000, 0, 10)),
+      await serializeNote(deserializeNote({id: generateTestId(), content: "third", date: new Date(2000, 0, 10)})),
     ];
-    const updatedNote = sanitizeNote(createMemoryNote(targetNote.id, targetNote.text, new Date(2000, 0, 31)));
+    const updatedNote = await serializeNote(deserializeNote({id: targetNote.id, content: targetNote.text, date: new Date(2000, 0, 31)}));
     const notesChanged = {};
     notesChanged[updatedNote.id] = updatedNote;
 
@@ -137,14 +114,14 @@ describe("updateListWithChanges", () => {
     expect(newNotes[2]).toEqual(oldNotes[2]);
   });
 
-  it("should add notes (no search words)", () => {
+  it("should add notes (no search words)", async () => {
     const oldNotes = [
-      createIndexedNote("first"),
-      createIndexedNote("second"),
-      createIndexedNote("third"),
+      await createIndexedNote("first"),
+      await createIndexedNote("second"),
+      await createIndexedNote("third"),
     ];
-    const newNoteA = createIndexedNote("new");
-    const newNoteB = createIndexedNote("newer");
+    const newNoteA = await createIndexedNote("new");
+    const newNoteB = await createIndexedNote("newer");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -157,15 +134,15 @@ describe("updateListWithChanges", () => {
     expect(newNotes).toContain(newNoteB);
   });
 
-  it("should add notes if they match", () => {
+  it("should add notes if they match", async () => {
     const searchWords = parseWords("fo");
     const oldNotes = [
-      createIndexedNote("first foo"),
-      createIndexedNote("second foo"),
-      createIndexedNote("third foo"),
+      await createIndexedNote("first foo"),
+      await createIndexedNote("second foo"),
+      await createIndexedNote("third foo"),
     ];
-    const newNoteA = createIndexedNote("new foo");
-    const newNoteB = createIndexedNote("new foolish");
+    const newNoteA = await createIndexedNote("new foo");
+    const newNoteB = await createIndexedNote("new foolish");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -178,15 +155,15 @@ describe("updateListWithChanges", () => {
     expect(newNotes).toContain(newNoteB);
   });
 
-  it("should not add notes if they don't match", () => {
+  it("should not add notes if they don't match", async () => {
     const searchWords = parseWords("fo");
     const oldNotes = [
-      createIndexedNote("first foo"),
-      createIndexedNote("second foo"),
-      createIndexedNote("third foo"),
+      await createIndexedNote("first foo"),
+      await createIndexedNote("second foo"),
+      await createIndexedNote("third foo"),
     ];
-    const newNoteA = createIndexedNote( "new f");
-    const newNoteB = createIndexedNote("new of");
+    const newNoteA = await createIndexedNote( "new f");
+    const newNoteB = await createIndexedNote("new of");
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -199,14 +176,14 @@ describe("updateListWithChanges", () => {
     expect(newNotes).not.toContain(newNoteB);
   });
 
-  it("should sort new notes in place (with no search words)", () => {
+  it("should sort new notes in place (with no search words)", async () => {
     const oldNotes = [
-      createIndexedNote("first", new Date(2000, 0, 30)),
-      createIndexedNote("second", new Date(2000, 0, 20)),
-      createIndexedNote("third", new Date(2000, 0, 10)),
+      await createIndexedNote("first", new Date(2000, 0, 30)),
+      await createIndexedNote("second", new Date(2000, 0, 20)),
+      await createIndexedNote("third", new Date(2000, 0, 10)),
     ];
-    const newNoteA = createIndexedNote( "newer", new Date(2000, 0, 25));
-    const newNoteB = createIndexedNote("new", new Date(2000, 0, 15));
+    const newNoteA = await createIndexedNote( "newer", new Date(2000, 0, 25));
+    const newNoteB = await createIndexedNote("new", new Date(2000, 0, 15));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -221,15 +198,15 @@ describe("updateListWithChanges", () => {
     expect(newNotes[3]).toEqual(newNoteB);
   });
 
-  it("should sort new notes in place (with search words)", () => {
+  it("should sort new notes in place (with search words)", async () => {
     const searchWords = parseWords("fo ba");
     const oldNotes = [
-      createIndexedNote( "first foo bar", new Date(2000, 0, 30)),
-      createIndexedNote("second foo bar", new Date(2000, 0, 20)),
-      createIndexedNote("third foo bar", new Date(2000, 0, 10)),
+      await createIndexedNote("first foo bar", new Date(2000, 0, 30)),
+      await createIndexedNote("second foo bar", new Date(2000, 0, 20)),
+      await createIndexedNote("third foo bar", new Date(2000, 0, 10)),
     ];
-    const newNoteA = createIndexedNote("newer bar foo", new Date(2000, 0, 25));
-    const newNoteB = createIndexedNote("bar new foo", new Date(2000, 0, 15));
+    const newNoteA = await createIndexedNote("newer bar foo", new Date(2000, 0, 25));
+    const newNoteB = await createIndexedNote("bar new foo", new Date(2000, 0, 15));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;
@@ -244,21 +221,22 @@ describe("updateListWithChanges", () => {
     expect(newNotes[3]).toEqual(newNoteB);
   });
 
-  it("should delete, modify, add and sort (with search words)", () => {
+  it("should delete, modify, add and sort (with search words)", async () => {
     const searchWords = parseWords("fo ba");
     const oldNotes = [
-      createIndexedNote("first foo bar", new Date(2000, 0, 30)),
-      createIndexedNote("second foo bar", new Date(2000, 0, 20)),
-      createIndexedNote("third foo bar", new Date(2000, 0, 10)),
+      await createIndexedNote("first foo bar", new Date(2000, 0, 30)),
+      await createIndexedNote("second foo bar", new Date(2000, 0, 20)),
+      await createIndexedNote("third foo bar", new Date(2000, 0, 10)),
     ];
 
     const notesDeleted = {};
     notesDeleted[generateTestId()] = true;
     notesDeleted[oldNotes[1].id] = true;
 
-    const newNoteA = createIndexedNote("not a match", new Date(2000, 0, 25));
-    const newNoteB = createIndexedNote("bar new foo", new Date(2000, 0, 5));
-    const changingNote = createMemoryNote(oldNotes[2].id, "changed foo bar", new Date(2000, 0, 10));
+    const newNoteA = await createIndexedNote("not a match", new Date(2000, 0, 25));
+    const newNoteB = await createIndexedNote("bar new foo", new Date(2000, 0, 5));
+    const rawChange = {id: oldNotes[2].id, content: "changed foo bar", date: new Date(2000, 0, 10)};
+    const changingNote = await serializeNote(deserializeNote(rawChange));
     const notesChanged = {};
     notesChanged[newNoteA.id] = newNoteA;
     notesChanged[newNoteB.id] = newNoteB;

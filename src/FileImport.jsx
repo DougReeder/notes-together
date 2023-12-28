@@ -19,9 +19,9 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
 import CloseIcon from '@mui/icons-material/Close';
 import {isLikelyMarkdown} from "./util";
-import {createMemoryNote} from "./Note";
 import {upsertNote} from "./storage";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
+import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
@@ -333,7 +333,8 @@ async function importGraphic(file) {
   const {dataUrl, alt} = await imageFileToDataUrl(file);
   const html = `<h1></h1><img alt="${alt}" src="${dataUrl}" /><p></p>`;
 
-  const newNote = createMemoryNote(null, html, new Date(file.lastModified), 'text/html;hint=SEMANTIC');
+  const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: file.lastModified};
+  const newNote = await serializeNote(deserializeNote(raw));
   const cleanNote = await upsertNote(newNote);
   console.info(`finished importing 1 HTML note from "${file.name}" ${file.type}`, cleanNote.id);
   return {noteIds: [cleanNote.id], message: "1 note"};
@@ -363,7 +364,8 @@ async function importHtml(html, fileDateValue, coda) {
       }
     }
 
-    const newNote = createMemoryNote(null, html, new Date(fileDateValue), 'text/html;hint=SEMANTIC');
+    const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: fileDateValue};
+    const newNote = await serializeNote(deserializeNote(raw));
 
     const cleanNote = await upsertNote(newNote);
     return {noteIds: [cleanNote.id], messages: []};
@@ -395,7 +397,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
       if (emptyLineCount >= 3) {
         // non-blank line after 3 blank, so forms note from previous
         try {
-          const note = linesToNote(buffer, fileDateValue--, coda, parseType);
+          const note = await linesToNote(buffer, fileDateValue--, coda, parseType);
           const cleanNote = await upsertNote(note);
           noteIds.push(cleanNote.id);
         } catch (err) {
@@ -424,7 +426,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
   }
   if (buffer.length > 0) {   // forms one last note
     try {
-      const note = linesToNote(buffer, fileDateValue--, coda, parseType);
+      const note = await linesToNote(buffer, fileDateValue--, coda, parseType);
       const cleanNote = await upsertNote(note);
       noteIds.push(cleanNote.id);
     } catch (err) {
@@ -448,7 +450,7 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
  * @arg {string} parseType
  * @returns {Object} note
  */
-function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
+async function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   const emptyLinePatt = /^\s*$/;
   while (emptyLinePatt.test(lines[lines.length - 1])) {
     --lines.length;
@@ -480,7 +482,8 @@ function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   } else {
     content += '\n';
   }
-  return createMemoryNote(null, content, new Date(dateValue), parseType);
+  const raw = {mimeType: parseType, content, date: dateValue};
+  return serializeNote(deserializeNote(raw));
 }
 
 async function importText(text, fileDateValue, coda, parseType) {
@@ -495,7 +498,8 @@ async function importText(text, fileDateValue, coda, parseType) {
         text += '\n\n' + coda;
       }
     }
-    const newNote = createMemoryNote(null, text, fileDateValue, parseType);
+    const raw = {mimeType: parseType, content: text, date: fileDateValue};
+    const newNote = await serializeNote(deserializeNote(raw));
 
     const cleanNote = await upsertNote(newNote);
 

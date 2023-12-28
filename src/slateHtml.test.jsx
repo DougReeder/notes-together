@@ -1,8 +1,6 @@
 // Copyright © 2022-2023 Doug Reeder under the MIT License
 
 import {withHtml, deserializeHtml, serializeHtml} from "./slateHtml";
-import sanitizeHtml from "sanitize-html";
-import {semanticOnly} from "./sanitizeNote";
 import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
 import {getRelevantBlockType} from "./slateUtil";
@@ -454,9 +452,9 @@ describe("HTML plugin normalizer", () => {
           ]},
       ];
       editor.selection = null;
-  
+
       Editor.normalize(editor, {force: true});
-  
+
       expect(editor.children[0].type).toEqual('quote');
       expect(editor.children[0].children[0].type).toEqual(listType);
       expect(editor.children[0].children[0].children[0].type).toEqual('list-item');
@@ -2361,9 +2359,6 @@ describe("serializeHtml", () => {
       ]}
     ]);
     expect(html).toEqual(`<ol><li><input type="checkbox"/>kohlrabi</li><li><input type="checkbox" checked/>daikon</li></ol>`);
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual(`<ol><li><input type="checkbox" />kohlrabi</li><li><input type="checkbox" checked />daikon</li></ol>`);
   });
 
   it("should encode task list", () => {
@@ -2374,9 +2369,6 @@ describe("serializeHtml", () => {
         ]}
     ]);
     expect(html).toEqual(`<ul><li><input type="checkbox"/>Maecenas porttitor</li><li><input type="checkbox" checked/>libero ac</li></ul>`);
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual(`<ul><li><input type="checkbox" />Maecenas porttitor</li><li><input type="checkbox" checked />libero ac</li></ul>`);
   });
 
   it("should encode code blocks", () => {
@@ -2402,15 +2394,6 @@ describe("serializeHtml", () => {
   return text;
 }
 </code></pre>`);
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual(`<pre><code>function adHocTextReplacements(text) {
-  if (a&amp;&amp;b&lt;c) { return null; }
-  text = text.replace(/([A-Za-z])\\^2(?![\\dA-Za-z])/g, &quot;$1²&quot;);
-  text = text.replace(/([A-Za-z])\\^3(?![\\dA-Za-z])/g, &quot;$1³&quot;);
-  return text;
-}
-</code></pre>`);
   });
 
   it("should encode links", () => {
@@ -2418,9 +2401,6 @@ describe("serializeHtml", () => {
         {text: "a cool example"},
       ]}]);
     expect(html).toEqual('<a href="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" title="Cool Example">a cool example</a>');
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual('<a href="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" title="Cool Example">a cool example</a>');
   });
 
   it("should encode images", () => {
@@ -2434,9 +2414,6 @@ describe("serializeHtml", () => {
         {text: " a pile of other slices"}]
     }]);
     expect(html).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit">');
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit" />');
   });
 
   it("should substitute data URLs for object URLs in images", () => {
@@ -2451,9 +2428,6 @@ describe("serializeHtml", () => {
         {text: "a thing"}]
     }], substitutions);
     expect(html).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing" title="something">');
-
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    expect(cleanHtml).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing" title="something" />');
   });
 
   it("should drop images containing an object URL with no substitution", () => {
@@ -2474,15 +2448,10 @@ describe("serializeHtml", () => {
 
 
 describe("deserializeHtml", () => {
-  const editor = withHtml({
-    isInline: () => false,
-    isVoid: () => false
-  });
-
   it("should return an array of Slate nodes, even for empty string", () => {
     const html = ``;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(0);
   });
@@ -2490,7 +2459,7 @@ describe("deserializeHtml", () => {
   it("should return an array of Slate nodes, even for plain text", () => {
     const html = `foo`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "foo"});
     expect(slateNodes.length).toEqual(1);
@@ -2499,7 +2468,7 @@ describe("deserializeHtml", () => {
   it("should merge the text of ignored tags", () => {
     const html = `<ruby>  明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: ` 明日 (Ashita)`});
     expect(slateNodes.length).toEqual(1);
@@ -2508,7 +2477,7 @@ describe("deserializeHtml", () => {
   it("should parse <code> <kbd> and <samp> tags as code marks", () => {
     const html = `The <code>push()</code> method <kbd>help mycommand</kbd> look for <samp>0 files</samp> foo`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "The "});
     expect(slateNodes[1]).toEqual({text: "push()", code: true});
@@ -2523,7 +2492,7 @@ describe("deserializeHtml", () => {
   it("should parse <em> <i> <q> <dfn> <cite> <var> <abbr> and <address> tags as italic marks", () => {
     const html = `The <em>upper</em> thing <i>everyone</i> needs <q>supposedly</q> a <dfn>validator</dfn> like <cite>Nineteen Eighty-Four</cite> foo <var>x<sub>1</sub></var> bar <abbr title="Laugh Out Loud">LOL</abbr> spam <address><a href="mailto:jdoe@google.com">jdoe@google.com</a></address>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "The "});
     expect(slateNodes[1]).toEqual({text: "upper", italic: true});
@@ -2549,7 +2518,7 @@ describe("deserializeHtml", () => {
   it("should correctly parse italic marks inside italic marks", () => {
     const html = `<em>outer <em>inner</em> again outer</em> plain`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "outer ", italic: true});
     expect(slateNodes[1]).toEqual({text: "inner", italic: true});
@@ -2561,7 +2530,7 @@ describe("deserializeHtml", () => {
   it("should parse <s> and <strike> tags as strikethrough marks", () => {
     const html = `leading text <s>struck text</s> interquel1 <strike>more struck text</strike> trailing text`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "leading text "});
     expect(slateNodes[1]).toEqual({text: "struck text", strikethrough: true});
@@ -2574,7 +2543,7 @@ describe("deserializeHtml", () => {
   it("should parse <del> and <ins> tags", () => {
     const html = `prolog <del>local text</del><ins>remote text</ins> epilogue`
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({text: "prolog "});
     expect(slateNodes[1]).toEqual({text: "local text", deleted: true});
@@ -2592,7 +2561,7 @@ describe("deserializeHtml", () => {
 <h5>Heading Five</h5>
 <h6>Heading Six</h6>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes).toEqual([
       {type: 'heading-one', children: [{text: "Heading One"}]},
@@ -2623,8 +2592,7 @@ describe("deserializeHtml", () => {
 </dl>
 `;
 
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
-    const slateNodes = deserializeHtml(cleanHtml, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]).toEqual({type: 'paragraph', children: [{text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]});
 
@@ -2651,7 +2619,7 @@ describe("deserializeHtml", () => {
   it("should retain blank Leaves between inline Elements", () => {
     const html = `leading text <a href="http://example.com"> anchor text </a> trailing text`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(3);
     expect(slateNodes[0]?.text).toEqual("leading text ");
@@ -2662,7 +2630,7 @@ describe("deserializeHtml", () => {
   it("should parse a link inside bold as bold inside a link", () => {
     const html = `<b><a href=“https://developer.mozilla.org/en-US/docs/Glossary/Style_origin”>style origin</a></b>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]?.type).toEqual('link');
     expect(slateNodes[0].children[0]).toEqual({text: "style origin", bold: true});
@@ -2673,7 +2641,7 @@ describe("deserializeHtml", () => {
     const html = `<em><img class="fit-picture"
      src="/media/cc0-images/grapefruit-slice-332-332.jpg" alt="a slice of grapefruit"/></em>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]?.type).toEqual('image');
     expect(slateNodes[0].children.length).toEqual(1);
@@ -2682,10 +2650,9 @@ describe("deserializeHtml", () => {
   });
 
   it("should parse image without src as not an image", () => {
-    const html = `<img src="ftp://ftp.funet.fi/pub/chicken.gif" alt="rooster"/>`;
-    const cleanHtml = sanitizeHtml(html, semanticOnly);
+    const html = `<img srcset="ftp://ftp.funet.fi/pub/chicken.gif" alt="rooster"/>`;
 
-    const slateNodes = deserializeHtml(cleanHtml, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0]?.type).not.toEqual('image');
     expect(slateNodes.length).toBeLessThanOrEqual(1);
@@ -2696,7 +2663,7 @@ describe("deserializeHtml", () => {
     const html = `<p>first paragraph</p>
 <p>second paragraph</p>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(2);
     expect(slateNodes[0].type).toEqual("paragraph");
@@ -2707,7 +2674,7 @@ describe("deserializeHtml", () => {
     const html = `<h2>Book Title</h2>
 leaf text`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(2);
     expect(slateNodes[0].type).toEqual("heading-two");
@@ -2719,7 +2686,7 @@ leaf text`;
   it("should coerce marked leaf text to Elements, so all the children of an Element are the same", () => {
     const html = `<strong>marked leaf text<p>paragraph text</p></strong>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0].children[0]).toEqual({text: "marked leaf text", bold: true});
     expect(slateNodes[0].children.length).toEqual(1);
@@ -2732,7 +2699,7 @@ leaf text`;
     const html = `<pre>let a = b;</pre>
 <strong>exclamation!</strong>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(2);
     expect(slateNodes[0].type).toEqual("code");
@@ -2756,7 +2723,7 @@ leaf text`;
    \tNAVY customers can call 614-645-NAVY (6289); 
     </div>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(4);
     expect(slateNodes[0].type).toEqual("heading-two");
@@ -2770,7 +2737,7 @@ leaf text`;
     const html = `<a href="http://example.com">link text</a>
 <p>lorem ipsum</p>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(2);
     expect(Element.isElement(slateNodes[0])).toBeTruthy();
@@ -2785,7 +2752,7 @@ leaf text`;
     const html = `<a href="http://example.com">link text</a>
 ipso facto`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes.length).toEqual(2);
     expect(Element.isElement(slateNodes[0])).toBeTruthy();
@@ -2801,7 +2768,7 @@ ipso facto`;
     <tr><th>Pitcher</th><td>Alice</td><td>34</td></tr>
 </table>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(Element.isElement(slateNodes[0])).toBeTruthy();
     expect(slateNodes[0].type).toEqual('table');
@@ -2846,7 +2813,7 @@ ipso facto`;
   </tr>
 </table>`;
 
-    const slateNodes = deserializeHtml(html, editor);
+    const slateNodes = deserializeHtml(html);
 
     expect(slateNodes[0].type).toEqual('paragraph');
     expect(slateNodes[0].children[0].text).toMatch(/Example/);
@@ -2861,23 +2828,40 @@ ipso facto`;
     expect(slateNodes[1].children[2].children[1].children).toHaveLength(1);
     expect(slateNodes).toHaveLength(2);
   });
+
+  it("should drop dangerous tags and tags without usable content", () => {
+    const html = `<!-- some comment-->
+<!DOCTYPE html>
+<html>
+<head>
+\t<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0">
+\t<title>Some Page</title>
+</head>
+<body>
+<script>eval('2 + 2')</script>
+<noscript>Enable Javascript</noscript>
+<p>safe</p>
+<style>body: {color: blue;}</style>
+<input type="button" value="Push me" />
+</body></html>`;
+
+    const slateNodes = deserializeHtml(html);
+
+    expect(slateNodes).toEqual([
+      {type: 'paragraph', children: [{text: "safe"}]}
+    ]);
+  });
 });
 
 
 describe("serializeHtml and deserializeHtml", () => {
-  const editor = withHtml({
-    isInline: () => false,
-    isVoid: () => false
-  });
-
   it("should round-trip HTML reserved characters", () => {
     const original = [
       {text: `this & that a<b, c>d "Give me liberty, or give me death!" Bob's bargains`},
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2890,8 +2874,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2904,8 +2887,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2919,8 +2901,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2939,8 +2920,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2953,8 +2933,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2967,8 +2946,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -2980,8 +2958,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3000,8 +2977,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3026,8 +3002,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3057,8 +3032,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3085,8 +3059,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3102,8 +3075,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3129,8 +3101,7 @@ describe("serializeHtml and deserializeHtml", () => {
       ];
 
       let html = serializeHtml(original);
-      html = sanitizeHtml(html, semanticOnly);
-      const reloaded = deserializeHtml(html, editor);
+      const reloaded = deserializeHtml(html);
 
       expect(reloaded).toEqual(original);
     });
@@ -3157,8 +3128,7 @@ describe("serializeHtml and deserializeHtml", () => {
       ];
 
       let html = serializeHtml(original);
-      html = sanitizeHtml(html, semanticOnly);
-      const reloaded = deserializeHtml(html, editor);
+      const reloaded = deserializeHtml(html);
 
       expect(reloaded).toEqual(original);
     });
@@ -3185,8 +3155,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3213,8 +3182,7 @@ describe("serializeHtml and deserializeHtml", () => {
       ];
 
       let html = serializeHtml(original);
-      html = sanitizeHtml(html, semanticOnly);
-      const reloaded = deserializeHtml(html, editor);
+      const reloaded = deserializeHtml(html);
 
       expect(reloaded).toEqual(original);
     });
@@ -3246,8 +3214,7 @@ describe("serializeHtml and deserializeHtml", () => {
       ];
 
       let html = serializeHtml(original);
-      html = sanitizeHtml(html, semanticOnly);
-      const reloaded = deserializeHtml(html, editor);
+      const reloaded = deserializeHtml(html);
 
       expect(reloaded).toEqual(original);
     });
@@ -3277,8 +3244,7 @@ describe("serializeHtml and deserializeHtml", () => {
         ];
 
         let html = serializeHtml(original);
-        html = sanitizeHtml(html, semanticOnly);
-        const reloaded = deserializeHtml(html, editor);
+        const reloaded = deserializeHtml(html);
 
         expect(reloaded).toEqual(original);
       });
@@ -3301,8 +3267,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3320,8 +3285,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3335,8 +3299,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3352,8 +3315,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });
@@ -3368,8 +3330,7 @@ describe("serializeHtml and deserializeHtml", () => {
     ];
 
     let html = serializeHtml(original);
-    html = sanitizeHtml(html, semanticOnly);
-    const reloaded = deserializeHtml(html, editor);
+    const reloaded = deserializeHtml(html);
 
     expect(reloaded).toEqual(original);
   });

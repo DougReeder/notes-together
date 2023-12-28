@@ -3,9 +3,7 @@
 
 import {findNoteIds, getNote} from "./storage";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
-import {deserializeHtml, withHtml} from "./slateHtml";
-import {withReact} from "slate-react";
-import {createEditor} from "slate";
+import {deserializeHtml} from "./slateHtml";
 import {serializeMarkdown} from "./slateMark";
 
 export async function fileExportMarkdown(searchStr, searchWords) {
@@ -30,7 +28,6 @@ export async function fileExportMarkdown(searchStr, searchWords) {
   }
 
   // asynchronously writes file
-  const editor = withHtml(withReact(createEditor()));
   const writableStream = await fileHandle.createWritable();
 
   const ids = await findNoteIds(searchWords);
@@ -40,8 +37,8 @@ export async function fileExportMarkdown(searchStr, searchWords) {
 
     let content;
     if (hasTagsLikeHtml(note.mimeType)) {
-      const slateNodes = deserializeHtml(note.content, editor);
-      content = serializeMarkdown(editor, slateNodes)
+      const slateNodes = deserializeHtml(note.content);
+      content = serializeMarkdown(slateNodes)
     } else if (!note.mimeType || /^text\//.test(note.mimeType)) {
       content = note.content;
     } else {

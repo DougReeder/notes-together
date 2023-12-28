@@ -1,36 +1,5 @@
 // listUtil.js - utilities for lists of notes, for Notes Together
-// Copyright © 2021 Doug Reeder
-
-const uniformList = {allowedTags: [ 'p', 'div',
-    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-    'strike', 'sub', 'sup',
-    'code', 'br', 'hr', 'pre',
-    'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td',
-  ],
-  allowedAttributes: {
-    a: [ 'href', 'name', 'target' ],
-    img: [ 'src', 'srcset', 'alt' ]
-  },
-  allowedSchemes: [ 'data' ],
-  transformTags: {
-    'h1': 'div',
-    'h2': 'div',
-    'h3': 'div',
-    'header': 'div',
-    'footer': 'div',
-    'main': 'div',
-    'section': 'div',
-    'article': 'div',
-    'aside': 'div',
-    'textarea': 'div',
-    'blockquote': 'div',
-  },
-  nonTextTags: [ 'style', 'script', 'noscript', 'nav', 'nl', 'rp', 'rt' ],
-  enforceHtmlBoundary: true,
-  parser: {
-    decodeEntities: false,
-  }
-};
+// Copyright © 2021,2024 Doug Reeder
 
 
 function updateListWithChanges(oldNotes, notesChanged, notesDeleted, searchWords) {
@@ -84,4 +53,4 @@ function compareByDate(itemA, itemB) {
   return itemB.date - itemA.date;
 }
 
-export {uniformList, updateListWithChanges};
+export {updateListWithChanges};
