@@ -1,5 +1,5 @@
 // List.js - List component for Notes Together
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021–2024 Doug Reeder
 
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
@@ -203,8 +203,11 @@ function List(props) {
         break;
       case 'Backspace':
       case 'Delete':
-        actionToConfirm.current = 'DELETE';
-        // eslint-disable-next-line no-fallthrough
+        if (selectedNoteId && (evt.ctrlKey || evt.metaKey)) {
+          actionToConfirm.current = 'DELETE';
+          inactivateAndActivateItemButtons(evt, selectedNoteId);
+        }
+        break;
       case 'ContextMenu':
         if (selectedNoteId) {
           inactivateAndActivateItemButtons(evt, selectedNoteId);

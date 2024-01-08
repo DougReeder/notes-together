@@ -114,14 +114,14 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <caption>Anywhere</caption>
           <tbody>
             <tr><td>escape ⎋</td><td>navigate out: close dialog, exit editor, show list panel, focus search, then clear search</td></tr>
-            <tr><td>ctrl+shift+plus or ​⇧⌘+</td><td>increase application text size</td></tr>
-            <tr><td>ctrl+minus or ⌘-</td><td>decrease application text size</td></tr>
+            <tr><td>ctrl+shift+plus<br/>or ​⇧⌘+</td><td>increase application text size</td></tr>
+            <tr><td>ctrl+minus<br/>or ⌘-</td><td>decrease application text size</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
           <caption>Search field</caption>
           <tbody>
-          <tr><td>enter/return ⏎</td><td>finish search (On phone or tablet, the on-screen keyboard is dismissed. On desktop, down- and up-arrow can then be used.)</td></tr>
+          <tr><td>enter/return ⏎</td><td>finish search (On phone or tablet, the on-screen keyboard is dismissed. On desktop, down- and up-arrow can then be used.)</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
@@ -131,12 +131,13 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift-down-arrow ⇧⬇️</td><td>skip 5 down through the list</td></tr>
             <tr><td>alt-down-arrow ⌥⬇️</td><td>skip 25 down through the list</td></tr>
             <tr><td>Page Down ⇟</td><td>skip 10 down through the list</td></tr>
-            <tr><td>End ↘ or ctrl-down-arrow ⎈⬇️</td><td>skip to end of list</td></tr>
+            <tr><td>End ↘ or ctrl-down-arrow or ⎈⬇️</td><td>skip to end of list</td></tr>
             <tr><td>up-arrow ⬆️</td><td>select previous note</td></tr>
             <tr><td>shift-up-arrow ⇧⬆️️</td><td>skip 5 up through the list</td></tr>
             <tr><td>alt-up-arrow️ ⌥⬆️</td><td>skip 25 up through the list</td></tr>
             <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
             <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
+            <tr><td>ctrl+Backspace or ctrl+Delete<br/>or ​⌘+Delete or ​⌘␡</td><td>delete selected note</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
@@ -165,7 +166,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>ctrl+` or ⌘`</td><td>monospaced phrase</td></tr>
             <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
             <tr><td>ctrl+8 or shift+ctrl+* or ctrl+- or shift-ctrl+-<br/>or ⌘8 or ⇧⌘* or ⌘- or ⇧⌘-</td><td>bulleted list</td></tr>
-            <tr><td>ctrl+1 or shift+ctrl+1 or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
+            <tr><td>ctrl+1 or shift+ctrl+1<br/>or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
             <tr><td>ctrl+[ or shift+ctrl+[ or ⌘[</td><td>task list</td></tr>
             <tr><td>ctrl+] or shift+ctrl+] or ⌘]</td><td>sequence</td></tr>
             <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>

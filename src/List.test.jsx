@@ -1,5 +1,5 @@
 // List.test.js - automated tests for List component for Notes Together
-// Copyright © 2021,2023 Doug Reeder
+// Copyright © 2021–2024 Doug Reeder
 
 import {
   render,
@@ -174,7 +174,7 @@ describe("List", () => {
     expect(mockHandleSelect).toHaveBeenCalledWith('cba4c6fd-abf4-4f68-91ab-979fdf233606', null);
   });
 
-  it("should not show item buttons on Backspace when no note selected", async () => {
+  it("should not show item buttons on control-backspace when no note selected", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -188,12 +188,12 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on Backspace then hide on Cancel click", async () => {
+  it("should show item buttons on control-backspace then hide on Cancel click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -207,7 +207,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     const cancelBtn = screen.getByRole('button', {name: "Cancel"});
     expect(cancelBtn).toBeVisible();
@@ -220,7 +220,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on Delete key then delete note on Delete click", async () => {
+  it("should show item buttons on meta-delete key then delete note on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -235,7 +235,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Delete}');
+    await userEvent.keyboard('{Meta>}{Delete}{/Meta}');
     const deleteBtn = screen.getByRole('button', {name: "Delete"});
     expect(deleteBtn).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
@@ -248,7 +248,7 @@ describe("List", () => {
     // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on Backspace then delete on Enter", async () => {
+  it("should show item buttons on meta-backspace then delete on Enter", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -263,7 +263,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Meta>}{Backspace}{/Meta}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
@@ -274,7 +274,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show item buttons on Delete key then delete on Space key", async () => {
+  it("should show item buttons on control-delete key then delete on Space key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -289,7 +289,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Delete}');
+    await userEvent.keyboard('{Control>}{Delete}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
@@ -300,7 +300,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show item buttons on Backspace key then close on Escape key", async () => {
+  it("should show item buttons on control-backspace key then hide on Escape key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -314,7 +314,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.keyboard('{Backspace}');
+    await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
