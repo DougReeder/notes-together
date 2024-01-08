@@ -7,6 +7,7 @@ import {deserializeHtml} from "./slateHtml";
 import {serializeMarkdown} from "./slateMark";
 
 export async function fileExportMarkdown(searchStr, searchWords) {
+  console.group("Export to Markdown file")
   if (!('showSaveFilePicker' in window)) {
     const err = new Error("This browser can't stream to files. Try Chrome, Edge or Opera on a computer.");
     err.severity = 'info';
@@ -58,5 +59,6 @@ export async function fileExportMarkdown(searchStr, searchWords) {
   console.info(message);
   window.postMessage({kind: 'TRANSIENT_MSG', severity: 'success' , message }, window?.location?.origin);
 
+  console.groupEnd();
   return numWritten;
 }

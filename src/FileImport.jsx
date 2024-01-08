@@ -1,5 +1,5 @@
 // FileImport.js - file import dialog & functions
-// Copyright © 2021-2023 Doug Reeder
+// Copyright © 2021-2024 Doug Reeder
 
 import {extractUserMessage} from "./util/extractUserMessage";
 import {
@@ -33,6 +33,12 @@ function FileImport({files, isMultiple, doCloseImport}) {
   const importBtnRef = useRef();
 
   useEffect(() => {
+    if (files.length > 0) {
+      console.group(`Importing ${files.length} file(s)`);
+    } else {
+      console.groupEnd();
+    }
+
     async function determineParseTypes(files) {
       let isMarkdownColumnRequired = false;
       let isReviewRequired = false;
@@ -52,6 +58,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
           isReviewRequired = true;
           let message;
           if (['NotFoundError', 'NotReadableError'].includes(err.name)) {   // Firefox, Safari
+            console.error(`File not readable: “${file.name}” (${file.type})`);
             message = "Ask your administrator for permission to read this.";
           } else {
             message = extractUserMessage(err);
@@ -237,7 +244,7 @@ async function determineParseType(file) {
     if (!file.type.startsWith('text') &&
       !allowedFileTypesNonText.includes(file.type) &&
       !(!file.type && allowedExtensions.includes(extension))) {
-      console.error(`Not importable: “${file.name}” "${file.type}"`);
+      console.error(`Not importable: “${file.name}” (${file.type})`);
       return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
     }
 
@@ -253,7 +260,7 @@ async function determineParseType(file) {
       case 'xml':
       case 'svg+xml':
       case 'x-uuencode':
-        console.error(`Not importable: “${file.name}” "${file.type}"`);
+        console.error(`Not importable: “${file.name}” (${file.type})`);
         return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
       default:
         return {file, parseType: 'text/' + (result?.[1] || extension.slice(1) || 'plain')};
@@ -306,7 +313,7 @@ function importFromFile(file, parseType, isMultiple) {
               response = await importText(text, file.lastModified, coda, parseType);
               break;
           }
-          console.info(`finished importing ${response.noteIds.length} ${parseType} notes from "${file.name}"`, response.messages);
+          console.info(`Imported ${response.noteIds.length} ${parseType} note(s) from "${file.name}"`, response.messages);
 
           const msgs = response.messages || [];
           if (response.noteIds.length > 1) {
@@ -336,7 +343,7 @@ async function importGraphic(file) {
   const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: file.lastModified};
   const newNote = await serializeNote(deserializeNote(raw));
   const cleanNote = await upsertNote(newNote);
-  console.info(`finished importing 1 HTML note from "${file.name}" ${file.type}`, cleanNote.id);
+  console.info(`Created 1 HTML note from "${file.name}" (${file.type})`);
   return {noteIds: [cleanNote.id], message: "1 note"};
 }
 
