@@ -39,7 +39,7 @@ function evaluateImage(blob, objectURL) {
       // console.log("img onload size:", this.width, this.height);
 
       if (this.width > 1280 || this.height > 1280 || blob.size > MAX_SIZE ||
-          ['image/tiff', 'image/jxl', 'image/avif', 'image/avci', 'image/heif', 'image/heic'].includes(blob.type)) {
+          ['image/tiff', 'image/jp2', 'image/jxl', 'image/avci', 'image/heif', 'image/heic'].includes(blob.type)) {
         resolve(resize(img, blob.type));
       } else {
         resolve(await fileToDataUrl(blob));
@@ -88,7 +88,12 @@ function resize(img, fileType) {
     context.fillRect(0, 0, canvas.width, canvas.height);
   }
   context.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.4);
+  let dataUrl = canvas.toDataURL('image/webp', 0.4);
+  const actualMimeType = /^data:([-\w.]+\/[-\w.]+)/.exec(dataUrl)?.[1];
+  if ('image/png' === actualMimeType) {
+    dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+  }
+  return dataUrl;
 }
 
 export {imageFileToDataUrl, fileToDataUrl, evaluateImage};
