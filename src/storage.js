@@ -261,14 +261,15 @@ async function upsertNote(serializedNote, initiator) {
     });
   }
 
-  await upsertNoteDb(serializedNote, initiator);
+  const promises = [upsertNoteDb(serializedNote, initiator)];
 
   if ('REMOTE' !== initiator) {
-    const remoteStorage = await remotePrms;
-    await remoteStorage.documents.upsert(serializedNote);
+    promises.push(remotePrms.then(remoteStorage => remoteStorage.documents.upsert(serializedNote)));
   }
 
-  return serializedNote;
+  const results = await Promise.all(promises);
+
+  return results[0];   // expected to be serialized note
 }
 
 
