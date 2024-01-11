@@ -3,7 +3,7 @@
 // Copyright © 2021-2024 Doug Reeder
 
 import {v4 as uuidv4} from "uuid";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {SerializedNote} from "./Note.js";
 
 const FIRST_RESULTS_MS = 84;
@@ -65,13 +65,13 @@ function initDb(dbName = dbNameDefault) {
       noteDb.onerror = function (evt2) {
         // This handles errors not caught at the transaction or above.
         console.error("IDB: db.onerror:", evt2.target?.error || evt2.target);
-        window.postMessage({kind: 'TRANSIENT_MSG', message: "Database error - restart your browser"}, window?.location?.origin);
+        transientMsg("Restart your browser — Database error");
       };
       // if the browser is closing, the user won't see this
       // maybe store something in localStorage?
       noteDb.onclose = function (evt) {
         console.error("unexpected IDB close:", evt);
-        window.postMessage({kind: 'TRANSIENT_MSG', message: "Access to database lost - reload this page"}, window?.location?.origin);
+        transientMsg("Reload this page — access to database lost");
       }
       resolve({indexedDb: noteDb, isFirstLaunch});
     };
@@ -80,17 +80,18 @@ function initDb(dbName = dbNameDefault) {
     // before we can proceed.
     openRequest.onblocked = (evt) => {
       console.warn("IDB open blocked:", evt);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: "Close all other tabs with this webapp open"}, window?.location?.origin);
+      transientMsg("Close all other tabs with this webapp open");
     };
 
     openRequest.onclose = evt => {
-      console.warn("IDB forcibly closed:", evt);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: "Database forcibly closed: " + extractUserMessage(evt.target?.error)}, window?.location?.origin);
+      console.warn("IDB forcibly closed:", evt.target?.error);
+      transientMsg("Reload this page — database forcibly closed");
     }
   });
 
   dbPrms.catch(err => {
-    window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+    console.error("initDb:", err);
+    transientMsg(extractUserMessage(err));
   });
 
   return dbPrms;

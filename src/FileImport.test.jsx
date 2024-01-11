@@ -12,6 +12,8 @@ import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import {validate as uuidValidate} from "uuid";
 import {dataURItoFile} from "./util/testUtil";
+import {CONTENT_MAX} from "./Note.js";
+import {CONTENT_TOO_LONG} from "./Note.js";
 
 describe("checkForMarkdown", () => {
   it("should throw for non-file", async () => {
@@ -110,7 +112,7 @@ describe("importFromFile", () => {
   it("should reject an overly-long HTML file", async () => {
     const fileDate = '2021-08-15T12:00:00Z';
     let html = '<li>${Math.random()}</li>\n';
-    while (html.length < 600_000) {
+    while (html.length < CONTENT_MAX) {
       html += html;
     }
     const file = new File(['<ol>', html,'</ol>'], "list.html", {type: 'text/html', lastModified: Date.parse(fileDate)});
@@ -118,7 +120,7 @@ describe("importFromFile", () => {
     const {noteIds, message} = await importFromFile(file, 'text/html', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
-    expect(message).toEqual("Too long. Copy the parts you need.");
+    expect(message).toEqual(CONTENT_TOO_LONG);
   });
 
   it("should parse an empty text file as 0 notes in multiple mode", async () => {
@@ -386,7 +388,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     let listLines = `1. A thing
 2. Some other thing
 `;
-    while (listLines.length < 600_000) {
+    while (listLines.length < CONTENT_MAX) {
       listLines += listLines;
     }
     let lipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n';
@@ -459,7 +461,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
   it("should reject an overly-long non-plain text file", async () => {
     const fileDate = '2021-05-11T12:00:00Z';
     let lines = 'foo,42\n';
-    while (lines.length < 600_000) {
+    while (lines.length < CONTENT_MAX) {
       lines += lines;
     }
     const file = new File([lines], "too-long.csv", {type: 'text/csv', lastModified: Date.parse(fileDate)});
@@ -467,7 +469,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const {noteIds, message} = await importFromFile(file, 'text/csv', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
-    expect(message).toEqual("Too long. Copy the parts you need.");
+    expect(message).toEqual(CONTENT_TOO_LONG);
   });
 
   it("should parse a text file as one note when flagged single", async () => {

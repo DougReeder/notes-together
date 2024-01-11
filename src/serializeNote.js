@@ -1,13 +1,13 @@
 // serializeNote.js — converts Slate nodes to content & calculates title if needed
 // Copyright © 2023 Doug Reeder
 
-import {NodeNote, SerializedNote, TITLE_MAX} from "./Note.js";
+import {CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle, TITLE_MAX} from "./Note.js";
 import {deserializeHtml, INLINE_ELEMENTS, serializeHtml} from "./slateHtml.jsx";
 import {Node as SlateNode} from "slate";
 import {parseWords} from "./storage.js";
 import {currentSubstitutions} from "./urlSubstitutions.js";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
-import normalizeDate from "./util/normalizeDate.js";
+import {CONTENT_MAX} from "./Note.js";
 
 /**
  * Converts Slate nodes to text & extracts keywords
@@ -23,6 +23,14 @@ async function serializeNote(nodeNote) {
     [title, content, wordSet] = await serializeNoteHtml(nodeNote);
   } else {
     [title, content, wordSet] = serializeNoteText(nodeNote);
+  }
+
+  const limit = nodeNote.subtype?.startsWith('html') || nodeNote.subtype?.startsWith('markdown') ?
+    CONTENT_MAX : CONTENT_MAX / 10;
+  if (content.length > limit) {
+    const err = new Error(`“${shortenTitle(title)}” is too long: ${content.length} characters`);
+    err.userMsg = CONTENT_TOO_LONG;
+    throw err;
   }
 
   for (let candidateWord of wordSet) {
@@ -163,9 +171,7 @@ function deserializeNote(note) {
     throw new Error(`Can't handle “${note.mimeType}” note`);
   }
 
-  const date = normalizeDate(note.date ?? note.lastEdited);
-
-  return new NodeNote(note.id, subtype, slateNodes, date, note.isLocked);
+  return new NodeNote(note.id, subtype, slateNodes, note.date ?? note.lastEdited, note.isLocked);
 }
 
 export {serializeNote, deserializeNote};

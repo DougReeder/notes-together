@@ -12,19 +12,30 @@ import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
 import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import checkIfInstallRecommended from "./webappInstall";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
 function List(props) {
-  const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect, setTransientErr} = props;
+  const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect} = props;
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
   // console.log("List props:", props, "   notes:", notes);
 
   const [itemButtonsIds, setItemButtonsIds] = useState({});
+
+  const exitItemButtons = useCallback(id => {
+    try {
+      const newItemButtonIds = Object.assign({}, itemButtonsIds);
+      delete newItemButtonIds[id];
+      setItemButtonsIds(newItemButtonIds);
+    } catch (err) {
+      console.error("exitItemButtons:", err);
+      transientMsg(extractUserMessage(err));
+    }
+  }, [itemButtonsIds]);
 
   useEffect(() => {
     // console.log("launching search")
@@ -61,7 +72,8 @@ function List(props) {
         changeCount(newNotes.length);
       }
     } catch (err) {
-      setTransientErr(err);
+      console.error("externalChangeListener:", err);
+      transientMsg(extractUserMessage(err));
     }
   };
   useEffect( () => {
@@ -121,7 +133,8 @@ function List(props) {
         pointerRef.current = {};
       }
     } catch (err) {
-      setTransientErr(err);
+      console.error("handlePointerDown:", err);
+      transientMsg(extractUserMessage(err));
     }
   }
 
@@ -141,7 +154,8 @@ function List(props) {
         handleSelect(pointerRef.current.downId, 'DETAIL');
       }
     } catch (err) {
-      setTransientErr(err);
+      console.error("handlePointerUp:", err);
+      transientMsg(extractUserMessage(err));
     } finally {
       pointerRef.current = {};
     }
@@ -227,7 +241,8 @@ function List(props) {
                 break;
             }
           } catch (err) {
-            window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+            console.error(`${evt.code} key:`, err);
+            transientMsg(extractUserMessage(err), err.severity);
           } finally {
             actionToConfirm.current = '';
             inactivateAndActivateItemButtons(evt, null);
@@ -253,7 +268,7 @@ function List(props) {
         handleSelect(newId, newPanel);
       }
     }
-  }, [handleSelect, notes, selectedNoteId, itemButtonsIds, inactivateAndActivateItemButtons]);
+  }, [handleSelect, notes, selectedNoteId, itemButtonsIds, exitItemButtons, inactivateAndActivateItemButtons]);
   useEffect(() => {
     document.addEventListener('keydown', documentKeyListener);
 
@@ -310,29 +325,21 @@ function List(props) {
     selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
   }, [selectedNoteId])
 
-  function exitItemButtons(id) {
-    try {
-      const newItemButtonIds = Object.assign({}, itemButtonsIds);
-      delete newItemButtonIds[id];
-      setItemButtonsIds(newItemButtonIds);
-    } catch (err) {
-      setTransientErr(err);
-    }
-  }
-
   async function deleteItem(evt) {
+    let id;
     try {
       evt.preventDefault();
       evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
-      const id = noteEl?.dataset?.id;
+      id = noteEl?.dataset?.id;
       await deleteNote(id);
       exitItemButtons(id);
       if (id === selectedNoteId) {
         handleSelect(null);
       }
     } catch (err) {
-      window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+      console.error(`deleteItem [${id}]:`, err);
+      transientMsg(extractUserMessage(err), err.severity);
     } finally {
       inactivateAndActivateItemButtons(evt, null);
     }
@@ -347,8 +354,8 @@ function List(props) {
     }
     checkFirstLaunch().catch(err => {
       console.error("Error launching:", err);
-      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
-        message: "Error launching - restart your browser."}, window?.location?.origin);
+      transientMsg("Restart your browser — error launching");
+
     });
   }, []);
 
@@ -460,7 +467,6 @@ List.propTypes = {
   changeCount: PropTypes.func.isRequired,
   selectedNoteId: PropTypes.string,
   handleSelect: PropTypes.func.isRequired,
-  setTransientErr: PropTypes.func.isRequired,
 }
 
 export default List;

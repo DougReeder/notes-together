@@ -30,7 +30,7 @@ describe("List", () => {
     mockIsFirstLaunch = true;
     mockStubList = [];
 
-    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}}></List>);
 
     await screen.findByRole('list');
     expect(await screen.findByRole('heading', {name: "Free your mind from mundane details!"})).toBeVisible();
@@ -48,7 +48,7 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
 
-    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}}></List>);
 
     await screen.findAllByRole('listitem');
     expect(await screen.findByRole('heading', {name: "Free your mind from mundane details!"})).toBeVisible();
@@ -63,7 +63,7 @@ describe("List", () => {
     mockIsFirstLaunch = false;
     mockStubList = [];
 
-    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}}></List>);
 
     await screen.findByRole('list');
     expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
@@ -77,7 +77,7 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
 
-    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}}></List>);
 
     await screen.findByRole('list');
     expect(screen.queryByRole('heading', {name: "Free your mind from mundane details!"})).not.toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
 
-    render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={() => {}}></List>);
 
     const items = await screen.findAllByRole('listitem');
     expect(items.length).toEqual(5);
@@ -117,9 +117,7 @@ describe("List", () => {
     });
     const mockHandleSelect = vitest.fn();
 
-    render(<List changeCount={() => {}}
-                 handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
     await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -133,9 +131,7 @@ describe("List", () => {
     });
     const mockHandleSelect = vitest.fn();
 
-    render(<List changeCount={() => {}}
-                 handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
     await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -152,7 +148,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='0b6b89c8-8aca-43de-8c7b-72095380682b'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -169,7 +165,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -186,7 +182,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId={null}
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -205,7 +201,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+                ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -234,7 +230,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -263,7 +259,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -290,7 +286,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId={someNoteId}
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -316,7 +312,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -343,7 +339,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     const items = await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -372,7 +368,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     const items = await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
@@ -398,7 +394,7 @@ describe("List", () => {
     render(<List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                 setTransientErr={() => {}}></List>);
+    ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();

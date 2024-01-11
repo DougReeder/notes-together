@@ -1,25 +1,24 @@
 // storage.test.js - automated tests for storage abstraction for Notes Together
-// Copyright © 2021-2023 Doug Reeder
+// Copyright © 2021–2024 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
-import {NodeNote, SerializedNote} from "./Note";
+import {NodeNote} from "./Note";
 import _ from "fake-indexeddb/auto.js";
 import {
   init,
   parseWords,
-  upsertNote,
   getNote,
   deleteNote,
   findStubs,
   changeHandler,
   saveTag,
-  listTags, deleteTag, TAG_LENGTH_MAX
+  listTags, deleteTag, TAG_LENGTH_MAX, STORE_OBJECT_DELAY, upsertNote
 } from "./storage";
 import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL} from "uuid";
 import {waitFor} from "@testing-library/react";
-import {deserializeHtml} from "./slateHtml.jsx";
+import {deserializeHtml, serializeHtml} from "./slateHtml.jsx";
 import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 
@@ -330,49 +329,25 @@ describe("storage", () => {
 
   describe("upsertNote", () => {
     it("should fail storing when passed a non-object", async () => {
-      await expect(upsertNote(undefined)).rejects.toThrow();
+      await expect(upsertNote(undefined, undefined)).rejects.toThrow();
     });
 
-    it("should fail storing when passed a note without valid id", async () => {
-      const serializedNote = new SerializedNote(undefined, '', '', "", new Date(), false, [])
-      await expect(upsertNote(serializedNote)).rejects.toThrow('id');
+    it("should fail storing when passed a note without nodes", async () => {
+      const badNote = {id: generateTestId(), subtype: '', date: new Date(), isLocked: false};
+
+      await expect(upsertNote(badNote, undefined)).rejects.toThrow('nodes');
     });
 
-    // mimeType can be string, undefined or null. Is it worth testing for that?
-
-    it("should fail storing when passed a note without title", async () => {
-      const serializedNote = new SerializedNote(generateTestId(), '', undefined, "something", new Date(), false, ['SOMETHING'])
-      await expect(upsertNote(serializedNote)).rejects.toThrow('title');
-    });
-
-    it("should fail storing when passed a note without content", async () => {
-      const serializedNote = new SerializedNote(generateTestId(), '', '', undefined, new Date(), false, [])
-
-      await expect(upsertNote(serializedNote)).rejects.toThrow('content');
-    });
-
-    it("should fail storing when passed a note with bad string date", async () => {
-      const serializedNote = new SerializedNote(generateTestId(), '', "elbow", "elbow", "Tuesday", false, []);
-
-      await expect(upsertNote(serializedNote)).rejects.toThrow("date");
-    });
-
-    // isLocked is coerced to boolean; type not checked
-
-    it("should fail storing when passed a note without valid wordArr", async () => {
-      const serializedNote = new SerializedNote(generateTestId(), '', '', '', new Date(), false, {})
-      await expect(upsertNote(serializedNote)).rejects.toThrow('wordArr');
-    });
 
     it("should insert a note",async () => {
       const originalId = generateTestId();
       const nodes = [{type: 'paragraph', children: [{text: "Simply "}, {text: "unbearable", strikethrough: true}]}];
-      const originalDate = new Date(1997, 5, 16, 9);
-      const original = await serializeNote(new NodeNote(originalId, 'html;hint=SEMANTIC', nodes, originalDate, true));
+      const originalDate = new Date(1996, 5, 16, 9);
+      const original = new NodeNote(originalId, 'html;hint=SEMANTIC', nodes, originalDate, true);
 
-      const savedNote = await upsertNote(original);
+      const savedNote = await upsertNote(original, undefined);
       expect(savedNote.id).toEqual(originalId);
-      expect(savedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
+      expect(savedNote.mimeType).toEqual('text/' + original.subtype);
       expect(savedNote.title).toEqual("Simply unbearable");
       expect(savedNote.content).toEqual('<p>Simply <s>unbearable</s></p>');
       expect(savedNote.wordArr).toContain("SIMPLY");
@@ -380,14 +355,21 @@ describe("storage", () => {
       expect(savedNote.wordArr.length).toEqual(2);
 
       const retrieved = await getNote(originalId);
-      expect(retrieved.mimeType).toEqual('text/html;hint=SEMANTIC');
-      expect(retrieved.content).toEqual(original.content);
+      expect(retrieved.mimeType).toEqual('text/' + original.subtype);
+      expect(retrieved.content).toEqual(serializeHtml(original.nodes));
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("SIMPLY");
       expect(retrieved.wordArr).toContain("UNBEARABLE");
       expect(retrieved.wordArr.length).toEqual(2);
-      expect(retrieved.mimeType).toEqual(original.mimeType);
       expect(retrieved.isLocked).toEqual(original.isLocked);
+
+      const {remoteStorage} = await init();
+      const remoteNote = await remoteStorage.documents.get(original.id);
+      expect(remoteNote.mimeType).toEqual('text/' + original.subtype);
+      expect(remoteNote.title).toEqual("Simply unbearable");
+      expect(remoteNote.content).toEqual(serializeHtml(original.nodes));
+      expect(remoteNote.date).toEqual(original.date);
+      expect(remoteNote.isLocked).toEqual(original.isLocked);
     });
 
     it("should update a note",async () => {
@@ -397,27 +379,38 @@ describe("storage", () => {
         {type: 'paragraph', children: [{text: " A Memoir"}]},
       ];
       const originalDate = new Date(2003, 2, 15);
-      const original = await serializeNote(new NodeNote(originalId, 'plain', nodes, originalDate, true));
+      const original = await new NodeNote(originalId, 'plain', nodes, originalDate, true);
 
-      await upsertNote(original);
+      const returned1 = await upsertNote(original, undefined);   // SerializedNote
+      expect(returned1.title).toEqual("I. Asimov:\nA Memoir");
       const updatedNodes = [{type: 'heading-two', children: [{text: "Eleven Years of Trying"}]}];
       const updatedDate = new Date(2010, 3, 16);
-      const updated = await serializeNote(new NodeNote(originalId, 'html;hint=SEMANTIC', updatedNodes, updatedDate, false))
-      await upsertNote(updated, 'DETAIL');
+      const updated = new NodeNote(originalId, 'html;hint=SEMANTIC', updatedNodes, updatedDate, false);
+      const returned2 = await upsertNote(updated, 'DETAIL');   // NodeNote
+      expect(returned2.subtype).toEqual(updated.subtype);
+      expect(returned2.title).toBeFalsy();
+      let retrieved = await getNote(originalId);
+      expect(retrieved.title).toEqual("I. Asimov:\nA Memoir");   // delay time has not elapsed
+      expect(retrieved.date).toEqual(originalDate);
+      expect(retrieved.wordArr).toContain("I");
+      expect(retrieved.wordArr).toContain("ASIMOV");
+      expect(retrieved.wordArr).toContain("MEMOIR");
+      expect(retrieved.wordArr.length).toEqual(3);
 
-      const retrieved = await getNote(originalId);
+      await new Promise(resolve => setTimeout(resolve, STORE_OBJECT_DELAY + 100));
+      retrieved = await getNote(originalId);
+      expect(retrieved.mimeType).toEqual('text/' + updated.subtype);
+      expect(retrieved.title).toEqual("Eleven Years of Trying");
       expect(retrieved.content).toEqual("<h2>Eleven Years of Trying</h2>");
       expect(retrieved.date).toEqual(updatedDate);
       expect(retrieved.wordArr).not.toContain("I");
       expect(retrieved.wordArr).not.toContain("ASIMOV");
-      expect(retrieved.wordArr).not.toContain("A");
       expect(retrieved.wordArr).not.toContain("MEMOIR");
       expect(retrieved.wordArr).toContain("ELEVEN");
       expect(retrieved.wordArr).toContain("YEARS");
       expect(retrieved.wordArr).toContain("OF");
       expect(retrieved.wordArr).toContain("TRYING");
       expect(retrieved.wordArr.length).toEqual(4);
-      expect(retrieved.mimeType).toEqual(updated.mimeType);
       expect(retrieved.isLocked).toEqual(updated.isLocked);
     });
 
@@ -425,22 +418,57 @@ describe("storage", () => {
       const originalId = generateTestId();
       const nodes = [{type: 'paragraph', children: [{text: "offer of offertory off"}]}];
       const originalDate = new Date(1999, 8, 23, 17);
-      const original = await serializeNote(new NodeNote(originalId, undefined, nodes, originalDate, false));
+      const original = new NodeNote(originalId, 'html', nodes, originalDate, false);
 
       const savedNote = await upsertNote(original, 'REMOTE');
       expect(savedNote.id).toEqual(originalId);
+      expect(savedNote.content).toEqual(serializeHtml(original.nodes));
       expect(savedNote.wordArr).toContain("OFFERTORY");
       expect(savedNote.wordArr.length).toEqual(1);
 
       const retrieved = await getNoteDb(originalId);
-      expect(retrieved.content).toEqual(original.content);
+      expect(retrieved.content).toEqual(serializeHtml(original.nodes));
+      expect(retrieved.mimeType).toEqual('text/' + original.subtype);
       expect(retrieved.date).toEqual(originalDate);
       expect(retrieved.wordArr).toContain("OFFERTORY");
       expect(retrieved.wordArr.length).toEqual(1);
-      expect(retrieved.mimeType).toEqual(original.mimeType);
 
       const {remoteStorage} = await init();
       await expect(remoteStorage.documents.get(originalId)).resolves.toBeUndefined();
+    });
+
+    it("should round-trip a note and its update", async () => {
+      const nodes = [
+        {type: 'heading-one', children: [{text: "Some", bold: true}, {text: " Title"}]},
+        {type: 'heading-one', children: [{text: "Another", italic: true}, {text: " Title"}]},
+        {type: 'paragraph', children: [{text: "The Luddites were "}, {text: "technophobes", strikethrough: true},
+            {text: " grass-roots labor organizers."}]},
+      ];
+      const original = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes,
+        new Date(2002, 7, 15, 20), true);
+
+      await upsertNote(original, undefined);
+
+      const deserializedNote = deserializeNote(await getNote(original.id));
+      expect(deserializedNote).toEqual(original);
+
+      const {remoteStorage} = await init();
+      const deserializedRemoteNote = deserializeNote(await remoteStorage.documents.get(original.id));
+      expect(deserializedRemoteNote).toEqual(original);
+
+      const updatedNodes = [{type: 'heading-one', children: [{text: "something agitating"}]}, ...nodes];
+      const updated = new NodeNote(original.id, original.subtype, updatedNodes, original.date, original.isLocked);
+
+      await upsertNote(updated, undefined);
+
+      const immediateNote = deserializeNote(await getNote(original.id));
+      expect(immediateNote).toEqual(original);   // delay time has not elapsed
+      const immediateRemoteNote = await deserializeNote(await remoteStorage.documents.get(original.id));
+      expect(immediateRemoteNote).toEqual(original);
+
+      await new Promise(resolve => setTimeout(resolve, STORE_OBJECT_DELAY + 100));
+      const delayedNote = deserializeNote(await getNote(original.id));
+      expect(delayedNote).toEqual(updated);
     });
   });
 
@@ -462,11 +490,10 @@ describe("storage", () => {
     it("should remove note from storage", async () => {
       const id = generateTestId();
       const nodes = [{type: 'paragraph', children: [{text: "Aroint, thee, knave!"}]}];
-      const note = await serializeNote(new NodeNote(id, undefined, nodes));
-
-      await upsertNote(note);
+      await upsertNote(new NodeNote(id, undefined, nodes), undefined);
 
       const deleteResult = await deleteNote(id);
+
       expect(deleteResult).toContain(id);
       await expect(getNote(id)).resolves.toBeUndefined();
     });
@@ -482,15 +509,15 @@ describe("storage", () => {
 
     it("should not remove locked note from storage", async () => {
       const nodes = [{type: 'paragraph', children: [{text: "Fusce vel maximus ipsum, at consequat dolor."}]}];
-      const note = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, new Date(1983, 2, 26), true));
-
-      const savedNote = await upsertNote(note)
+      const nodeNote = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, new Date(1983, 2, 26), true)
+      const savedNote = await upsertNote(nodeNote, undefined)
 
       await expect(deleteNote(savedNote.id)).rejects.toThrow("not deleting “Fusce vel maximus ipsum,...” which is locked.");
       await expect(getNote(savedNote.id)).resolves.toEqual(savedNote);
 
-      savedNote.isLocked = false;
-      await upsertNote(savedNote);
+      await new Promise(resolve => setTimeout(resolve, STORE_OBJECT_DELAY + 100));
+      nodeNote.isLocked = false;
+      await upsertNote(nodeNote, undefined);
       await expect(deleteNote(savedNote.id)).resolves.toEqual([{statusCode: 200},  savedNote.id]);
       await expect(getNote(savedNote.id)).resolves.toBeUndefined();
     });
@@ -564,8 +591,7 @@ describe("storage", () => {
         mimeType: 'text/html;hint=SEMANTIC',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
-      const serializedNote = await serializeNote(deserializeNote(localNote));
-      await upsertNote(serializedNote);
+      await upsertNote(deserializeNote(localNote), undefined);
       await changeHandler({origin: 'remote', oldValue: localNote, newValue: false});
       await new Promise((resolve) => {
         setTimeout(() => {
@@ -872,11 +898,12 @@ Finance: we can't afford it.</ins>`);
 
   describe("findStubs", () => {
     let note1, note2, note3;
+    let note1title, note2title, note3title;
 
-    function createTestNote(title, content, wordArr) {
+    function createTestNote(nodes) {
       const startDate = new Date(2015, 0, 1);
       const date = new Date(startDate.getTime() + Math.random() * 7*24*60*60*1000);
-      return new SerializedNote(generateTestId(), 'text/html;hint=SEMANTIC', title, content, date, false, wordArr);
+      return new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, date, false);
     }
 
     beforeAll(async () => {
@@ -884,32 +911,37 @@ Finance: we can't afford it.</ins>`);
         {type: 'heading-two', children: [{text: "The world"}]},
         {type: 'paragraph', children: [{text: " set free"}]},
       ];
-      note1 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes1, new Date(2011, 0, 1)));
+      note1 = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes1, new Date(2011, 0, 1));
+      note1title = (await serializeNote(note1)).title;
+
       const nodes2 = [
         {type: 'paragraph', children: [{text: "Math "}, {text: "is not", bold: true}, {text: " my favorite"}, ]},
       ];
-      note2 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes2, new Date(2012, 1, 2)));
+      note2 = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes2, new Date(2012, 1, 2));
+      note2title = (await serializeNote(note2)).title;
+
       const nodes3 = [
         {type: 'paragraph', children: [{text: "I don't "}, {text: "like thin crust", code: true}]},
       ];
-      note3 = await serializeNote(new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes3, new Date(2013, 2, 3)));
+      note3 = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes3, new Date(2013, 2, 3));
+      note3title = (await serializeNote(note3)).title;
 
       for (const noteId of await findFillerNoteIds()) {
         await deleteNote(noteId, true);
       }
 
-      await upsertNote(note1);
-      await upsertNote(note2);
-      await upsertNote(note3);
+      await upsertNote(note1, undefined);
+      await upsertNote(note2, undefined);
+      await upsertNote(note3, undefined);
 
       for (let i = 0; i < 10; ++i) {
-        await upsertNote(createTestNote(note1.title, note1.content, note1.wordArr));
-        await upsertNote(createTestNote(note2.title, note2.content, note2.wordArr));
-        await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
+        await upsertNote(createTestNote(nodes1), undefined);
+        await upsertNote(createTestNote(nodes2), undefined);
+        await upsertNote(createTestNote(nodes3), undefined);
       }
-      await upsertNote(createTestNote(note2.title, note2.content, note2.wordArr));
-      await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
-      await upsertNote(createTestNote(note3.title, note3.content, note3.wordArr));
+      await upsertNote(createTestNote(nodes2), undefined);
+      await upsertNote(createTestNote(nodes3), undefined);
+      await upsertNote(createTestNote(nodes3), undefined);
     });
 
     it("should return all notes when no words in search string", () => new Promise((done, fail) => {
@@ -932,13 +964,13 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(36);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title ===  note1.title ? 1 : 0) + acc;
+            return (item.title ===  note1title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2.title ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(12);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3.title ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -976,13 +1008,13 @@ Finance: we can't afford it.</ins>`);
           });
           expect(testStubs.length).toEqual(24);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title ===  note1.title ? 1 : 0) + acc;
+            return (item.title ===  note1title ? 1 : 0) + acc;
           }, 0)).toEqual(11);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2.title ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3.title ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -1023,13 +1055,13 @@ Finance: we can't afford it.</ins>`);
           expect(testStubs.length).toEqual(13);
           expect(testStubIds.size).toEqual(13);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title ===  note1.title ? 1 : 0) + acc;
+            return (item.title ===  note1title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note2.title ? 1 : 0) + acc;
+            return (item.title === note2title ? 1 : 0) + acc;
           }, 0)).toEqual(0);
           expect(testStubs.reduce((acc, item) => {
-            return (item.title === note3.title ? 1 : 0) + acc;
+            return (item.title === note3title ? 1 : 0) + acc;
           }, 0)).toEqual(13);
 
           let lastDate = Date.now();
@@ -1051,14 +1083,14 @@ Finance: we can't afford it.</ins>`);
   describe("findStubs (max)", () => {
     beforeAll(async () => {
       const nodes = [{type: 'paragraph', children: [{text: "something rather short"}]}];
-      const note = await serializeNote(new NodeNote(generateTestId(), undefined, nodes));
 
       for (const noteId of await findFillerNoteIds()) {
         await deleteNote(noteId);
       }
 
       for (let i = 0; i < 500; ++i) {
-        await upsertNote(new SerializedNote(generateTestId(), note.mimeType, note.title, note.content, note.date, note.isLocked, note.wordArr));
+        const nodeNote = new NodeNote(generateTestId(), undefined, nodes, new Date(), false);
+        await upsertNote(nodeNote, undefined);
       }
     });
 
@@ -1162,7 +1194,7 @@ Finance: we can't afford it.</ins>`);
 
       for (let i = 0; i < 600; ++i) {
         const nodeNote = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes)
-        await upsertNote(await serializeNote(nodeNote))
+        await upsertNote(nodeNote, undefined);
       }
     }, 60_000);
 

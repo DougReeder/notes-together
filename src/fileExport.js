@@ -5,9 +5,10 @@ import {findNoteIds, getNote} from "./storage";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {deserializeHtml} from "./slateHtml";
 import {serializeMarkdown} from "./slateMark";
+import {shortenTitle} from "./Note.js";
+import {transientMsg} from "./util/extractUserMessage.js";
 
 export async function fileExportMarkdown(searchStr, searchWords) {
-  console.group("Export to Markdown file")
   if (!('showSaveFilePicker' in window)) {
     const err = new Error("This browser can't stream to files. Try Chrome, Edge or Opera on a computer.");
     err.severity = 'info';
@@ -25,7 +26,7 @@ export async function fileExportMarkdown(searchStr, searchWords) {
   });
   const extension = (/\.[A-Za-z0-9]{1,8}$/.exec(fileHandle.name)?.[0] || '').toLowerCase();
   if (! ['.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.txt'].includes(extension)) {
-    window.postMessage({kind: 'TRANSIENT_MSG', message: `A file extension of “${extension}” will make it difficult for you to access Markdown text`, severity: 'warning'}, window?.location?.origin);
+    transientMsg(`A file extension of “${extension}” will make it difficult for you to access Markdown text.`, 'warning');
   }
 
   // asynchronously writes file
@@ -43,12 +44,14 @@ export async function fileExportMarkdown(searchStr, searchWords) {
     } else if (!note.mimeType || /^text\//.test(note.mimeType)) {
       content = note.content;
     } else {
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Can't export “${note.mimeType}” note`}, window?.location?.origin);
+      const msg = `Can't export “${note.mimeType}” note`;
+      console.error(msg);
+      transientMsg(msg);
       continue;
     }
 
     const blob = new Blob([content, "\n", note.date?.toISOString(), "\n\n\n\n"], {type: 'text/plain'});
-    console.info(`writing ${note.id} ${note.date.toISOString()} ${note.title?.split("\n")?.[0]?.slice(0,85)}`)
+    console.info(`writing ${note.id} ${note.date.toISOString()} “${shortenTitle(note.title)}”`)
     await writableStream.write(blob);
     ++numWritten;
   }
@@ -57,8 +60,7 @@ export async function fileExportMarkdown(searchStr, searchWords) {
 
   const message = `Wrote ${numWritten} notes to ${fileHandle.name}`;
   console.info(message);
-  window.postMessage({kind: 'TRANSIENT_MSG', severity: 'success' , message }, window?.location?.origin);
+  transientMsg(message, 'success');
 
-  console.groupEnd();
   return numWritten;
 }

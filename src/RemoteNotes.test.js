@@ -2,13 +2,14 @@
 // Copyright © 2021 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
-import {SerializedNote} from "./Note";
+import {CONTENT_MAX, CONTENT_TOO_LONG, SerializedNote} from "./Note";
 import _ from "fake-indexeddb/auto.js";
 import RemoteStorage from "remotestoragejs";
-import RemoteNotes from "./RemoteNotes";
+import {RemoteNotes} from "./RemoteNotes";
 import {NIL} from "uuid";
-import {parseWords, TAG_LENGTH_MAX} from "./storage";
+import {parseWords, TAG_LENGTH_MAX, STORE_OBJECT_DELAY} from "./storage";
 import {deserializeNote, serializeNote} from "./serializeNote.js";
+import QuietError from "./util/QuietError.js";
 
 
 describe("RemoteNotes", () => {
@@ -70,6 +71,13 @@ describe("RemoteNotes", () => {
       expect(new Date(savedNote.date)).toEqual(serializedNote.date);
       expect(savedNote.mimeType).toEqual(serializedNote.mimeType);
       expect(savedNote.isLocked).toEqual(serializedNote.isLocked);
+
+      const retrieved = await remoteStorage.documents.get(serializedNote.id);
+      expect(retrieved.content).toEqual(serializedNote.content);
+      expect(retrieved.title).toEqual(serializedNote.title);
+      expect(new Date(retrieved.date)).toEqual(serializedNote.date);
+      expect(retrieved.mimeType).toEqual(serializedNote.mimeType);
+      expect(retrieved.isLocked).toEqual(serializedNote.isLocked);
     });
 
     it("should store HTML note unchanged when all fields good", async () => {
@@ -94,10 +102,9 @@ describe("RemoteNotes", () => {
       const updatedText = "<h2>In Joy Still Felt</h2>";
       const updated = new SerializedNote(originalId, 'text/html;hint=SEMANTIC', "In Joy Still Felt", updatedText, original.date, false, []);
       await remoteStorage.documents.upsert(updated);
-      const retrieved = await remoteStorage.documents.get(originalId);
-
+      let retrieved = await remoteStorage.documents.get(originalId);
       expect(retrieved.content).toEqual(updatedText);
-      expect(retrieved.title).toEqual("In Joy Still Felt");
+      expect(retrieved.title).toEqual(updated.title);
       expect(retrieved.date).toEqual(updated.date);
       expect(retrieved.mimeType).toEqual(updated.mimeType);
       expect(retrieved.isLocked).toEqual(updated.isLocked);
@@ -146,6 +153,37 @@ describe("RemoteNotes", () => {
 
       });
     })
+
+    it("should message user & not save when content too large", async () => {
+      const mockPostMessage = window.postMessage = vitest.fn();
+      const mockConsoleError = console.error = vitest.fn();
+
+      const originalText = "a".repeat(CONTENT_MAX);
+      const original = new SerializedNote(generateTestId(), undefined, "really long", originalText, new Date(2003, 4, 13), false, []);
+      await remoteStorage.documents.upsert(original);
+
+      let retrieved = await remoteStorage.documents.get(original.id);
+
+      expect(retrieved.content).toEqual(originalText);   // validates success of upsert
+      expect(retrieved.title).toEqual(original.title);
+      expect(retrieved.date).toEqual(original.date);
+      expect(retrieved.mimeType).toEqual(original.mimeType);
+      expect(retrieved.isLocked).toEqual(original.isLocked);
+
+      await new Promise(resolve => setTimeout(resolve, STORE_OBJECT_DELAY + 100));
+      const updatedText = originalText + "x";
+      const updated = new SerializedNote(original.id, original.mimeType, "longer", updatedText, original.date, false, []);
+
+      await expect(remoteStorage.documents.upsert(updated)).rejects.toThrow(QuietError);
+
+      retrieved = await remoteStorage.documents.get(original.id);
+      expect(retrieved.content).toEqual(originalText);   // not updated
+      expect(retrieved.title).toEqual(original.title);   // not updated
+      expect(mockPostMessage).toHaveBeenCalledOnce();
+      expect(mockPostMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG',
+        message: CONTENT_TOO_LONG, severity: 'error'}, window?.location?.origin);
+      expect(mockConsoleError).toHaveBeenCalledOnce();
+    });
   });
 
   describe("get", () => {

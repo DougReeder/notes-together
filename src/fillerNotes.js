@@ -3,7 +3,7 @@
 
 import {v4 as uuidv4} from "uuid";
 import {upsertNote} from './storage';
-import {deserializeNote, serializeNote} from "./serializeNote.js";
+import {deserializeNote} from "./serializeNote.js";
 
 
 async function seedNotes() {
@@ -11,15 +11,15 @@ async function seedNotes() {
   const random = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   random[15] = 2;
   const raw1 = {id: uuidv4({random}), content: "<h1>The rain in Spain</h1><p>stays mainly in the plain</p>", mimeType: 'text/html;hint=SEMANTIC'};
-  await upsertNote(await serializeNote(deserializeNote(raw1)));
+  await upsertNote(deserializeNote(raw1), undefined);
   random[15] = 3;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<ul><li>H<sub>2</sub>O</li><li>C³I</li><li>2º libro, la Calle 3ª</li><li>grüßen",
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 4;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}), content: `<p>Lincoln's Gettysburg Address</p><blockquote>
     <p><s>Eighty-seven years ago</s>Four score and seven years ago our fathers brought forth on this continent a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.</p>
 
@@ -27,24 +27,24 @@ async function seedNotes() {
 
     <p>But, in a larger sense, we can not dedicate—we can not consecrate—we can not hallow—this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us—that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion—that we here highly resolve that these dead shall not have died in vain—that this nation, under God, shall have a new birth of freedom—and that government of the people, by the people, for the people, shall not perish from the earth.`,
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 7;
   const raw4 = {id: uuidv4({random}), content: "<dl><dt>Here we go</dt><dd>gathering nuts in May", mimeType: 'text/html;hint=SEMANTIC'};
-  await upsertNote(await serializeNote(deserializeNote(raw4)));
+  await upsertNote(deserializeNote(raw4), undefined);
   random[15] = 8;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<pre>The dao that is seen\nis not the true dao\nuntil you bring fresh toner",
     mimeType: 'text/html;hint=SEMANTIC',
     isLocked: true,
-  })));
+  }), undefined);
   random[15] = 11;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "These are the times that try men's souls. The summer soldier and the sunshine patriot will, in this crisis, shrink from the service of their country; but he that stands it now, deserves the love and thanks of man and woman."
-  })));   // no mimeType, like Litewrite
+  }), undefined);   // no mimeType, like Litewrite
   random[15] = 12;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}), content: `<p>tensile structures
 <svg fill="none" stroke-linecap="square" stroke-miterlimit="10" version="1.1" viewBox="0 0 226.77 226.77" xmlns="http://www.w3.org/2000/svg">
  <g transform="translate(8.964 4.2527)" fill-rule="evenodd" stroke="#000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="4">
@@ -58,46 +58,46 @@ async function seedNotes() {
 </svg>
 </p>
 `, mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
 
   random[15] = 13;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: `{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard
  This is some {\\b RTF} text.\\par
  }`,
     title: 'This is some RTF text.',
     mimeType: 'text/rtf'
-  })));
+  }), undefined);
 
   random[15] = 15;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<h1>Star Trek II: The Wrath of Khan</h1><p>the best of everything that was best about Star Trek TOS</p><p>adventure, science-fiction</p>",
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 16;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}), content: `<p> The <ruby> 漢 <rp>(</rp><rt>Kan</rt><rp>)</rp> 字 <rp>(</rp><rt>ji</rt><rp>)</rp></ruby> for tomorrow is <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp></ruby> </p>`, mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 19;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<h2>Star Trek III: The Search for Spock</h2><p>has difficulties standing on its own; it relies heavily on knowledge of <em>Khan</em>.</p><p>adventure, science-fiction</p>",
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 20;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<h3>Star Trek IV: The Voyage Home</h3><p>the funniest of all the star trek films due to the fact that it is played totally tongue in cheek</p><p>adventure, science-fiction</p>",
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
   random[15] = 23;
-  await upsertNote(await serializeNote(deserializeNote({
+  await upsertNote(deserializeNote({
     id: uuidv4({random}),
     content: "<h4>Star Wars: Episode IV - A New Hope</h4><p>the characters I liked most in this one are old Obi-Wan Kenobi, wonderfully portrayed by Alec Guinness, and Han Solo</p><p>adventure, science-fiction</p>",
     mimeType: 'text/html;hint=SEMANTIC'
-  })));
+  }), undefined);
 }
 
 
@@ -106,13 +106,14 @@ async function randomNote() {
   const id = uuidv4({random});
   const content = Math.random() < 0.666 ? movieText() : listText();
   const date = new Date(Date.now() + (Math.random()*32 - 31) * 24*60*60*1000);
+  console.info(`Adding “${content.slice(0, 70).replace(/\n/g, ' ')}”`);
 
   if (/<[a-z]+[^>]*>/.test(content)) {
     const raw = {id, mimeType: 'text/html;hint=SEMANTIC', content, date};
-    return upsertNote(await serializeNote(deserializeNote(raw)));
+    return upsertNote(deserializeNote(raw), undefined);
   } else {
     const raw = {id, content, date};
-    return upsertNote(await serializeNote(deserializeNote(raw)));
+    return upsertNote(deserializeNote(raw), undefined);
   }
 }
 
@@ -521,7 +522,7 @@ And by opposing end them.</p>`;
   const timer = setInterval(async () => {
     // doesn't wait for promise to be fulfilled, as keyboard events don't wait
     const raw = {id, mimeType: 'text/html;hint=SEMANTIC', content: fullText.slice(0, ++i), date};
-    upsertNote(await serializeNote(deserializeNote(raw)));
+    await upsertNote(deserializeNote(raw), undefined);
     if (i>=fullText.length) {
       clearInterval(timer);
     }

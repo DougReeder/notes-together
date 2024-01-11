@@ -6,6 +6,8 @@ import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 import normalizeDate from "./util/normalizeDate.js";
 
 const TITLE_MAX = 400;
+const CONTENT_MAX = 600_000;
+const CONTENT_TOO_LONG = "Too long. Split this into multiple notes";
 
 /**
  * @property {string} id: UUID
@@ -16,7 +18,7 @@ const TITLE_MAX = 400;
  */
 class NodeNote {
   /**
-   * Validates & copies arguments
+   * Validates and supplies defaults for arguments
    * @param {string} id - UUID
    * @param {string} subtype - everything after 'text/' in the MIME type
    * @param {[SlateNode]} nodes - typically editor.children
@@ -26,9 +28,30 @@ class NodeNote {
   constructor(id, subtype, nodes, date, isLocked) {
     this.id = uuidValidate(id) ? id : uuidv4();
     this.subtype = subtype || "";
-    this.nodes = Array.isArray(nodes) ? nodes.slice(0) : [];
+    this.nodes = Array.isArray(nodes) ? nodes : [];
     this.date = normalizeDate(date);
     this.isLocked = Boolean(isLocked);
+  }
+
+  /**
+   * Deep copies every field
+   * @param {NodeNote} oldNote
+   * @returns {NodeNote}
+   * @throws {Error} if oldNote.nodes is not an Array
+   */
+  static clone(oldNote) {
+    if (!Array.isArray(oldNote.nodes)) {
+      const err = new Error(`nodes is not Array [${oldNote.id}]`);
+      err.userMsg = "Delete this corrupt note";
+      throw err;
+    }
+    return new NodeNote(
+      uuidValidate(oldNote.id) ? oldNote.id : uuidv4(),
+      oldNote.subtype || '',
+      structuredClone(oldNote.nodes),
+      normalizeDate(oldNote.date),
+      Boolean(oldNote.isLocked)
+    );
   }
 }
 
@@ -62,5 +85,15 @@ class SerializedNote {
   }
 }
 
+function shortenTitle(title) {
+  const shortened = title?.split("\n")?.[0];
+  if (!shortened) {
+    return "«untitled»";
+  } else if (shortened.length <= 27) {
+    return shortened;
+  } else {
+    return shortened.slice(0, 26) + "…";
+  }
+}
 
-export {TITLE_MAX, NodeNote, SerializedNote};
+export {TITLE_MAX, CONTENT_MAX, CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle};

@@ -1,17 +1,17 @@
 // RemoteNotes.js - RemoteStorage module for notes containing semantic HTML
-// Copyright © 2021 Doug Reeder under the MIT License
+// Copyright © 2021–2024 Doug Reeder under the MIT License
 
 import {validate as uuidValidate} from 'uuid';
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {TAG_LENGTH_MAX} from "./storage";
 import normalizeDate from "./util/normalizeDate.js";
+import {CONTENT_MAX, CONTENT_TOO_LONG, shortenTitle, TITLE_MAX} from "./Note.js";
+import QuietError from "./util/QuietError.js";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
 const SAVED_SEARCH_PATH = 'notes/savedSearches/';
 
 const subscriptions = new Set();
-
-let previousStoreObjectPrms = Promise.resolve();
 
 const RemoteNotes = {
   name: 'documents',
@@ -23,15 +23,15 @@ const RemoteNotes = {
           "type": "string",
           "format": "uuid"
         },
-        "content": {   // may contain semantic HTML tags
+        content: {   // mimeType determines if this contains semantic HTML tags, Markdown, or plain text
           "type": "string",
           "default": "",
-          "maxLength": 600000   // allows for a data URL of one small raster image
+          "maxLength": CONTENT_MAX   // allows for a couple of data URLs of small raster images
         },
-        "title": {
+        title: {   // always plain text
           "type": "string",
           "default": "☹",
-          "maxLength": 400
+          "maxLength": TITLE_MAX
         },
         "date": {   // RFC 3339, section 5.6 (a subset of ISO 8601)
           "type": "string",
@@ -64,7 +64,7 @@ const RemoteNotes = {
           callback(evt);
         } catch (err) {
           console.error("documents change subscriber:", err);
-          window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+          transientMsg(extractUserMessage(err));
         }
       }
     });
@@ -73,22 +73,30 @@ const RemoteNotes = {
       exports: {
         // available as remoteStorage.documents.upsert();
         upsert: async function (serializedNote) {
-          // console.debug("documents.upsert", memoryNote);
+          // console.debug("documents.upsert", serializedNote);
           serializedNote.date = normalizeDate(serializedNote.date);
 
           const remoteNote = {
             id: serializedNote.id,
             ...(serializedNote.mimeType && { mimeType: serializedNote.mimeType }),
-            title: serializedNote.title ?? "[Untitled]",
+            title: serializedNote.title ?? "«untitled»",
             content: serializedNote.content,
             date: serializedNote.date.toISOString(),
             isLocked: Boolean(serializedNote.isLocked),
             lastEdited: Date.now(),
           }
-          const path = 'notes/' + remoteNote.id;
-          await Promise.allSettled([previousStoreObjectPrms]);
-          previousStoreObjectPrms = privateClient.storeObject("note", path, remoteNote);
-          await previousStoreObjectPrms;
+
+          try {
+            await privateClient.storeObject("note", 'notes/' + remoteNote.id, remoteNote);
+          } catch (err) {
+            if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
+              console.error(`while storing “${shortenTitle(remoteNote.title)}”:`, err);
+              transientMsg(CONTENT_TOO_LONG);
+              throw new QuietError(CONTENT_TOO_LONG, err?.error);
+            } else {
+              throw err;
+            }
+          }
           return remoteNote;
         },
 
@@ -187,7 +195,7 @@ const RemoteNotes = {
             }
           } catch (err) {
             console.error("while retrieving tags:", err);
-            window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't retrieve tags", severity: 'error'}, window?.location?.origin);
+            transientMsg("Can't retrieve tags");
           }
           originalTags.sort( (a, b) => a.localeCompare(b));
           return {originalTags, normalizedTags};
@@ -228,4 +236,4 @@ function toMemoryNote(remoteNote) {
   };
 }
 
-export default RemoteNotes;
+export {RemoteNotes};

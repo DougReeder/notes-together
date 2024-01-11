@@ -1,7 +1,7 @@
 // noinspection ExceptionCaughtLocallyJS
 
 import {validate as uuidValidate} from 'uuid';
-import {NodeNote} from './Note';
+import {CONTENT_TOO_LONG, NodeNote} from './Note';
 import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
@@ -58,13 +58,13 @@ import {
   insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE
 } from "./slateUtil";
 import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
 import {clearSubstitutions} from "./urlSubstitutions";
 import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
-import {deserializeNote, serializeNote} from "./serializeNote.js";
+import {deserializeNote} from "./serializeNote.js";
 
 
 const BLOCK_TYPE_DISPLAY = {
@@ -242,9 +242,6 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     return ranges;
   }, [searchWords]);
 
-  const canSave = useRef(true);
-  const shouldSave = useRef(false);
-
   async function handleSlateChange(newValue) {
     try {
       setNoteErr(null);
@@ -269,11 +266,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       if (isAstChange) {
         // console.log(`AST change ${noteId}:`, editor.operations, newValue);
         if (saveOnAstChangeRef.current) {
-          if (canSave.current) {
-            await save(noteDate, isLocked);
-          } else {
-            shouldSave.current = true;
-          }
+          await save(noteDate, isLocked);
         }
       } else {
         forceRender();   // updates the mark indicators
@@ -281,8 +274,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
     } catch (err) {
       console.error("handleSlateChange:", err);
-      if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
-        transientMsg("Can't save. Split this note into multiple notes");
+      if (CONTENT_TOO_LONG === err.userMsg) {
+        transientMsg(CONTENT_TOO_LONG);
       } else {
         setNoteErr(err);
       }
@@ -297,29 +290,16 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       const newDate = new Date(year, month-1, day, noteDate.getHours(), noteDate.getMinutes(), noteDate.getSeconds(), noteDate.getMilliseconds());
       setNoteDate(newDate);
       // console.log('handleDateChange:', newDate);
-      if (canSave.current) {
-        await save(newDate, isLocked);
-      } else {
-        shouldSave.current = true;
-      }
+      await save(newDate, isLocked);
     } catch (err) {
       console.error("Detail handleDateChange:", err);
-      transientMsg(extractUserMessage(err))
+      transientMsg(extractUserMessage(err));
     }
   }
 
   async function save(date, isLocked) {
-    canSave.current = false;
-
     const nodeNote = new NodeNote(noteId, editor.subtype, editor.children, date, isLocked);
-    await upsertNote(await serializeNote(nodeNote), 'DETAIL');
-    setTimeout(async () => {
-      canSave.current = true;
-      if (shouldSave.current) {
-        shouldSave.current = false;
-        await save(noteDate, isLocked);
-      }
-    }, 1500);
+    await upsertNote(nodeNote, 'DETAIL');
   }
 
   const [noteErr, setNoteErr] = useState();
@@ -521,6 +501,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             transientMsg(PLACE_CURSOR_IN_TABLE, 'info');
             return;
           default:
+            console.warn(`Can't append “${targetType}”`);
             transientMsg("Can't append that!", 'info');
             return;
         }
@@ -829,9 +810,14 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     if (isLocked) {
       noteControls = <>
         <div style={{margin: '0 1em'}}>{noteDate.toDateString()}</div>
-        <IconButton title="Unlock note" size="large" onClick={_evt => {
-          setIsLocked(false);
-          save(noteDate, false);
+        <IconButton title="Unlock note" size="large" onClick={async _evt => {
+          try {
+            setIsLocked(false);
+            await save(noteDate, false);
+          } catch (err) {
+            console.error("unlocking:", err);
+            transientMsg(extractUserMessage(err));
+          }
         }}><Lock/></IconButton>
       </>;
     } else {
@@ -888,10 +874,15 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           }}>
             Flip Table Rows To Columns
           </MenuItem>
-          <MenuItem onClick={_evt => {
-            setDetailsMenuAnchorEl(null);
-            setIsLocked(true);
-            save(noteDate, true);
+          <MenuItem onClick={async _evt => {
+            try {
+              setDetailsMenuAnchorEl(null);
+              setIsLocked(true);
+              await save(noteDate, true);
+            } catch (err) {
+              console.error("locking:", err);
+              transientMsg(extractUserMessage(err));
+            }
           }}>
             Lock note <Lock/>
           </MenuItem>
@@ -1054,7 +1045,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               }
               } catch (err) {
                 console.error(`typed ${evt.key}:`, err);
-                window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity}, window?.location?.origin);
+                transientMsg(extractUserMessage(err), err.severity);
               }
             }}
             // forcing an update preserves focus; unclear why
@@ -1162,6 +1153,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   async function pasteFileChange(evt) {
     try {
+      console.group("Pasting files into editor");
       // console.log("paste files:", evt.target.files)
       ReactEditor.focus(editor);
       const dataTransfer = new DataTransfer();
@@ -1174,15 +1166,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       transientMsg(UNEXPECTED_ERROR);
     } finally {
       pasteFileInput.current.value = "";
+      console.groupEnd();
     }
-  }
-
-  function transientMsg(message, severity = 'error') {
-    window.postMessage({
-      kind: 'TRANSIENT_MSG',
-      severity,
-      message
-    }, window?.location?.origin);
   }
 
   return (<>

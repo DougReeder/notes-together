@@ -1,5 +1,5 @@
 import {v4 as uuidv4} from "uuid";
-import {SerializedNote} from './Note';
+import {NodeNote, SerializedNote} from './Note';
 import {
   fireEvent,
   render,
@@ -172,21 +172,32 @@ it('renders error if note missing', async () => {
 
     await user.click(await screen.findByRole('button', {name: "1979"}));
 
-    const dialog = await screen.findByRole('dialog');
-    const input = within(dialog).getByDisplayValue('1979-08-22');
+    let dialog = await screen.findByRole('dialog');
+    let input = within(dialog).getByDisplayValue('1979-08-22');
     const newDateStr = "2005-10-30";
-    fireEvent.change(input, { target: { value: newDateStr } });
 
+    fireEvent.change(input, { target: { value: newDateStr } });
     await user.click(await within(dialog).findByRole('button', {name: "Set"}));
 
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    const partialNote = {id: noteId, mimeType: "text/html;hint=SEMANTIC",
-      title: "Proin sagittis quam sit amet eros dictum",
-      content: "<p> Proin sagittis quam sit amet eros dictum </p>",
-      date: new Date(2005, 10-1, 30, oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds(), oldDate.getMilliseconds()),
-      isLocked: false,
-      wordArr: ['PROIN', 'SAGITTIS', 'QUAM', 'SIT', 'AMET', 'EROS', 'DICTUM']};
+    const nodes = [{type: 'paragraph', noteSubtype: "html;hint=SEMANTIC", children: [{text: " Proin sagittis quam sit amet eros dictum "}]}];
+    const partialNote = new NodeNote(noteId, 'html;hint=SEMANTIC', nodes,
+      new Date(2005, 10-1, 30,
+        oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds(), oldDate.getMilliseconds()), false);
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
+
+    await user.click(await screen.findByRole('button', {name: "2005"}));
+    dialog = await screen.findByRole('dialog');
+    input = within(dialog).getByDisplayValue(newDateStr);
+
+    fireEvent.change(input, { target: { value: "2005-12-01" } });
+    await user.click(await within(dialog).findByRole('button', {name: "Set"}));
+
+    expect(upsertNote).toHaveBeenCalledTimes(2);
+    const updatedNote = new NodeNote(noteId, 'html;hint=SEMANTIC', nodes,
+      new Date(2005, 12-1, 1,
+        oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds(), oldDate.getMilliseconds()), false);
+    expect(upsertNote).toHaveBeenLastCalledWith(updatedNote, 'DETAIL');
   });
 
   it.skip("edits & saves HTML if retrieved as SVG", async () => {
@@ -200,8 +211,6 @@ it('renders error if note missing', async () => {
 
     expect(await screen.findByRole('textbox')).toBeVisible();
     expect(screen.getByRole('button', {name: "(n/a)"})).toBeVisible();
-
-    // upsertNote.mockResolvedValue(Promise.resolve(createMemoryNote(noteId, "Hello", noteDate)));
 
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
@@ -258,7 +267,10 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    const partialNote = {id: noteId, mimeType: "text/html;hint=SEMANTIC", title: expect.any(String), content: "      (  a  +  b  )   2     =     c  2  +  4  ⋅  (  1  2   a  b  )  ", date: noteDate, isLocked: true, wordArr: []};
+    const nodes = [
+      {text: "      (  a  +  b  )   2     =     c  2  +  4  ⋅  (  1  2   a  b  )  ", noteSubtype: "html;hint=SEMANTIC"}
+    ]
+    const partialNote = new NodeNote(noteId, 'html;hint=SEMANTIC', nodes, noteDate, true);
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
@@ -279,7 +291,8 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
 
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    const partialNote = {id: noteId, mimeType: "text/plain", title: "Goodbye, Lenin", content: "Goodbye, Lenin", date: noteDate, isLocked: true, wordArr: ["GOODBYE", "LENIN"]};
+    const nodes = [{type: 'paragraph', noteSubtype: 'plain', children: [{text: "Goodbye, Lenin"}]}];
+    const partialNote = new NodeNote(noteId, 'plain', nodes, noteDate, true);
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
@@ -299,7 +312,8 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    const partialNote = {id: noteId, mimeType: "", title: "Aloha", content: "Aloha", date: noteDate, isLocked: true, wordArr: ["ALOHA"]};
+    const nodes = [{type: 'paragraph', noteSubtype: '', children: [{text: "Aloha"}]}];
+    const partialNote = new NodeNote(noteId, '', nodes, noteDate, true);
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 
@@ -320,7 +334,11 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
     await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
     expect(upsertNote).toHaveBeenCalledTimes(1);
-    const partialNote = {id: noteId, mimeType: "text/markdown;hint=COMMONMARK", title: "Vaporware\nThis is hot stuff.", content: "# Vaporware\nThis is hot stuff.", date: noteDate, isLocked: true, wordArr: ["VAPORWARE", "THIS", "IS", "HOT", "STUFF"]};
+    const nodes = [
+      {type: 'paragraph', noteSubtype: 'markdown;hint=COMMONMARK', children: [{text: "# Vaporware"}]},
+      {type: 'paragraph', children: [{text: "This is hot stuff."}]},
+    ];
+    const partialNote = new NodeNote(noteId, 'markdown;hint=COMMONMARK', nodes, noteDate, true);
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
   });
 

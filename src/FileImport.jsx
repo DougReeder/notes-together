@@ -1,7 +1,7 @@
 // FileImport.js - file import dialog & functions
 // Copyright © 2021-2024 Doug Reeder
 
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {
   AppBar,
   Button, CircularProgress,
@@ -21,7 +21,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import {isLikelyMarkdown} from "./util";
 import {upsertNote} from "./storage";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
-import {deserializeNote, serializeNote} from "./serializeNote.js";
+import {deserializeNote} from "./serializeNote.js";
+import {CONTENT_MAX} from "./Note.js";
+import QuietError from "./util/QuietError.js";
 
 function FileImport({files, isMultiple, doCloseImport}) {
   const [imports, setImports] = useState([]);
@@ -35,8 +37,6 @@ function FileImport({files, isMultiple, doCloseImport}) {
   useEffect(() => {
     if (files.length > 0) {
       console.group(`Importing ${files.length} file(s)`);
-    } else {
-      console.groupEnd();
     }
 
     async function determineParseTypes(files) {
@@ -78,9 +78,14 @@ function FileImport({files, isMultiple, doCloseImport}) {
     }
     determineParseTypes(files).catch(err => {
       console.error("while determining parse types:", err);
-      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
-        message: "Import those files one by one."}, window?.location?.origin);
-    })
+      transientMsg("Import those files one by one.");
+    });
+
+    return () => {   // cleanup
+      if (files.length > 0) {   // files.length is the old value
+        console.groupEnd();
+      }
+    };
   }, [files]);
 
   useEffect(() => {
@@ -341,10 +346,9 @@ async function importGraphic(file) {
   const html = `<h1></h1><img alt="${alt}" src="${dataUrl}" /><p></p>`;
 
   const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: file.lastModified};
-  const newNote = await serializeNote(deserializeNote(raw));
-  const cleanNote = await upsertNote(newNote);
+  const {id} = await upsertNote(deserializeNote(raw), undefined);
   console.info(`Created 1 HTML note from "${file.name}" (${file.type})`);
-  return {noteIds: [cleanNote.id], message: "1 note"};
+  return {noteIds: [id], message: "1 note"};
 }
 
 async function importHtml(html, fileDateValue, coda) {
@@ -372,10 +376,9 @@ async function importHtml(html, fileDateValue, coda) {
     }
 
     const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: fileDateValue};
-    const newNote = await serializeNote(deserializeNote(raw));
 
-    const cleanNote = await upsertNote(newNote);
-    return {noteIds: [cleanNote.id], messages: []};
+    const {id} = await upsertNote(deserializeNote(raw), undefined);
+    return {noteIds: [id], messages: []};
   } catch (err) {
     let messages = [];
     if ('/properties/content/maxLength' === err?.error?.schemaPath) {
@@ -405,8 +408,8 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
         // non-blank line after 3 blank, so forms note from previous
         try {
           const note = await linesToNote(buffer, fileDateValue--, coda, parseType);
-          const cleanNote = await upsertNote(note);
-          noteIds.push(cleanNote.id);
+          const {id} = await upsertNote(note, undefined);
+          noteIds.push(id);
         } catch (err) {
           console.error("splitIntoNotes:", err);
           const msg = extractUserMessage(err);
@@ -434,8 +437,8 @@ async function splitIntoNotes(text, fileDateValue, coda, parseType) {
   if (buffer.length > 0) {   // forms one last note
     try {
       const note = await linesToNote(buffer, fileDateValue--, coda, parseType);
-      const cleanNote = await upsertNote(note);
-      noteIds.push(cleanNote.id);
+      const {id} = await upsertNote(note, undefined);
+      noteIds.push(id);
     } catch (err) {
       console.error("while forming last note:", err);
       const msg = extractUserMessage(err);
@@ -469,7 +472,7 @@ async function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
     return previousValue + currentString.length;
   }, 0);
   const isMarkdown = 'text/markdown' === parseType;
-  if (noteChars > (isMarkdown ? 600_000 : 60_000)) {
+  if (noteChars > (isMarkdown ? CONTENT_MAX : CONTENT_MAX / 10)) {
     throw new Error(`Divide manually before importing`);
   }
   // last line may or may not be date
@@ -489,8 +492,7 @@ async function linesToNote(lines, noteDefaultDateValue, coda, parseType) {
   } else {
     content += '\n';
   }
-  const raw = {mimeType: parseType, content, date: dateValue};
-  return serializeNote(deserializeNote(raw));
+  return deserializeNote({mimeType: parseType, content, date: dateValue});
 }
 
 async function importText(text, fileDateValue, coda, parseType) {
@@ -506,11 +508,10 @@ async function importText(text, fileDateValue, coda, parseType) {
       }
     }
     const raw = {mimeType: parseType, content: text, date: fileDateValue};
-    const newNote = await serializeNote(deserializeNote(raw));
 
-    const cleanNote = await upsertNote(newNote);
+    const {id} = await upsertNote(deserializeNote(raw), undefined);
 
-    return {noteIds: [cleanNote.id], messages: []};
+    return {noteIds: [id], messages: []};
   } catch (err) {
     let messages = [];
     if ('/properties/content/maxLength' === err?.error?.schemaPath) {
@@ -521,14 +522,6 @@ async function importText(text, fileDateValue, coda, parseType) {
     return {noteIds: [], messages}
   }
 }
-
-/** Throwable, but should not be reported to the user */
-function QuietError(message) {
-  this.message = message;
-}
-
-QuietError.prototype = Object.create(Error.prototype);
-QuietError.prototype.name = "QuietError";
 
 
 export default FileImport;

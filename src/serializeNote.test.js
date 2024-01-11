@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {deserializeNote, serializeNote} from "./serializeNote";
-import {NodeNote} from "./Note";
+import {CONTENT_MAX, NodeNote} from "./Note";
 import {withHtml} from "./slateHtml.jsx";
 import {withReact} from "slate-react";
 import {createEditor} from "slate";
@@ -276,6 +276,28 @@ the single biggest source of inspiration for Markdown's syntax is the format of 
     expect(serializedNote.wordArr).toContain("L12345678");
     expect(serializedNote.wordArr).toContain("P12345678");
     expect(serializedNote.wordArr.length).toEqual(16);
+  });
+
+  it(`should reject an HTML note longer than ${CONTENT_MAX} characters`, async () => {
+    const nodes = [];
+    for (let i = 0; i < 100; ++i) {
+      const text = "b".repeat(CONTENT_MAX / 100);
+      nodes.push({type: 'paragraph', children: [{text}]});
+    }
+    const nodeNote = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, new Date(), false);
+
+    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
+  });
+
+  it(`should reject a text note longer than ${CONTENT_MAX / 10} characters`, async () => {
+    const nodes = [];
+    for (let i = 0; i < 100; ++i) {
+      const text = "c".repeat(CONTENT_MAX / 10 / 100);
+      nodes.push({type: 'paragraph', children: [{text}]});
+    }
+    const nodeNote = new NodeNote(generateTestId(), 'plain', nodes, new Date(), false);
+
+    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
   });
 });
 

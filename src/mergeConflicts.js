@@ -2,7 +2,7 @@
 // Copyright © 2021-2022 Doug Reeder
 
 import htmlparser from "htmlparser2";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 
 const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr', 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect', 'stop', 'use'];
 
@@ -27,7 +27,7 @@ function tokenize(markup) {
     },
     onerror(err) {
       console.error("while parsing HTML:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      transientMsg(extractUserMessage(err));
     }
   }, {recognizeSelfClosing: false, recognizeCDATA: false});
 

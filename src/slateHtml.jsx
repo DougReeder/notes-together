@@ -21,7 +21,7 @@ import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {addSubstitution} from "./urlSubstitutions";
 import {determineParseType} from "./FileImport";
 import {getCommonBlock, coerceToPlainText, toggleCheckListItem} from "./slateUtil";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import PropTypes from "prop-types";
 
 function isEmpty(node) {
@@ -469,7 +469,7 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
       }
     } catch (err) {
       console.error("insertBreak:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err)}, window?.location?.origin);
+      transientMsg(extractUserMessage(err));
     }
   }
 
@@ -486,8 +486,7 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
       }
     } catch (err) {
       console.error("while pasting:", err);
-      const userMsg = err?.userMsg || "Can you open that in another app and copy?";
-      window.postMessage({kind: 'TRANSIENT_MSG', message: userMsg}, window?.location?.origin);
+      transientMsg(err?.userMsg || "Can you open that in another app and copy?");
     }
   }
 
@@ -536,25 +535,25 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
                 resolve();
               } catch (err) {
                 console.error("while pasting file:", err);
-                window.postMessage({kind: 'TRANSIENT_MSG', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+                transientMsg(`Can you open “${file.name}” in another app and copy?`);
                 reject(err);
               }
             };
             reader.onerror = () => {
               console.error("reader.onerror:", reader.error);
-              window.postMessage({kind: 'TRANSIENT_MSG', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+              transientMsg(`Can you open “${file.name}” in another app and copy?`);
               reject(reader.error);
             };
             reader.readAsText(file);
           });
         } else {
           console.warn("not pasteable:", file.name, file.type, fileInfo.message);
-          window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: `Can you open “${file.name}” in another app and copy?`}, window?.location?.origin);
+          transientMsg(`Can you open “${file.name}” in another app and copy?`, 'warning');
         }
       }
     } else {   // use default handling, which probably does nothing
       console.warn("default handling", ...dataTransfer.items);
-      window.postMessage({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, window?.location?.origin);
+      transientMsg("Can you open that in another app and copy?", 'warning');
       insertData(dataTransfer)
     }
   }

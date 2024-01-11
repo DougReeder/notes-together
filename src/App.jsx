@@ -7,7 +7,7 @@ import {
   checkpointSearch, listSuggestions,
   saveTag, deleteTag, listTags
 } from './storage';
-import {deserializeNote, serializeNote} from "./serializeNote.js";
+import {deserializeNote} from "./serializeNote.js";
 import {findFillerNoteIds} from './idbNotes';
 import React, {useState, useEffect, useRef, useCallback, useMemo, useReducer} from 'react';
 import {useSearchParams} from "react-router-dom";
@@ -20,20 +20,19 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Snackbar, Toolbar
+  Toolbar
 } from "@mui/material";
 import Slide from '@mui/material/Slide';
 import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
 import FileImport, {allowedExtensions, allowedFileTypesNonText} from './FileImport';
-import {Alert, AlertTitle} from '@mui/material';
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import HelpPane from "./HelpPane";
 import {Delete, DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
-import {extractUserMessage} from "./util/extractUserMessage";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
 
 
@@ -101,14 +100,15 @@ function App() {
     try {
       const initialText = searchStr.trim() ? `<h1></h1><p></p><hr /><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
       const raw = {mimeType: 'text/html;hint=SEMANTIC', content: initialText};
-      const newNote = await serializeNote(deserializeNote(raw));
+      const newNote = deserializeNote(raw);
       // console.log("adding note:", newNote);
-      await upsertNote(newNote);
+      await upsertNote(newNote, undefined);
       setMustShowPanel('DETAIL');
       focusOnLoad.current = true;
       setSelectedNoteId(newNote.id);
     } catch (err) {
-      setTransientErr(err);
+      console.error("addNote:", err);
+      transientMsg(extractUserMessage(err));
     }
   }, [searchStr]);
 
@@ -132,8 +132,7 @@ function App() {
       case 'TAG_CHANGE':
         combineTagsWithSuggestions().catch(err => {
           console.error("while combining tags:", err);
-          window.postMessage({ kind: "Can't retrieve tags - close and re-open this tab", severity: 'error',
-            message: extractUserMessage(err)}, window?.location?.origin);
+          transientMsg("Can't retrieve tags - close and re-open this tab");
         });
         break;
       case 'TRANSIENT_MSG':
@@ -194,8 +193,7 @@ function App() {
     }
     startup().catch(err => {
       console.error("during startup:", err);
-      window.postMessage({ kind: 'TRANSIENT_MSG', severity: 'error',
-        message: "Error starting up - restart your browser"}, window?.location?.origin);
+      transientMsg("Error starting up - restart your browser");
     });
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -294,7 +292,7 @@ function App() {
       }
     } catch (err) {
       console.error("while selecting files to import:", err);
-      setTransientErr(err);
+      transientMsg(extractUserMessage(err));
     }
   }
 
@@ -303,8 +301,9 @@ function App() {
     setAppMenuAnchorEl(null);
     setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
     try {
+      console.group("Export to Markdown file")
       if ("0" === count) {
-        window.postMessage({kind: 'TRANSIENT_MSG', severity: 'info', message: "Change the search to match some notes!"}, window?.location?.origin);
+        transientMsg("Change the search to match some notes!", 'info');
         return;
       }
 
@@ -312,10 +311,11 @@ function App() {
     } catch (err) {
       console.error(`while exporting:`, err);
       if ('AbortError' !== err.name || "The user aborted a request." !== err.message) {
-        window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+        transientMsg(extractUserMessage(err), err.severity);
       }
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
+      console.groupEnd();
     }
   }
 
@@ -333,11 +333,11 @@ function App() {
         setImportFiles(evt.dataTransfer.files);
         setIsImportMultiple(false);
       } else {
-        window.postMessage({kind: 'TRANSIENT_MSG', message: "Drag that to the editor panel", severity: 'warning'}, window?.location?.origin);
+        transientMsg("Drag that to the editor panel", 'warning');
       }
     } catch (err) {
       console.error("while dropping file:", err);
-      setTransientErr(err);
+      transientMsg(extractUserMessage(err));
     }
   }
 
@@ -358,10 +358,12 @@ function App() {
       await combineTagsWithSuggestions();
       const message = 'string' === typeof saveResult ?
         `Saved tag “${searchStr}”` :
-        `Updated tag “${saveResult?.original}” to “${searchStr}”`
-      window.postMessage({kind: 'TRANSIENT_MSG', message, severity: 'success'}, window?.location?.origin);
+        `Updated tag “${saveResult?.original}” to “${searchStr}”`;
+      console.info(message);
+      transientMsg(message, 'success');
     } catch (err) {
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
+      console.error(`while saving tag “${[...searchWords].join(' ')}”:`, err);
+      transientMsg(extractUserMessage(err), err.severity);
     }
   }
 
@@ -370,10 +372,13 @@ function App() {
       setAppMenuAnchorEl(null);
       await deleteTag(searchWords, searchStr);
       await combineTagsWithSuggestions();
-      window.postMessage({kind: 'TRANSIENT_MSG', message: `Deleted tag “${searchStr}”`, severity: 'success'}, window?.location?.origin);
+      const message = `Deleted tag “${searchStr}”`;
+      console.info(message);
+      transientMsg(message, 'success');
       setSearchParams(new URLSearchParams());
     } catch (err) {
-      window.postMessage({kind: 'TRANSIENT_MSG', message: extractUserMessage(err), severity: err.severity || 'error'}, window?.location?.origin);
+      console.error(`while deleting tag “${[...searchWords].join(' ')}”:`, err);
+      transientMsg(extractUserMessage(err), err.severity);
     }
   }
 
@@ -383,10 +388,11 @@ function App() {
         await deleteNote(selectedNoteId);
         handleSelect(null);
       } catch (err) {
-        window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+        console.error("while deleting " + selectedNoteId, err);
+        transientMsg(extractUserMessage(err), err.severity);
       }
     } else {
-      window.postMessage({kind: 'TRANSIENT_MSG', message: "First, select a note!", severity: 'info'}, window?.location?.origin);
+      transientMsg("First, select a note!", 'info');
     }
     setAppMenuAnchorEl(null);
   }
@@ -407,7 +413,8 @@ function App() {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       await seedNotes();
     } catch (err) {
-      setTransientErr(err);
+      console.error("handleAddSeedNotes:", err);
+      transientMsg(extractUserMessage(err));
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
@@ -415,27 +422,33 @@ function App() {
 
   async function handleAddMovieNotes() {
     try {
+      console.groupCollapsed("Adding 100 movie or list notes")
       setTestMenuAnchorEl(null);
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       for (let i = 0; i < 100; ++i) {
         await randomNote();
       }
     } catch (err) {
-      setTransientErr(err);
+      console.error("handleAddMovieNotes:", err);
+      transientMsg(extractUserMessage(err));
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
+      console.groupEnd();
     }
   }
 
   async function handleHammer() {
     try {
+      console.group("Hammering storage");
       setTestMenuAnchorEl(null);
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
       await hammerStorage();
     } catch (err) {
-      setTransientErr(err);
+      console.error("handleHammer:", err);
+      transientMsg(extractUserMessage(err));
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
+      console.groupEnd();
     }
   }
 
@@ -451,23 +464,17 @@ function App() {
             handleSelect(null);
           }
         } catch (err2) {
-          console.warn(`while deleting ${noteId}:`, err2);
-          window.postMessage({kind: 'TRANSIENT_MSG', severity: err2.severity, message: extractUserMessage(err2)}, window?.location?.origin);
+          console.warn(`while deleting filler [${noteId}]:`, err2);
+          transientMsg(extractUserMessage(err2), err2.severity);
         }
       }
     } catch (err) {
       console.warn("while deleting filler notes:", err);
-      window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
+      transientMsg(extractUserMessage(err), err.severity);
     } finally {
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
       console.groupEnd();
     }
-  }
-
-  const [transientErr, setTransientErr] = useState(null);
-
-  function handleSnackbarClose(_evt) {
-    setTransientErr(null);
   }
 
 
@@ -489,7 +496,7 @@ function App() {
               onClose={closeTestMenu}
             >
               <MenuItem onClick={handleAddSeedNotes}>Add Seed Notes</MenuItem>
-              <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie Notes</MenuItem>
+              <MenuItem onClick={handleAddMovieNotes}>Add 100 Movie or List Notes</MenuItem>
               <MenuItem onClick={handleHammer}>Hammer Storage</MenuItem>
               <MenuItem onClick={handleDeleteFillerNotes}>Delete Filler Notes</MenuItem>
             </Menu>
@@ -514,14 +521,8 @@ function App() {
           </Toolbar>
         </AppBar>
         <div style={{height: '4px', flex: '0 0 auto', backgroundColor: 'white'}}></div>
-        <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect} setTransientErr={setTransientErr}></List>
+        <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
         <Fab onClick={addNote} color="primary" title="Create new note"><AddIcon /></Fab>
-        <Snackbar open={Boolean(transientErr)} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
-          <Alert onClose={handleSnackbarClose} severity="error">
-            <AlertTitle>{transientErr?.userMsg || "Close and re-open this tab"}</AlertTitle>
-            {transientErr?.message || transientErr?.name || transientErr?.toString()}
-          </Alert>
-        </Snackbar>
         <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
       </div>
       <div className="separator"></div>

@@ -1,5 +1,5 @@
 // extractUserMessage.js - extracts a message for the end-user from an error
-// Copyright © 2021 Doug Reeder under the MIT license
+// Copyright © 2021-2024 Doug Reeder under the MIT license
 
 export function extractUserMessage(err) {
   if (err?.userMsg) {
@@ -11,4 +11,13 @@ export function extractUserMessage(err) {
   } else {
     return "Close and re-open this tab";
   }
+}
+
+
+export  function transientMsg(message, severity = 'error') {
+  window.postMessage({
+    kind: 'TRANSIENT_MSG',
+    severity,
+    message
+  }, window?.location?.origin);
 }

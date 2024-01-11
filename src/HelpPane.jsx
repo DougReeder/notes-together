@@ -224,7 +224,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <a href="https://hominidsoftware.com/notes-together/"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
         <h2>Notes Together</h2>
         <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
-        <p>Copyright © 2021-2023 <a href="https://hominidsoftware.com/">Hominid Software</a></p>
+        <p>Copyright © 2021–2024 <a href="https://hominidsoftware.com/">Hominid Software</a></p>
         <p>&nbsp;</p>
       </div>
     </Box>

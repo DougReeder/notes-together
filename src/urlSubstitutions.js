@@ -2,6 +2,7 @@
 // Copyright © 2021 Doug Reeder
 
 import {evaluateImage, fileToDataUrl} from "./util/imageFileToDataUrl";
+import {transientMsg} from "./util/extractUserMessage.js";
 
 
 const MAX_SIZE = 200_000;    // max content size / 3
@@ -36,11 +37,12 @@ async function objectUrlToDataUrl(objectUrl) {
     }
 
     const dataUrl = await evaluateImage(blob, objectUrl);
-    window.postMessage({kind: 'TRANSIENT_MSG', message: "Graphic may not be saved", severity: 'warning'}, window?.location?.origin);
+    console.warn("Graphic may not be saved", blob);
+    transientMsg("Graphic may not be saved", 'warning');
     return {old: objectUrl, new: dataUrl};
   } catch (err) {
     console.error(`URL substitution err ${objectUrl}:`, err);
-    window.postMessage({kind: 'TRANSIENT_MSG', message: "Can't save graphic"}, window?.location?.origin);
+    transientMsg("Can't save graphic");
     throw err;
   }
 }
