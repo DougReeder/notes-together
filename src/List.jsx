@@ -222,6 +222,8 @@ function List(props) {
             switch (actionToConfirm.current) {
               case 'DELETE':
                 await deleteNote(selectedNoteId);
+                exitItemButtons(selectedNoteId);
+                handleSelect(null);
                 break;
             }
           } catch (err) {
@@ -325,6 +327,10 @@ function List(props) {
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
       await deleteNote(id);
+      exitItemButtons(id);
+      if (id === selectedNoteId) {
+        handleSelect(null);
+      }
     } catch (err) {
       window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
     } finally {
@@ -380,7 +386,7 @@ function List(props) {
             if (dateStr.startsWith("Today")) {
               dateClassName += ' today';
             }
-            listItems.push(<li className="divider" key={Math.random()}>
+            listItems.push(<li className="divider" role="separator" key={Math.random()}>
               <svg className="leftLine" version="1.1" viewBox="0 0 40 20">
                 <line fill="none" stroke="#155477" x1="0" y1="10" x2="35" y2="10" strokeWidth="6" strokeLinecap="round" />
               </svg>
@@ -426,19 +432,19 @@ function List(props) {
       );
     }
     if (isFirstLaunch && notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
-      listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div>);
+      listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, undefined, 'HELP')}>{adviceGettingStarted}</div>);
     }
 
     checkIfInstallRecommended(notes.length, isFirstLaunch).catch(console.error);
   } else {
     if (searchWords.size > 0) {
-      listItems = <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>
+      listItems = <div className="advice solo" onClick={handleSelect.bind(this, undefined, 'HELP')}>
         <h2>No Matching Notes</h2>
         Try just the first few letters of your search word(s), or synonyms of them.
       </div>
     } else {
       listItems = isFirstLaunch && gettingStartedDisplayed ?
-          <div className="advice solo" onClick={handleSelect.bind(this, null, 'HELP')}>{adviceGettingStarted}</div> :
+          <div className="advice solo" onClick={handleSelect.bind(this, undefined, 'HELP')}>{adviceGettingStarted}</div> :
           null;
     }
   }

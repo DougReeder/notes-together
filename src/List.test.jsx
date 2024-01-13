@@ -84,7 +84,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Close"})).not.toBeInTheDocument();
   });
 
-  it("should render note summaries & advice", async () => {
+  it("should render separators & note summaries", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -92,20 +92,23 @@ describe("List", () => {
     render(<List changeCount={() => {}} handleSelect={() => {}} setTransientErr={() => {}}></List>);
 
     const items = await screen.findAllByRole('listitem');
-    expect(items.length).toEqual(8);
-    expect(items[0].className).toEqual("divider");
-    expect(items[0].textContent).toEqual("September 2021");
+    expect(items.length).toEqual(5);
+    expect(items[0].className).toEqual("summary");
+    expect(items[0].textContent).toEqual("I would find her society much more believable if it was set far in the future on some other planet, and did not require the reader to swallow a total reversal of current trends.");
     expect(items[1].className).toEqual("summary");
-    expect(items[1].textContent).toEqual("I would find her society much more believable if it was set far in the future on some other planet, and did not require the reader to swallow a total reversal of current trends.");
-    expect(items[2].className).toEqual("summary");
-    expect(items[2].textContent).toEqual("Uncommon Women (1983)The only problem I had with the movie was that it fails to develop its material.");
+    expect(items[1].textContent).toEqual("Uncommon Women (1983)The only problem I had with the movie was that it fails to develop its material.");
 
-    expect(items[4].className).toEqual("divider");
-    expect(items[4].textContent).toEqual("August 2021");
-    expect(items[5].className).toEqual("summary");
-    expect(items[5].textContent).toEqual("A shallow cash-grab.  More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world. The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.");
-    expect(items[6].className).toEqual("divider");
-    expect(items[6].textContent).toEqual("August 2020");
+    expect(items[3].className).toEqual("summary");
+    expect(items[3].textContent).toEqual("A shallow cash-grab.  More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world. The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.");
+
+    const separators = await screen.findAllByRole('separator');
+    expect(separators.length).toEqual(3);
+    expect(separators[0].className).toEqual("divider");
+    expect(separators[0].textContent).toEqual("September 2021");
+    expect(separators[1].className).toEqual("divider");
+    expect(separators[1].textContent).toEqual("August 2021");
+    expect(separators[2].className).toEqual("divider");
+    expect(separators[2].textContent).toEqual("August 2020");
   });
 
   it("should switch to displaying Details on first down arrow", async () => {
@@ -216,6 +219,7 @@ describe("List", () => {
 
     await userEvent.click(cancelBtn);
     expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
@@ -244,8 +248,9 @@ describe("List", () => {
 
     await userEvent.click(deleteBtn);
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(mockHandleSelect).toHaveBeenCalledWith(null);
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
   it("should show item buttons on meta-backspace then delete on Enter", async () => {
@@ -271,6 +276,7 @@ describe("List", () => {
 
     await userEvent.keyboard('{Enter}');
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
+    expect(mockHandleSelect).toHaveBeenCalledWith(null);
     // mock deleteNote can't call postMessage
   });
 
@@ -297,6 +303,7 @@ describe("List", () => {
 
     await userEvent.keyboard(' ');
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
+    expect(mockHandleSelect).toHaveBeenCalledWith(null);
     // mock deleteNote can't call postMessage
   });
 
@@ -318,14 +325,45 @@ describe("List", () => {
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // not selected
 
     await userEvent.keyboard('{Escape}');
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // not cleared after delete
   });
 
-  it("should show item buttons on double-click", async () => {
+  it("should show item buttons on double-click & delete non-selected item", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // not selected
+
+    await userEvent.dblClick(items[1]);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', {name: "Delete"}));
+    expect(deleteNote).toHaveBeenCalledWith("615df9ff-89ab-4d51-b64d-0e82b2dfc2b6");
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // deleted item was not selected
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show item buttons on double-click & delete selected item", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -339,8 +377,50 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.dblClick(items[1]);
+    await userEvent.dblClick(items[3]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', {name: "Delete"}));
+    expect(deleteNote).toHaveBeenCalledWith('f5af3107-fc12-4291-88ff-e0d64b962e49');
+    expect(mockHandleSelect).toHaveBeenCalled();   // deleted item was selected
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+  });
+
+  it("should show item buttons on double-click, switch to another, then hide when the list is double-clicked outside items", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+                 setTransientErr={() => {}}></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    const item2 = screen.getByText("Uncommon Women (1983)", {exact: false});
+    await userEvent.dblClick(item2);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    const item3 = screen.getByText("A paragraph that might introduce the content.", {exact: false});
+    await userEvent.dblClick(item3);
+    expect(screen.getAllByRole('button', {name: "Delete"})).toHaveLength(2);
+    expect(screen.getAllByRole('button', {name: "Cancel"})).toHaveLength(2);
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.dblClick(screen.getByRole('list'));   // outside any item
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 });

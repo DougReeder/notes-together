@@ -1,4 +1,4 @@
-// Copyright © 2021-2023 Doug Reeder
+// Copyright © 2021-2024 Doug Reeder
 
 import {
   init,
@@ -77,7 +77,7 @@ function App() {
 
   const selectedNoteId = sessionStorage.getItem('selectedNoteId');
   function setSelectedNoteId(id) {
-    sessionStorage.setItem('selectedNoteId', id);
+    sessionStorage.setItem('selectedNoteId', id || '');   // setItem coerces to string
     forceRender();
   }
 
@@ -85,7 +85,7 @@ function App() {
   const lastCheckpointRef = useRef(new Set());
 
   function handleSelect(id, newPanel) {
-    if (id) {
+    if (undefined !== id) {
       setSelectedNoteId(id);
     }
     if (newPanel) {
@@ -381,6 +381,7 @@ function App() {
     if (selectedNoteId) {
       try {
         await deleteNote(selectedNoteId);
+        handleSelect(null);
       } catch (err) {
         window.postMessage({kind: 'TRANSIENT_MSG', severity: err.severity, message: extractUserMessage(err)}, window?.location?.origin);
       }
@@ -446,6 +447,9 @@ function App() {
       for (const noteId of await findFillerNoteIds()) {
         try {
           await deleteNote(noteId);
+          if (noteId === selectedNoteId) {
+            handleSelect(null);
+          }
         } catch (err2) {
           console.warn(`while deleting ${noteId}:`, err2);
           window.postMessage({kind: 'TRANSIENT_MSG', severity: err2.severity, message: extractUserMessage(err2)}, window?.location?.origin);
@@ -498,12 +502,12 @@ function App() {
             <Menu id="appMenu" anchorEl={appMenuAnchorEl} open={Boolean(appMenuAnchorEl)}
                   onClose={setAppMenuAnchorEl.bind(this, null)}>
               <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
-              <MenuItem onClick={handleSaveTag}>Save search as tag<Label/></MenuItem>
-              <MenuItem onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
+              <MenuItem className={(searchWords.size) ? '' : 'pseudoDisabled'} onClick={handleSaveTag}>Save search as tag<Label/></MenuItem>
+              <MenuItem className={(searchWords.size) ? '' : 'pseudoDisabled'} onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               <MenuItem className={!('showSaveFilePicker' in window && "0" !== count) ? 'pseudoDisabled' : ''} onClick={handleExportSelectedMarkdown}>{`Export ${searchWords.size > 0 ? count : "all"} notes to Markdown...`}</MenuItem>
-              <MenuItem onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
+              <MenuItem className={(selectedNoteId) ? '' : 'pseudoDisabled'} onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                    accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
