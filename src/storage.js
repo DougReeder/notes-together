@@ -148,7 +148,7 @@ async function changeHandler(evt) {
     }
   } catch (err) {
     if (!(err instanceof QuietError)) {
-      console.error("remoteStorage documents subscribe:", err, evt);
+      console.error("remoteStorage changeHandler:", err, evt);
       transientMsg(extractUserMessage(err));
     }
   }

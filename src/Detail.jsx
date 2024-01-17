@@ -18,7 +18,7 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Toolbar, Menu, Divider
+  Toolbar, Menu, Divider, CircularProgress
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -647,11 +647,17 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         {noteErr?.message || noteErr?.name || noteErr?.toString()}
       </Alert>
     </>;
-  } else if (!noteDate) {
+  } else if (!noteDate) {   // probably the note is still being retrieved
     content = (<>
       <AppBar onClick={toggleFocus} position="sticky" style={appbarStyle}>
         <Toolbar>{outBtn}</Toolbar>
       </AppBar>
+      {isLoading ? <Box sx={
+        {position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'transparent',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center'}}>
+          <div> &nbsp; </div>
+          <CircularProgress />
+      </Box> : null }
       <div style={{width: '100%', height: '100%', backgroundImage: 'url(/icons/NotesTogether-icon-gray.svg)',
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
     </>);
@@ -922,9 +928,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             {Boolean(noteDate) && ! noteErr ? noteControls : null}
           </Toolbar>
         </AppBar>
-        {isLoading ? <Box sx={{position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'rgba(128,128,128,50%)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center'}}>
-          <progress style={{marginTop: '4ch'}}/>
-        </Box> : null}
+        {isLoading ? <Box sx={
+          {position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'rgba(255,255,255,67%)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center'}}>
+          <div> &nbsp; </div>
+          <CircularProgress />
+        </Box> : null }
         <Editable
             key={editableKey}   // change the key to restart editor w/ new editorValue
             renderElement={renderElement}
