@@ -559,6 +559,27 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     expect(noteIds.length).toEqual(0);
     expect(message).toEqual("No notes");
   });
+
+  it("should parse a text file with carriage returns, in single mode", async () => {
+    vitest.spyOn(console, 'info').mockImplementation(() => null);
+
+    const {noteIds, message} = await importFromFile(carriageReturnsFile, 'text/plain', false);
+
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
+
+    const retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/plain');
+    expect(retrievedNote.title).toEqual("Some MacOS Classic file\ncollapse of the Soviet Union");
+    expect(retrievedNote.content).toEqual(carriageReturnsContent.replace(/\r/g, '\n') + `
+
+cr`);
+    expect(console.info).toHaveBeenCalledWith(
+      expect.stringMatching(/Imported .*from "cr"/i), ["1 note"]);
+  });
 });
 
 
@@ -592,6 +613,10 @@ const textFile = new File([textContent], 'nursery-rhymes.txt', {type: 'text/plai
 const fileDatePng = '2001-09-30T10:00:00Z';
 const dataUrlDot = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==';
 const pngFile = dataURItoFile(dataUrlDot, 'dot.png', fileDatePng);
+
+const fileDateCarriageReturns = '1950-01-31';
+const carriageReturnsContent = "Some MacOS Classic file\r\rcollapse of the Soviet Union\nend of the Cold War";
+const carriageReturnsFile = new File([carriageReturnsContent], 'cr', {type: 'text/plain', lastModified: Date.parse(fileDateCarriageReturns)});
 
 const fiveFiles = [htmlFile, binaryFile, markdownFile, markDownInTextFile, textFile];
 

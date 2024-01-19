@@ -268,7 +268,7 @@ async function determineParseType(file) {
         console.error(`Not importable: “${file.name}” (${file.type})`);
         return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
       default:
-        return {file, parseType: 'text/' + (result?.[1] || extension.slice(1) || 'plain')};
+        return {file, parseType: 'text/' + (result?.[1] || extension?.slice(1) || 'plain')};
     }
   }
 }
@@ -500,6 +500,7 @@ async function importText(text, fileDateValue, coda, parseType) {
     if (/^\s*$/.test(text)) {
       return {noteIds: [], messages: []};
     }
+    text = text.replace(/\r\n|\r/g, '\n');   // replaces carriage returns with newlines
     if (coda) {
       if ('text/markdown' === parseType) {
         text += '\n\n------------------------------\n' + coda;
