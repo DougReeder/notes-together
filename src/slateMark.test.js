@@ -748,6 +748,26 @@ let a = b**c, x = y**z;
     expect(md).toEqual(`![Not a pipe](https://example.com/other)`);
   });
 
+  it("should replace graphic w/ alt text, if data: URL & flagged", () => {
+    const slateNodes = [
+      { type: 'image', url: 'data:image/png;base64,FLJFEIOVLJEAOFOOJ', title: 'the Mona Lisa', children: [
+          {text: "a "},
+          {text: "famous", italic: true},
+          {text: " painting"},
+        ]},
+      { type: 'image', url: 'https://example.edu/graphic', title: "Whistler's Mother", children: [
+          {text: "another "},
+          {text: "notable", bold: true},
+          {text: " painting"},
+        ]},
+    ];
+
+    const md = serializeMarkdown(slateNodes, true);
+
+    expect(md).toEqual(`a *famous* painting
+![another **notable** painting](https://example.edu/graphic "Whistler's Mother")`);
+  });
+
   it("should serialize hierarchical lists", () => {
     const slateNodes = [
       {type: 'bulleted-list', children: [

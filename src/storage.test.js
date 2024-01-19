@@ -945,6 +945,7 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should return all notes when no words in search string", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(parseWords(" .@ *) -—-"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -989,6 +990,7 @@ Finance: we can't afford it.</ins>`);
     }));
 
     it("should return stubs containing words which start with the only search word", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(parseWords("th"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1033,6 +1035,7 @@ Finance: we can't afford it.</ins>`);
     }));
 
     it("should return stubs containing words which start with each of the search words", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(parseWords("th don"), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1095,6 +1098,7 @@ Finance: we can't afford it.</ins>`);
     });
 
     it("should return 500 stubs when search string is empty", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1132,6 +1136,7 @@ Finance: we can't afford it.</ins>`);
     }));
 
     it("should return 500 stubs with multiple search words", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(parseWords("Some-thin rathE s.h.o.r."), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1199,6 +1204,7 @@ Finance: we can't afford it.</ins>`);
     }, 60_000);
 
     it("should return a maximum of 500 stubs when search string is empty", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       findStubs(new Set(), callback);
 
       function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -1233,6 +1239,7 @@ Finance: we can't afford it.</ins>`);
     }), 30_000);
 
     it("should return a maximum of 500 stubs with multiple search words", () => new Promise((done, fail) => {
+      expect.hasAssertions();
       const searchWords = parseWords("177 congres declaratio governmen self-eviden");
       findStubs(searchWords, callback);
 

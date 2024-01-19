@@ -1,5 +1,5 @@
 // idbNotes.test.js - automated tests for storage for Notes Together
-// Copyright © 2021-2022 Doug Reeder
+// Copyright © 2021-2024 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
 import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
@@ -219,6 +219,7 @@ describe("findStubs", () => {
   });
 
   it("should return all notes when no words in search string", () => new Promise(done => {
+    expect.hasAssertions();
     findStubs(parseWords(" .@ *) -—-"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {
@@ -263,6 +264,7 @@ describe("findStubs", () => {
   }));
 
   it("should return notes containing words which start with each of the search words", () => new Promise(done =>  {
+    expect.hasAssertions();
     findStubs(parseWords("th don"), callback);
 
     function callback(err, matched, {isPartial, isFinal, isSearch} = {}) {

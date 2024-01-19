@@ -1,5 +1,5 @@
 // HelpPane.js - Preferences & HelpPane for Notes Together
-// Copyright © 2022 Doug Reeder
+// Copyright © 2022—2024 Doug Reeder
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
@@ -19,14 +19,14 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 (navigator.userAgentData?.brands || []).map(item => '\n' + item.brand + ' ' + item.version));
   /* eslint-disable react/no-unescaped-entities */
   return <>
-    <AppBar>
+    <AppBar aria-labelledby="helpPaneTitle">
       <Toolbar style={{justifyContent: 'flex-start'}}>
         <IconButton title="Out to list pane" className="narrowLayoutOnly"
             edge={false} size="large"
             onClick={setMustShowPanel?.bind(this, 'LIST')}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography style={{margin: "1.5ch"}}>
+        <Typography id="helpPaneTitle" style={{margin: "1.5ch"}}>
             Help
         </Typography>
       </Toolbar>
@@ -43,10 +43,10 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search as tag</b>. Tags are listed before search suggestions in the search dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
         <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
         <p>If a note doesn't contain the tag word or words you need, just add them to the bottom of the note. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
-        <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't clutter the interface. If you need the project notes again, just type the topic into the search field!</p>
+        <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't get in your way. If you need the project notes again, just type the topic into the search field!</p>
 
         <h4>How can I organize large amounts of text?</h4>
-        <p>Pick a distinctive 1–3 word topic. Save the topic as a tag. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
+        <p>Pick a distinctive 1–3 word topic (and add it to any notes that don't have it). Save the topic as a tag. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
         <p>Split long notes into several short notes. Append the topic to each.</p>
         {/*<p>You can export all your notes on a topic with the menu command <strong>Export matching notes to*/}
         {/*  file</strong>. Moving these files off a phone may require creative use of Wi-Fi Direct, Bluetooth, Air*/}
@@ -138,6 +138,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
             <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
             <tr><td>ctrl+Backspace or ctrl+Delete<br/>or ​⌘+Delete or ​⌘␡</td><td>delete selected note</td></tr>
+            <tr><td>ctrl+. or shift+ctrl+&gt;<br/>or ⌘. or ⌘⇧&gt;</td><td>share selected note, with file</td></tr>
+            <tr><td>ctrl+, or shift+ctrl+&lt;<br/>or ⌘, or ⌘⇧&lt;</td><td>share selected note as text</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
@@ -185,6 +187,11 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           </tbody>
         </table>
 
+        <h4>Which browsers on which operating systems allow me to Share notes?</h4>
+        <p>See <a href="https://caniuse.com/web-share" target="_blank" rel="noreferrer">Web Share API</a> on CanIUse.</p>
+        <p>In other browsers, you can send a text version of a note via email.
+          Some graphics will be replaced by their alt text.</p>
+
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
           <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel.</p>
@@ -221,10 +228,10 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>Does the editor behave differently when editing a Markdown note?</h4>
         <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
 
-        <a href="https://hominidsoftware.com/notes-together/"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
+        <a href="https://hominidsoftware.com/notes-together/" target="_blank" rel="noreferrer"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
         <h2>Notes Together</h2>
         <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
-        <p>Copyright © 2021–2024 <a href="https://hominidsoftware.com/">Hominid Software</a></p>
+        <p>Copyright © 2021–2024 <a href="https://hominidsoftware.com/" target="_blank" rel="noreferrer">Hominid Software</a></p>
         <p>&nbsp;</p>
       </div>
     </Box>

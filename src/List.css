@@ -116,9 +116,10 @@ li.selected > .title {
 }
 
 .itemButtons > button {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
 
-    padding: 2ex;
+    padding-top: 0.7rlh;
+    padding-bottom: 0.7rlh;
 }
 
 ol.list ul, ol.list ol {

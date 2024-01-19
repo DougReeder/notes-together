@@ -10,6 +10,7 @@ import App from './App.jsx';
 import './index.css';
 import { registerSW } from "virtual:pwa-register";
 import {visualViewportMatters} from "./util.js";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 
 if (!('requestIdleCallback' in window)) {
   // https://github.com/behnammodi/polyfill/blob/master/window.polyfill.js
@@ -42,6 +43,12 @@ if (!('requestIdleCallback' in window)) {
 // init is idempotent
 init().then((/*{indexedDb, isFirstLaunch, remoteStorage}*/) => {
   // console.log(`indexedDB: ${indexedDb}, remoteStorage initialized: ${remoteStorage} isFirstLaunch: ${isFirstLaunch}`);
+}).
+    catch(err => {
+  console.error("while initializing DB:", err);
+  requestIdleCallback(() => {   // waits until the UI is up
+    transientMsg("Close & re-open this tab — " + extractUserMessage(err));
+  });
 });
 
 const theme = createTheme({

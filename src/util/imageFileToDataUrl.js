@@ -89,7 +89,7 @@ function resize(img, fileType) {
   }
   context.drawImage(img, 0, 0, canvas.width, canvas.height);
   let dataUrl = canvas.toDataURL('image/webp', 0.4);
-  const actualMimeType = /^data:([-\w.]+\/[-\w.]+)/.exec(dataUrl)?.[1];
+  const actualMimeType = /^data:([A-Za-z]+\/[-\w.+]+)/.exec(dataUrl)?.[1];
   if ('image/png' === actualMimeType) {
     dataUrl = canvas.toDataURL('image/jpeg', 0.4);
   }

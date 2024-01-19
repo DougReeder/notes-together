@@ -3,26 +3,29 @@
 
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
-import {findStubs, deleteNote, init} from "./storage";
-import {useState, useEffect, useRef, useCallback} from 'react';
+import {findStubs, deleteNote, init, getNote} from "./storage";
+import {useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
-import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import checkIfInstallRecommended from "./webappInstall";
+import {shortenTitle} from "./Note.js";
+import {sharingContent, wrapInFile} from "./util/sharingContent.js";
+import {NonmodalDialog} from "./NonmodalDialog.jsx";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
-function List(props) {
+const List = forwardRef( function List (props, imperativeRef) {
   const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect} = props;
+
+  const DEFAULT_SHARE = 'function' === typeof navigator.share ? "Share file" : "Send text via email";
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
-  // console.log("List props:", props, "   notes:", notes);
 
   const [itemButtonsIds, setItemButtonsIds] = useState({});
 
@@ -112,11 +115,9 @@ function List(props) {
       if (pointerRef.current.longPressTimeoutId) {   // long-press in progress
         clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
       }
-      if (1 !== evt.buttons || evt.target.closest("button")) {
+      if (0 !== evt.button || evt.target.closest("button")) {
         return;
       }
-      evt.preventDefault();
-      evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
       pointerRef.current = uuidValidate(id) ?
@@ -129,8 +130,9 @@ function List(props) {
       function longPress() {
         if (Math.abs(list.current?.scrollTop - pointerRef.current?.downScroll) < 63) {
           inactivateAndActivateItemButtons(evt, id);
+          actionToConfirm.current = DEFAULT_SHARE;
         }
-        pointerRef.current = {};
+        pointerRef.current = {suppressClickId: id};
       }
     } catch (err) {
       console.error("handlePointerDown:", err);
@@ -138,38 +140,72 @@ function List(props) {
     }
   }
 
-  function handlePointerUp(evt) {
+  function handlePointerUp(_evt) {
     try {
       if (pointerRef.current.longPressTimeoutId) {   // long-press hasn't happened
         clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
-      } else {   // long-press has happened, so this event is ignored
-        return;
-      }
-      if (evt.target.closest("button")) {
-        return;
-      }
-      evt.preventDefault();
-      evt.stopPropagation();
-      if (! evt.target.closest("div.itemButtons")) {
-        handleSelect(pointerRef.current.downId, 'DETAIL');
       }
     } catch (err) {
       console.error("handlePointerUp:", err);
       transientMsg(extractUserMessage(err));
     } finally {
-      pointerRef.current = {};
+      pointerRef.current = {...(pointerRef.current.suppressClickId && { suppressClickId: pointerRef.current.suppressClickId })};
     }
   }
 
   function handleClick(evt) {
-    if (2 === evt.detail) {   // double click
-      evt.preventDefault();
-      evt.stopPropagation();
-      const noteEl = evt.target.closest("li.summary");
-      const id = noteEl?.dataset?.id;
-      inactivateAndActivateItemButtons(evt, id);
+    const noteEl = evt.target.closest("li.summary");
+    const id = noteEl?.dataset?.id;
+    if (1 === evt.detail && !evt.target.closest("div.itemButtons")) {   // single-click, not item button
+      if (id && id === pointerRef.current.suppressClickId) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        pointerRef.current = {};
+      } else if (id !== selectedNoteId) {
+        handleSelect(id, 'DETAIL');
+        inactivateAndActivateItemButtons(evt, itemButtonsIds[id] ? id : null);
+      }
     }
   }
+
+  function handleContextMenu(evt) {
+    try {
+      const noteEl = evt.target.closest("li.summary");
+      const id = noteEl?.dataset?.id;
+      if (id) {
+        evt.preventDefault();   // prevents browser content menu
+        actionToConfirm.current = DEFAULT_SHARE;
+      }
+      inactivateAndActivateItemButtons(evt, id);
+    } catch (err) {
+      console.error("handleContextMenu:", err);
+    }
+  }
+
+  useImperativeHandle(imperativeRef, () => {
+    return {
+      showSelectedItemButtons() {
+        if (selectedNoteId) {
+          inactivateAndActivateItemButtons(null, selectedNoteId);
+          actionToConfirm.current = DEFAULT_SHARE;
+        }
+      },
+    };
+  }, [selectedNoteId, inactivateAndActivateItemButtons, DEFAULT_SHARE]);
+
+  useEffect(() => {
+    try {
+      const entry = Object.entries(itemButtonsIds).find(([, active]) => active)
+      if (entry) {
+        const buttons = Array.from(document.querySelectorAll(`li[data-id="${entry[0]}"] button`));
+        const buttonToConfirm = buttons.find(button => actionToConfirm.current === button.innerHTML);
+        buttonToConfirm?.focus();
+        actionToConfirm.current = '';
+      }
+    } catch (err) {
+      console.error("while focusing after itemButtonIds changed:", err);
+    }
+  }, [selectedNoteId, itemButtonsIds])
 
   const actionToConfirm = useRef('');
 
@@ -180,7 +216,7 @@ function List(props) {
     if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
       return;
     }
-    switch (evt.code) {
+    switch (evt.key) {
       case 'ArrowDown':
         if (evt.shiftKey) {
           incrementSelectedNote(+5);
@@ -218,35 +254,23 @@ function List(props) {
       case 'Backspace':
       case 'Delete':
         if (selectedNoteId && (evt.ctrlKey || evt.metaKey)) {
-          actionToConfirm.current = 'DELETE';
+          actionToConfirm.current = 'Delete';
           inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
+      case '.':
+        if (!(evt.ctrlKey || evt.metaKey)) { return; }
+        /* fallthrough */
       case 'ContextMenu':
         if (selectedNoteId) {
+          actionToConfirm.current = DEFAULT_SHARE;
           inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
-      case 'Enter':   // The App key handler also handles this - that's ok.
-      case 'Space':
-        if (itemButtonsIds[selectedNoteId]) {
-          evt.stopPropagation();
-          evt.preventDefault();
-          try {
-            switch (actionToConfirm.current) {
-              case 'DELETE':
-                await deleteNote(selectedNoteId);
-                exitItemButtons(selectedNoteId);
-                handleSelect(null);
-                break;
-            }
-          } catch (err) {
-            console.error(`${evt.code} key:`, err);
-            transientMsg(extractUserMessage(err), err.severity);
-          } finally {
-            actionToConfirm.current = '';
-            inactivateAndActivateItemButtons(evt, null);
-          }
+      case ',':
+        if (selectedNoteId && (evt.ctrlKey || evt.metaKey)) {
+          actionToConfirm.current = 'function' === typeof navigator.share ? "Share text" : "Send text via email";
+          inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
       // default:
@@ -268,7 +292,7 @@ function List(props) {
         handleSelect(newId, newPanel);
       }
     }
-  }, [handleSelect, notes, selectedNoteId, itemButtonsIds, exitItemButtons, inactivateAndActivateItemButtons]);
+  }, [handleSelect, notes, selectedNoteId, inactivateAndActivateItemButtons, DEFAULT_SHARE]);
   useEffect(() => {
     document.addEventListener('keydown', documentKeyListener);
 
@@ -298,31 +322,22 @@ function List(props) {
     }
   }, [listKeyListener]);
 
-  const deleteBtn = useRef();
-  const cancelItemButtonsBtn = useRef();
 
-  const blurHandler = useCallback(evt => {
-    if ([deleteBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
+  const handleBlur = useCallback(evt => {
+    if (evt.relatedTarget?.closest("div.itemButtons")) {
       return;
     }
 
     inactivateAndActivateItemButtons(evt, null);
   }, [inactivateAndActivateItemButtons]);
 
-  useEffect(() => {
-    const currentList = list.current;
-    currentList?.addEventListener('blur', blurHandler);
-
-    return function removeListListener(){
-      currentList?.removeEventListener('blur', blurHandler);
-    }
-  }, [blurHandler])
-
 
   const selectedElmntRef = useRef(null);
 
   useEffect(() => {
-    selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    if ('function' === typeof selectedElmntRef.current?.scrollIntoView) {   // workaround for vitest?/jsdom? issue
+      selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    }
   }, [selectedNoteId])
 
   async function deleteItem(evt) {
@@ -342,6 +357,110 @@ function List(props) {
       transientMsg(extractUserMessage(err), err.severity);
     } finally {
       inactivateAndActivateItemButtons(evt, null);
+    }
+  }
+
+  const [sharingIssue, setSharingIssue] = useState(null);
+
+  /**
+   * Attempts to use Web Share API and calls setSharingIssue if there's a problem
+   * @param {Event} evt
+   * @param {boolean} useShare
+   * @param {boolean} includeFile
+   * @returns {Promise<void>}
+   */
+  async function shareItem(evt, useShare, includeFile = true) {
+    let id, note, shareTitle, data;
+    try {
+      evt.preventDefault();
+      evt.stopPropagation();
+      id = evt.target.closest("li.summary")?.dataset?.id;
+      note = await getNote(id);
+      if (note) {
+        shareTitle = note.title?.split(/\r\n|\n|\r/)?.[0]?.replace(/[<>\\/^•]/g, " ").trim().slice(0, 90) || "«note»";
+        const text = sharingContent(note);
+        const file = includeFile ? wrapInFile(note) : null;
+        data = { title: shareTitle, text: text, ...(file && { files: [file] })};
+        await tryShare(data, useShare);
+      } else {
+        console.error(`Note [${id}] not in database`);
+        transientMsg("Did you delete this note in another tab?");
+      }
+    } catch (err) {
+      const label = note?.title ? `“${shortenTitle(note?.title)}”` : `[${id}]`;
+      console.error(`unforeseen error preparing share ${label}:`, err);
+      transientMsg("Report this to developer:" + extractUserMessage(err));
+    } finally {
+      inactivateAndActivateItemButtons(evt, null);
+    }
+  }
+
+  /**
+   * Uses args to try share or use mailto: URL. Sets sharingIssue to new value.
+   * @param {Object} data
+   * @param {string} data.title
+   * @param {string} data.text
+   * @param {File[]} [data.files]
+   * @param {boolean} useShare
+   * @returns {Promise<void>}
+   */
+  async function tryShare(data, useShare) {
+    try {
+      if (useShare) {
+        if (!navigator.canShare(data)) {
+          if (data?.files) {   // Drops file from share; user can cancel at Share dialog
+            console.warn("The browser does not allow sharing files.");
+            transientMsg("The browser only allowed a text version to be shared.", 'warning', true);
+            data = { title: data.title, text: data.text };   // presumes files are the reason
+          } else {   // Shows dialog before proceeding; cancelling email is awkward
+            console.error("Permission to Share has not been granted.");
+            setSharingIssue({dialogTitle: `Send text version of “${data.title}” via email?`,
+              message: "Permission to Share has not been granted.", useShare: false, data});
+            return;
+          }
+        }
+        console.info(`trying share:`, data);
+        await navigator.share(data);
+        setSharingIssue(null);
+      } else {
+        const url =
+          `mailto:?subject=${encodeURIComponent(data.title)}&body=${encodeURIComponent(data.text)}`;
+        setSharingIssue(null);
+        console.info("sending via:", url);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.target= '_blank';
+        a.rel = 'noreferrer';
+        a.referrerPolicy = 'no-referrer';
+        a.click();
+      }
+    } catch (err) {
+      if ('AbortError' === err.name) {
+        console.info(`user aborted sharing “${sharingIssue?.data?.title}”:`, err);
+        setSharingIssue(null);
+      } else if ('NotAllowedError' === err.name && data?.files?.length > 0) {
+        const oldFile = data.files?.[0];
+        console.error(`Permission to share “${data.title}” as ${oldFile?.type} file wasn't granted.`, err);
+        if (oldFile?.type?.startsWith('text/')
+          && ! ['text/plain', 'text/html', 'text/css', 'text/csv'].includes(oldFile?.type)) {
+          const newData ={ title: data.title, text: data.text,
+            files: [new File([oldFile], oldFile.name + '.txt',
+              {type: 'text/plain', endings: 'native' /*, lastModified: note.lastEdited*/})] };
+          const subtype = /^[A-Za-z]+\/([-\w.+]+)/.exec(oldFile?.type)?.[1] || 'plain';
+          setSharingIssue({dialogTitle: `Share “${data.title}” as plain text file?`,
+            message: `You aren't allowed to Share that as a ${subtype} file.`, useShare: true, data: newData});
+        } else {
+          const newData = { title: data.title, text: data.text };
+          setSharingIssue({dialogTitle: `Share text version of “${data.title}” without file?`,
+            message: "You aren't allowed to Share that as a file.", useShare: true, data: newData});
+        }
+      } else {
+        console.error(`tried share “${data?.title}”:`, err);
+        const message = 'NotAllowedError' === err.name ? "You aren't allowed to Share that." : extractUserMessage(err);
+        setSharingIssue({dialogTitle: `Send text version of “${data?.title}” via email?`,
+          message, useShare: false, data});
+      }
     }
   }
 
@@ -406,7 +525,7 @@ function List(props) {
           let titleDiv;
           if ('string' === typeof note.title && /\S/.test(note.title)) {
             const titleLines = note.title.split('\n');
-            titleDiv = <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+            titleDiv = <div className="title" id={'title-'+note.id}>{titleLines[0]}<br/>{titleLines[1]}</div>
           } else {
             titleDiv = <div className="title untitled">Untitled</div>
           }
@@ -415,18 +534,20 @@ function List(props) {
             itemButtons = (
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
-                    <Button ref={deleteBtn} variant="contained" onClick={deleteItem}>Delete</Button>
-                    {/*<Button type="button">Share</Button>*/}
-                    <IconButton ref={cancelItemButtonsBtn} title="Cancel" size="large" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
-                      <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
-                    </IconButton>
+                    <Button variant="contained" color="warning" onClick={deleteItem}>Delete</Button>
+                    {'function' === typeof navigator.share ?
+                      <>
+                        <Button variant="contained" onClick={evt => shareItem(evt, true, false)}>Share text</Button>
+                        <Button variant="contained" onClick={evt => shareItem(evt, true, true)}>Share file</Button>
+                      </> :
+                      <Button variant="contained" onClick={evt => shareItem(evt, false, false)}>Send text via email</Button>}
                   </div>
                 </CSSTransition>);
           }
           listItems.push(
             note.id === selectedNoteId ?
               <li data-id={note.id} key={note.id} ref={selectedElmntRef}
-                  className="summary selected">
+                  className="summary selected" aria-labelledby={'title-'+note.id}>
                 {titleDiv}
                 {itemButtons}
               </li>
@@ -455,12 +576,18 @@ function List(props) {
           null;
     }
   }
-  return (
-      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
+
+  return <>
+      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} onContextMenu={handleContextMenu} onBlur={handleBlur} aria-label="note titles">
         {listItems}
       </ol>
-  );
-}
+      <NonmodalDialog open={Boolean(sharingIssue?.dialogTitle)}
+                      title={sharingIssue?.dialogTitle || ""} message={sharingIssue?.message || ""}
+                      okName={sharingIssue?.useShare ? "Share" : "Send email"}
+                      onOk={() => tryShare(sharingIssue.data, sharingIssue.useShare)}
+                      onCancel={() => setSharingIssue(null)} ></NonmodalDialog>
+    </>;
+});
 
 List.propTypes = {
   searchWords: PropTypes.instanceOf(Set),

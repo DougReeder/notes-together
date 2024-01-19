@@ -14,10 +14,11 @@ export function extractUserMessage(err) {
 }
 
 
-export  function transientMsg(message, severity = 'error') {
+export  function transientMsg(message, severity = 'error', atTop = false) {
   window.postMessage({
     kind: 'TRANSIENT_MSG',
     severity,
-    message
+    message,
+    atTop,
   }, window?.location?.origin);
 }

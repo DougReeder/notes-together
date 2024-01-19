@@ -1657,7 +1657,7 @@ https://www.example.org`);
     await editor.insertData(dataTransfer);
 
     expect(window.postMessage).toHaveBeenCalledTimes(1);
-    expect(window.postMessage).toHaveBeenLastCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}, expect.anything());
+    expect(window.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({kind: 'TRANSIENT_MSG', severity: 'warning', message: "Can you open that in another app and copy?"}), expect.anything());
     expect(console.warn).toHaveBeenCalledWith("default handling", ...dataTransfer.items);
   })
 });

@@ -399,8 +399,8 @@ function compareByDate(itemA, itemB) {
 /**
  * Retrieves note from IndexedDB (ignores remoteStorage)
  * @param {string} id
- * @returns {Promise<SerializedNote>}
- * */
+ * @returns {Promise<SerializedNote|undefined>}
+ */
 function getNoteDb(id) {
   return dbPrms.then(({indexedDb: db}) => {
     return new Promise((resolve, reject) => {
