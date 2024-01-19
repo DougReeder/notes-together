@@ -3,7 +3,7 @@
 
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
-import {findStubs, deleteNote, init} from "./storage";
+import {findStubs, deleteNote, init, getNote} from "./storage";
 import {useState, useEffect, useRef, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
@@ -14,6 +14,9 @@ import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import checkIfInstallRecommended from "./webappInstall";
+import {shortenTitle} from "./Note.js";
+import {sharingContent} from "./util/sharingContent.js";
+import {NonmodalDialog} from "./NonmodalDialog.jsx";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
@@ -299,10 +302,11 @@ function List(props) {
   }, [listKeyListener]);
 
   const deleteBtn = useRef();
+  const shareItemBtn = useRef();
   const cancelItemButtonsBtn = useRef();
 
   const blurHandler = useCallback(evt => {
-    if ([deleteBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
+    if ([deleteBtn.current, shareItemBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
       return;
     }
 
@@ -342,6 +346,91 @@ function List(props) {
       transientMsg(extractUserMessage(err), err.severity);
     } finally {
       inactivateAndActivateItemButtons(evt, null);
+    }
+  }
+
+  const [sharingIssue, setSharingIssue] = useState(null);
+
+  async function shareItem(evt) {
+    let id, note, data;
+    try {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const noteEl = evt.target.closest("li.summary");
+      id = noteEl?.dataset?.id;
+      note = await getNote(id);
+      if (note) {
+        try {
+          const shareTitle = note.title?.split("\n")?.[0]?.replace(/[<>\\/^•]/g, " ").trim() || "«note»";
+          const {text, file} = sharingContent(note);
+          data = { title: shareTitle, text: text, ...(file && { files: [file] })};
+          if ('function' === typeof navigator.share) {
+            if (!navigator.canShare(data)) {
+              if (file) {
+                console.warn("The browser does not allow sharing files.");
+                transientMsg("The browser only allowed a Markdown version to be shared.", 'warning');
+                data = { title: shareTitle, text: text };   // presumes files are the reason
+              } else {
+                console.error("Permission to Share has not been granted.");
+                setSharingIssue({message: "Permission to Share has not been granted.", useShare: false, data});
+                return;
+              }
+            }
+            console.info(`sharing:`, data);
+            await navigator.share(data);
+          } else {
+            setSharingIssue({message: "Browser can't Share other ways.", useShare: false, data});
+          }
+        } catch (err2) {
+          if ('NotAllowedError' === err2.name && data?.files) {
+            console.error(`Permission to share “${data.title}” as file wasn't granted.`, err2);
+            setSharingIssue({message: "You aren't allowed to Share that as a file.", useShare: true, data});
+          } else {
+            throw err2;
+          }
+        }
+      } else {
+        transientMsg("Did you delete this note in another tab?", 'warning');
+      }
+    } catch (err) {
+      let message;
+      if ('NotAllowedError' === err.name) {
+        message = "You aren't allowed to Share that.";
+      } else {
+        message = extractUserMessage(err);
+      }
+      const label = note?.title ? `“${shortenTitle(note?.title)}”` : `[${id}]`;
+      console.error(`shareItem ${label}:`, err);
+      if ('AbortError' !== err.name) {
+        setSharingIssue({message, useShare: false, data});
+      }
+    } finally {
+      inactivateAndActivateItemButtons(evt, null);
+    }
+  }
+
+  async function retryShare() {
+    try {
+      if (sharingIssue.useShare) {
+        const data = { title: sharingIssue.data.title, text: sharingIssue.data.text };
+        console.info(`sharing:`, data);
+        await navigator.share(data);
+        setSharingIssue(null);
+      } else {
+        const url =
+          `mailto:?subject=${encodeURIComponent(sharingIssue.data.title)}&body=${encodeURIComponent(sharingIssue.data.text)}`;
+        setSharingIssue(null);
+        console.info("sharing via:", url);
+        window.location = url;
+      }
+    } catch (err) {
+      console.error(`retried share “${sharingIssue.data.title}”:`, err);
+      if ('AbortError' === err.name) {
+        setSharingIssue(null);
+      } else {
+        const message = 'NotAllowedError' === err.name ? "You aren't allowed to Share that." : extractUserMessage(err);
+        setSharingIssue({message, useShare: false, data: sharingIssue.data});
+      }
     }
   }
 
@@ -415,8 +504,8 @@ function List(props) {
             itemButtons = (
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
-                    <Button ref={deleteBtn} variant="contained" onClick={deleteItem}>Delete</Button>
-                    {/*<Button type="button">Share</Button>*/}
+                    <Button ref={deleteBtn} variant="contained" color="warning" onClick={deleteItem}>Delete</Button>
+                    <Button ref={shareItemBtn} variant="contained" onClick={shareItem}>Share</Button>
                     <IconButton ref={cancelItemButtonsBtn} title="Cancel" size="large" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
                       <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
                     </IconButton>
@@ -455,11 +544,18 @@ function List(props) {
           null;
     }
   }
-  return (
+
+  const shareLabel = `${sharingIssue?.data.files ? "Markdown version of" : ""} “${sharingIssue?.data.title}”`;
+  const dialogTitle = sharingIssue?.useShare ? `Share ${shareLabel} without file?` : `Send ${shareLabel} via email?`;
+  return <>
       <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
         {listItems}
       </ol>
-  );
+      <NonmodalDialog open={Boolean(sharingIssue)}
+                      title={dialogTitle} message={sharingIssue?.message || ""}
+                      okName={sharingIssue?.useShare ? "Share" : "Send email"} onOk={retryShare}
+                      onCancel={() => setSharingIssue(null)} ></NonmodalDialog>
+    </>;
 }
 
 List.propTypes = {

@@ -1,5 +1,5 @@
 // HelpPane.js - Preferences & HelpPane for Notes Together
-// Copyright © 2022 Doug Reeder
+// Copyright © 2022—2024 Doug Reeder
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
@@ -184,6 +184,11 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             </ul></td></tr>
           </tbody>
         </table>
+
+        <h4>When I Share a Rich Text note, why does the receiver sometimes get a Markdown version?</h4>
+        <p>Notes Together shares both a Markdown version and an HTML file version.
+          The receiving app decides which it will use.</p>
+        <p>Separately, some browsers don't support sharing files (and some don't support sharing at all).</p>
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>

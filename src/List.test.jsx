@@ -9,8 +9,10 @@ import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
 import _ from "fake-indexeddb/auto.js";
-import {deleteNote} from './storage';
+import {deleteNote, getNote} from './storage';
 import List from "./List";
+import {SerializedNote} from "./Note.js";
+import normalizeDate from "./util/normalizeDate.js";
 
 let mockStubList = [];
 let mockIsFirstLaunch = false;
@@ -22,6 +24,7 @@ vitest.mock('./storage', () => ({
       callback(null, mockStubList, {isPartial: false, isFinal: false});
     }, 4);
   },
+  getNote: vitest.fn(),
   deleteNote: vitest.fn().mockResolvedValue([undefined, 42]),
 }));
 
@@ -99,7 +102,7 @@ describe("List", () => {
     expect(items[1].textContent).toEqual("Uncommon Women (1983)The only problem I had with the movie was that it fails to develop its material.");
 
     expect(items[3].className).toEqual("summary");
-    expect(items[3].textContent).toEqual("A shallow cash-grab.  More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world. The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.");
+    expect(items[3].textContent).toEqual("A shallow cash-grab.More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world.");
 
     const separators = await screen.findAllByRole('separator');
     expect(separators.length).toEqual(3);
@@ -173,7 +176,101 @@ describe("List", () => {
     expect(mockHandleSelect).toHaveBeenCalledWith('cba4c6fd-abf4-4f68-91ab-979fdf233606', null);
   });
 
-  it("should not show item buttons on control-backspace when no note selected", async () => {
+
+  it("should show item buttons on double-click then hide on Escape key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    await userEvent.dblClick(items[0]);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+
+    await userEvent.keyboard('{Escape}');
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+  });
+
+  it("should show item buttons on double-click then hide on Cancel click", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    await userEvent.dblClick(items[0]);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    const cancelBtn = screen.getByRole('button', {name: "Cancel"});
+    expect(cancelBtn).toBeVisible();
+
+    await userEvent.click(cancelBtn);
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+  });
+
+  it("should show item buttons on double-click, switch to another, then hide when the list is double-clicked outside items", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
+                 handleSelect={mockHandleSelect}
+    ></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    const item2 = screen.getByText("Uncommon Women (1983)", {exact: false});
+    await userEvent.dblClick(item2);
+    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+
+    const item3 = screen.getByText("machine:", {exact: false});
+    await userEvent.dblClick(item3);
+    expect(screen.getAllByRole('button', {name: "Delete"})).toHaveLength(2);   // old sliding away, new sliding in
+    expect(screen.getAllByRole('button', {name: "Share"})).toHaveLength(2);
+    expect(screen.getAllByRole('button', {name: "Cancel"})).toHaveLength(2);
+
+    await userEvent.dblClick(screen.getByRole('list'));   // outside any item
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(deleteNote).not.toHaveBeenCalled();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+  });
+
+
+  it("should not show Delete & Cancel buttons on control-backspace when no note selected", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -192,7 +289,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on control-backspace then hide on Cancel click", async () => {
+  it("should show Delete & Cancel buttons on control-backspace then hide on Cancel click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -220,7 +317,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on meta-delete key then delete note on Delete click", async () => {
+  it("should show Delete & Cancel buttons on meta-delete key then delete note on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -249,7 +346,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on meta-backspace then delete on Enter", async () => {
+  it("should show Delete & Cancel buttons on meta-backspace then delete on Enter key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -276,7 +373,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show item buttons on control-delete key then delete on Space key", async () => {
+  it("should show Delete & Cancel buttons on control-delete key then delete on Space key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -303,7 +400,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show item buttons on control-backspace key then hide on Escape key", async () => {
+  it("should show Delete & Cancel buttons on control-backspace key then hide on Escape key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -330,7 +427,7 @@ describe("List", () => {
     expect(mockHandleSelect).not.toHaveBeenCalled();   // not cleared after delete
   });
 
-  it("should show item buttons on double-click & delete non-selected item", async () => {
+  it("should show Delete & Cancel buttons on double-click & delete non-selected item on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -359,7 +456,7 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show item buttons on double-click & delete selected item", async () => {
+  it("should show Delete & Cancel buttons on double-click & delete selected item on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -385,38 +482,406 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
   });
 
-  it("should show item buttons on double-click, switch to another, then hide when the list is double-clicked outside items", async () => {
+  it("should show Share & Cancel buttons on double-click & share non-selected HTML item w/ file", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
     const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
 
-    render(<List changeCount={() => {}}
-                 selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
-                 handleSelect={mockHandleSelect}
-    ></List>);
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect} ></List>);
     await screen.findAllByRole('listitem');
-    expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    const item2 = screen.getByText("Uncommon Women (1983)", {exact: false});
-    await userEvent.dblClick(item2);
-    expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
-    expect(deleteNote).not.toHaveBeenCalled();
+    expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
-    const item3 = screen.getByText("A paragraph that might introduce the content.", {exact: false});
-    await userEvent.dblClick(item3);
-    expect(screen.getAllByRole('button', {name: "Delete"})).toHaveLength(2);
-    expect(screen.getAllByRole('button', {name: "Cancel"})).toHaveLength(2);
-    expect(deleteNote).not.toHaveBeenCalled();
-    expect(mockHandleSelect).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
 
-    await userEvent.dblClick(screen.getByRole('list'));   // outside any item
-    expect(deleteNote).not.toHaveBeenCalled();
-    expect(mockHandleSelect).not.toHaveBeenCalled();
-    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+...is an HTTP-header based mechanism`, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
     expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & share selected Markdown item with file", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = `# Uncommon Women (1983)
+    
+* Intense plot development. 
+* Starting with fights and ending with politics is a bit of a downer.`;
+    const mockNote = new SerializedNote(mockStubs[1].id, 'text/markdown;hint=COMMONMARK', mockStubs[1].title,
+      content, normalizeDate(mockStubs[1].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId="615df9ff-89ab-4d51-b64d-0e82b2dfc2b6"></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    const item = screen.getByText("Uncommon Women (1983)", {exact: false});
+    await userEvent.dblClick(item);
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "Uncommon Women (1983).html", {type: 'text/markdown', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "Uncommon Women (1983)", text: content, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & share non-selected Litewrite item with file", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = `A shallow cash-grab.
+More troubling is the is the lecturing on the evils of capitalism and how it was responsible for all the ecological troubles of the world.
+The lecturing is reasonable for the characters and their background, and makes sense given the characters' situation.`;
+    const mockNote = new SerializedNote(mockStubs[3].id, undefined, mockStubs[3].title,
+      content, normalizeDate(mockStubs[3].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect} ></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    const item = screen.getByText("A shallow cash-grab.", {exact: false});
+    await userEvent.dblClick(item);
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "A shallow cash-grab..html", {type: 'text/plain', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "A shallow cash-grab.", text: content, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & share selected YAML item w/ file", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = `machine:
+  ruby:
+    version: 2.1.3
+  environment:
+    CODECLIMATE_REPO_TOKEN: 6bd8d374b120a5449b9a4b7dfda40cc0609dbade48a1b6655f04a9bc8de3a3ee
+    ADAPTER: active_record
+    ADAPTER: mongoid
+dependencies:
+  pre:
+    - gem install bundler
+test:
+  override:
+    - bundle exec rake:spec_all
+`;
+    const mockNote = new SerializedNote(mockStubs[2].id, 'text/x-yaml', mockStubs[2].title,
+      content, normalizeDate(mockStubs[2].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId="cba4c6fd-abf4-4f68-91ab-979fdf233606"></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+
+    const item = screen.getByText("machine:", {exact: false});
+    await userEvent.dblClick(item);
+    expect(screen.getByRole('button', {name: "Share"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "machine:.yaml", {type: 'application/x-yaml', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "machine:", text: content, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & not message user on AbortError", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(
+      () => Promise.reject(new DOMException("unit test", "AbortError")));
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    expect(navigator.share).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching("CORS"), new DOMException("unit test", "AbortError"));
+    expect(window.postMessage).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeFalsy();
+
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & show dialog on DataError", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(
+      () => Promise.reject(new DOMException("unit test", "DataError")));
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    expect(navigator.share).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching("CORS"), new DOMException("unit test", "DataError"));
+    expect(window.postMessage).not.toHaveBeenCalled();
+
+    await screen.findByRole('dialog');
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeTruthy();
+
+    await userEvent.click(screen.getAllByRole('button', {name: "Cancel"})[1]);
+
+    // no way to test setting window.location to mailto: URL
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
+  });
+
+  it("should show dialog on Share NotAllowedError, retry w/o file, then send via email", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(
+      () => Promise.reject(new DOMException("unit test", "NotAllowedError")));
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`, files: [file]});
+    // expect(console.error).toHaveBeenCalledTimes(2);
+    // expect(console.error).toHaveBeenCalledWith("foo");
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching("“CORS” as file"), new DOMException("unit test", "NotAllowedError"));
+    expect(window.postMessage).not.toHaveBeenCalled();
+
+    await screen.findByRole('dialog');
+    await userEvent.click(screen.getAllByRole('button', {name: "Share"})[1]);
+
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`});
+    expect(console.error).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching("retried share “CORS”"), new DOMException("unit test", "NotAllowedError"));
+
+    await screen.findByRole('dialog');
+    await userEvent.click(screen.getByRole('button', {name: "Send email"}));
+
+    // no way to test setting window.location to mailto: URL
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
+  });
+
+  it("should show Share & Cancel buttons on double-click & check if files can be shared", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+
+    navigator.canShare = vi.fn().mockImplementation(() => false);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    vitest.spyOn(console, 'warn').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    expect(navigator.canShare).toHaveBeenCalledOnce();
+    expect(navigator.share).toHaveBeenCalledOnce();
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`});
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringMatching("files"));
+    expect(window.postMessage).toHaveBeenCalledOnce();
+    // expect(window.postMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning',
+    //   message: "The browser only allowed a Markdown version to be shared."}, expect.anything());
+
+    expect(screen.queryByRole('button', {name: "Share"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+  });
+
+  it("should show dialog if Web Share API not supported then cancel", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    delete navigator.canShare;
+    delete navigator.share;
+
+    vitest.spyOn(console, 'warn').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    await screen.findByRole('dialog');
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeTruthy();
+
+    await userEvent.click(screen.getAllByRole('button', {name: "Cancel"})[1]);
+
+    // no way to test setting window.location to mailto: URL
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
+  });
+
+  it("should show dialog if Web Share API not supported then email", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    delete navigator.canShare;
+    delete navigator.share;
+
+    vitest.spyOn(console, 'warn').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.dblClick(item);
+    await userEvent.click(screen.getByRole('button', {name: "Share"}));
+
+    await screen.findByRole('dialog');
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('button', {name: "Cancel"})).toHaveLength(2);
+    await userEvent.click(screen.getByRole('button', {name: "Send email"}));
+
+    // no way to test setting window.location to mailto: URL
+    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Send email"}));
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
   });
 });
