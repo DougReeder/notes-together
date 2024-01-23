@@ -137,7 +137,7 @@ function App() {
         break;
       case 'TRANSIENT_MSG':
         enqueueSnackbar(evt.data?.message || "Close and re-open this tab", {
-          anchorOrigin: {horizontal: 'left', vertical: 'bottom'},
+          anchorOrigin: {horizontal: 'left', vertical: evt.data?.atTop ? 'top' : 'bottom'},
           variant: evt.data?.severity || 'error',
           autoHideDuration: ['info', 'success'].includes(evt.data?.severity) ? 4000 : 8000,
           disableWindowBlurListener: true,

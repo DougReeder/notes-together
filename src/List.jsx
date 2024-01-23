@@ -15,7 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import checkIfInstallRecommended from "./webappInstall";
 import {shortenTitle} from "./Note.js";
-import {sharingContent} from "./util/sharingContent.js";
+import {sharingContent, wrapInFile} from "./util/sharingContent.js";
 import {NonmodalDialog} from "./NonmodalDialog.jsx";
 
 const LONG_PRESS_DURATION = 500;   // ms
@@ -302,11 +302,12 @@ function List(props) {
   }, [listKeyListener]);
 
   const deleteBtn = useRef();
-  const shareItemBtn = useRef();
+  const shareTextBtn = useRef();
+  const shareFileBtn = useRef();
   const cancelItemButtonsBtn = useRef();
 
   const blurHandler = useCallback(evt => {
-    if ([deleteBtn.current, shareItemBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
+    if ([deleteBtn.current, shareTextBtn.current, shareFileBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
       return;
     }
 
@@ -351,8 +352,14 @@ function List(props) {
 
   const [sharingIssue, setSharingIssue] = useState(null);
 
-  async function shareItem(evt) {
-    let id, note, data;
+  /**
+   * Attempts to use Web Share API and calls setSharingIssue if there's a problem
+   * @param {Event} evt
+   * @param {boolean} includeFile
+   * @returns {Promise<void>}
+   */
+  async function shareItem(evt, includeFile) {
+    let id, note, shareTitle, data;
     try {
       evt.preventDefault();
       evt.stopPropagation();
@@ -360,61 +367,75 @@ function List(props) {
       id = noteEl?.dataset?.id;
       note = await getNote(id);
       if (note) {
-        try {
-          const shareTitle = note.title?.split("\n")?.[0]?.replace(/[<>\\/^•]/g, " ").trim() || "«note»";
-          const {text, file} = sharingContent(note);
-          data = { title: shareTitle, text: text, ...(file && { files: [file] })};
-          if ('function' === typeof navigator.share) {
-            if (!navigator.canShare(data)) {
-              if (file) {
-                console.warn("The browser does not allow sharing files.");
-                transientMsg("The browser only allowed a Markdown version to be shared.", 'warning');
-                data = { title: shareTitle, text: text };   // presumes files are the reason
-              } else {
-                console.error("Permission to Share has not been granted.");
-                setSharingIssue({message: "Permission to Share has not been granted.", useShare: false, data});
-                return;
-              }
+        shareTitle = note.title?.split(/\r\n|\n|\r/)?.[0]?.replace(/[<>\\/^•]/g, " ").trim().slice(0, 90) || "«note»";
+        const text = sharingContent(note);
+        const file = includeFile ? wrapInFile(note) : null;
+        data = { title: shareTitle, text: text, ...(file && { files: [file] })};
+        if ('function' === typeof navigator.share) {
+          if (!navigator.canShare(data)) {
+            if (file) {
+              console.warn("The browser does not allow sharing files.");
+              transientMsg("The browser only allowed a text version to be shared.", 'warning', true);
+              data = { title: shareTitle, text: text };   // presumes files are the reason
+            } else {
+              console.error("Permission to Share has not been granted.");
+              setSharingIssue({dialogTitle: `Send text version of “${shareTitle}” via email?`,
+                message: "Permission to Share has not been granted.", useShare: false, data});
+              return;
             }
-            console.info(`sharing:`, data);
-            await navigator.share(data);
-          } else {
-            setSharingIssue({message: "Browser can't Share other ways.", useShare: false, data});
           }
-        } catch (err2) {
-          if ('NotAllowedError' === err2.name && data?.files) {
-            console.error(`Permission to share “${data.title}” as file wasn't granted.`, err2);
-            setSharingIssue({message: "You aren't allowed to Share that as a file.", useShare: true, data});
-          } else {
-            throw err2;
-          }
+          console.info(`sharing:`, data);
+          await navigator.share(data);
+        } else {
+          setSharingIssue({dialogTitle: `Send text version of “${shareTitle}” via email?`,
+            message: "Browser can't Share other ways.", useShare: false, data});
         }
       } else {
         transientMsg("Did you delete this note in another tab?", 'warning');
       }
     } catch (err) {
-      let message;
-      if ('NotAllowedError' === err.name) {
-        message = "You aren't allowed to Share that.";
+      if ('NotAllowedError' === err.name && data?.files) {
+        const oldFile = data.files?.[0];
+        console.error(`Permission to share “${data.title}” as ${oldFile?.type} file wasn't granted.`, err);
+        if (oldFile?.type?.startsWith('text/')
+          && ! ['text/plain', 'text/html', 'text/css', 'text/csv'].includes(oldFile?.type)) {
+          const newData ={ title: data.title, text: data.text,
+            files: [new File([oldFile], oldFile.name + '.txt',
+              {type: 'text/plain', endings: 'native' /*, lastModified: note.lastEdited*/})] };
+          const subtype = /^[A-Za-z]+\/([-\w.+]+)/.exec(oldFile?.type)?.[1] || 'plain';
+          setSharingIssue({dialogTitle: `Share “${shareTitle}” as plain text file?`,
+            message: `You aren't allowed to Share that as a ${subtype} file.`, useShare: true, data: newData});
+        } else {
+          const newData = { title: data.title, text: data.text };
+          setSharingIssue({dialogTitle: `Share text version of “${shareTitle}” without file?`,
+            message: "You aren't allowed to Share that as a file.", useShare: true, data: newData});
+        }
       } else {
-        message = extractUserMessage(err);
-      }
-      const label = note?.title ? `“${shortenTitle(note?.title)}”` : `[${id}]`;
-      console.error(`shareItem ${label}:`, err);
-      if ('AbortError' !== err.name) {
-        setSharingIssue({message, useShare: false, data});
+        const label = note?.title ? `“${shortenTitle(note?.title)}”` : `[${id}]`;
+        if ('AbortError' === err.name) {
+          console.info(`user aborted sharing ${label}:`, err);
+        } else {
+          console.error(`unforeseen error ${label}:`, err);
+          setSharingIssue({
+            dialogTitle: `Send text version of “${shareTitle}” via email?`,
+            message: extractUserMessage(err), useShare: false, data
+          });
+        }
       }
     } finally {
       inactivateAndActivateItemButtons(evt, null);
     }
   }
 
+  /**
+   * Uses sharingIssue to retry share or use mailto: URL. Sets sharingIssue to new value.
+   * @returns {Promise<void>}
+   */
   async function retryShare() {
     try {
       if (sharingIssue.useShare) {
-        const data = { title: sharingIssue.data.title, text: sharingIssue.data.text };
-        console.info(`sharing:`, data);
-        await navigator.share(data);
+        console.info(`retrying share:`, sharingIssue.data);
+        await navigator.share(sharingIssue.data);
         setSharingIssue(null);
       } else {
         const url =
@@ -424,12 +445,14 @@ function List(props) {
         window.location = url;
       }
     } catch (err) {
-      console.error(`retried share “${sharingIssue.data.title}”:`, err);
       if ('AbortError' === err.name) {
+        console.info(`user aborted sharing “${sharingIssue?.data?.title}”:`, err);
         setSharingIssue(null);
       } else {
+        console.error(`retried share “${sharingIssue?.data?.title}”:`, err);
         const message = 'NotAllowedError' === err.name ? "You aren't allowed to Share that." : extractUserMessage(err);
-        setSharingIssue({message, useShare: false, data: sharingIssue.data});
+        setSharingIssue({dialogTitle: `Send text version of “${sharingIssue?.data?.title}” via email?`,
+          message, useShare: false, data: sharingIssue?.data});
       }
     }
   }
@@ -505,7 +528,8 @@ function List(props) {
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
                     <Button ref={deleteBtn} variant="contained" color="warning" onClick={deleteItem}>Delete</Button>
-                    <Button ref={shareItemBtn} variant="contained" onClick={shareItem}>Share</Button>
+                    <Button ref={shareTextBtn} variant="contained" onClick={evt => shareItem(evt, false)}>Share text</Button>
+                    <Button ref={shareFileBtn} variant="contained" onClick={evt => shareItem(evt, true) }>Share file</Button>
                     <IconButton ref={cancelItemButtonsBtn} title="Cancel" size="large" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
                       <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
                     </IconButton>
@@ -545,14 +569,12 @@ function List(props) {
     }
   }
 
-  const shareLabel = `${sharingIssue?.data.files ? "Markdown version of" : ""} “${sharingIssue?.data.title}”`;
-  const dialogTitle = sharingIssue?.useShare ? `Share ${shareLabel} without file?` : `Send ${shareLabel} via email?`;
   return <>
       <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
         {listItems}
       </ol>
       <NonmodalDialog open={Boolean(sharingIssue)}
-                      title={dialogTitle} message={sharingIssue?.message || ""}
+                      title={sharingIssue?.dialogTitle || ""} message={sharingIssue?.message || ""}
                       okName={sharingIssue?.useShare ? "Share" : "Send email"} onOk={retryShare}
                       onCancel={() => setSharingIssue(null)} ></NonmodalDialog>
     </>;

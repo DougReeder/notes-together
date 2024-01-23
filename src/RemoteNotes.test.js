@@ -180,8 +180,8 @@ describe("RemoteNotes", () => {
       expect(retrieved.content).toEqual(originalText);   // not updated
       expect(retrieved.title).toEqual(original.title);   // not updated
       expect(mockPostMessage).toHaveBeenCalledOnce();
-      expect(mockPostMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG',
-        message: CONTENT_TOO_LONG, severity: 'error'}, window?.location?.origin);
+      expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining( {kind: 'TRANSIENT_MSG',
+        message: CONTENT_TOO_LONG, severity: 'error'}), window?.location?.origin);
       expect(mockConsoleError).toHaveBeenCalledOnce();
     });
   });

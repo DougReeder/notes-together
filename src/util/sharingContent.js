@@ -7,33 +7,34 @@ import {deserializeHtml} from "../slateHtml.jsx";
 import {shortenTitle} from "../Note.js";
 
 /**
- * Converts note to Markdown or plain text; wraps content in file if not plain nor Markdown.
+ * Converts note to Markdown or plain text.
  * @param {SerializedNote} note
- * @returns {{text: string, file: File|undefined}}
+ * @returns string
  */
 export function sharingContent(note) {
-  let text, file;
+  let text;
   if (hasTagsLikeHtml(note.mimeType)) {
     text = serializeMarkdown(deserializeHtml(note.content));
-    file = wrapInFile(note);
-  } else if (/^text\//.test(note.mimeType)) {
+  } else if (!note.mimeType || /^text\//.test(note.mimeType)) {
     text = note.content;
-    file = wrapInFile(note);
-  } else if (!note.mimeType) {
-    text = note.content;
-    file = wrapInFile(note);
   } else {
-    const err = new Error(`Can't export ${note.mimeType} note “${shortenTitle(note.title)}” [${note.id}]`);
-    err.userMsg = `Can't export “${note.mimeType}” note`;
+    const err = new Error(`Can't share ${note.mimeType} note “${shortenTitle(note.title)}” [${note.id}]`);
+    err.userMsg = `Can't share “${note.mimeType}” note`;
     throw err;
   }
 
-  return {text, file};
+  return text;
 }
 
-function wrapInFile(note) {
-  const subtype = /^[-\w.]+\/([-\w.]+)/.exec(note.mimeType)?.[1] || 'plain';
-  // if (['plain', 'markdown'].includes(subtype)) { return undefined; }
+/**
+ * Creates a File object from the contents and type
+ * @param {SerializedNote} note
+ * @returns {File}
+ */
+export function wrapInFile(note) {
+  const typeMatch = /^([A-Za-z]+\/([-\w.+]+))/.exec(note.mimeType);
+  const fileType = typeMatch?.[1] || 'text/plain';
+  const subtype = typeMatch?.[2] || 'plain';
 
   let extension = map[subtype];
   if (!extension) {
@@ -45,13 +46,12 @@ function wrapInFile(note) {
       extension = '.' + subtype;
     }
   }
-  const fileName = (note.title?.split("\n")?.[0].replace(/[<>\\/^•]/g, " ").trim() || "note") + extension;
-  const fileType = /^([-\w.]+\/[-\w.]+)/.exec(note.mimeType)?.[1] || 'text/plain';
+  const fileName = (note.title?.split(/\r\n|\n|\r/)?.[0]?.replace(/[<>{}\\/^•]/g, " ").trim().slice(0, 90) || "note") + extension;
   return new File([note.content], fileName,
     {type: fileType, endings: 'native' /*, lastModified: note.lastEdited*/});
 }
 
-// maps subtype to file extension, when the subtype is not the the extension, or 'x-foo'
+// maps subtype to file extension, when the subtype is not the the extension, 'x-extension' nor 'vnd.extension'
 const map = {
   'xhtml+xml': '.xhtml',
   'mathml+xml': '.mml',
@@ -61,6 +61,9 @@ const map = {
   'readme': '.txt',
   'me': '.txt',
   '1st': '.txt',
+  'log': '.txt',
+  'vnd.ascii-art': '.txt',   // so recipients can handle appropriately
+  'ascii': '.txt',
   'markdown': '.md',
   'mkd': '.md',
   'mkdn': '.md',
@@ -69,6 +72,7 @@ const map = {
   'vcard': '.vcf',
   'calendar': '.ics',
   'rfc822': '.eml',
+  'global': '.u8msg',
   'x-uuencode': '.uue',
   'tab-separated-values': '.tsv',
   'x-shellscript': '.sh',
@@ -87,8 +91,6 @@ const map = {
   'x-httpd-php': '.php',
   'uri-list': '.uri',
   'vnd.uri-map': '.urim',
-  'vnd.ascii-art': '.txt',   // so recipients can handle appropriately
-  'ascii': '.txt',
   'vnd.dvb.subtitle': '.sub',
   'mathematica': '.nb',
 }

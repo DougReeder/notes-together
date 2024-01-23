@@ -315,7 +315,7 @@ async function deleteNote(id, force) {
   if (!force) {
     const note = await getNoteDb(id);
     if (note?.isLocked) {
-      const shortTitle = note.title?.split("\n")?.[0]?.slice(0, 24) + "...";
+      const shortTitle = note.title?.split(/\r\n|\n|\r/)?.[0]?.slice(0, 24) + "...";
       const message = `not deleting “${shortTitle}” which is locked.`;
       // console.warning(message);
       const err = new Error(message);

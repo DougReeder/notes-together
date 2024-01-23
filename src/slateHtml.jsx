@@ -568,7 +568,7 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
   function pasteUriListToRichText(uriList) {
     const slateNodes = [];
     let comment = "", url;
-    for (const line of uriList.split(/\r\n|\n/)) {
+    for (const line of uriList.split(/\r\n|\n|\r/)) {
       if ('#' === line[0]) {
         comment = /#\s*(.*)/.exec(line)[1] || "";
       } else if ((url = line?.trim())) {
@@ -639,7 +639,7 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
   function pasteUriListToMarkdown(uriList) {
     let markdown = "";
     let comment = "", url;
-    for (const line of uriList.split(/\r\n|\n/)) {
+    for (const line of uriList.split(/\r\n|\n|\r/)) {
       if ('#' === line[0]) {
         comment = /#\s*(.*)/.exec(line)[1] || "";
       } else if ((url = line?.trim())) {
