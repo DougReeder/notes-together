@@ -10,7 +10,6 @@ import './List.css';
 import {CSSTransition} from "react-transition-group";
 import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
-import {Cancel} from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import checkIfInstallRecommended from "./webappInstall";
@@ -25,7 +24,6 @@ function List(props) {
 
   const [listErr, setListErr] = useState(null);
   const [notes, setNotes] = useState([]);
-  // console.log("List props:", props, "   notes:", notes);
 
   const [itemButtonsIds, setItemButtonsIds] = useState({});
 
@@ -115,11 +113,9 @@ function List(props) {
       if (pointerRef.current.longPressTimeoutId) {   // long-press in progress
         clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
       }
-      if (1 !== evt.buttons || evt.target.closest("button")) {
+      if (0 !== evt.button || evt.target.closest("button")) {
         return;
       }
-      evt.preventDefault();
-      evt.stopPropagation();
       const noteEl = evt.target.closest("li.summary");
       const id = noteEl?.dataset?.id;
       pointerRef.current = uuidValidate(id) ?
@@ -132,8 +128,9 @@ function List(props) {
       function longPress() {
         if (Math.abs(list.current?.scrollTop - pointerRef.current?.downScroll) < 63) {
           inactivateAndActivateItemButtons(evt, id);
+          actionToConfirm.current = "Share file";
         }
-        pointerRef.current = {};
+        pointerRef.current = {suppressClickId: id};
       }
     } catch (err) {
       console.error("handlePointerDown:", err);
@@ -141,38 +138,61 @@ function List(props) {
     }
   }
 
-  function handlePointerUp(evt) {
+  function handlePointerUp(_evt) {
     try {
       if (pointerRef.current.longPressTimeoutId) {   // long-press hasn't happened
         clearTimeout(pointerRef.current.longPressTimeoutId);   // prevent long-press
-      } else {   // long-press has happened, so this event is ignored
-        return;
-      }
-      if (evt.target.closest("button")) {
-        return;
-      }
-      evt.preventDefault();
-      evt.stopPropagation();
-      if (! evt.target.closest("div.itemButtons")) {
-        handleSelect(pointerRef.current.downId, 'DETAIL');
       }
     } catch (err) {
       console.error("handlePointerUp:", err);
       transientMsg(extractUserMessage(err));
     } finally {
-      pointerRef.current = {};
+      pointerRef.current = {...(pointerRef.current.suppressClickId && { suppressClickId: pointerRef.current.suppressClickId })};
     }
   }
 
   function handleClick(evt) {
-    if (2 === evt.detail) {   // double click
-      evt.preventDefault();
-      evt.stopPropagation();
-      const noteEl = evt.target.closest("li.summary");
-      const id = noteEl?.dataset?.id;
-      inactivateAndActivateItemButtons(evt, id);
+    const noteEl = evt.target.closest("li.summary");
+    const id = noteEl?.dataset?.id;
+    if (1 === evt.detail && !evt.target.closest("div.itemButtons")) {   // single-click, not item button
+      if (id && id === pointerRef.current.suppressClickId) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        pointerRef.current = {};
+      } else if (id !== selectedNoteId) {
+        handleSelect(id, 'DETAIL');
+        inactivateAndActivateItemButtons(evt, itemButtonsIds[id] ? id : null);
+      }
     }
   }
+
+  function handleContextMenu(evt) {
+    try {
+      const noteEl = evt.target.closest("li.summary");
+      const id = noteEl?.dataset?.id;
+      if (id) {
+        evt.preventDefault();   // prevents browser content menu
+        actionToConfirm.current = "Share file";
+      }
+      inactivateAndActivateItemButtons(evt, id);
+    } catch (err) {
+      console.error("handleContextMenu:", err);
+    }
+  }
+
+  useEffect(() => {
+    try {
+      const entry = Object.entries(itemButtonsIds).find(([, active]) => active)
+      if (entry) {
+        const buttons = Array.from(document.querySelectorAll(`li[data-id="${entry[0]}"] button`));
+        const buttonToConfirm = buttons.find(button => actionToConfirm.current === button.innerHTML);
+        buttonToConfirm?.focus();
+        actionToConfirm.current = '';
+      }
+    } catch (err) {
+      console.error("while focusing after itemButtonIds changed:", err);
+    }
+  }, [selectedNoteId, itemButtonsIds])
 
   const actionToConfirm = useRef('');
 
@@ -183,7 +203,7 @@ function List(props) {
     if (evt.target.dataset.slateEditor || evt.isComposing || evt.keyCode === 229) {
       return;
     }
-    switch (evt.code) {
+    switch (evt.key) {
       case 'ArrowDown':
         if (evt.shiftKey) {
           incrementSelectedNote(+5);
@@ -221,35 +241,23 @@ function List(props) {
       case 'Backspace':
       case 'Delete':
         if (selectedNoteId && (evt.ctrlKey || evt.metaKey)) {
-          actionToConfirm.current = 'DELETE';
+          actionToConfirm.current = 'Delete';
           inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
+      case '.':
+        if (!(evt.ctrlKey || evt.metaKey)) { return; }
+        /* fallthrough */
       case 'ContextMenu':
         if (selectedNoteId) {
+          actionToConfirm.current = 'Share file';
           inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
-      case 'Enter':   // The App key handler also handles this - that's ok.
-      case 'Space':
-        if (itemButtonsIds[selectedNoteId]) {
-          evt.stopPropagation();
-          evt.preventDefault();
-          try {
-            switch (actionToConfirm.current) {
-              case 'DELETE':
-                await deleteNote(selectedNoteId);
-                exitItemButtons(selectedNoteId);
-                handleSelect(null);
-                break;
-            }
-          } catch (err) {
-            console.error(`${evt.code} key:`, err);
-            transientMsg(extractUserMessage(err), err.severity);
-          } finally {
-            actionToConfirm.current = '';
-            inactivateAndActivateItemButtons(evt, null);
-          }
+      case ',':
+        if (selectedNoteId && (evt.ctrlKey || evt.metaKey)) {
+          actionToConfirm.current = 'Share text';
+          inactivateAndActivateItemButtons(evt, selectedNoteId);
         }
         break;
       // default:
@@ -271,7 +279,7 @@ function List(props) {
         handleSelect(newId, newPanel);
       }
     }
-  }, [handleSelect, notes, selectedNoteId, itemButtonsIds, exitItemButtons, inactivateAndActivateItemButtons]);
+  }, [handleSelect, notes, selectedNoteId, inactivateAndActivateItemButtons]);
   useEffect(() => {
     document.addEventListener('keydown', documentKeyListener);
 
@@ -301,27 +309,14 @@ function List(props) {
     }
   }, [listKeyListener]);
 
-  const deleteBtn = useRef();
-  const shareTextBtn = useRef();
-  const shareFileBtn = useRef();
-  const cancelItemButtonsBtn = useRef();
 
-  const blurHandler = useCallback(evt => {
-    if ([deleteBtn.current, shareTextBtn.current, shareFileBtn.current, cancelItemButtonsBtn.current].includes(evt.relatedTarget)) {
+  const handleBlur = useCallback(evt => {
+    if (evt.relatedTarget?.closest("div.itemButtons")) {
       return;
     }
 
     inactivateAndActivateItemButtons(evt, null);
   }, [inactivateAndActivateItemButtons]);
-
-  useEffect(() => {
-    const currentList = list.current;
-    currentList?.addEventListener('blur', blurHandler);
-
-    return function removeListListener(){
-      currentList?.removeEventListener('blur', blurHandler);
-    }
-  }, [blurHandler])
 
 
   const selectedElmntRef = useRef(null);
@@ -527,12 +522,9 @@ function List(props) {
             itemButtons = (
                 <CSSTransition in={itemButtonsIds[note.id]} appear={true} timeout={333} classNames="slideFromLeft" onExited={() => {exitItemButtons(note.id)}}>
                   <div className="itemButtons">
-                    <Button ref={deleteBtn} variant="contained" color="warning" onClick={deleteItem}>Delete</Button>
-                    <Button ref={shareTextBtn} variant="contained" onClick={evt => shareItem(evt, false)}>Share text</Button>
-                    <Button ref={shareFileBtn} variant="contained" onClick={evt => shareItem(evt, true) }>Share file</Button>
-                    <IconButton ref={cancelItemButtonsBtn} title="Cancel" size="large" onClick={evt => {inactivateAndActivateItemButtons(evt, null);}}>
-                      <Cancel color="primary" sx={{fontSize: '3rem', backgroundColor: 'white', borderRadius: '0.5em'}} />
-                    </IconButton>
+                    <Button variant="contained" color="warning" onClick={deleteItem}>Delete</Button>
+                    <Button variant="contained" onClick={evt => shareItem(evt, false)}>Share text</Button>
+                    <Button variant="contained" onClick={evt => shareItem(evt, true) }>Share file</Button>
                   </div>
                 </CSSTransition>);
           }
@@ -570,7 +562,7 @@ function List(props) {
   }
 
   return <>
-      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
+      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} onContextMenu={handleContextMenu} onBlur={handleBlur}>
         {listItems}
       </ol>
       <NonmodalDialog open={Boolean(sharingIssue)}

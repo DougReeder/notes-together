@@ -83,6 +83,11 @@ function App() {
   const searchRef = useRef();
   const lastCheckpointRef = useRef(new Set());
 
+  /**
+   * Sets selectedNoteId and mustShowPanel
+   * @param {string|null|undefined} id UUID of item
+   * @param {string|undefined} newPanel LIST, DETAIL, HELP or undefined
+   */
   function handleSelect(id, newPanel) {
     if (undefined !== id) {
       setSelectedNoteId(id);

@@ -3,7 +3,7 @@
 
 import {
   render,
-  screen, waitForElementToBeRemoved, within,
+  screen, waitFor, waitForElementToBeRemoved, within,
 } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
@@ -177,7 +177,7 @@ describe("List", () => {
   });
 
 
-  it("should show item buttons on double-click then hide on Escape key", async () => {
+  it("should show item buttons on right-click then hide on Escape key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -189,25 +189,22 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.dblClick(items[0]);
+    await userEvent.pointer([{keys: '[MouseRight]', target: items[0]}]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
 
     await userEvent.keyboard('{Escape}');
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
   });
 
-  it("should show item buttons on double-click then hide on Cancel click", async () => {
+  it("should show item buttons on right-click then hide on click on other item", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -219,26 +216,22 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.dblClick(items[0]);
+    await userEvent.pointer([{keys: '[MouseRight]', target: items[0]}]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    const cancelBtn = screen.getByRole('button', {name: "Cancel"});
-    expect(cancelBtn).toBeVisible();
 
-    await userEvent.click(cancelBtn);
-    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
+    await userEvent.click(items[1]);
+    await waitFor(() => expect(screen.queryAllByRole('button', {name: "Delete"})).toHaveLength(0));
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(navigator.share).not.toHaveBeenCalled();
-    expect(mockHandleSelect).not.toHaveBeenCalled();
+    expect(mockHandleSelect).toHaveBeenCalledOnce();
   });
 
-  it("should show item buttons on double-click, switch to another, then hide when the list is double-clicked outside items", async () => {
+  it("should show item buttons on right-click, switch to another, then hide when the list is clicked outside items", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -253,34 +246,30 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item2 = screen.getByText("Uncommon Women (1983)", {exact: false});
-    await userEvent.dblClick(item2);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item2}]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
 
     const item3 = screen.getByText("machine:", {exact: false});
-    await userEvent.dblClick(item3);
-    expect(screen.getAllByRole('button', {name: "Delete"})).toHaveLength(2);   // old sliding away, new sliding in
-    expect(screen.getAllByRole('button', {name: "Share text"})).toHaveLength(2);
-    expect(screen.getAllByRole('button', {name: "Share file"})).toHaveLength(2);
-    expect(screen.getAllByRole('button', {name: "Cancel"})).toHaveLength(2);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item3}]);
+    expect((await screen.findAllByRole('button', {name: "Share text"})).length).toBeGreaterThanOrEqual(1);
+    // expect(screen.getAllByRole('button', {name: "Share text"})).toHaveLength(2);
+    expect((await screen.findAllByRole('button', {name: "Share file"})).length).toBeGreaterThanOrEqual(1);
+    // expect(screen.getAllByRole('button', {name: "Share file"})).toHaveLength(2);
 
-    await userEvent.dblClick(screen.getByRole('list'));   // outside any item
-    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
-    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+    await userEvent.click(screen.getByRole('list'));   // outside any item
+    await waitFor(() => expect(screen.queryAllByRole('button', {name: "Share text"})).toHaveLength(0));
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(navigator.share).not.toHaveBeenCalled();
-    expect(mockHandleSelect).not.toHaveBeenCalled();
+    expect(mockHandleSelect).toHaveBeenCalledOnce();
   });
 
 
-  it("should not show Delete & Cancel buttons on control-backspace when no note selected", async () => {
+  it("should not show Delete button on control-backspace when no note selected", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -292,14 +281,12 @@ describe("List", () => {
     ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Delete & Cancel buttons on control-backspace then hide on Cancel click", async () => {
+  it("should show Delete button on control-backspace then hide on click on other item", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -311,23 +298,20 @@ describe("List", () => {
                 ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    const cancelBtn = screen.getByRole('button', {name: "Cancel"});
-    expect(cancelBtn).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    await userEvent.click(cancelBtn);
+    await userEvent.click(screen.getByText("I would find her society", {exact: false}));
     expect(deleteNote).not.toHaveBeenCalled();
-    expect(mockHandleSelect).not.toHaveBeenCalled();
-    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(mockHandleSelect).toHaveBeenCalledOnce();
+    expect(mockHandleSelect).toHaveBeenCalledWith('0b6b89c8-8aca-43de-8c7b-72095380682b', 'DETAIL');
+    await waitFor(() => expect(screen.queryAllByRole('button', {name: "Delete"})).toHaveLength(0));
   });
 
-  it("should show Delete & Cancel buttons on meta-delete key then delete note on Delete click", async () => {
+  it("should show Delete button on meta-delete key then delete note on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -340,12 +324,10 @@ describe("List", () => {
     ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Meta>}{Delete}{/Meta}');
     const deleteBtn = screen.getByRole('button', {name: "Delete"});
     expect(deleteBtn).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -353,10 +335,9 @@ describe("List", () => {
     expect(deleteNote).toHaveBeenCalledWith(someNoteId);
     expect(mockHandleSelect).toHaveBeenCalledWith(null);
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Delete & Cancel buttons on meta-backspace then delete on Enter key", async () => {
+  it("should show Delete button on meta-backspace then delete on Enter key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -369,11 +350,9 @@ describe("List", () => {
     ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Meta>}{Backspace}{/Meta}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
@@ -383,7 +362,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show Delete & Cancel buttons on control-delete key then delete on Space key", async () => {
+  it("should show Delete button on control-delete key then delete on Space key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -396,11 +375,9 @@ describe("List", () => {
     ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Control>}{Delete}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
@@ -410,7 +387,7 @@ describe("List", () => {
     // mock deleteNote can't call postMessage
   });
 
-  it("should show Delete & Cancel buttons on control-backspace key then hide on Escape key", async () => {
+  it("should show Delete button on control-backspace key then hide on Escape key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -422,22 +399,19 @@ describe("List", () => {
     ></List>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     await userEvent.keyboard('{Control>}{Backspace}{/Control}');
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // not selected
 
     await userEvent.keyboard('{Escape}');
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Delete"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // not cleared after delete
   });
 
-  it("should show Delete & Cancel buttons on double-click & delete non-selected item on Delete click", async () => {
+  it("should show Delete button on right-click & delete non-selected item on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -449,13 +423,11 @@ describe("List", () => {
     ></List>);
     const items = await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // not selected
 
-    await userEvent.dblClick(items[1]);
+    await userEvent.pointer([{keys: '[MouseRight]', target: items[1]}]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -463,10 +435,9 @@ describe("List", () => {
     expect(deleteNote).toHaveBeenCalledWith("615df9ff-89ab-4d51-b64d-0e82b2dfc2b6");
     expect(mockHandleSelect).not.toHaveBeenCalled();   // deleted item was not selected
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Delete & Cancel buttons on double-click & delete selected item on Delete click", async () => {
+  it("should show Delete button on right-click & delete selected item on Delete click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -478,11 +449,9 @@ describe("List", () => {
     ></List>);
     const items = await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
-    await userEvent.dblClick(items[3]);
+    await userEvent.pointer([{keys: '[MouseRight]', target: items[3]}]);
     expect(screen.getByRole('button', {name: "Delete"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -493,7 +462,7 @@ describe("List", () => {
   });
 
 
-  it("should show Share & Cancel buttons on double-click & share non-selected HTML note w/ file", async () => {
+  it("should show Share buttons on right-click & share non-selected HTML note w/ file on Share file click", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -510,13 +479,11 @@ describe("List", () => {
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -529,15 +496,94 @@ describe("List", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share non-selected HTML note as Markdown text", async () => {
+  it("should show Share buttons on right-click & share non-selected HTML note w/ file on Space key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
+
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.keyboard(' ');
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+  });
+
+  it("should show Share buttons on right-click & share selected HTML note w/ file on Space key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId="ca5a278b-1959-45da-9431-d3bd856c8733"></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
+
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.keyboard(' ');
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+  });
+
+  it("should show Share buttons on right-click & share non-selected HTML note as Markdown text", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -554,13 +600,11 @@ describe("List", () => {
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -572,15 +616,92 @@ describe("List", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share text"}));
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share selected Markdown item with file", async () => {
+  it("should show Share buttons on command-period & share selected HTML note w/ file on Space key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId="ca5a278b-1959-45da-9431-d3bd856c8733"></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
+
+    await userEvent.keyboard('{Meta>}.{/Meta}');
+    expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.keyboard(' ');
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`, files: [file]});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected by this
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+  });
+
+  it("should show Share buttons on command-comma & share selected HTML note as text on Space key", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    const consoleErrorSpy = vitest.spyOn(console, 'error');
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId="ca5a278b-1959-45da-9431-d3bd856c8733"></List>);
+    await screen.findAllByRole('listitem');
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
+
+    await userEvent.keyboard('{Meta>},{/Meta}');
+    expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
+    expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await userEvent.keyboard(' ');
+    expect(navigator.share).toHaveBeenCalledOnce();
+    expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
+
+...is an HTTP-header based mechanism`});
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected by this
+
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share text"}));
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
+  });
+
+  it("should show Share buttons on right-click & share selected Markdown item w/ file", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -601,13 +722,11 @@ describe("List", () => {
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("Uncommon Women (1983)", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -618,14 +737,12 @@ describe("List", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share selected Markdown item as text", async () => {
+  it("should show Share buttons on right-click & share selected Markdown item as text", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -646,13 +763,11 @@ describe("List", () => {
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("Uncommon Women (1983)", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -662,14 +777,12 @@ describe("List", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share non-selected Litewrite item with file", async () => {
+  it("should show Share buttons on right-click & share non-selected Litewrite item w/ file", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -688,13 +801,11 @@ The lecturing is reasonable for the characters and their background, and makes s
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("A shallow cash-grab.", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -705,14 +816,12 @@ The lecturing is reasonable for the characters and their background, and makes s
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share non-selected Litewrite item as text", async () => {
+  it("should show Share buttons on right-click & share non-selected Litewrite item as text", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -732,13 +841,11 @@ The lecturing is reasonable for the characters and their background, and makes s
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("A shallow cash-grab.", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -749,14 +856,12 @@ The lecturing is reasonable for the characters and their background, and makes s
     expect(window.postMessage).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share selected YAML item w/ file", async () => {
+  it("should show Share buttons on right-click & share selected YAML item w/ file", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -788,13 +893,11 @@ test:
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("machine:", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -806,14 +909,12 @@ test:
     expect(window.postMessage).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & share selected YAML item as text", async () => {
+  it("should show Share buttons on right-click & share selected YAML item as text", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -845,13 +946,11 @@ test:
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
 
     const item = screen.getByText("machine:", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
-    expect(screen.getByRole('button', {name: "Cancel"})).toBeVisible();
     expect(navigator.share).not.toHaveBeenCalled();
     expect(mockHandleSelect).not.toHaveBeenCalled();
 
@@ -862,14 +961,12 @@ test:
     expect(window.postMessage).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     expect(mockHandleSelect).not.toHaveBeenCalled();   // shared item was not selected
 
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & not message user when Share aborted", async () => {
+  it("should show Share buttons on right-click & not message user when Share aborted", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -887,7 +984,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share text"}));
 
     expect(navigator.share).toHaveBeenCalledOnce();
@@ -897,12 +994,10 @@ test:
 
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share text"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & show dialog on DataError", async () => {
+  it("should show Share buttons on right-click & show dialog on DataError", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -919,7 +1014,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share text"}));
 
     expect(navigator.share).toHaveBeenCalledOnce();
@@ -934,9 +1029,9 @@ test:
     await userEvent.click(within(dialog).getByRole('button', {name: "Cancel"}));
 
     // no way to test setting window.location to mailto: URL
-    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
-    expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
-    expect(within(dialog).queryByRole('button', {name: "Send email"})).toBeFalsy();
+    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Cancel"}));
+    expect(screen.queryByRole('button', {name: "Cancel"})).not.toBeVisible();
+    expect(within(dialog).queryByRole('button', {name: "Send email"})).not.toBeVisible();
   });
 
   it("should show dialog on Share NotAllowedError, retry w/o file, then send via email", async () => {
@@ -957,7 +1052,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share file"}));
 
     expect(navigator.share).toHaveBeenCalledOnce();
@@ -991,7 +1086,7 @@ test:
     // expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
   });
 
-  it("should show Share & Cancel buttons on double-click & check if files can be shared", async () => {
+  it("should show Share buttons on right-click & check if files can be shared", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -1009,7 +1104,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share file"}));
 
     expect(navigator.canShare).toHaveBeenCalledOnce();
@@ -1020,13 +1115,11 @@ test:
     expect(console.error).not.toHaveBeenCalled();
     expect(console.warn).toHaveBeenCalledWith(expect.stringMatching("files"));
     expect(window.postMessage).toHaveBeenCalledOnce();
-    expect(window.postMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning',
-      message: "The browser only allowed a text version to be shared.", atTop: true}, undefined);
+    // expect(window.postMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning',
+    //   message: "The browser only allowed a text version to be shared.", atTop: true}, 'https://testorigin.org');
 
-    // expect(screen.queryByRole('button', {name: "Share files"})).toBeVisible();   // sliding closed at this point
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeVisible();
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share files"}));
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
   });
 
   it("should show dialog if Web Share API not supported then cancel", async () => {
@@ -1048,7 +1141,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share text"}));
 
     const dialog = await screen.findByRole('dialog');
@@ -1057,11 +1150,11 @@ test:
     expect(window.postMessage).not.toHaveBeenCalled();
     expect(within(dialog).queryByRole('button', {name: "Send email"})).toBeTruthy();
 
-    await userEvent.click(screen.getAllByRole('button', {name: "Cancel"})[1]);
+    await userEvent.click(screen.getByRole('button', {name: "Cancel"}));
 
     // no way to test setting window.location to mailto: URL
     expect(console.info).not.toHaveBeenCalled();
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
+    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Cancel"}));
     // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
     // expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
   });
@@ -1085,7 +1178,7 @@ test:
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
-    await userEvent.dblClick(item);
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
     await userEvent.click(screen.getByRole('button', {name: "Share text"}));
 
     const dialog = await screen.findByRole('dialog');

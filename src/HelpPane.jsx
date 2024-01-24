@@ -138,6 +138,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
             <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
             <tr><td>ctrl+Backspace or ctrl+Delete<br/>or ​⌘+Delete or ​⌘␡</td><td>delete selected note</td></tr>
+            <tr><td>ctrl+. or shift+ctrl+&gt;<br/>or ⌘. or ⌘⇧&gt;</td><td>share selected note, with file</td></tr>
+            <tr><td>ctrl+, or shift+ctrl+&lt;<br/>or ⌘, or ⌘⇧&lt;</td><td>share selected note as text</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
