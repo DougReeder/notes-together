@@ -19,14 +19,14 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 (navigator.userAgentData?.brands || []).map(item => '\n' + item.brand + ' ' + item.version));
   /* eslint-disable react/no-unescaped-entities */
   return <>
-    <AppBar>
+    <AppBar aria-labelledby="helpPaneTitle">
       <Toolbar style={{justifyContent: 'flex-start'}}>
         <IconButton title="Out to list pane" className="narrowLayoutOnly"
             edge={false} size="large"
             onClick={setMustShowPanel?.bind(this, 'LIST')}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography style={{margin: "1.5ch"}}>
+        <Typography id="helpPaneTitle" style={{margin: "1.5ch"}}>
             Help
         </Typography>
       </Toolbar>

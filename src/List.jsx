@@ -4,7 +4,7 @@
 import {validate as uuidValidate} from "uuid";
 import {updateListWithChanges} from "./listUtil";
 import {findStubs, deleteNote, init, getNote} from "./storage";
-import {useState, useEffect, useRef, useCallback} from 'react';
+import {useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle} from 'react';
 import PropTypes from 'prop-types';
 import './List.css';
 import {CSSTransition} from "react-transition-group";
@@ -19,7 +19,7 @@ import {NonmodalDialog} from "./NonmodalDialog.jsx";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
-function List(props) {
+const List = forwardRef( function List (props, imperativeRef) {
   const {searchWords = new Set(), changeCount, selectedNoteId, handleSelect} = props;
 
   const [listErr, setListErr] = useState(null);
@@ -180,6 +180,17 @@ function List(props) {
     }
   }
 
+  useImperativeHandle(imperativeRef, () => {
+    return {
+      showSelectedItemButtons() {
+        if (selectedNoteId) {
+          inactivateAndActivateItemButtons(null, selectedNoteId);
+          actionToConfirm.current = 'Share file';
+        }
+      },
+    };
+  }, [selectedNoteId, inactivateAndActivateItemButtons]);
+
   useEffect(() => {
     try {
       const entry = Object.entries(itemButtonsIds).find(([, active]) => active)
@@ -322,7 +333,9 @@ function List(props) {
   const selectedElmntRef = useRef(null);
 
   useEffect(() => {
-    selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    if ('function' === typeof selectedElmntRef.current?.scrollIntoView) {   // workaround for vitest?/jsdom? issue
+      selectedElmntRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    }
   }, [selectedNoteId])
 
   async function deleteItem(evt) {
@@ -513,7 +526,7 @@ function List(props) {
           let titleDiv;
           if ('string' === typeof note.title && /\S/.test(note.title)) {
             const titleLines = note.title.split('\n');
-            titleDiv = <div className="title">{titleLines[0]}<br/>{titleLines[1]}</div>
+            titleDiv = <div className="title" id={'title-'+note.id}>{titleLines[0]}<br/>{titleLines[1]}</div>
           } else {
             titleDiv = <div className="title untitled">Untitled</div>
           }
@@ -531,7 +544,7 @@ function List(props) {
           listItems.push(
             note.id === selectedNoteId ?
               <li data-id={note.id} key={note.id} ref={selectedElmntRef}
-                  className="summary selected">
+                  className="summary selected" aria-labelledby={'title-'+note.id}>
                 {titleDiv}
                 {itemButtons}
               </li>
@@ -562,7 +575,7 @@ function List(props) {
   }
 
   return <>
-      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} onContextMenu={handleContextMenu} onBlur={handleBlur}>
+      <ol ref={list} tabIndex="-1" className="list" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} onContextMenu={handleContextMenu} onBlur={handleBlur} aria-label="note titles">
         {listItems}
       </ol>
       <NonmodalDialog open={Boolean(sharingIssue)}
@@ -570,7 +583,7 @@ function List(props) {
                       okName={sharingIssue?.useShare ? "Share" : "Send email"} onOk={retryShare}
                       onCancel={() => setSharingIssue(null)} ></NonmodalDialog>
     </>;
-}
+});
 
 List.propTypes = {
   searchWords: PropTypes.instanceOf(Set),

@@ -30,7 +30,7 @@ import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
 import HelpPane from "./HelpPane";
-import {Delete, DeleteOutline, Help, Label} from "@mui/icons-material";
+import {DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
@@ -387,13 +387,14 @@ function App() {
     }
   }
 
-  async function handleDeleteSelected(_evt) {
+  const imperativeRef = useRef();
+
+  async function handleShowItemButtons(_evt) {
     if (selectedNoteId) {
       try {
-        await deleteNote(selectedNoteId);
-        handleSelect(null);
+        imperativeRef.current.showSelectedItemButtons();
       } catch (err) {
-        console.error("while deleting " + selectedNoteId, err);
+        console.error(`while showing item buttons for ${selectedNoteId}:`, err);
         transientMsg(extractUserMessage(err), err.severity);
       }
     } else {
@@ -519,14 +520,14 @@ function App() {
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               <MenuItem className={!('showSaveFilePicker' in window && "0" !== count) ? 'pseudoDisabled' : ''} onClick={handleExportSelectedMarkdown}>{`Export ${searchWords.size > 0 ? count : "all"} notes to Markdown...`}</MenuItem>
-              <MenuItem className={(selectedNoteId) ? '' : 'pseudoDisabled'} onClick={handleDeleteSelected}>Delete selected note <Delete/></MenuItem>
+              <MenuItem className={(selectedNoteId) ? '' : 'pseudoDisabled'} onClick={handleShowItemButtons}>Delete or Share selected note...</MenuItem>
             </Menu>
             <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
                    accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
           </Toolbar>
         </AppBar>
         <div style={{height: '4px', flex: '0 0 auto', backgroundColor: 'white'}}></div>
-        <List searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
+        <List ref={imperativeRef} searchWords={searchWords} changeCount={changeCount} selectedNoteId={selectedNoteId} handleSelect={handleSelect}></List>
         <Fab onClick={addNote} color="primary" title="Create new note"><AddIcon /></Fab>
         <FileImport files={importFiles} isMultiple={isImportMultiple} doCloseImport={doCloseImport} />
       </div>
