@@ -466,7 +466,11 @@ describe("List", () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
-    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const content = `<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>
+<img src="https://example.com/" alt="Example picture" title="Cool stuff" />
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUh" alt="Data picture" title="Nifty thing" />
+<img src="data:image/jpeg;base64,OGIEOEOLEJEIIJFIE" title="calm lake" />
+<img src="data:image/webp;base64,LKJFDOFDSOI" />`;
     const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
       content, normalizeDate(mockStubs[4].date), false, []);
     getNote.mockResolvedValue(mockNote);
@@ -492,7 +496,11 @@ describe("List", () => {
     const file = new File([content], "CORS.html", {type: 'text/html', endings: 'native'});
     expect(navigator.share).toHaveBeenCalledWith({title: "CORS", text: `# Cross-Origin Resource Sharing
 
-...is an HTTP-header based mechanism`, files: [file]});
+...is an HTTP-header based mechanism
+![Example picture](https://example.com/ "Cool stuff")
+Data picture
+calm lake
+«graphic»`, files: [file]});
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
@@ -706,8 +714,8 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
     const content = `# Uncommon Women (1983)
-    
-* Intense plot development. 
+
+* Intense plot development.
 * Starting with fights and ending with politics is a bit of a downer.`;
     const mockNote = new SerializedNote(mockStubs[1].id, 'text/markdown;hint=COMMONMARK', mockStubs[1].title,
       content, normalizeDate(mockStubs[1].date), false, []);
@@ -747,8 +755,8 @@ describe("List", () => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
     const content = `# Uncommon Women (1983)
-    
-* Intense plot development. 
+
+* Intense plot development.
 * Starting with fights and ending with politics is a bit of a downer.`;
     const mockNote = new SerializedNote(mockStubs[1].id, 'text/markdown;hint=COMMONMARK', mockStubs[1].title,
       content, normalizeDate(mockStubs[1].date), false, []);

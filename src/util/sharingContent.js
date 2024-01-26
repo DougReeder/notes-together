@@ -14,7 +14,7 @@ import {shortenTitle} from "../Note.js";
 export function sharingContent(note) {
   let text;
   if (hasTagsLikeHtml(note.mimeType)) {
-    text = serializeMarkdown(deserializeHtml(note.content));
+    text = serializeMarkdown(deserializeHtml(note.content), true);
   } else if (!note.mimeType || /^text\//.test(note.mimeType)) {
     text = note.content;
   } else {

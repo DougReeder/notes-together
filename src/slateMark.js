@@ -332,7 +332,7 @@ function textNode(text, {italic, bold, code, superscript, subscript, underline, 
   return node;
 }
 
-function serializeMarkdown(slateNodes) {
+function serializeMarkdown(slateNodes, replaceDataUrlImgs) {
   const hierarchy = [];
   let inCodeBlock = false;
   let tableRowNum = 0;
@@ -429,10 +429,17 @@ function serializeMarkdown(slateNodes) {
             inCodeBlock = false;
             break;
           case 'image':
-            if (slateNode.title) {
-              text = `![${text}](${slateNode.url} "${slateNode.title}")`;
+            if (replaceDataUrlImgs && /^data:/.test(slateNode.url)) {
+              if (!text?.trim()) {
+                text = slateNode.title?.trim().length > 0 ? slateNode.title : "«graphic»";
+              }
+              // else just pass through the children, which are the alt text
             } else {
-              text = `![${text}](${slateNode.url})`;
+              if (slateNode.title) {
+                text = `![${text}](${slateNode.url} "${slateNode.title}")`;
+              } else {
+                text = `![${text}](${slateNode.url})`;
+              }
             }
             break;
           case 'thematic-break':

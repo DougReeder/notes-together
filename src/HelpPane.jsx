@@ -189,7 +189,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>Which browsers on which operating systems allow me to Share notes?</h4>
         <p>See <a href="https://caniuse.com/web-share" target="_blank" rel="noreferrer">Web Share API</a> on CanIUse.</p>
-        <p>In other browsers, you can send a text version of a note via email.</p>
+        <p>In other browsers, you can send a text version of a note via email.
+          Some graphics will be replaced by their alt text.</p>
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
