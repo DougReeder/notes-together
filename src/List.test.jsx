@@ -974,6 +974,35 @@ test:
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
   });
 
+  it("should show Share buttons on right-click & message user when note missing", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    getNote.mockResolvedValue(undefined);
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+    vitest.spyOn(console, 'info').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    await userEvent.click(screen.getByRole('button', {name: "Share file"}));
+
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(window.postMessage).toHaveBeenCalled();
+    expect(window.postMessage).toHaveBeenCalledWith(expect.objectContaining({kind: 'TRANSIENT_MSG', severity: 'error',
+      message: "Did you delete this note in another tab?"}), 'https://testorigin.org');
+    expect(screen.queryByRole('dialog')).toBeFalsy();
+
+    expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
+    expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share text"}));
+  });
+
   it("should show Share buttons on right-click & not message user when Share aborted", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
@@ -1031,7 +1060,8 @@ test:
       expect.stringMatching("CORS"), new DOMException("unit test", "DataError"));
     expect(window.postMessage).not.toHaveBeenCalled();
 
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', {name: "Send text version of “CORS” via email?"});
+    expect(within(dialog).getByText("unit test")).toBeVisible();
     expect(within(dialog).queryByRole('button', {name: "Send email"})).toBeTruthy();
 
     await userEvent.click(within(dialog).getByRole('button', {name: "Cancel"}));
@@ -1073,7 +1103,8 @@ test:
       expect.stringMatching("“CORS” as text/html file"), new DOMException("unit test", "NotAllowedError"));
     expect(window.postMessage).not.toHaveBeenCalled();
 
-    let dialog = await screen.findByRole('dialog');
+    let dialog = await screen.findByRole('dialog', {name: "Share text version of “CORS” without file?"});
+    expect(within(dialog).getByText("You aren't allowed to Share that as a file.", {})).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', {name: "Share"}));
 
     expect(navigator.share).toHaveBeenCalledTimes(2);
@@ -1082,16 +1113,71 @@ test:
 ...is an HTTP-header based mechanism`});
     expect(console.error).toHaveBeenCalledTimes(2);
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringMatching("retried share “CORS”"), new DOMException("unit test", "NotAllowedError"));
+      expect.stringMatching("tried share “CORS”"), new DOMException("unit test", "NotAllowedError"));
 
-    dialog = await screen.findByRole('dialog');
+    dialog = await screen.findByRole('dialog', {name: "Send text version of “CORS” via email?"});
+    expect(within(dialog).getByText("You aren't allowed to Share that.", {})).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', {name: "Send email"}));
 
     // no way to test setting window.location to mailto: URL
-    expect(console.info).toHaveBeenCalledWith("sharing via:", expect.stringMatching('mailto:'))
+    expect(console.info).toHaveBeenCalledWith("sending via:", expect.stringMatching('mailto:'))
     // await waitForElementToBeRemoved(within(dialog).queryByRole('button', {name: "Send email"}));
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
-    // expect(screen.queryByRole('button', {name: "Share"})).toBeFalsy();
+  });
+
+  it("should show dialog on Share NotAllowedError for uncommon text file, ask to retry w/ plain text file", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = `machine:
+  ruby:
+    version: 2.1.3`;
+    const mockNote = new SerializedNote(mockStubs[2].id, 'text/x-yaml', mockStubs[2].title,
+      content, normalizeDate(mockStubs[2].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(
+      () => Promise.reject(new DOMException("unit test", "NotAllowedError")));
+    vitest.spyOn(console, 'info').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("machine:", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    await userEvent.click(screen.getByRole('button', {name: "Share file"}));
+
+    expect(navigator.share).toHaveBeenCalledOnce();
+    let file = new File([content], "machine.yaml", {type: 'text/x-yaml', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "machine:", text: content, files: [file]});
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching("Permission to share “machine:”"), new DOMException("unit test", "NotAllowedError"));
+    expect(window.postMessage).not.toHaveBeenCalled();
+    let dialog = await screen.findByRole('dialog', {name: "Share “machine:” as plain text file?"});
+    expect(within(dialog).getByText("You aren't allowed to Share that as a x-yaml file.", {})).toBeVisible();
+
+    await userEvent.click(within(dialog).getByRole('button', {name: "Share"}));
+
+    expect(navigator.share).toHaveBeenCalledTimes(2);
+    file = new File([content], "machine.yaml.txt", {type: 'text/plain', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "machine:", text: content, files: [file]});
+    expect(console.error).toHaveBeenCalledTimes(2);
+    dialog = await screen.findByRole('dialog', {name: "Share text version of “machine:” without file?"});
+    expect(within(dialog).getByText("You aren't allowed to Share that as a file.", {})).toBeVisible();
+
+    await userEvent.click(within(dialog).getByRole('button', {name: "Share"}));
+
+    expect(navigator.share).toHaveBeenCalledTimes(3);
+    expect(navigator.share).toHaveBeenCalledWith({title: "machine:", text: content});
+    expect(console.error).toHaveBeenCalledTimes(3);
+    dialog = await screen.findByRole('dialog', {name: "Send text version of “machine:” via email?"});
+    expect(within(dialog).getByText("You aren't allowed to Share that.", {})).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', {name: "Send email"}));
+
+    // no way to test setting window.location to mailto: URL
+    expect(console.info).toHaveBeenCalledWith("sending via:", expect.stringMatching('mailto:'))
+    // await waitForElementToBeRemoved(within(dialog).queryByRole('button', {name: "Send email"}));
   });
 
   it("should show Share buttons on right-click & check if files can be shared", async () => {
@@ -1130,7 +1216,7 @@ test:
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
   });
 
-  it("should show dialog if Web Share API not supported then cancel", async () => {
+  it("should show Share buttons on right-click, check if text can be shared, then ask to send email", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
@@ -1138,68 +1224,93 @@ test:
     const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
       content, normalizeDate(mockStubs[4].date), false, []);
     getNote.mockResolvedValue(mockNote);
-    delete navigator.canShare;
-    delete navigator.share;
-
-    vitest.spyOn(console, 'info').mockImplementation(() => null);
+    navigator.canShare = vi.fn().mockImplementation(() => false);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
     vitest.spyOn(console, 'warn').mockImplementation(() => null);
     vitest.spyOn(console, 'error').mockImplementation(() => null);
     vitest.spyOn(window, 'postMessage');
-
     render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
     await screen.findAllByRole('listitem');
     const item = screen.getByText("CORS", {exact: false});
     await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+
     await userEvent.click(screen.getByRole('button', {name: "Share text"}));
 
-    const dialog = await screen.findByRole('dialog');
-    expect(console.error).not.toHaveBeenCalled();
-    expect(console.warn).not.toHaveBeenCalled();
-    expect(window.postMessage).not.toHaveBeenCalled();
-    expect(within(dialog).queryByRole('button', {name: "Send email"})).toBeTruthy();
+    expect(navigator.canShare).toHaveBeenCalledOnce();
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledOnce();
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("not been granted"));
+    let dialog = await screen.findByRole('dialog', {name: "Send text version of “CORS” via email?"});
+    expect(within(dialog).getByText("Permission to Share has not been granted.", {})).toBeVisible();
 
-    await userEvent.click(screen.getByRole('button', {name: "Cancel"}));
-
-    // no way to test setting window.location to mailto: URL
-    expect(console.info).not.toHaveBeenCalled();
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Cancel"}));
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
-    // expect(screen.queryByRole('button', {name: "Send email"})).toBeFalsy();
-  });
-
-  it("should show dialog if Web Share API not supported then email", async () => {
-    mockStubList = mockStubs.map(stub => {
-      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
-    });
-    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
-    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
-      content, normalizeDate(mockStubs[4].date), false, []);
-    getNote.mockResolvedValue(mockNote);
-    delete navigator.canShare;
-    delete navigator.share;
-
-    vitest.spyOn(console, 'info').mockImplementation(() => null);
-    vitest.spyOn(console, 'warn').mockImplementation(() => null);
-    vitest.spyOn(console, 'error').mockImplementation(() => null);
-    vitest.spyOn(window, 'postMessage');
-
-    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
-    await screen.findAllByRole('listitem');
-    const item = screen.getByText("CORS", {exact: false});
-    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
-    await userEvent.click(screen.getByRole('button', {name: "Share text"}));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(console.error).not.toHaveBeenCalled();
-    expect(console.warn).not.toHaveBeenCalled();
-    expect(window.postMessage).not.toHaveBeenCalled();
-    expect(within(dialog).getByRole('button', {name: "Cancel"})).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', {name: "Send email"}));
 
     // no way to test setting window.location to mailto: URL
-    expect(console.info).toHaveBeenCalledWith("sharing via:", expect.stringMatching('mailto:'))
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Send email"}));
-    // await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share"}));
-    // expect(screen.queryByRole('button', {name: "Cancel"})).toBeFalsy();
+    expect(console.info).toHaveBeenCalledWith("sending via:", expect.stringMatching('mailto:'))
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', {name: "Send text version of “CORS” via email?"})).toBeFalsy();
+  });
+
+  it("should email if Web Share API not supported", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    delete navigator.canShare;
+    delete navigator.share;
+
+    vitest.spyOn(console, 'info').mockImplementation(() => null);
+    vitest.spyOn(console, 'warn').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    await userEvent.click(screen.getByRole('button', {name: "Send text via email"}));
+
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+
+    // no way to test setting window.location to mailto: URL
+    expect(console.info).toHaveBeenCalledWith("sending via:", expect.stringMatching('mailto:'))
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Send text via email"}));
+  });
+
+  it("should focus email button if Web Share API not supported", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = "<h1>Cross-Origin Resource Sharing</h1><p>...is an HTTP-header based mechanism</p>";
+    const mockNote = new SerializedNote(mockStubs[4].id, 'text/html;hint=SEMANTIC', mockStubs[4].title,
+      content, normalizeDate(mockStubs[4].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    delete navigator.canShare;
+    delete navigator.share;
+
+    vitest.spyOn(console, 'info').mockImplementation(() => null);
+    vitest.spyOn(console, 'warn').mockImplementation(() => null);
+    vitest.spyOn(console, 'error').mockImplementation(() => null);
+    vitest.spyOn(window, 'postMessage');
+
+    render(<List changeCount={() => {}} handleSelect={() => {}} ></List>);
+    await screen.findAllByRole('listitem');
+    const item = screen.getByText("CORS", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+    await userEvent.keyboard(' ');
+
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(window.postMessage).not.toHaveBeenCalled();
+
+    // no way to test setting window.location to mailto: URL
+    expect(console.info).toHaveBeenCalledWith("sending via:", expect.stringMatching('mailto:'))
+    await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Send text via email"}));
   });
 });
