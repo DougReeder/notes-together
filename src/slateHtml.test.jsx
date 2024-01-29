@@ -2403,6 +2403,13 @@ describe("serializeHtml", () => {
     expect(html).toEqual('<a href="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" title="Cool Example">a cool example</a>');
   });
 
+  it("should encode links without titles", () => {
+    const html = serializeHtml([{type: 'link', url: 'https://blah.com/', title: undefined, children: [
+        {text: "the alt text"},
+      ]}]);
+    expect(html).toEqual('<a href="https://blah.com/">the alt text</a>');
+  });
+
   it("should encode images", () => {
     const html = serializeHtml([{
       type: 'image',
@@ -2416,6 +2423,12 @@ describe("serializeHtml", () => {
     expect(html).toEqual('<img src="https://mozilla.org/?x=%D1%88%D0%B5%D0%BB%D0%BB%D1%8B" alt="Grapefruit slice atop a pile of other slices" title="Slice of grapefruit">');
   });
 
+  it("should encode images without titles", () => {
+    const nodes = [{type: 'image', url: 'https://quux.org/', children: [{text: "The Quux Way"}]}];
+
+    expect(serializeHtml(nodes)).toEqual('<img src="https://quux.org/" alt="The Quux Way">')
+  })
+
   it("should substitute data URLs for object URLs in images", () => {
     const substitutions = new Map();
     substitutions.set('blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
@@ -2423,14 +2436,13 @@ describe("serializeHtml", () => {
     const html = serializeHtml([{
       type: 'image',
       url: 'blob:http://192.168.1.74:3000/2fd265e6-86f4-4826-9fc6-98812c4b0bb5',
-      title: "something",
       children: [
         {text: "a thing"}]
     }], substitutions);
-    expect(html).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing" title="something">');
+    expect(html).toEqual('<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAAAAAAAAAACdYiYyAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==" alt="a thing">');
   });
 
-  it("should drop images containing an object URL with no substitution", () => {
+  it("should encode alt text for images containing an object URL with no substitution", () => {
     console.error = vitest.fn();
 
     const html = serializeHtml([{
@@ -2440,9 +2452,9 @@ describe("serializeHtml", () => {
       children: [
         {text: "a thing"}]
     }], new Map());
-    expect(html).toEqual('');
+    expect(html).toEqual('a thing');
 
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("No substitution for"), expect.stringMatching("blob:http://192.168.1.74:3000/"));
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching("No substitution for “a thing”"), expect.stringMatching("blob:http://192.168.1.74:3000/"));
   });
 });
 
@@ -2598,6 +2610,7 @@ describe("deserializeHtml", () => {
 
     expect(slateNodes[1].type).toEqual('image');
     expect(slateNodes[1].url).toEqual('favicon-192x192.png');
+    expect(slateNodes[1].title).toBeFalsy();
     expect(slateNodes[2].type).toEqual('paragraph');
     expect(slateNodes[2].children[0].text).toMatch(/MDN Logo/);
     expect(slateNodes[2].children[0].italic).toEqual(true);
@@ -2635,6 +2648,18 @@ describe("deserializeHtml", () => {
     expect(slateNodes[0]?.type).toEqual('link');
     expect(slateNodes[0].children[0]).toEqual({text: "style origin", bold: true});
     expect(slateNodes.length).toEqual(1);
+  });
+
+  it("should fix old notes by dropping link titles equalling string 'undefined'", () => {
+    const html = `<p><a href="https://spam.ni/" title="undefined">The link text</a></p>`;
+
+    const slateNodes = deserializeHtml(html);
+
+    expect(slateNodes).toEqual([
+      {type: 'paragraph', children: [
+          {type: 'link', url: 'https://spam.ni/', children: [{text: "The link text"}]},
+        ]},
+    ])
   });
 
   it("should parse an image inside emphasis as emphasis inside image", () => {

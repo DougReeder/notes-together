@@ -686,7 +686,11 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
 
 
 const ELEMENT_TAGS = {
-  A: el => ({ type: 'link', url: decodeURI(el.getAttribute('href')), title: el.getAttribute('title') || undefined }),
+  A: el => ({
+    type: 'link',
+    url: decodeURI(el.getAttribute('href')),
+    title: el.getAttribute('title') && "undefined" !== el.getAttribute('title') ? el.getAttribute('title') : undefined
+  }),
   BLOCKQUOTE: () => ({ type: 'quote' }),
   H1: () => ({ type: 'heading-one' }),
   H2: () => ({ type: 'heading-two' }),
@@ -1243,18 +1247,25 @@ function serializeHtml(slateNodes, substitutions = new Map()) {
         case 'thematic-break':
           return `<hr />`;
         case 'link':
-          return `<a href="${encodeURI(slateNode.url)}" title="${slateNode.title}">${children}</a>`
-        case 'image':
-          if (slateNode.url.startsWith('blob:')) {
-            const dataUrl = substitutions.get(slateNode.url);
-            if (dataUrl) {
-              return `<img src="${encodeURI(dataUrl)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
-            } else {
-              console.error("No substitution for", slateNode?.url);
-              return '';   // Doesn't save img tag.
-            }
+          if (slateNode.title) {
+            return `<a href="${encodeURI(slateNode.url)}" title="${slateNode.title}">${children}</a>`
           } else {
-            return `<img src="${encodeURI(slateNode.url)}" alt="${SlateNode.string(slateNode) || ''}" title="${slateNode.title || ''}">`;
+            return `<a href="${encodeURI(slateNode.url)}">${children}</a>`
+          }
+        case 'image':
+          const altText = SlateNode.string(slateNode) || '';
+          let url = slateNode.url;
+          if (url.startsWith('blob:')) {
+            url = substitutions.get(slateNode.url);
+            if (!url) {
+              console.error(`No substitution for “${altText}”`, slateNode?.url);
+              return altText;   // Substitutes
+            }
+          }
+          if (slateNode.title) {
+            return `<img src="${encodeURI(url)}" alt="${altText}" title="${slateNode.title}">`;
+          } else {
+            return `<img src="${encodeURI(url)}" alt="${altText}">`;
           }
         case 'table':
           return `<table><tbody>${children}</tbody></table>`;

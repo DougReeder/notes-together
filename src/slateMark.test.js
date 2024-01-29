@@ -496,7 +496,9 @@ after`;
 
 ![description](https://chi.edu/b.gif "some title")
 
-after`;
+after
+
+![alternative text](data:image/png;base64,DVFOIEGLJAGGILEJIFOAJI)`;
 
     const slateNodes = deserializeMarkdown(mdText);
 
@@ -509,6 +511,9 @@ after`;
         ]},
       {type: 'paragraph', children: [
           {text: "after"}
+        ]},
+      {type: 'image', url: "data:image/png;base64,DVFOIEGLJAGGILEJIFOAJI", title: null, children: [
+          {text: "alternative text"},
         ]},
     ]);
   });
@@ -686,7 +691,7 @@ let a = b**c, x = y**z;
                 ]},
               {type: "numbered-list", "listStart": 1, children: [
                   {type: 'list-item', children: [
-                      {type: 'link', url: '#internal-2', title: null, children: [
+                      {type: 'link', url: '#internal-2', title: undefined, children: [
                           {text: "one one"}
                         ]},
                     ]},
@@ -699,7 +704,7 @@ let a = b**c, x = y**z;
                   {type: 'list-item', children: [{text: "two one"}]},
                   {type: 'list-item', children: [
                       {type: 'paragraph', children: [
-                          {type: 'link', url: '#internal-3', title: null, children: [
+                          {type: 'link', url: '#internal-3', children: [
                               {text: "two two"},
                             ]},
                         ]},
@@ -740,12 +745,16 @@ let a = b**c, x = y**z;
     const slateNodes = [
       { type: 'image', url: 'https://example.com/other', children: [
           {text: "Not a pipe"},
-        ]}
+        ]},
+      { type: 'image', url: 'https://example.fr/trahison', title: undefined, children: [
+          {text: "La Trahison des Images"},
+        ]},
     ];
 
     const md = serializeMarkdown(slateNodes);
 
-    expect(md).toEqual(`![Not a pipe](https://example.com/other)`);
+    expect(md).toEqual(`![Not a pipe](https://example.com/other)
+![La Trahison des Images](https://example.fr/trahison)`);
   });
 
   it("should replace graphic w/ alt text, if data: URL & flagged", () => {
