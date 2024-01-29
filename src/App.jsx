@@ -34,6 +34,7 @@ import {DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
+import {deserializeHtml} from "./slateHtml.jsx";
 
 
 function App() {
@@ -149,13 +150,26 @@ function App() {
           TransitionComponent: Slide,
         });
         break;
+      case 'DESERIALIZE_HTML':
+        console.info(`deserializing HTML for Service Worker:`, evt.data?.html?.slice(0, 60));
+        const slateNodes = deserializeHtml(evt.data?.html);
+        navigator.serviceWorker?.controller?.postMessage({slateNodes});
+        break;
     }
+  }
+  const newServiceWorker = _evt => {
+    console.info("A new Service Worker has claimed this window.");
+    // TODO: reload page? (after notifying user?)
   }
   useEffect( () => {
     window.addEventListener("message", externalChangeListener);
+    navigator.serviceWorker?.addEventListener('message', externalChangeListener);
+    navigator.serviceWorker?.addEventListener('controllerchange', newServiceWorker);
 
     return function removeExternalChangeListener() {
       window.removeEventListener("message", externalChangeListener);
+      navigator.serviceWorker?.removeEventListener('message', externalChangeListener);
+      navigator.serviceWorker?.removeEventListener('controllerchange', newServiceWorker);
     };
   });
 

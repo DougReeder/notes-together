@@ -9,8 +9,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.js',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,woff,woff2,json}'],
+        globPatterns: ['**/*.{js,css,html,woff,woff2,json}'],
+        globIgnores: ['**/google*.html'],   // TODO: why doesn't this work?
+        additionalManifestEntries: ['/icons/NotesTogether-icon-gray.svg', 'icons/NotesTogether-Icon-96x96.png'],
+        mode: 'production',
       },
       manifest: manifest,
     })

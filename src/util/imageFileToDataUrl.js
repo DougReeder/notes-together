@@ -1,6 +1,6 @@
 // imageFileToDataUrl.js - downscales an image & converts to data URL
 // Copyright © 2017-2024 Doug Reeder
-
+/* eslint-env browser, worker */
 
 const MAX_SIZE = 200_000;   // max content size / 3
 
@@ -16,18 +16,24 @@ async function imageFileToDataUrl(file) {
     // }
   }
 
+  let dataUrl;
   // avoids converting vector to raster if reasonably possible
-  if (file.size < (MAX_SIZE * 1.4) && file.type === 'image/svg+xml') {
-    const dataUrl = await fileToDataUrl(file);
-    return {dataUrl, alt: texts.join('\n')};
+  if ((file.size < (MAX_SIZE * 1.4) && file.type === 'image/svg+xml')) {
+    dataUrl = await fileToDataUrl(file);
+  } else if ('function' === typeof URL.createObjectURL) {   // not available in a Service Worker
+    const objectUrl = URL.createObjectURL(file);
+    dataUrl = await evaluateImage(file, objectUrl);
+    URL.revokeObjectURL(objectUrl);
+  } else if ('function' === typeof createImageBitmap) {   // not available in Node (for testing)
+    dataUrl = await evaluateImageBitmap(file);
+  } else {
+    dataUrl = await fileToDataUrl(file);
   }
-
-  const objectUrl = URL.createObjectURL(file);
-  const dataUrl = await evaluateImage(file, objectUrl);
-  URL.revokeObjectURL(objectUrl);
 
   return {dataUrl, alt: texts.join('\n')};
 }
+
+const NOT_CROSS_BROWSER = ['image/tiff', 'image/jp2', 'image/jxl', 'image/avci', 'image/heif', 'image/heic'];
 
 function evaluateImage(blob, objectURL) {
   return new Promise((resolve, reject) => {
@@ -38,8 +44,7 @@ function evaluateImage(blob, objectURL) {
       // Modern browsers respect the orientation data in EXIF.
       // console.log("img onload size:", this.width, this.height);
 
-      if (this.width > 1280 || this.height > 1280 || blob.size > MAX_SIZE ||
-          ['image/tiff', 'image/jp2', 'image/jxl', 'image/avci', 'image/heif', 'image/heic'].includes(blob.type)) {
+      if (this.width > 1280 || this.height > 1280 || blob.size > MAX_SIZE || NOT_CROSS_BROWSER.includes(blob.type)) {
         resolve(resize(img, blob.type));
       } else {
         resolve(await fileToDataUrl(blob));
@@ -75,12 +80,12 @@ function resize(img, fileType) {
   const canvas = document.createElement('canvas');
   if (img.width >= img.height) {   // constrain width
     canvas.width = Math.min(1280, img.width);   // logical width
-    canvas.height = (img.height / img.width) * canvas.width;
+    canvas.height = Math.round((img.height / img.width) * canvas.width);
   } else {   // constrain height
     canvas.height = Math.min(1280, img.height);   // logical height
-    canvas.width = (img.width / img.height) * canvas.height;
+    canvas.width = Math.round((img.width / img.height) * canvas.height);
   }
-  console.info(`resizing to ${canvas.width}×${canvas.height}`);
+  console.info(`resizing to ${canvas.width}×${canvas.height} using Canvas`);
 
   const context = canvas.getContext('2d');
   if (!(['image/jpeg', 'image/bmp'].includes(fileType))) {   // might have transparent background
@@ -94,6 +99,40 @@ function resize(img, fileType) {
     dataUrl = canvas.toDataURL('image/jpeg', 0.4);
   }
   return dataUrl;
+}
+
+async function evaluateImageBitmap(file) {
+  let imageBitmap = await createImageBitmap(file);
+  if ((imageBitmap.width > 1280 || imageBitmap.height > 1280 || file.size > MAX_SIZE ||
+      NOT_CROSS_BROWSER.includes(file.type)) &&
+      !('image/jpeg' === file.type && imageBitmap.height > imageBitmap.width && file.size <= MAX_SIZE)) {
+      // portrait JPEGs don't always come through with the correct orientation
+    let canvasWidth, canvasHeight;
+    if (imageBitmap.width > imageBitmap.height) {
+      canvasWidth = Math.min(imageBitmap.width, 1280);
+      canvasHeight = Math.round(imageBitmap.height * canvasWidth / imageBitmap.width);
+    } else {
+      canvasHeight = Math.min(imageBitmap.height, 1280);
+      canvasWidth = Math.round(imageBitmap.width * canvasHeight / imageBitmap.height);
+    }
+    if (canvasWidth !== imageBitmap.width || canvasHeight !== imageBitmap.height) {
+      imageBitmap.close();
+      imageBitmap = await createImageBitmap(file, {resizeWidth: canvasWidth, resizeHeight: canvasHeight});
+    }
+    const canvas = new OffscreenCanvas(canvasWidth, canvasHeight);
+    console.info(`resizing “${file.name}” to ${canvas.width}×${canvas.height} using OffscreenCanvas`);
+    const context = canvas.getContext("bitmaprenderer");
+    context.transferFromImageBitmap(imageBitmap);   // consumes bitmap
+    let blob = await canvas.convertToBlob({type: 'image/webp', quality: 0.4});
+    if ('image/png' === blob.type) {
+      blob = await canvas.convertToBlob({type: 'image/jpeg', quality: 0.4});
+    }
+    return await fileToDataUrl(blob);
+  } else {
+    console.info(`importing “${file.name}” at original resolution of ${imageBitmap.width}×${imageBitmap.height}`);
+    imageBitmap.close();
+    return await fileToDataUrl(file);
+  }
 }
 
 export {imageFileToDataUrl, fileToDataUrl, evaluateImage};

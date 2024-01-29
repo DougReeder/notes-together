@@ -1,7 +1,7 @@
 {
   "short_name": "Notes Together",
   "name": "Notes Together",
-  "description": "Free your mind from mundane details! Toss in text and pictures. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!",
+  "description": "Free your mind from mundane details! Toss in text, pictures, links and files Shared from native apps. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!",
   "icons": [
     {
       "src": "/generated-icons/pwa-64x64.png",
@@ -72,6 +72,19 @@
   "id": "/",
   "scope": "/",
   "display": "standalone",
+  "share_target": {
+    "action": "/create-from-share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {"name": "files", "accept": ["text/*", "image/*", "application/mathml+xml", "application/mathml-presentation+xml", "application/xhtml+xml", "application/yaml", "application/x-yaml", "application/json", "application/ld+json", "application/sql", "application/javascript", "application/x-sh", "application/x-csh", "application/x-tex", "application/vnd.uri-map", "application/mathematica", "application/vnd.dart", "application/x-httpd-php", "application/mbox", "message/rfc822", "message/global", ".text", ".readme", ".ascii", ".log", ".md", ".mkd", ".mkdn", ".mdown", ".markdown", ".adoc", ".textile", ".rst", ".etx", ".org", ".apt", ".pod", ".t", ".tsv", ".vcf", ".ics", ".nb", ".msg", ".eml", ".u8msg", ".mbox", ".mml", ".mathml", ".json", ".yml", ".yaml", ".sql", ".sh", ".bash", ".csh", ".bat", ".awk", ".js", ".ts", ".jsx", ".tsx", ".glsl", ".java", ".properties", ".groovy", ".gvy", ".gy", ".rb", ".p", ".py", ".el", ".c", ".h", ".cc", ".cxx", ".strings", ".dart", ".erl", ".php", ".asm", ".diff", ".url", ".uri", ".urim"]}
+      ]
+    }
+  },
   "theme_color": "#94bbe6",
   "background_color": "white",
   "categories": ["productivity", "lifestyle", "education", "business"],

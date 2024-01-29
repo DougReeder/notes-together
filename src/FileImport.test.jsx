@@ -1,9 +1,9 @@
 // FileImport.test.js - automated tests for importing notes from files
-// Copyright © 2021-2023 Doug Reeder
+// Copyright © 2021-2024 Doug Reeder
 
 import _ from "fake-indexeddb/auto.js";
 import {init, getNote} from "./storage";
-import FileImport, {checkForMarkdown, importFromFile} from "./FileImport";
+import FileImport, {checkForMarkdown, determineParseType, importFromFile} from "./FileImport";
 import {
   render,
   screen, waitFor
@@ -14,6 +14,66 @@ import {validate as uuidValidate} from "uuid";
 import {dataURItoFile} from "./util/testUtil";
 import {CONTENT_MAX} from "./Note.js";
 import {CONTENT_TOO_LONG} from "./Note.js";
+
+describe("determineParseType", () => {
+  it("should parse graphics as their mime type", async () => {
+    const file = new File([], 'landscape.jpeg', {type: 'image/jpeg'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: file.type});
+  });
+
+  it("should parse compatible files as HTML", async () => {
+    const file = new File([], 'equations.mml', {type: 'application/mathml+xml'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: 'text/html'});
+  });
+
+  it("should flag unknown types", async () => {
+    console.error = vitest.fn();
+    const file = new File([], 'data.bin', {type: 'application/octet-stream'});
+
+    await expect(determineParseType(file)).resolves.toEqual(expect.objectContaining({file, parseType: file.type, message: expect.stringMatching("Not importable")}));
+    expect(console.error).toHaveBeenCalledOnce();
+  });
+
+  it("should parse markdown as markdown", async () => {
+    const file = new File([], 'webpage.md', {type: 'text/markdown'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: file.type});
+  });
+
+  it("should guess whether plain text files contain markdown", async () => {
+    const file = new File([], 'webpage.txt', {type: 'text/plain'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: 'text/plain', isMarkdown: false});
+  });
+
+  it("should flag unsupported text types", async () => {
+    console.error = vitest.fn();
+    const file = new File([], 'document.rtf', {type: 'text/rtf'});
+
+    await expect(determineParseType(file)).resolves.toEqual(expect.objectContaining({file, parseType: file.type, message: expect.stringMatching("Not importable")}));
+    expect(console.error).toHaveBeenCalledOnce();
+  });
+
+  it("should parse supported text types as their own MIME type", async () => {
+    const file = new File([], 'table.csv', {type: 'text/csv'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: file.type});
+  });
+
+  it("should discard subtype prefixes", async () => {
+    const file = new File([], 'config.yaml', {type: 'text/x-yaml'});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: 'text/yaml'});
+  });
+
+  it("should parse unknown types with known extension as text", async () => {
+    const file = new File([], 'program.java', {type: ''});
+
+    await expect(determineParseType(file)).resolves.toEqual({file, parseType: 'text/java'});
+  });
+});
 
 describe("checkForMarkdown", () => {
   it("should throw for non-file", async () => {

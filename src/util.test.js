@@ -1,4 +1,7 @@
-import {adHocTextReplacements, isLikelyMarkdown, visualViewportMatters} from "./util";
+// util.js — tests for various utilty funtions for Notes Together
+// Copyright © 2021–2024 Doug Reeder
+
+import {adHocTextReplacements, isLikelyMarkdown, normalizeUrl, urlRunningTextRE, visualViewportMatters} from "./util";
 
 describe("isLikelyMarkdown", () => {
   test("should not flag plain text starting or ending in newline", () => {
@@ -152,5 +155,86 @@ describe("AdHocTextReplacements", () => {
 describe("visualViewportMatters", () => {
   it("should not throw an exception", () => {
     expect(typeof visualViewportMatters()).toEqual('boolean');
+  });
+});
+
+describe("urlRunningTextRE followed by normalizeUrl", () => {
+  it("should return empty string for an email address", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('jsmith@sub.example.fun')?.[0] || '')).toEqual('');
+  });
+
+  it("should return empty string for a URL using an IP address", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('https://192.168.0.1')?.[0] || '')).toEqual('');
+  });
+
+  it("should return empty string for a bare domain name", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('java.sun.com')?.[0] || '')).toEqual('');
+  });
+
+  it("should allow bare domain names that start with www. as a special case", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('www.sun.com')?.[0] || '')).toEqual('https://www.sun.com/');
+  });
+
+  it("should allow parentheses in path", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('https://en.wikipedia.org/wiki/Hose_(clothing)')?.[0] || '')).toEqual('https://en.wikipedia.org/wiki/Hose_(clothing)');
+  });
+
+  it("should prepend https:// if needed", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('www.example.com/quux')?.[0] || ''))
+      .toEqual('https://www.example.com/quux');
+  });
+
+  it("should normalize the path", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('ftp://example.edu/../a/./b/../b/%63/%7bfoo%7d')?.[0] || ''))
+      .toEqual('ftp://example.edu/a/b/%63/%7bfoo%7d');
+  });
+
+  it("should allow mailto: URLs", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('mailto:bob@example.org?subject=Hey')?.[0] || ''))
+      .toEqual('mailto:bob@example.org?subject=Hey');
+  });
+
+  it("should allow mailto: URLs w/ arbitrary subject and body", () => {
+    urlRunningTextRE.lastIndex = 0;
+    const match = urlRunningTextRE.exec('mailto:bob@example.org?subject=Hey,%20there!&body=You%20need%20to%20know...');
+    expect(normalizeUrl(match?.[0] || '')).toEqual('mailto:bob@example.org?subject=Hey,%20there!&body=You%20need%20to%20know...');
+  });
+
+  it("should allow a fragment", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('http://example.com/data.csv#row=5-*')?.[0] || ''))
+      .toEqual('http://example.com/data.csv#row=5-*');
+  });
+
+  it("should allow almost any scheme", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('coaps+tcp://example.com:5683/~sensors/temp.xml')?.[0] || ''))
+      .toEqual('coaps+tcp://example.com:5683/~sensors/temp.xml');
+  });
+
+  it("should block the javascript: scheme", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('javascript:alert()')?.[0] || ''))
+      .toEqual('');
+  });
+
+  it("should block the file: scheme", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('file:/etc/motd')?.[0] || ''))
+      .toEqual('');
+  });
+
+  it("should normalize browser-specific URLs", () => {
+    urlRunningTextRE.lastIndex = 0;
+    expect(normalizeUrl(urlRunningTextRE.exec('microsoft-edge-holographic://microsoft.com/')?.[0] || ''))
+      .toEqual('https://microsoft.com/');
   });
 });
