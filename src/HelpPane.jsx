@@ -138,8 +138,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
             <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
             <tr><td>ctrl+Backspace or ctrl+Delete<br/>or ​⌘+Delete or ​⌘␡</td><td>delete selected note</td></tr>
-            <tr><td>ctrl+. or shift+ctrl+&gt;<br/>or ⌘. or ⌘⇧&gt;</td><td>share selected note, with file</td></tr>
-            <tr><td>ctrl+, or shift+ctrl+&lt;<br/>or ⌘, or ⌘⇧&lt;</td><td>share selected note as text</td></tr>
+            <tr><td>ctrl+. or shift+ctrl+&gt;<br/>or ⌘. or ⌘⇧&gt;</td><td>Share selected note, with file</td></tr>
+            <tr><td>ctrl+, or shift+ctrl+&lt;<br/>or ⌘, or ⌘⇧&lt;</td><td>Share selected note as text</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
@@ -187,14 +187,21 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           </tbody>
         </table>
 
-        <h4>Which browsers on which operating systems allow me to Share notes?</h4>
+        <h4>Which browsers on which operating systems allow me to Share notes <i>to</i> other apps?</h4>
         <p>See <a href="https://caniuse.com/web-share" target="_blank" rel="noreferrer">Web Share API</a> on CanIUse.</p>
         <p>In other browsers, you can send a text version of a note via email.
           Some graphics will be replaced by their alt text.</p>
 
+        <h4>How do I Share <i>from</i> other apps to Notes Together?</h4>
+        <p>You must first <a href="https://support.google.com/chrome/answer/9658361#9657916" target="_blank" rel="noreferrer">Install</a> Notes Together (or <a href="https://support.apple.com/guide/iphone/bookmark-favorite-webpages-iph42ab2f3a7/ios#iph4f9a47bbc" target="_blank" rel="noreferrer">Add to Home Screen</a>
+          /<a href="https://support.apple.com/en-us/104996#create" target="_blank" rel="noreferrer">Add to Dock</a>).
+          Consult the documentation for your browser.
+          Notes Together will appear in the system Share pane when the Share is one it can accept.</p>
+        <p>Some browsers don't support this Sharing. See <a href="https://caniuse.com/mdn-html_manifest_share_target" target="_blank" rel="noreferrer">manifest: share_target</a> on CanIUse.</p>
+
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
-          <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel.</p>
+          <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel. Or send them using the system Share feature (if supported).</p>
             <p>If you don't need text related to the graphic, at least add several key words, so you can find it by search.</p>
           </li>
           <li><p>To add graphics to an existing note, drag the files to the editor, or copy and paste them.</p>
@@ -219,8 +226,11 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus GFM <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">tables</a>, <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists" target="_blank" rel="noreferrer">checklists</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, delete and insert text styles, as usual in Markdown.)</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
-        <h4>How do I add a link?</h4>
-        <p>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor.</p>
+        <h4>How do I add a link to a Rich Text note?</h4>
+        <ol>
+          <li>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor pane.</li>
+          <li>Or, make sure Notes Together is installed and use the system Share (if supported by your browser and operating system) to send the URL.</li>
+        </ol>
 
         <h4>How do I follow a link, in a Rich Text note?</h4>
         <p>Right-click the link, then select <b>Open link in new tab</b>.</p>

@@ -16,14 +16,14 @@ describe("imageFileToDataUrl", () => {
     expect(alt).toEqual("picture.icon.svg");
   });
 
-  // it("should return small JPEG unchanged", async () => {
-  //   const jpegDataUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAADAAcDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAAv/EABcQAAMBAAAAAAAAAAAAAAAAAAABITH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8ATmAf/9k=';
-  //   const jpegFile = dataURItoFile(jpegDataUri, "small.jpeg");
-  //
-  //
-  //   const {dataUrl, alt} = await imageFileToDataUrl(jpegFile);
-  //
-  //   expect(dataUrl).toEqual(jpegDataUri);
-  //   expect(alt).toEqual("small");
-  // });
+  it("should return small JPEG unchanged", async () => {
+    const jpegDataUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAADAAcDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAAv/EABcQAAMBAAAAAAAAAAAAAAAAAAABITH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8ATmAf/9k=';
+    const jpegFile = dataURItoFile(jpegDataUri, "small.jpeg");
+
+
+    const {dataUrl, alt} = await imageFileToDataUrl(jpegFile);
+
+    expect(dataUrl).toEqual(jpegDataUri);
+    expect(alt).toEqual("small.jpeg");
+  });
 });

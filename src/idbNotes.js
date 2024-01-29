@@ -13,10 +13,13 @@ let dbPrms;
 
 function initDb(dbName = dbNameDefault) {
   dbPrms = new Promise((resolve, reject) => {
-    if (!window.indexedDB) {
-      const err = new Error("missing IndexedDB: " + navigator.userAgent);
-      err.userMsg = "This browser is too old to run Notes Together. Try the current version of Firefox or Chrome.";
-      return reject(err);
+    // eslint-disable-next-line no-undef
+    if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope)) {
+      if (!window.indexedDB) {
+        const err = new Error("missing IndexedDB: " + navigator.userAgent);
+        err.userMsg = "This browser is too old to run Notes Together. Try the current version of Firefox or Chrome.";
+        return reject(err);
+      }
     }
 
     const openRequest = indexedDB.open(dbName, 3);
@@ -439,8 +442,8 @@ function upsertNoteDb(cleanNote, initiator) {
           const notesChanged = {};
           notesChanged[cleanNote.id] = cleanNote;   // postMessage will clone
           // console.log("IDB: upsertNoteDb", note.id, note.content?.slice(0, 50));
-          window.postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}}, window?.location?.origin);
           resolve(cleanNote);
+          return postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}});
         } else {
           reject(new Error(`saved id ${evt.target?.result} doesn't match passed id ${cleanNote.id}`))
         }
@@ -705,6 +708,18 @@ function listSuggestions(max) {
       };
     });
   });
+}
+
+async function postMessage(msgObj) {
+  // eslint-disable-next-line no-undef
+  if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+    for (const client of await self.clients.matchAll({includeUncontrolled: true})) {
+      // console.log(`posting NOTE_CHANGE to client ${client?.id} ${client?.url} ${client?.type} ${client?.frameType}`)
+      client?.postMessage(msgObj);
+    }
+  } else {
+    window.postMessage(msgObj, window?.location?.origin);
+  }
 }
 
 export {initDb, findStubs, findNoteIds, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds, checkpointSearch, listSuggestions};

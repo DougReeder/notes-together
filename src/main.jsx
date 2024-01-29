@@ -100,6 +100,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 )
 
-if ("serviceWorker" in navigator && !/localhost/.test(window.location)) {
+if ("serviceWorker" in navigator && !/localhost:5173/.test(window.location)) {
   registerSW();
 }

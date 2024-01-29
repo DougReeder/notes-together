@@ -28,7 +28,7 @@ async function checkIfInstallRecommended(notesLength, isFirstLaunch) {
 
     let promptString, action;
     if (installPromptDeferred) {   // System install prompt is available
-      promptString = 'Install this webapp for easy access and a separate window.';
+      promptString = 'Install this webapp for a separate window & Sharing from native apps.';
       action = snackbarId => (
         <>
           <button onClick={() => {install(); closeSnackbar(snackbarId);}}>Install</button>
@@ -40,15 +40,15 @@ async function checkIfInstallRecommended(notesLength, isFirstLaunch) {
       !/Edge/.test(navigator.userAgent) &&
       !window.MSStream &&   // not IE11, which lies
       !/\bFxiOS\/[\d.]+\b/.test(navigator.userAgent)) {   // not Firefox on iOS
-      promptString = 'For easy access and a separate window, tap the share button then scroll down to "Add to Home Screen"';
+      promptString = 'For a separate window & Sharing from native apps, tap the share button then scroll down to "Add to Home Screen"';
     } else if (/\bMacintosh\b/.test(navigator.userAgent) &&
       /Safari\/[\d.]+/.test(navigator.userAgent) &&
       ! /\bChrom\w{1,3}\/[\d.]+\b/.test(navigator.userAgent)) {   // not Chrome/Chromium
-      promptString = 'For easy access and a separate window, click the share button then "Add to Dock"';
+      promptString = 'For a separate window & Sharing from native apps, click the share button then "Add to Dock"';
     } else if (/\bMobile\b/.test(navigator.userAgent) &&
       /\bFirefox\/[\d.]+\b/.test(navigator.userAgent) &&
       ! /\bSeamonkey\/[\d.]+\b/.test(navigator.userAgent)) {   // not Seamonkey
-      promptString = 'For easy access and a separate window, from the Firefox (meatball) menu select "Install"';
+      promptString = 'For a separate window & Sharing from native apps, from the Firefox (meatball) menu select "Install"';
     }   // else not installable, at least not now
 
     if (promptString) {

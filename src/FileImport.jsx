@@ -233,9 +233,12 @@ FileImport.propTypes = {
 }
 
 
-const allowedFileTypesNonText = ['application/mathml+xml','application/xhtml+xml','image/svg+xml', 'application/yaml','application/x-yaml', 'application/json', 'application/ld+json', 'application/sql','application/javascript', 'application/x-javascript', 'application/ecmascript','message/rfc822','message/global', 'application/mbox', 'application/x-sh', 'application/x-csh', 'application/x-tex', 'application/x-troff', 'application/vnd.uri-map', 'application/mathematica', 'application/vnd.dart', 'application/x-httpd-php'];
+const allowedFileTypesNonText = ['application/mathml+xml','application/xhtml+xml','image/svg+xml', 'application/yaml','application/x-yaml', 'application/json', 'application/ld+json', 'application/sql','application/javascript', 'application/x-javascript', 'application/ecmascript','message/rfc822','message/global', 'application/mbox', 'application/x-shellscript', 'application/x-sh', 'application/x-csh', 'application/x-tex', 'application/x-troff', 'application/x-info', 'application/vnd.uri-map', 'application/mathematica', 'application/vnd.dart', 'application/x-httpd-php'];
 
 const allowedExtensions = ['.txt', '.text', '.readme', '.me', '.1st', '.plain', '.ascii', '.log', '.markdown', '.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.adoc', '.textile', '.rst', '.etx', '.org', '.apt', '.pod', '.html', '.htm', '.xhtml', '.mml', '.mathml', '.msg', '.eml', '.mbox', '.tex', '.t', '.php', '.jsp', '.asp', '.mustache', '.hbs', '.erb', '.njk', '.ejs', '.haml', '.pug', '.erb', '.webc', '.liquid', '.xo', '.json', '.yaml', '.yml', '.awk', '.vcs', '.ics', '.abc', '.js', '.ts', '.jsx', '.css', '.less', '.sass', '.glsl', '.webmanifest', '.m', '.java', '.properties', '.groovy', '.gvy', '.gy', '.gsh', '.el', '.sql', '.c', '.h', '.pch', '.cc', '.cxx', '.cpp', '.hpp', '.strings', '.p', '.py', '.rb', '.pm', '.dart', '.erl', '.hs', '.wat', '.asm', '.rcp', '.diff', '.make', '.mak', '.mk', '.nmk', '.cmake', '.snap', '.hbx', '.sh', '.bash', '.csh', '.bat', '.inf', '.ni', '.gradle', '.ldif', '.url', '.uri', '.uris', '.urim', '.urimap', '.meta', '.mtl', '.obj', '.gltf', '.service', '.toml'];
+
+// The file filter allows all text/* types
+const unsupportedTextSubtypes = ['rtf', 'xml', 'xml-external-parsed-entity', 'SGML', 'uuencode'];
 
 async function determineParseType(file) {
   // console.log(`selected file “${file.name}” "${file.type}"`)
@@ -253,22 +256,18 @@ async function determineParseType(file) {
       return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
     }
 
-    const result = /\/([^;]+)/.exec(file.type);
-    switch (result?.[1]) {
-      case 'markdown':
+    const subtype = /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(file.type)?.[1];
+    if ('markdown' === subtype) {
         return {file, parseType: 'text/markdown'};
-      case 'plain':
+    } else if ('plain' === subtype) {
         const isMarkdown = await checkForMarkdown(file);
         // console.log(`text file "${file.name}"; likely Markdown ${isMarkdown}`);
         return {file, parseType: 'text/plain', isMarkdown};
-      case 'rtf':
-      case 'xml':
-      case 'svg+xml':
-      case 'x-uuencode':
+    } else if (unsupportedTextSubtypes.includes(subtype)) {
         console.error(`Not importable: “${file.name}” (${file.type})`);
         return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
-      default:
-        return {file, parseType: 'text/' + (result?.[1] || extension?.slice(1) || 'plain')};
+    } else {
+        return {file, parseType: 'text/' + (subtype || extension?.slice(1) || 'plain')};
     }
   }
 }
@@ -526,4 +525,4 @@ async function importText(text, fileDateValue, coda, parseType) {
 
 
 export default FileImport;
-export {determineParseType, allowedFileTypesNonText, allowedExtensions, checkForMarkdown, importFromFile};
+export {determineParseType, allowedFileTypesNonText, allowedExtensions, unsupportedTextSubtypes, checkForMarkdown, importFromFile};

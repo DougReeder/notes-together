@@ -1,3 +1,7 @@
+// util.js — various utilty funtions for Notes Together
+// Copyright © 2021–2024 Doug Reeder
+
+/* eslint-env browser, worker */
 
 // ASCII, Unicode, no-break & soft hyphens
 // ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
@@ -98,4 +102,38 @@ function visualViewportMatters() {
   }
 }
 
-export {globalWordRE, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters};
+// const urlRunningTextRE = /(([^:/?#]+):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/g
+// Numeric IP addresses are not allowed — local network addresses are unstable and others are a security problem
+const urlRunningTextRE = /(\b(?:([A-Za-z][A-Za-z+-]{2,25}:(?:\/\/)?)(?:[\w;:&=+$,-]+@)?|www\.)([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,6}(?::\d{1,5})?)(\/[\w+~%/.)(-]*)?(\?[-+=&;%@.,!\w_]*)?(#[.!/\\\w=,*-]*)?/g
+
+const BLOCKED_SCHEMES = ['javascript:', 'file:', 'data:'];
+
+const BROWSER_SPECIFIC_SCHEMES = ['microsoft-edge:', 'microsoft-edge-holographic:', 'googlechrome:', 'opera-http:',
+  'read:http:', 'read:https:', 'intent:http:', 'intent:https:'];
+
+function normalizeUrl(str) {
+  try {
+    const url = new URL(str);
+    if (BLOCKED_SCHEMES.includes(url.protocol)) {
+      return '';
+    } else if (BROWSER_SPECIFIC_SCHEMES.includes(url.protocol)) {
+      return url.href.replace(url.protocol, 'https:');   // setting protocol has no effect in test
+    } else {
+      return url.href;
+    }
+  } catch (err) {
+    try {
+      if (str.startsWith('www.') || str.startsWith('WWW.')) {
+        const url = new URL('https://' + str);
+        return url.href;
+      } else {
+        return '';
+      }
+    } catch (err) {
+      return '';
+    }
+  }
+}
+
+
+export {globalWordRE, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters, urlRunningTextRE, normalizeUrl};

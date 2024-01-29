@@ -1,7 +1,7 @@
 Notes Together
 ==============
 
-Free your mind from mundane details! Toss in text and pictures. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!
+Free your mind from mundane details! Toss in text, pictures, links and files Shared from native apps. Be confident you can find any note on any device. Take control of your data with remoteStorage. Never spend time tidying up — unless you want to!
 
 A web app for taking notes (or copied snippets of text or pictures) and recalling them by context:
 any words in them, or the date.

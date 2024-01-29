@@ -81,9 +81,11 @@ const List = forwardRef( function List (props, imperativeRef) {
   };
   useEffect( () => {
     window.addEventListener("message", externalChangeListener);
+    navigator.serviceWorker?.addEventListener('message', externalChangeListener);
 
     return function removeExternalChangeListener() {
       window.removeEventListener("message", externalChangeListener);
+      navigator.serviceWorker?.removeEventListener('message', externalChangeListener);
     };
   });
 
