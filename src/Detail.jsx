@@ -658,8 +658,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           <div> &nbsp; </div>
           <CircularProgress />
       </Box> : null }
-      <div style={{width: '100%', height: '100%', backgroundImage: 'url(/icons/NotesTogether-icon-gray.svg)',
-        backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}></div>
+      <div className="detailsEmpty" ></div>
     </>);
   } else {
     const dateControl = editor.subtype?.startsWith('html') ?

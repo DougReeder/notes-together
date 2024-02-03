@@ -32,6 +32,15 @@
     margin-block-end: 0;
 }
 
+.detailsEmpty {
+    width: 100%;
+    height: 100%;
+    background-image: url(/icons/NotesTogether-icon-gray.svg);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 [data-slate-editor=true] {
     padding: 1rem;
     background-color: white;
