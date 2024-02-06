@@ -102,7 +102,7 @@ ${content}
     status, statusText, headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': body.length.toString(),
-      'Location': self.location.origin + '/',
+      'Location': self.location.origin + import.meta.env.BASE_URL,
     }
   });
 }
