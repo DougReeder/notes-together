@@ -163,9 +163,11 @@ const List = forwardRef( function List (props, imperativeRef) {
         evt.preventDefault();
         evt.stopPropagation();
         pointerRef.current = {};
-      } else if (id !== selectedNoteId) {
+      } else if (id) {   // clicked on list item
         handleSelect(id, 'DETAIL');
-        inactivateAndActivateItemButtons(evt, itemButtonsIds[id] ? id : null);
+      } else {   // clicked on list below items
+        handleSelect(null, undefined);
+        inactivateAndActivateItemButtons(evt, null);
       }
     }
   }
@@ -326,11 +328,9 @@ const List = forwardRef( function List (props, imperativeRef) {
 
 
   const handleBlur = useCallback(evt => {
-    if (evt.relatedTarget?.closest("div.itemButtons")) {
-      return;
+    if (!evt.relatedTarget?.closest("ol.list")) {   // element being focussed is outside list
+      inactivateAndActivateItemButtons(evt, null);
     }
-
-    inactivateAndActivateItemButtons(evt, null);
   }, [inactivateAndActivateItemButtons]);
 
 

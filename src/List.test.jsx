@@ -177,6 +177,26 @@ describe("List", () => {
   });
 
 
+  it("should ensure Details are displayed on second click", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const mockHandleSelect = vitest.fn();
+    const user = userEvent.setup();
+
+    render(<List changeCount={() => {}}
+                 selectedNoteId="cba4c6fd-abf4-4f68-91ab-979fdf233606"
+                 handleSelect={mockHandleSelect}
+    ></List>);
+    const items = await screen.findAllByRole('listitem');
+    expect(mockHandleSelect).not.toHaveBeenCalled();
+
+    await user.click(items[2]);
+
+    expect(mockHandleSelect).toHaveBeenCalledWith("cba4c6fd-abf4-4f68-91ab-979fdf233606", 'DETAIL');
+  });
+
+
   it("should show item buttons on right-click then hide on Escape key", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
@@ -204,14 +224,14 @@ describe("List", () => {
     expect(mockHandleSelect).not.toHaveBeenCalled();
   });
 
-  it("should show item buttons on right-click then hide on click on other item", async () => {
+  it("should show item buttons on right-click then hide on click outside list", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
     const mockHandleSelect = vitest.fn();
     navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
 
-    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}></List>);
+    render(<><List changeCount={() => {}} handleSelect={mockHandleSelect}></List><input type="text"></input></>);
     const items = await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
@@ -222,13 +242,12 @@ describe("List", () => {
     expect(screen.getByRole('button', {name: "Share text"})).toBeVisible();
     expect(screen.getByRole('button', {name: "Share file"})).toBeVisible();
 
-    await userEvent.click(items[1]);
+    await userEvent.click(screen.getByRole('textbox'));
     await waitFor(() => expect(screen.queryAllByRole('button', {name: "Delete"})).toHaveLength(0));
     expect(screen.queryByRole('button', {name: "Share text"})).toBeFalsy();
     expect(screen.queryByRole('button', {name: "Share file"})).toBeFalsy();
     expect(deleteNote).not.toHaveBeenCalled();
     expect(navigator.share).not.toHaveBeenCalled();
-    expect(mockHandleSelect).toHaveBeenCalledOnce();
   });
 
   it("should show item buttons on right-click, switch to another, then hide when the list is clicked outside items", async () => {
@@ -286,16 +305,16 @@ describe("List", () => {
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
   });
 
-  it("should show Delete button on control-backspace then hide on click on other item", async () => {
+  it("should show Delete button on control-backspace then hide on click outside list", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
     });
     const mockHandleSelect = vitest.fn();
 
-    render(<List changeCount={() => {}}
+    render(<><List changeCount={() => {}}
                  selectedNoteId='f5af3107-fc12-4291-88ff-e0d64b962e49'
                  handleSelect={mockHandleSelect}
-                ></List>);
+                ></List><input type="text"></input></>);
     await screen.findAllByRole('listitem');
     expect(screen.queryByRole('button', {name: "Delete"})).toBeFalsy();
 
@@ -304,10 +323,8 @@ describe("List", () => {
     expect(mockHandleSelect).not.toHaveBeenCalled();
     expect(deleteNote).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByText("I would find her society", {exact: false}));
+    await userEvent.click(screen.getByRole('textbox'));
     expect(deleteNote).not.toHaveBeenCalled();
-    expect(mockHandleSelect).toHaveBeenCalledOnce();
-    expect(mockHandleSelect).toHaveBeenCalledWith('0b6b89c8-8aca-43de-8c7b-72095380682b', 'DETAIL');
     await waitFor(() => expect(screen.queryAllByRole('button', {name: "Delete"})).toHaveLength(0));
   });
 
