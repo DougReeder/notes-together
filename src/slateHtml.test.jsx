@@ -2873,6 +2873,7 @@ ipso facto`;
     const slateNodes = deserializeHtml(html);
 
     expect(slateNodes).toEqual([
+      {type: 'heading-one', children: [{text: "Some Page"}]},
       {type: 'paragraph', children: [{text: "safe"}]}
     ]);
   });

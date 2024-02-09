@@ -131,10 +131,11 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
       "", [textFile]);
 
     expect(nodeNote.subtype).toMatch(/^plain/);
-    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(2);
     expect(nodeNote.nodes[0]).toEqual({type: 'paragraph',
       children: [{text: "Read more at https://music.osu.edu/ and on paper"}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "the text"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "the text"}]});
+    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(3);
   });
 
   it("should accept URL in url field (by itself) and create rich text", async () => {
@@ -190,40 +191,10 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     const nodeNote = await assembleNote("Washington's Farewell Address", "introductory\nlines", "", [file]);
 
     expect(nodeNote.subtype).toMatch(/^plain/);
-    expect(nodeNote.nodes).toHaveLength(9);
     expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "Washington's Farewell Address"}]});
     expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "introductory"}]});
     expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "lines"}]});
-    expect(nodeNote.nodes[3].type).toEqual('paragraph');
-    expect(nodeNote.nodes[3].children).toHaveLength(1);
-    expect(nodeNote.nodes[3].children[0].text).toMatch(/^The acceptance of/);
-    expect(nodeNote.nodes[4].type).toEqual('paragraph');
-    expect(nodeNote.nodes[4].children).toHaveLength(1);
-    expect(nodeNote.nodes[4].children[0].text).toMatch(/^I rejoice that/);
-    expect(nodeNote.nodes[5].type).toEqual('paragraph');
-    expect(nodeNote.nodes[5].children).toHaveLength(1);
-    expect(nodeNote.nodes[5].children[0].text).toMatch(/^The impressions with which I first undertook/);
-    expect(nodeNote.nodes[6]).toEqual({type: 'paragraph', children: [{text: ""}]});
-    expect(nodeNote.nodes[7]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[8]).toEqual({type: 'paragraph', children: [{text: "farewell", italic: true}]});
-    expect(nodeNote.date).toEqual(new Date(fileDate));
-  });
-
-  it("should override the file type of plain text if the url field is present", async () => {
-    const url = 'https://boomerang.au/list';
-    const fileDate = new Date(1796, 0, 1).valueOf();
-    const file = new File([TEXT2], "farewell", {type: 'text/plain', lastModified: fileDate});
-
-    const nodeNote = await assembleNote("Washington's Farewell Address", "introductory\nlines", url, [file]);
-
-    expect(nodeNote.subtype).toMatch(/^html/);
-    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(8);
-    expect(nodeNote.nodes[0]).toEqual({type: 'heading-one', children: [{text: "Washington's Farewell Address"}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "introductory"}]});
-    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "lines"}]});
-    expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: ""},
-        {type: 'link', url, children: [{text: url}]},
-        {text: ""}]});
+    expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: ""}]});
     expect(nodeNote.nodes[4].type).toEqual('paragraph');
     expect(nodeNote.nodes[4].children).toHaveLength(1);
     expect(nodeNote.nodes[4].children[0].text).toMatch(/^The acceptance of/);
@@ -234,6 +205,49 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     expect(nodeNote.nodes[6].children).toHaveLength(1);
     expect(nodeNote.nodes[6].children[0].text).toMatch(/^The impressions with which I first undertook/);
     expect(nodeNote.nodes[7]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[8]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[9]).toEqual({type: 'paragraph', children: [{text: "farewell"}]});
+    expect(nodeNote.nodes).toHaveLength(10);
+    expect(nodeNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should prepend filename if nothing precedes the file", async () => {
+    const fileDate = new Date(1796, 0, 1).valueOf();
+    const file = new File([TEXT2], "farewell.txt", {type: 'text/plain', lastModified: fileDate});
+
+    const nodeNote = await assembleNote("", "", "", [file]);
+
+    expect(nodeNote.subtype).toMatch(/^plain/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "farewell.txt"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[2].type).toEqual('paragraph');
+    expect(nodeNote.nodes[2].children).toHaveLength(1);
+    expect(nodeNote.nodes[2].children[0].text).toMatch(/^The acceptance of/);
+    expect(nodeNote.nodes[3].type).toEqual('paragraph');
+    expect(nodeNote.nodes[3].children).toHaveLength(1);
+    expect(nodeNote.nodes[3].children[0].text).toMatch(/^I rejoice that/);
+    expect(nodeNote.nodes[4].type).toEqual('paragraph');
+    expect(nodeNote.nodes[4].children).toHaveLength(1);
+    expect(nodeNote.nodes[4].children[0].text).toMatch(/^The impressions with which I first undertook/);
+    expect(nodeNote.nodes[5]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(6);
+    expect(nodeNote.date).toEqual(new Date(fileDate));
+  });
+
+  it("should override the file type of plain text if the url field is present", async () => {
+    const url = 'https://boomerang.au/list';
+    const fileDate = new Date(1796, 0, 1).valueOf();
+    const file = new File([TEXT2], "farewell.txt", {type: 'text/plain', lastModified: fileDate});
+
+    const nodeNote = await assembleNote("", "", url, [file]);
+
+    expect(nodeNote.subtype).toMatch(/^html/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: ""},
+        {type: 'link', url, children: [{text: url}]},
+        {text: ""}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[2].type).toEqual('paragraph');
+    expect(nodeNote.nodes).toHaveLength(8);
     expect(nodeNote.date).toEqual(new Date(fileDate));
   });
 
@@ -263,21 +277,34 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     const nodeNote = await assembleNote("A Nifty Article", "This is the article:", url, [file]);
 
     expect(nodeNote.subtype).toMatch(/^html/);
-    expect(nodeNote.nodes).toHaveLength(8);
     expect(nodeNote.nodes[0]).toEqual({type: 'heading-one', children: [{text: "A Nifty Article"}]});
     expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "This is the article:"}]});
     expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: ""},
         {type: 'link', url, children: [{text: url}]},
         {text: ""}]});
-    expect(nodeNote.nodes[3]).toEqual({type: 'heading-two', children: [{text: "Series Name"}]});
-    expect(nodeNote.nodes[4]).toEqual({type: 'heading-one', children: [{text: "The Main Title"}]});
-    expect(nodeNote.nodes[5]).toEqual({type: 'paragraph', children: [
+    expect(nodeNote.nodes[3]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[4]).toEqual({type: 'heading-two', children: [{text: "Series Name"}]});
+    expect(nodeNote.nodes[5]).toEqual({type: 'heading-one', children: [{text: "The Main Title"}]});
+    expect(nodeNote.nodes[6]).toEqual({type: 'paragraph', children: [
         {text: "I guess we have to "},
         {text: "include", italic: true},
         {text: " content."},
       ]});
-    expect(nodeNote.nodes[6]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[7]).toEqual({type: 'paragraph', children: [{text: "some article", italic: true}]});
+    expect(nodeNote.nodes[7]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[8]).toEqual({type: 'paragraph', children: [{text: "some article", italic: true}]});
+    expect(nodeNote.nodes).toHaveLength(9);
+  });
+
+  it("should not prepend filename if HTML file contains a heading", async () => {
+    const file = new File(["<h3>Tertiary Heading</h3>"], "degenerate.html", {type: 'text/html'});
+
+    const nodeNote = await assembleNote("", "", "", [file]);
+
+    expect(nodeNote.subtype).toMatch(/^html/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'heading-three', children: [{text: "Tertiary Heading"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "degenerate.html", italic: true}]});
+    expect(nodeNote.nodes).toHaveLength(3);
   });
 
   it("should convert a vector graphic to an image element w/ data URL", async () => {
@@ -324,13 +351,12 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     const nodeNote = await assembleNote("A Plausible Report Title", "This is the report:", "", [file]);
 
     expect(nodeNote.subtype).toMatch(/^html/);
-    expect(nodeNote.nodes).toHaveLength(5);
     expect(nodeNote.nodes[0]).toEqual({type: 'heading-one', children: [{text: "A Plausible Report Title"}]});
     expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "This is the report:"}]});
-    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'thematic-break', children: [{text: ""}]});
     expect(nodeNote.nodes[3]).toEqual({type: 'quote',
       children: [{text: `Import of “${file.name}” (${file.type}) not supported`, bold: true}]});
-    expect(nodeNote.nodes[4]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes).toHaveLength(4);
     expect(console.warn).toHaveBeenCalledOnce();
   });
 
@@ -340,18 +366,18 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     const nodeNote = await assembleNote("", "", "", [sqlFile]);
 
     expect(nodeNote.subtype).toMatch(/^html/);
-    expect(nodeNote.nodes).toHaveLength(16);
-    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "CREATE TABLE APP.CITIES"}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "   ("}]});
-    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph',
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "cities.sql", italic: true}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "CREATE TABLE APP.CITIES"}]});
+    expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: "   ("}]});
+    expect(nodeNote.nodes[4]).toEqual({type: 'paragraph',
       children: [{text: "      CITY_ID          INTEGER NOT NULL constraint cities_pk primary key,"}]});
-    expect(nodeNote.nodes[12]).toEqual({type: 'paragraph',
+    expect(nodeNote.nodes[14]).toEqual({type: 'paragraph',
       children: [{text: "insert into APP.CITIES VALUES (3,'Auckland','New Zealand','AKL','English','NZ');"}]});
-    expect(nodeNote.nodes[14]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[15]).toEqual({type: 'paragraph', children: [{text: "cities.sql", italic: true}]});
+    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(16);
   });
 
-  it("should concatenate all files, use a compatible subtype, and append file names", async () => {
+  it("should concatenate text files with thematic-breaks, and append text file names", async () => {
     const url = 'https://party.com/';
     const yamlFile = new File([YAML], "config stuff",
       {type: 'text/x-yaml', lastModified: new Date(2005, 7, 21).valueOf()});
@@ -359,14 +385,16 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
       {type: 'image/svg+xml', lastModified: new Date(2018, 10, 30).valueOf()});
     const emptyFile = new File([], "things I like about so-and-so",
       {type: 'text/plain', lastModified: new Date(1970, 4, 15)});
-    const textFile = new File([TEXT1], "farewell address",
+    const text1File = new File([TEXT1], "farewell address",
       {type: 'text/plain', lastModified: new Date(1796, 0, 1).valueOf()});
+    const text2File = new File([TEXT2], "also farewell address.txt",
+      {type: 'text/plain', lastModified: new Date(1797, 1, 3).valueOf()});
     const rtfFile = new File([RTF], "something dull.rtf",
       {type: 'application/rtf', lastModified: new Date(2019, 11, 25).valueOf()});
     const htmlFile = new File([HTML], "my conference notes",
       {type: 'text/html', lastModified: new Date(2002, 3, 29).valueOf()});
 
-    const nodeNote = await assembleNote("A Motley Collection", TEXT2, url, [yamlFile, svgFile, emptyFile, textFile, rtfFile, htmlFile]);
+    const nodeNote = await assembleNote("A Motley Collection", TEXT2, url, [yamlFile, svgFile, text2File, emptyFile, text1File, rtfFile, htmlFile]);
 
     expect(nodeNote.subtype).toMatch(/^html/);
     expect(nodeNote.nodes[0]).toEqual({type: 'heading-one', children: [{text: "A Motley Collection"}]});
@@ -379,33 +407,67 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
         {type: 'link', url, children: [{text: url}]},
         {text: ""}]});
 
-    expect(nodeNote.nodes[6]).toEqual({type: 'paragraph', children: [{text: "development:"}]});
+    expect(nodeNote.nodes[6]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[7]).toEqual({type: 'paragraph', children: [{text: "development:"}]});
 
-    expect(nodeNote.nodes[9]).toEqual({type: 'paragraph', children: [{text: ""}]});
-    expect(nodeNote.nodes[10]).toEqual({
+    expect(nodeNote.nodes[10]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[11]).toEqual({
       type: 'image',
       url: DATA_URL_SVG,
       children: [{text: "circular pattern.svg"}]});
-    expect(nodeNote.nodes[11]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[12]).toEqual({type: 'paragraph', children: [{text: ""}]});
 
-    expect(nodeNote.nodes[12]).toEqual({type: 'paragraph', children: [{text: "Friends and Citizens:"}]});
+    // no thematic-break after graphic
+    expect(nodeNote.nodes[13].type).toEqual('paragraph');
+    expect(nodeNote.nodes[13].children).toHaveLength(1);
+    expect(nodeNote.nodes[13].children[0].text).toMatch(/^The acceptance of, and continuance hitherto in/);
 
-    expect(nodeNote.nodes[15]).toEqual({type: 'paragraph', children: [{text: ""}]});
-    expect(nodeNote.nodes[16]).toEqual(
+    expect(nodeNote.nodes[17]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    // empty file has no content nodes
+
+    expect(nodeNote.nodes[18]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[19]).toEqual({type: 'paragraph', children: [{text: "Friends and Citizens:"}]});
+
+    expect(nodeNote.nodes[22]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[23]).toEqual(
       {type: 'quote', children: [{text: `Import of “${rtfFile.name}” (${rtfFile.type}) not supported`, bold: true}]});
-    expect(nodeNote.nodes[17]).toEqual({type: 'paragraph', children: [{text: ""}]});
 
-    expect(nodeNote.nodes[18]).toEqual({type: 'heading-two', children: [{text: "Series Name"}]});
+    expect(nodeNote.nodes[24]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[25]).toEqual({type: 'heading-two', children: [{text: "Series Name"}]});
 
-    expect(nodeNote.nodes[21]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[22]).toEqual({type: 'paragraph',
-      children: [{text: "config stuff, things I like about so-and-so, farewell address, my conference notes", italic: true}]});
+    expect(nodeNote.nodes[28]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[29]).toEqual({type: 'paragraph',
+      children: [{text: "config stuff, also farewell address.txt, things I like about so-and-so, farewell address, my conference notes", italic: true}]});
 
-    expect(nodeNote.nodes).toHaveLength(23);
+    expect(nodeNote.nodes).toHaveLength(30);
 
     expect(nodeNote.date).toEqual(new Date(2018, 10, 30));
 
     expect(console.warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("should insert thematic-break between problem and graphic", async () => {
+    const rtfFile = new File([RTF], "my old post.rtf",
+      {type: 'application/rtf', lastModified: new Date(2016, 10, 13).valueOf()});
+    const svgFile = new File([SVG], "nifty thing.svg",
+      {type: 'image/svg+xml', lastModified: new Date(2014, 9, 29).valueOf()});
+
+    const nodeNote = await assembleNote("", "old stuff", "", [rtfFile, svgFile]);
+
+    expect(nodeNote.subtype).toMatch(/^html/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "old stuff"}]});
+
+    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual(
+      {type: 'quote', children: [{text: `Import of “${rtfFile.name}” (${rtfFile.type}) not supported`, bold: true}]});
+
+    expect(nodeNote.nodes[3]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.nodes[4]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[5]).toEqual(
+      {type: 'image', url: DATA_URL_SVG, children: [{text: "nifty thing.svg"}]});
+    expect(nodeNote.nodes[6]).toEqual({type: 'paragraph', children: [{text: ""}]});
+
+    expect(nodeNote.nodes).toHaveLength(7);
   });
 
   it("should append the name of an empty file", async () => {
@@ -415,9 +477,10 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
 
     expect(nodeNote.subtype).toMatch(/^markdown/);
     expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "The attached file is empty."}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "empty.md", italic: true}]});
-    expect(nodeNote.nodes).toHaveLength(3);
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "------------------------------"}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "------------------------------"}]});
+    expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: "*empty.md*"}]});
+    expect(nodeNote.nodes).toHaveLength(4);
   });
 
   it("should accept if solo file is empty", async () => {
@@ -426,9 +489,11 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     const nodeNote = await assembleNote("", "", "", [file]);
 
     expect(nodeNote.subtype).toMatch(/^plain/);
-    expect(nodeNote.nodes[0]).toEqual({type: 'thematic-break', children: [{text: ""}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: "empty.txt", italic: true}]});
-    expect(nodeNote.nodes).toHaveLength(2);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "empty.txt"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: "empty.txt"}]});
+    expect(nodeNote.nodes).toHaveLength(4);
   });
 
   it("should reject if no usable content", async () => {

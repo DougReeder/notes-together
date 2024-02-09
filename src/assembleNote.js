@@ -62,24 +62,46 @@ export async function assembleNote(title, text, url, files, clientId) {
     console.info(`Imported URL “${shorten(url)}”`);
   }
 
+  let needsTitleMaterial = (0 === slateNodes.length);
+
+  let lastFileWasText = true;
+  let lastFileHadProblem = false;
   for (const file of files) {
     try {
-      const fileSubtype = /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(file.type)?.[1];
-      if (unsupportedTextSubtypes.includes(fileSubtype)) {
-        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-        slateNodes.push({type: 'quote',
-          children: [{text: `Import of “${file.name}” (${file.type}) not supported`, bold: true}]});
-        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-        console.warn(`Import of “${file.name}” (${file.type}) not supported`);
-        postTransientMessage(`Import of “${file.name}” (${file.type}) not supported`, 'warning');
-        continue;
+      if (!/^image/.test(file.type) && slateNodes.length > 0 && lastFileWasText) {
+        slateNodes.push(...divider(subtype, undefined, undefined));
       }
 
-      if (0 === file.size) {
+      const fileSubtype = /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(file.type)?.[1];
+      if (unsupportedTextSubtypes.includes(fileSubtype)) {
+        slateNodes.push({type: 'quote',
+          children: [{text: `Import of “${file.name}” (${file.type}) not supported`, bold: true}]});
+        // doesn't push name into suffix
+        lastFileWasText = true;
+        lastFileHadProblem = true;
+          console.warn(`Import of “${file.name}” (${file.type}) not supported`);
+        postTransientMessage(`Import of “${file.name}” (${file.type}) not supported`, 'warning');
+        continue;
+      } else if (0 === file.size) {
         suffix.push(file.name);
         hasRealContent = true;
+        // doesn't set lastFileWasText nor lastFileHadProblem
         console.warn(`“${file.name}” is empty.`);
         postTransientMessage(`“${file.name}” is empty.`, 'warning');
+        continue;
+      } else if (file.type?.startsWith('image')) {
+        const {dataUrl, alt} = await imageFileToDataUrl(file);
+        if (lastFileHadProblem) {
+          slateNodes.push(...divider(subtype, undefined, undefined));
+        }
+        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+        slateNodes.push({type: 'image', url: dataUrl, children: [{text: alt}]});
+        slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+        // file name is in alt text, so it's not added to suffix
+        hasRealContent = true;
+        lastFileWasText = false;
+        lastFileHadProblem = false;
+        console.info(`Imported “${file.name}” (${file.type}) as graphic`);
         continue;
       }
 
@@ -89,28 +111,26 @@ export async function assembleNote(title, text, url, files, clientId) {
           try {
             if (hasTagsLikeHtml(file.type)) {
               // eslint-disable-next-line no-undef
-              if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-                slateNodes.push(...await clientDeserializeHtml(evt.target.result, clientId));
-              } else {   // needed for testing
-                slateNodes.push(...deserializeHtml(evt.target.result));
+              const htmlNodes = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope ?
+                await clientDeserializeHtml(evt.target.result, clientId) :
+                deserializeHtml(evt.target.result);
+              if (htmlNodes.some(node => ['heading-one', 'heading-two', 'heading-three'].includes(node.type))) {
+                needsTitleMaterial = false;
               }
+              slateNodes.push(...htmlNodes);
               suffix.push(file.name);
               hasRealContent = true;
+              lastFileWasText = true;
+              lastFileHadProblem = false;
               console.info(`Imported “${file.name}” (${file.type}) as HTML`);
-            } else if (file.type?.startsWith('image')) {
-              const {dataUrl, alt} = await imageFileToDataUrl(file);
-              slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-              slateNodes.push({type: 'image', url: dataUrl, children: [{text: alt}]});
-              slateNodes.push({type: 'paragraph', children: [{text: ""}]});
-              // file name is in alt text, so it's not added to suffix
-              hasRealContent = true;
-              console.info(`Imported “${file.name}” (${file.type}) as graphic`);
             } else {   // supported text type
               const paragraphs = evt.target.result.split(/\r\n|\n|\r/)
                 .map(line => {return {type: 'paragraph', children: [{text: line}]}});
               slateNodes.push(...paragraphs);
               suffix.push(file.name);
               hasRealContent = true;
+              lastFileWasText = true;
+              lastFileHadProblem = false;
               console.info(`Imported “${file.name}” (${file.type}) as text`);
             }
             resolve();
@@ -120,18 +140,18 @@ export async function assembleNote(title, text, url, files, clientId) {
         });
         reader.addEventListener('error', _evt => {
           const msg = `error while reading “${file.name}”`;
-          slateNodes.push({type: 'paragraph', children: [{text: ""}]});
           slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]})
-          slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+          lastFileWasText = true;
+          lastFileHadProblem = true;
           reject(new Error(msg))
         });
         reader.addEventListener('abort', evt => {
           const msg = `read of “${file.name}” was aborted`;
           console.warn(msg, evt);
           postTransientMessage(`“Import of ${file.name}” was interrupted`, 'warning');
-          slateNodes.push({type: 'paragraph', children: [{text: ""}]});
           slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]});
-          slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+          lastFileWasText = true;
+          lastFileHadProblem = true;
           resolve();
         });
         reader.readAsText(file);
@@ -141,20 +161,40 @@ export async function assembleNote(title, text, url, files, clientId) {
       console.error(intro, err);
       const msg = intro + ": " + extractUserMessage(err);
       postTransientMessage(msg);
-      slateNodes.push({type: 'paragraph', children: [{text: ""}]});
       slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]})
-      slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+      lastFileWasText = true;
+      lastFileHadProblem = true;
     }
   }
   if (hasRealContent) {
     if (suffix.length > 0) {
-      slateNodes.push({type: 'thematic-break', children: [{text: ""}]});
-      slateNodes.push({type: 'paragraph', children: [{text: suffix.join(", "), italic: true}]});
+      slateNodes.push(...divider(subtype, undefined, suffix.join(", ")));
+      if (needsTitleMaterial) {
+        slateNodes.unshift(...divider(subtype, suffix.join(", "), undefined));
+      }
     }
     return new NodeNote(undefined, subtype, slateNodes, date, undefined);
   } else {
     throw new Error("No usable content in Share");
   }
+}
+
+function divider(subtype, beforeText, afterText) {
+  const slateNodes = [];
+  if ('html' === subtype) {
+    beforeText && slateNodes.push({type: 'paragraph', children: [{text: beforeText, italic: true}]});
+    slateNodes.push({type: 'thematic-break', children: [{text: ""}]});
+    afterText && slateNodes.push({type: 'paragraph', children: [{text: afterText, italic: true}]});
+  } else if ('markdown' === subtype) {
+    beforeText && slateNodes.push({type: 'paragraph', children: [{text: `*${beforeText}*`}]});
+    slateNodes.push({type: 'paragraph', children: [{text: "------------------------------"}]});
+    afterText && slateNodes.push({type: 'paragraph', children: [{text: `*${afterText}*`}]});
+  } else {
+    beforeText && slateNodes.push({type: 'paragraph', children: [{text: beforeText}]});
+    slateNodes.push({type: 'paragraph', children: [{text: ""}]});
+    afterText && slateNodes.push({type: 'paragraph', children: [{text: afterText}]});
+  }
+  return slateNodes;
 }
 
 function textHeuristics(text, subtype) {

@@ -366,6 +366,7 @@ describe("deserializeNote", () => {
     expect(nodeNote.id).toEqual(remoteNote.id);
     expect(nodeNote.subtype).toEqual('html;hint=SEMANTIC');
     expect(nodeNote.nodes).toEqual([
+      {type: 'heading-one', children: [{text: "XHTML"}]},
       {type: 'paragraph', children: [{text: 'I am a XHTML document'}]}
     ]);
     expect(Date.now() - nodeNote.date).toBeLessThan(1000);
