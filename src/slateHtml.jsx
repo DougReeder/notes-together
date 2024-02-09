@@ -762,6 +762,7 @@ const TEXT_TAGS = {
 function deserializeHtml(html) {
   const parsed = new DOMParser().parseFromString(html, 'text/html');
 
+  let hasH1 = false;
   let activeMarkStack = [{}];
   let activeCodeBlockStack = [false];
   const isChecklistStack = [];
@@ -778,6 +779,17 @@ function deserializeHtml(html) {
   }
   if (captionStack.length > 0) {
     console.warn("unused caption:", captionStack);
+  }
+
+  if (!hasH1) {
+    for (const el of parsed.head.children) {
+      if ('TITLE' === el.nodeName) {
+        const text = el.text?.trim();
+        if (text) {
+          slateNodes.unshift({type: 'heading-one', children: [{text}]})
+        }
+      }
+    }
   }
 
   return slateNodes;
@@ -817,6 +829,11 @@ function deserializeHtml(html) {
         case 'IMG':
           if (!el.src) {
             return '';
+          }
+          break;
+        case 'H1':
+          if (el.textContent?.trim()) {
+            hasH1 = true;
           }
           break;
         case 'PRE':

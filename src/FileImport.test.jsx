@@ -109,7 +109,7 @@ describe("importFromFile", () => {
     return init("testStorageDb");
   });
 
-  it("should parse a file containing an HTML fragment as one note, with file name appended", async () => {
+  it("should parse a file containing an HTML fragment as one note, with file name prepended", async () => {
     const fileContent = `<h1>Some Topic</h1>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
 <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. </p>
@@ -131,12 +131,12 @@ describe("importFromFile", () => {
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
     expect(retrievedNote.title).toEqual(`Some Topic`);
-    expect(retrievedNote.content).toEqual(fileContent.replace(/\n/g, '') + "<hr /><p><em>Lipsum.html</em></p>");
+    expect(retrievedNote.content).toEqual("<p><em>Lipsum.html</em></p><hr />" + fileContent.replace(/\n/g, ''));
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
 
-  it("should parse a file containing an HTML document as one note, with file name appended", async () => {
+  it("should parse a file containing an HTML document as one note, with title & file name prepended", async () => {
     const fileContent = `<html><head><title>Buckaroo Banzai</title></head><body>
 <blockquote>No matter where you go, there you are.</blockquote>
 </body></html>`;
@@ -152,9 +152,33 @@ describe("importFromFile", () => {
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
-    expect(retrievedNote.title).toEqual(`Buckaroo-Banzai.html`);
-    expect(retrievedNote.content).toEqual(`<blockquote>No matter where you go, there you are.</blockquote><hr /><p><em>Buckaroo-Banzai.html</em></p>`);
+    expect(retrievedNote.title).toEqual(`Buckaroo Banzai`);
+    expect(retrievedNote.content).toEqual(`<h1>Buckaroo Banzai</h1><p><em>Buckaroo-Banzai.html</em></p><hr /><blockquote>No matter where you go, there you are.</blockquote>`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
+    expect(retrievedNote.isLocked).toEqual(false);
+  });
+
+  it("should not prepend title of HTML document if it contains a non-blank H1", async () => {
+    const htmlContent = `<html><head><title>Albert Einstein — Biographies</title></head><body>
+<h1>Einstein Quote</h1>
+<blockquote>You should make things as simple as possible, but no simpler.</blockquote>
+</body></html>`;
+    const einsteinDate = '2019-02-01T13:00:00Z';
+    const file = new File([htmlContent], "Einstein-quote.html", {type: 'text/html', lastModified: Date.parse(einsteinDate)});
+
+    const {noteIds, message} = await importFromFile(file, 'text/html', true);
+    expect(noteIds).toBeInstanceOf(Array);
+    expect(noteIds.length).toEqual(1);
+    expect(uuidValidate(noteIds[0])).toBeTruthy();
+    expect(message).toEqual("1 note");
+
+    const retrievedNote = await getNote(noteIds[0]);
+    expect(retrievedNote).toBeInstanceOf(Object);
+    expect(retrievedNote.mimeType).toEqual('text/html;hint=SEMANTIC');
+    expect(retrievedNote.title).toEqual(`Einstein Quote`);
+    expect(retrievedNote.content).toEqual(
+      `<p><em>Einstein-quote.html</em></p><hr /><h1>Einstein Quote</h1><blockquote>You should make things as simple as possible, but no simpler.</blockquote>`);
+    expect(retrievedNote.date).toEqual(new Date(einsteinDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
 
@@ -193,7 +217,7 @@ describe("importFromFile", () => {
     expect(message).toEqual("No notes");
   });
 
-  it("should parse a text file with no separations nor dates as one note, with date equal to the file date", async () => {
+  it("should parse a text file with no separations nor dates as one note in multiple mode, with date equal to the file date", async () => {
     const fileContent = `Popular Novel
 Review copyright 2021 by Doug Reeder
 
@@ -202,9 +226,9 @@ There's three things to say about this:
 2. Another thing
 3. A sweeping generalization`;
     const fileDate = '2021-10-01T13:00:00Z';
-    const file = new File([fileContent], "review.t", {type: 'text/troff', lastModified: Date.parse(fileDate)});
+    const file = new File([fileContent], "review.text", {type: 'text/plain', lastModified: Date.parse(fileDate)});
 
-    const {noteIds, message} = await importFromFile(file, 'text/troff', true);
+    const {noteIds, message} = await importFromFile(file, 'text/plain', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(1);
     expect(uuidValidate(noteIds[0])).toBeTruthy();
@@ -212,13 +236,13 @@ There's three things to say about this:
 
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
-    expect(retrievedNote.mimeType).toEqual('text/troff');
+    expect(retrievedNote.mimeType).toEqual('text/plain');
     let titleLines = retrievedNote.title.split('\n');
     expect(titleLines[0]).toEqual("Popular Novel");
     expect(titleLines[1]).toEqual("Review copyright 2021 by Doug Reeder");
     expect(retrievedNote.content).toEqual(fileContent + `
 
-review.t`);
+review.text`);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
@@ -512,9 +536,9 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/javascript');
     let titleLines = retrievedNote.title.split('\n');
-    expect(titleLines[0]).toMatch(/^if \('chrome' in window && 'fileSystem' in chrome\) \{/);
-    expect(titleLines[1]).toMatch(/history.pushState = function \(newState\) \{/);
-    expect(retrievedNote.content).toEqual(fileContent + "\n\nhistoryStub.js");
+    expect(titleLines[0]).toMatch(/^historyStub.js/);
+    expect(titleLines[1]).toMatch(/^if \('chrome' in window && 'fileSystem' in chrome\) \{/);
+    expect(retrievedNote.content).toEqual("historyStub.js\n\n" + fileContent);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
   });
 
@@ -557,9 +581,9 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
     let titleLines = retrievedNote.title.split('\n');
-    expect(titleLines[0]).toMatch(/Some Title/);
-    expect(titleLines[1]).toMatch(/^Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
-    expect(retrievedNote.content).toEqual(fileContent + "\n\ngap.txt");
+    expect(titleLines[0]).toMatch(/^gap.txt/);
+    expect(titleLines[1]).toMatch(/Some Title/);
+    expect(retrievedNote.content).toEqual("gap.txt\n\n" + fileContent);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
@@ -594,8 +618,8 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/markdown;hint=COMMONMARK');
-    expect(retrievedNote.title).toMatch(/^Lorem Ipsum\n1. Aenean magna orci, porta quis vestibulum ac, venenatis eu est./);
-    expect(retrievedNote.content).toEqual(fileContent + "\n\n------------------------------\ndivided.txt");
+    expect(retrievedNote.title).toMatch(/^divided.txt\nLorem Ipsum/);
+    expect(retrievedNote.content).toEqual("*divided.txt*\n\n------------------------------\n" + fileContent);
     expect(retrievedNote.date).toEqual(new Date(fileDate));
     expect(retrievedNote.isLocked).toEqual(false);
   });
@@ -633,10 +657,8 @@ Morbi quis vulputate lectus, a interdum velit. Cras quis aliquam magna, sit amet
     const retrievedNote = await getNote(noteIds[0]);
     expect(retrievedNote).toBeInstanceOf(Object);
     expect(retrievedNote.mimeType).toEqual('text/plain');
-    expect(retrievedNote.title).toEqual("Some MacOS Classic file\ncollapse of the Soviet Union");
-    expect(retrievedNote.content).toEqual(carriageReturnsContent.replace(/\r/g, '\n') + `
-
-cr`);
+    expect(retrievedNote.title).toEqual("cr\nSome MacOS Classic file");
+    expect(retrievedNote.content).toEqual("cr\n\n" + carriageReturnsContent.replace(/\r/g, '\n'));
     expect(console.info).toHaveBeenCalledWith(
       expect.stringMatching(/Imported .*from "cr"/i), ["1 note"]);
   });

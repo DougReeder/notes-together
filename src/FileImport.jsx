@@ -356,22 +356,19 @@ async function importHtml(html, fileDateValue, coda) {
       return {noteIds: [], messages: []};
     }
     if (coda) {
-      let endPos = html.indexOf('</body>');
-      if (endPos < 0) {
-        endPos = html.indexOf('</BODY>');
-      }
-      if (endPos < 0) {
-        endPos = html.indexOf('</html>');
-      }
-      if (endPos < 0) {
-        endPos = html.indexOf('</HTML>');
+      let startPos = 0;
+      const bodyRE = /<body[^>]*>/ig;
+      const headRE = /<\/head *>/ig;
+      const htmlRE = /<html[^>]*>/ig;
+      if (bodyRE.test(html)) {
+        startPos = bodyRE.lastIndex;
+      } else if (headRE.test(html)) {
+        startPos = headRE.lastIndex;
+      } else if (htmlRE.test(html)) {
+        startPos = htmlRE.lastIndex;
       }
 
-      if (endPos >= 0) {
-        html = html.slice(0, endPos) + '<hr /><p><em>' + coda + '</em></p>' + html.slice(endPos);
-      } else {
-        html += '<hr /><p><em>' + coda + '</em></p>';
-      }
+      html = html.slice(0, startPos) + '<p><em>' + coda + '</em></p><hr />' + html.slice(startPos);
     }
 
     const raw = {mimeType: 'text/html;hint=SEMANTIC', content: html, date: fileDateValue};
@@ -502,9 +499,9 @@ async function importText(text, fileDateValue, coda, parseType) {
     text = text.replace(/\r\n|\r/g, '\n');   // replaces carriage returns with newlines
     if (coda) {
       if ('text/markdown' === parseType) {
-        text += '\n\n------------------------------\n' + coda;
+        text = `*${coda}*\n\n------------------------------\n` + text;
       } else {
-        text += '\n\n' + coda;
+        text = coda + '\n\n' + text;
       }
     }
     const raw = {mimeType: parseType, content: text, date: fileDateValue};
