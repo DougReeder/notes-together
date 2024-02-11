@@ -1,5 +1,5 @@
 // fileExport.js - file export function for Notes Together
-// Copyright © 2023 Doug Reeder
+// Copyright © 2024 Doug Reeder
 
 import {findNoteIds, getNote} from "./storage";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
@@ -51,7 +51,7 @@ export async function fileExportMarkdown(searchStr, searchWords) {
     }
 
     const blob = new Blob([content, "\n", note.date?.toISOString(), "\n\n\n\n"], {type: 'text/plain'});
-    console.info(`writing ${note.id} ${note.date.toISOString()} “${shortenTitle(note.title)}”`)
+    console.info(`writing “${shortenTitle(note.title)}” ${note.date.toISOString()}`);
     await writableStream.write(blob);
     ++numWritten;
   }

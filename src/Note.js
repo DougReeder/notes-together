@@ -4,6 +4,7 @@
 
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 import normalizeDate from "./util/normalizeDate.js";
+import {shorten} from "./util/shorten.js";
 
 const TITLE_MAX = 400;
 const CONTENT_MAX = 600_000;
@@ -86,13 +87,11 @@ class SerializedNote {
 }
 
 function shortenTitle(title) {
-  const shortened = title?.split("\n")?.[0];
-  if (!shortened) {
-    return "«untitled»";
-  } else if (shortened.length <= 27) {
+  const shortened = shorten(title?.split("\n")?.[0], 27);
+  if (shortened) {
     return shortened;
   } else {
-    return shortened.slice(0, 26) + "…";
+    return "«untitled»";
   }
 }
 

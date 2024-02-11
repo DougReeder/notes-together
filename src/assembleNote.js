@@ -8,7 +8,7 @@ import {imageFileToDataUrl} from "./util/imageFileToDataUrl.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {urlRunningTextRE, normalizeUrl} from "./util.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
-import {shorten} from "./service-worker-utils";
+import {shorten} from "./util/shorten.js";
 
 export async function assembleNote(title, text, url, files, clientId) {
   let slateNodes = [], suffix = [], hasRealContent = false;

@@ -3,7 +3,7 @@ import {registerRoute} from 'workbox-routing';
 import {init, upsertNote} from "./storage.js";
 import {assembleNote} from "./assembleNote.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
-import {shorten} from "./service-worker-utils.js";
+import {shorten} from "./util/shorten.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
 
 
