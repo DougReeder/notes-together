@@ -131,13 +131,13 @@ async function changeHandler(evt) {
         switch (evt.origin) {
           case 'remote':
             console.info("remoteStorage incoming savedSearch", evt.relativePath, evt.oldValue, evt.newValue);
-            window.postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
+            postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
             break;
           case 'conflict':
             console.warn("remoteStorage incoming savedSearch conflict", evt.relativePath, evt.lastCommonValue, evt.oldValue, evt.newValue);
             requestIdleCallback(async () => {
               await saveTag(parseWords(evt.newValue.original), evt.newValue.original);
-              window.postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
+              postMessage({kind: 'TAG_CHANGE'}, window?.location?.origin);
             });
             break;
         }

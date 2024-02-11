@@ -5,10 +5,10 @@ import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
 import {NodeNote} from "./Note.js";
 import {deserializeHtml} from "./slateHtml.jsx";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl.js";
-import {extractUserMessage} from "./util/extractUserMessage.js";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {urlRunningTextRE, normalizeUrl} from "./util.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
-import {postTransientMessage, shorten} from "./service-worker-utils";
+import {shorten} from "./service-worker-utils";
 
 export async function assembleNote(title, text, url, files, clientId) {
   let slateNodes = [], suffix = [], hasRealContent = false;
@@ -80,14 +80,14 @@ export async function assembleNote(title, text, url, files, clientId) {
         lastFileWasText = true;
         lastFileHadProblem = true;
           console.warn(`Import of “${file.name}” (${file.type}) not supported`);
-        postTransientMessage(`Import of “${file.name}” (${file.type}) not supported`, 'warning');
+        transientMsg(`Import of “${file.name}” (${file.type}) not supported`, 'warning');
         continue;
       } else if (0 === file.size) {
         suffix.push(file.name);
         hasRealContent = true;
         // doesn't set lastFileWasText nor lastFileHadProblem
         console.warn(`“${file.name}” is empty.`);
-        postTransientMessage(`“${file.name}” is empty.`, 'warning');
+        transientMsg(`“${file.name}” is empty.`, 'warning');
         continue;
       } else if (file.type?.startsWith('image')) {
         const {dataUrl, alt} = await imageFileToDataUrl(file);
@@ -148,7 +148,7 @@ export async function assembleNote(title, text, url, files, clientId) {
         reader.addEventListener('abort', evt => {
           const msg = `read of “${file.name}” was aborted`;
           console.warn(msg, evt);
-          postTransientMessage(`“Import of ${file.name}” was interrupted`, 'warning');
+          transientMsg(`“Import of ${file.name}” was interrupted`, 'warning');
           slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]});
           lastFileWasText = true;
           lastFileHadProblem = true;
@@ -160,7 +160,7 @@ export async function assembleNote(title, text, url, files, clientId) {
       const intro = `error processing “${file.name}” (${file.type})`;
       console.error(intro, err);
       const msg = intro + ": " + extractUserMessage(err);
-      postTransientMessage(msg);
+      transientMsg(msg);
       slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]})
       lastFileWasText = true;
       lastFileHadProblem = true;

@@ -181,7 +181,7 @@ describe("RemoteNotes", () => {
       expect(retrieved.title).toEqual(original.title);   // not updated
       expect(mockPostMessage).toHaveBeenCalledOnce();
       expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining( {kind: 'TRANSIENT_MSG',
-        message: CONTENT_TOO_LONG, severity: 'error'}), window?.location?.origin);
+        message: CONTENT_TOO_LONG, severity: 'error'}), '/');
       expect(mockConsoleError).toHaveBeenCalledOnce();
     });
   });

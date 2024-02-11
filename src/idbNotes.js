@@ -443,7 +443,7 @@ function upsertNoteDb(cleanNote, initiator) {
           notesChanged[cleanNote.id] = cleanNote;   // postMessage will clone
           // console.log("IDB: upsertNoteDb", note.id, note.content?.slice(0, 50));
           resolve(cleanNote);
-          return postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}});
+          postMessage({kind: 'NOTE_CHANGE', initiator, notesChanged, notesDeleted: {}}, '/');
         } else {
           reject(new Error(`saved id ${evt.target?.result} doesn't match passed id ${cleanNote.id}`))
         }
@@ -470,11 +470,11 @@ function deleteNoteDb(id) {
           // noteService.setFirstUnexportedChange().then(function (prefResult) {
           const notesDeleted = {};
           notesDeleted[id] = true;
-          window.postMessage({
+          postMessage({
             kind: 'NOTE_CHANGE',
             notesChanged: {},
             notesDeleted
-          }, window.location?.origin);
+          }, '/');
 
           // evt.target.result is always undefined
           resolve(id);
@@ -708,18 +708,6 @@ function listSuggestions(max) {
       };
     });
   });
-}
-
-async function postMessage(msgObj) {
-  // eslint-disable-next-line no-undef
-  if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-    for (const client of await self.clients.matchAll({includeUncontrolled: true})) {
-      // console.log(`posting NOTE_CHANGE to client ${client?.id} ${client?.url} ${client?.type} ${client?.frameType}`)
-      client?.postMessage(msgObj);
-    }
-  } else {
-    window.postMessage(msgObj, window?.location?.origin);
-  }
 }
 
 export {initDb, findStubs, findNoteIds, getNoteDb, upsertNoteDb, deleteNoteDb, findFillerNoteIds, checkpointSearch, listSuggestions};

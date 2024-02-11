@@ -82,7 +82,7 @@ describe("App", () => {
 
     await waitFor(() => expect(window.postMessage).toHaveBeenCalledTimes(2));
     expect(window.postMessage).toHaveBeenCalledWith(expect.objectContaining( {kind: 'TRANSIENT_MSG',
-      message: "First, select a note!", severity: 'info'}), window?.location?.origin);
+      message: "First, select a note!", severity: 'info'}), '/');
   });
 
   // it("should show item buttons if note selected", async () => {

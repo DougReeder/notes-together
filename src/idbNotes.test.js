@@ -90,6 +90,10 @@ describe("upsertNoteDb", () => {
     await deleteTestNotes();
   });
 
+  beforeEach(() => {
+    window.postMessage = vitest.fn();
+  });
+
   it("should fail when passed a non-object", async () => {
     await expect(upsertNoteDb()).rejects.toThrow();
   });
@@ -122,6 +126,12 @@ describe("upsertNoteDb", () => {
     expect(savedNote.content).toEqual(originalText);
     expect(savedNote.date).toEqual(originalDate);
 
+    expect(window.postMessage).toHaveBeenCalledOnce();
+    const notesChanged = {};
+    notesChanged[savedNote.id] = savedNote;
+    expect(window.postMessage).toHaveBeenCalledWith(
+      {kind: 'NOTE_CHANGE', initiator: undefined, notesChanged, notesDeleted: {}}, '/');
+
     const retrieved = await getNoteDb(originalId);
     expect(retrieved.title).toEqual(serializedNote.title);
     expect(retrieved.content).toEqual(originalText);
@@ -150,6 +160,7 @@ describe("upsertNoteDb", () => {
 
     await upsertNoteDb(updatedNote);
 
+    expect(window.postMessage).toHaveBeenCalledTimes(2);
     const retrieved = await getNoteDb(originalId);
     expect(retrieved.title).toEqual(updatedTitle);
     expect(retrieved.content).toEqual(updatedText);
@@ -168,6 +179,10 @@ describe("upsertNoteDb", () => {
 });
 
 describe("deleteNoteDb", () => {
+  beforeEach(() => {
+    window.postMessage = vitest.fn();
+  });
+
   it("should fail when passed a non-number", async () => {
     await expect(deleteNoteDb(undefined)).rejects.toThrow();
   });
@@ -182,11 +197,18 @@ describe("deleteNoteDb", () => {
     const deletedId = await deleteNoteDb(id);
     expect(deletedId).toEqual(id);
     await expect(getNoteDb(id)).resolves.toBeUndefined();
+
+    expect(window.postMessage).toHaveBeenCalledTimes(2);
+    const notesDeleted = {};
+    notesDeleted[id] = true;
+    expect(window.postMessage).toHaveBeenCalledWith(
+      {kind: 'NOTE_CHANGE', initiator: undefined, notesChanged: {}, notesDeleted}, '/');
   });
 
   it("should succeed in deleting non-existent note", async () => {
     const deletedId = await deleteNoteDb(0);
     expect(deletedId).toEqual(0);
+    expect(window.postMessage).toHaveBeenCalledOnce();
   });
 });
 

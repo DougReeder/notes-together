@@ -1012,7 +1012,7 @@ test:
     expect(console.error).toHaveBeenCalledOnce();
     expect(window.postMessage).toHaveBeenCalled();
     expect(window.postMessage).toHaveBeenCalledWith(expect.objectContaining({kind: 'TRANSIENT_MSG', severity: 'error',
-      message: "Did you delete this note in another tab?"}), 'https://testorigin.org');
+      message: "Did you delete this note in another tab?"}), '/');
     expect(screen.queryByRole('dialog')).toBeFalsy();
 
     expect(screen.queryByRole('button', {name: "Share text"})).toBeVisible();   // sliding closed at this point
@@ -1227,7 +1227,7 @@ test:
     expect(console.warn).toHaveBeenCalledWith(expect.stringMatching("files"));
     expect(window.postMessage).toHaveBeenCalledOnce();
     // expect(window.postMessage).toHaveBeenCalledWith({kind: 'TRANSIENT_MSG', severity: 'warning',
-    //   message: "The browser only allowed a text version to be shared.", atTop: true}, 'https://testorigin.org');
+    //   message: "The browser only allowed a text version to be shared.", atTop: true}, '/');
 
     expect(screen.queryByRole('button', {name: "Share file"})).toBeVisible();   // sliding closed at this point
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));

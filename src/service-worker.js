@@ -2,8 +2,8 @@ import {precacheAndRoute} from 'workbox-precaching';
 import {registerRoute} from 'workbox-routing';
 import {init, upsertNote} from "./storage.js";
 import {assembleNote} from "./assembleNote.js";
-import {extractUserMessage} from "./util/extractUserMessage.js";
-import {postTransientMessage, shorten} from "./service-worker-utils.js";
+import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
+import {shorten} from "./service-worker-utils.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
 
 
@@ -62,7 +62,7 @@ async function acceptShare({request, event}) {
       shorten(files[0]?.name) || shorten(url) || `${files.length} file(s)`;
 
     console.info(`accepting share “${label}”`);
-    postTransientMessage(`accepting share “${label}”`, 'info');
+    transientMsg(`accepting share “${label}”`, 'info');
   }
 }
 
@@ -74,9 +74,19 @@ function postError(err) {
   } else {
     msg = "Sharing failed: " + extractUserMessage(err);
   }
-  postTransientMessage(msg, 'error');
+  transientMsg(msg, 'error');
 
   return msg;
+}
+
+// upsertNoteDb and deleteNoteDb call a global postMessage function
+self.postMessage = async function (msgObj, _targetOrigin) {
+  setTimeout(async () => {
+    for (const client of await self.clients.matchAll({includeUncontrolled: true})) {
+      // console.log(`posting to client ${client?.id} ${client?.url} ${client?.type} ${client?.frameType}:`, msgObj)
+      client?.postMessage(msgObj);
+    }
+  }, 1000);
 }
 
 async function respond(content, status = 303, statusText = "See Other") {

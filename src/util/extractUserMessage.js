@@ -15,10 +15,10 @@ export function extractUserMessage(err) {
 
 
 export  function transientMsg(message, severity = 'error', atTop = false) {
-  window.postMessage({
+  postMessage({
     kind: 'TRANSIENT_MSG',
     severity,
     message,
     atTop,
-  }, window?.location?.origin);
+  }, '/');
 }
