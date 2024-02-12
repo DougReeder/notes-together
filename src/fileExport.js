@@ -7,6 +7,7 @@ import {deserializeHtml} from "./slateHtml";
 import {serializeMarkdown} from "./slateMark";
 import {shortenTitle} from "./Note.js";
 import {transientMsg} from "./util/extractUserMessage.js";
+import {extractExtension} from "./util.js";
 
 export async function fileExportMarkdown(searchStr, searchWords) {
   if (!('showSaveFilePicker' in window)) {
@@ -24,7 +25,7 @@ export async function fileExportMarkdown(searchStr, searchWords) {
       {description: "Markdown", accept: {"text/markdown": [".md"]}},
     ]
   });
-  const extension = (/\.[A-Za-z0-9]{1,8}$/.exec(fileHandle.name)?.[0] || '').toLowerCase();
+  const extension = extractExtension(fileHandle);
   if (! ['.md', '.mkd', '.mkdn', '.mdown', '.markdown', '.txt'].includes(extension)) {
     transientMsg(`A file extension of “${extension}” will make it difficult for you to access Markdown text.`, 'warning');
   }

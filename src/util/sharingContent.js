@@ -32,26 +32,20 @@ export function sharingContent(note) {
  * @returns {File}
  */
 export function wrapInFile(note) {
-  const typeMatch = /^([A-Za-z]+\/([-\w.+]+))/.exec(note.mimeType);
+  const typeMatch = /^([A-Za-z]+\/(?:x-|vnd\.|x\.)?([-\w.+]+))/.exec(note.mimeType);
   const fileType = typeMatch?.[1] || 'text/plain';
   const subtype = typeMatch?.[2] || 'plain';
 
-  let extension = map[subtype];
-  if (!extension) {
-    if (subtype.startsWith('x-')) {
-      extension = '.' + subtype.slice(2);
-    } else if (subtype.startsWith('vnd.')) {
-      extension = '.' + subtype.slice(4);
-    } else {
-      extension = '.' + subtype;
-    }
+  const extension = map[subtype] || '.' + subtype;
+  let fileName = shortenTitle(note.title, 90)?.replace(/[<>{}\\/^•]/g, " ").trim() || "note";
+  if (! fileName.endsWith(extension)) {
+    fileName += extension;
   }
-  const fileName = (note.title?.split(/\r\n|\n|\r/)?.[0]?.replace(/[<>{}\\/^•]/g, " ").trim().slice(0, 90) || "note") + extension;
   return new File([note.content], fileName,
     {type: fileType, endings: 'native' /*, lastModified: note.lastEdited*/});
 }
 
-// maps subtype to file extension, when the subtype is not the the extension, 'x-extension' nor 'vnd.extension'
+// maps subtype to file extension, when the subtype is not the the extension
 const map = {
   'xhtml+xml': '.xhtml',
   'mathml+xml': '.mml',
@@ -62,7 +56,7 @@ const map = {
   'me': '.txt',
   '1st': '.txt',
   'log': '.txt',
-  'vnd.ascii-art': '.txt',   // so recipients can handle appropriately
+  'ascii-art': '.txt',   // so recipients can handle appropriately
   'ascii': '.txt',
   'markdown': '.md',
   'mkd': '.md',
@@ -73,24 +67,45 @@ const map = {
   'calendar': '.ics',
   'rfc822': '.eml',
   'global': '.u8msg',
-  'x-uuencode': '.uue',
+  'uuencode': '.uue',
   'tab-separated-values': '.tsv',
-  'x-shellscript': '.sh',
+  'shellscript': '.sh',
   'javascript': '.js',
-  'x-javascript': '.js',
   'ecmascript': '.js',
-  'x-python-script': '.py',
+  'python-script': '.py',
+  'python': '.py',
+  'python3': '.py',
   'elisp': '.el',
   'gvy': '.groovy',
   'gy': '.groovy',
   'gsh': '.groovy',
+  'perl': '.pl',
+  'perl-script': '.pl',
+  'ruby': '.rb',
+  'erlang': '.erl',
+  'haskell': '.hs',
+  'pascal': '.pas',
+  'csrc': '.c',
+  'chdr': '.h',
+  'c++src': '.cpp',
+  'c++hdr': '.hpp',
+  'objcsrc': '.m',
+  'objective-c': '.m',
+  'csharp': '.cs',
+  'vbnet': '.vb',
+  'common-lisp': '.cl',
+  'scheme': '.scm',
+  'ocaml': '.ml',
+  'fortran': '.f',
   'make': '.nmk',   // Classically makefiles don't have an extension, but we have to use something
   'mak': '.nmk',
   'mk': '.nmk',
-  'x-troff': '.t',
-  'x-httpd-php': '.php',
+  'latex': '.tex',
+  'troff': '.t',
+  'httpd-php': '.php',
   'uri-list': '.uri',
-  'vnd.uri-map': '.urim',
-  'vnd.dvb.subtitle': '.sub',
+  'uri-map': '.urim',
+  'dvb.subtitle': '.sub',
   'mathematica': '.nb',
+  'matlab': '.m',
 }

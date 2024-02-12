@@ -5,6 +5,7 @@ import {assembleNote} from "./assembleNote.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {shorten} from "./util/shorten.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
+import {clientDeserializeHtml} from "./service-worker-utils.js";
 
 
 precacheAndRoute(self.__WB_MANIFEST);   // replaced during build w/ serialized precache manifest entries
@@ -19,6 +20,8 @@ const initPrms = init().then(instances => {
 }).catch(err => {
   console.error("while initializing IndexedIB and remoteStorage:", err);
 })
+
+self.doDeserializeHtml = clientDeserializeHtml;
 
 async function acceptShare({request, event}) {
   let title, text, url, files

@@ -2,6 +2,7 @@
 // Copyright © 2021-2024 Doug Reeder
 
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
+import {extractExtension} from "./util";
 import {
   AppBar,
   Button, CircularProgress,
@@ -18,7 +19,7 @@ import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {useCallback, useEffect, useRef, useState} from "react";
 import PropTypes from 'prop-types';
 import CloseIcon from '@mui/icons-material/Close';
-import {isLikelyMarkdown} from "./util";
+import {extractSubtype, isLikelyMarkdown} from "./util";
 import {upsertNote} from "./storage";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl";
 import {deserializeNote} from "./serializeNote.js";
@@ -242,8 +243,7 @@ const unsupportedTextSubtypes = ['rtf', 'xml', 'xml-external-parsed-entity', 'SG
 
 async function determineParseType(file) {
   // console.log(`selected file “${file.name}” "${file.type}"`)
-  const extMatch = /\.[^.]+$/.exec(file.name);
-  const extension = extMatch?.[0]?.toLowerCase();
+  const extension = extractExtension(file);
   if (file.type.startsWith('image/')) {
     return {file, parseType: file.type};
   } else if (hasTagsLikeHtml(file.type, extension)) {
@@ -256,7 +256,7 @@ async function determineParseType(file) {
       return {file, parseType: file.type, message: "Not importable. Open in appropriate app & copy."};
     }
 
-    const subtype = /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(file.type)?.[1];
+    const subtype = extractSubtype(file.type);
     if ('markdown' === subtype) {
         return {file, parseType: 'text/markdown'};
     } else if ('plain' === subtype) {

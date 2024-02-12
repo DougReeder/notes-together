@@ -4,6 +4,7 @@
 
 import {assembleNote} from "./assembleNote.js";
 import {dataURItoFile} from "./util/testUtil.js";
+import {deserializeHtml} from "./slateHtml.jsx";
 
 const TEXT1 = `Friends and Citizens:
 The period for a new election of a citizen to administer the executive government of the United States being not far distant, and the time actually arrived when your thoughts must be employed in designating the person who is to be clothed with that important trust, it appears to me proper, especially as it may conduce to a more distinct expression of the public voice, that I should now apprise you of the resolution I have formed, to decline being considered among the number of those out of whom a choice is to be made.
@@ -55,6 +56,7 @@ insert into APP.CITIES VALUES (3,'Auckland','New Zealand','AKL','English','NZ');
 // 2 0 obj
 // <</Length 3 0 R/Filter/FlateDecode>>`;
 
+window.doDeserializeHtml = deserializeHtml;
 
 describe("assembleNote", () => {
   beforeEach(() => {
@@ -256,8 +258,18 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
 
     const nodeNote = await assembleNote("", "", "", [file]);
 
-    expect(nodeNote.subtype).toMatch(/^x-yaml/);
+    expect(nodeNote.subtype).toMatch(/^yaml/);
     expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("should use Markdown if any text file is Markdown", async () => {
+    const yamlFile = new File([YAML], "cable", {type: 'application/x-yaml'});
+    const markdownFile = new File(["* item A\n* item B"], "list.md", {type: 'text/markdown'});
+
+    const nodeNote = await assembleNote("", "", "", [yamlFile, markdownFile]);
+
+    expect(nodeNote.subtype).toMatch(/^markdown/);
+    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(5);
   });
 
   it("should override the file type of text files if the url field is present", async () => {
@@ -365,9 +377,9 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
 
     const nodeNote = await assembleNote("", "", "", [sqlFile]);
 
-    expect(nodeNote.subtype).toMatch(/^html/);
-    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "cities.sql", italic: true}]});
-    expect(nodeNote.nodes[1]).toEqual({type: 'thematic-break', children: [{text: ""}]});
+    expect(nodeNote.subtype).toMatch(/^sql/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "cities.sql"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: ""}]});
     expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "CREATE TABLE APP.CITIES"}]});
     expect(nodeNote.nodes[3]).toEqual({type: 'paragraph', children: [{text: "   ("}]});
     expect(nodeNote.nodes[4]).toEqual({type: 'paragraph',
@@ -375,6 +387,18 @@ The backup plan was to use mailto:contact@abc.edu?subject=Plan%20Progress&body=g
     expect(nodeNote.nodes[14]).toEqual({type: 'paragraph',
       children: [{text: "insert into APP.CITIES VALUES (3,'Auckland','New Zealand','AKL','English','NZ');"}]});
     expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(16);
+  });
+
+  it("should extract a subtype from the extension of a typeless file", async () => {
+    const typelessFile = new File(["varying vec3 pos;"], "shader-frag.glsl", {});
+
+    const nodeNote = await assembleNote("", "", "", [typelessFile]);
+
+    expect(nodeNote.subtype).toMatch(/^glsl/);
+    expect(nodeNote.nodes[0]).toEqual({type: 'paragraph', children: [{text: "shader-frag.glsl"}]});
+    expect(nodeNote.nodes[1]).toEqual({type: 'paragraph', children: [{text: ""}]});
+    expect(nodeNote.nodes[2]).toEqual({type: 'paragraph', children: [{text: "varying vec3 pos;"}]});
+    expect(nodeNote.nodes.length).toBeGreaterThanOrEqual(3);
   });
 
   it("should concatenate text files with thematic-breaks, and append text file names", async () => {

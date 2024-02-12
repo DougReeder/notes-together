@@ -8,6 +8,7 @@ import {parseWords} from "./storage.js";
 import {currentSubstitutions} from "./urlSubstitutions.js";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
 import {CONTENT_MAX} from "./Note.js";
+import {extractSubtype} from "./util.js";
 
 /**
  * Converts Slate nodes to text & extracts keywords
@@ -162,7 +163,7 @@ function deserializeNote(note) {
     subtype = 'html;hint=SEMANTIC';
     slateNodes = deserializeHtml(note.content);
   } else if (!note.mimeType || /^text\//.test(note.mimeType)) {
-    subtype = /\/(.+)/.exec(note.mimeType)?.[1];
+    subtype = extractSubtype(note.mimeType);
     if (subtype?.startsWith('markdown')) {
       subtype = 'markdown;hint=COMMONMARK';
     }

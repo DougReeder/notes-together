@@ -37,6 +37,8 @@ import {fileExportMarkdown} from "./fileExport";
 import {deserializeHtml} from "./slateHtml.jsx";
 
 
+window.doDeserializeHtml = deserializeHtml;
+
 function App() {
   // TODO: replace string with set of normalized search terms
   const [searchParams, setSearchParams] = useSearchParams();

@@ -55,7 +55,7 @@ function evaluateImage(blob, objectURL) {
       const msg = `img onerror: “${blob.name}” (${blob.type}) ${blob.size} bytes`;
       console.error(msg);
       const err = new Error(msg);
-      err.userMsg = "Not loadable. Can you convert to a different format?";
+      err.userMsg = "Can you convert to a different format? Not loadable";
       reject(err);
     }
   });

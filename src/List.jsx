@@ -16,6 +16,7 @@ import checkIfInstallRecommended from "./webappInstall";
 import {shortenTitle} from "./Note.js";
 import {sharingContent, wrapInFile} from "./util/sharingContent.js";
 import {NonmodalDialog} from "./NonmodalDialog.jsx";
+import {extractSubtype} from "./util.js";
 
 const LONG_PRESS_DURATION = 500;   // ms
 
@@ -449,7 +450,7 @@ const List = forwardRef( function List (props, imperativeRef) {
           const newData ={ title: data.title, text: data.text,
             files: [new File([oldFile], oldFile.name + '.txt',
               {type: 'text/plain', endings: 'native' /*, lastModified: note.lastEdited*/})] };
-          const subtype = /^[A-Za-z]+\/([-\w.+]+)/.exec(oldFile?.type)?.[1] || 'plain';
+          const subtype = extractSubtype(oldFile?.type) || 'unknown';
           setSharingIssue({dialogTitle: `Share “${data.title}” as plain text file?`,
             message: `You aren't allowed to Share that as a ${subtype} file.`, useShare: true, data: newData});
         } else {

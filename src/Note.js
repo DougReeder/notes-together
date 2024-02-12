@@ -86,8 +86,8 @@ class SerializedNote {
   }
 }
 
-function shortenTitle(title) {
-  const shortened = shorten(title?.split("\n")?.[0], 27);
+function shortenTitle(title, maxLength = 27) {
+  const shortened = shorten(title?.split("\n")?.[0], maxLength);
   if (shortened) {
     return shortened;
   } else {

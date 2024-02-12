@@ -991,6 +991,34 @@ test:
     await waitForElementToBeRemoved(screen.queryByRole('button', {name: "Share file"}));
   });
 
+  it("should not Share file w/ duplicate file extension", async () => {
+    mockStubList = mockStubs.map(stub => {
+      return {id: stub.id, title: stub.title, date: new Date(stub.date)}
+    });
+    const content = `"""probe.py"""
+def read_pyfile(filename):`;
+    const mockNote = new SerializedNote(mockStubs[0].id, 'text/python-script', "probe.py",
+      content, normalizeDate(mockStubs[0].date), false, []);
+    getNote.mockResolvedValue(mockNote);
+    const mockHandleSelect = vitest.fn();
+    vitest.spyOn(window, 'postMessage');
+    navigator.canShare = vi.fn().mockImplementation(() => true);
+    navigator.share = vi.fn().mockImplementation(() => Promise.resolve());
+
+    render(<List changeCount={() => {}} handleSelect={mockHandleSelect}
+                 selectedNoteId=""></List>);
+    await screen.findAllByRole('listitem');
+
+    const item = screen.getByText("I would find her society", {exact: false});
+    await userEvent.pointer([{keys: '[MouseRight]', target: item}]);
+
+    await userEvent.click(screen.getByRole('button', {name: "Share file"}));
+    expect(navigator.share).toHaveBeenCalledOnce();
+    const file = new File([content], "probe.py", {type: 'text/python-script', endings: 'native'});
+    expect(navigator.share).toHaveBeenCalledWith({title: "probe.py", text: content, files: [file]});
+    expect(navigator.share.mock.calls[0][0].files[0].name).toEqual("probe.py");
+  });
+
   it("should show Share buttons on right-click & message user when note missing", async () => {
     mockStubList = mockStubs.map(stub => {
       return {id: stub.id, title: stub.title, date: new Date(stub.date)}
@@ -1172,7 +1200,7 @@ test:
       expect.stringMatching("Permission to share “machine:”"), new DOMException("unit test", "NotAllowedError"));
     expect(window.postMessage).not.toHaveBeenCalled();
     let dialog = await screen.findByRole('dialog', {name: "Share “machine:” as plain text file?"});
-    expect(within(dialog).getByText("You aren't allowed to Share that as a x-yaml file.", {})).toBeVisible();
+    expect(within(dialog).getByText("You aren't allowed to Share that as a yaml file.", {})).toBeVisible();
 
     await userEvent.click(within(dialog).getByRole('button', {name: "Share"}));
 

@@ -3,26 +3,43 @@
 
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
 import {NodeNote} from "./Note.js";
-import {deserializeHtml} from "./slateHtml.jsx";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
-import {urlRunningTextRE, normalizeUrl} from "./util.js";
-import {unsupportedTextSubtypes} from "./FileImport.jsx";
+import {urlRunningTextRE, normalizeUrl, extractSubtype, extractExtension} from "./util.js";
+import {allowedExtensions, allowedFileTypesNonText, unsupportedTextSubtypes} from "./FileImport.jsx";
 import {shorten} from "./util/shorten.js";
 
+/**
+ * Concatenates arguments, prepending file names if there's no other material for the note title.
+ * doDeserializeHtml must have been set on the global object to either deserializeHtml or clientDeserializeHtml.
+ * @param {string} title
+ * @param {string} text
+ * @param {string} url
+ * @param {[File]} files
+ * @param clientId
+ * @returns {Promise<NodeNote>}
+ */
 export async function assembleNote(title, text, url, files, clientId) {
   let slateNodes = [], suffix = [], hasRealContent = false;
 
-  let subtype = url ? 'html' : undefined;
+  let noteSubtype = url ? 'html' : undefined;
   let lastModified = Number.NEGATIVE_INFINITY;
   for (const file of files) {
-    if (hasTagsLikeHtml(file.type)) {
-      subtype = 'html';
+    const fileSubtype = extractSubtype(file.type);
+    const extension = extractExtension(file);
+    if (hasTagsLikeHtml(file.type, extension)) {
+      noteSubtype = 'html';
     } else if (file.type?.startsWith('image')) {
-      subtype = 'html';
-    } else if (file.type?.startsWith('text') && !file.type?.startsWith('text/rtf')) {
-      if (!subtype) {
-        subtype = /\/(.+)/.exec(file.type)?.[1];
+      noteSubtype = 'html';
+    } else if (file.type && !unsupportedTextSubtypes.includes(fileSubtype)) {
+      if ('markdown' === fileSubtype && 'html' !== noteSubtype) {
+        noteSubtype = 'markdown';
+      } else if (!noteSubtype) {
+        noteSubtype = fileSubtype;
+      }
+    } else if (allowedExtensions.includes(extension)) {
+      if (!noteSubtype) {
+        noteSubtype = extension.slice(1);
       }
     } else {
       continue;   // ignores lastModified date of unsupported file
@@ -31,11 +48,11 @@ export async function assembleNote(title, text, url, files, clientId) {
       lastModified = file.lastModified;
     }
   }
-  subtype = subtype || 'html';   // text field by itself is treated as rich text
+  noteSubtype = noteSubtype || 'html';   // text field by itself is treated as rich text
   const date = lastModified > Number.NEGATIVE_INFINITY ? new Date(lastModified) : new Date();
 
   if (/\S/.test(title)) {
-    switch (subtype) {
+    switch (noteSubtype) {
       case 'html':
         slateNodes.push({type: 'heading-one', children: [{text: title}]});
         break;
@@ -48,7 +65,7 @@ export async function assembleNote(title, text, url, files, clientId) {
   }
 
   if (/\S/.test(text)) {
-    slateNodes.push(...textHeuristics(text, subtype));
+    slateNodes.push(...linkHeuristics(text, noteSubtype));
     hasRealContent = true;
     console.info(`Imported text “${shorten(text)}”`);
   }
@@ -69,11 +86,12 @@ export async function assembleNote(title, text, url, files, clientId) {
   for (const file of files) {
     try {
       if (!/^image/.test(file.type) && slateNodes.length > 0 && lastFileWasText) {
-        slateNodes.push(...divider(subtype, undefined, undefined));
+        slateNodes.push(...divider(noteSubtype, undefined, undefined));
       }
 
-      const fileSubtype = /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(file.type)?.[1];
-      if (unsupportedTextSubtypes.includes(fileSubtype)) {
+      const fileSubtype = extractSubtype(file.type);
+      if (unsupportedTextSubtypes.includes(fileSubtype) ||
+          file.type?.startsWith('application') && ! allowedFileTypesNonText.includes(file.type)) {
         slateNodes.push({type: 'quote',
           children: [{text: `Import of “${file.name}” (${file.type}) not supported`, bold: true}]});
         // doesn't push name into suffix
@@ -92,7 +110,7 @@ export async function assembleNote(title, text, url, files, clientId) {
       } else if (file.type?.startsWith('image')) {
         const {dataUrl, alt} = await imageFileToDataUrl(file);
         if (lastFileHadProblem) {
-          slateNodes.push(...divider(subtype, undefined, undefined));
+          slateNodes.push(...divider(noteSubtype, undefined, undefined));
         }
         slateNodes.push({type: 'paragraph', children: [{text: ""}]});
         slateNodes.push({type: 'image', url: dataUrl, children: [{text: alt}]});
@@ -109,11 +127,10 @@ export async function assembleNote(title, text, url, files, clientId) {
         const reader = new FileReader();
         reader.addEventListener('load', async (evt) => {
           try {
-            if (hasTagsLikeHtml(file.type)) {
+            const extension = extractExtension(file);
+            if (hasTagsLikeHtml(file.type, extension)) {
               // eslint-disable-next-line no-undef
-              const htmlNodes = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope ?
-                await clientDeserializeHtml(evt.target.result, clientId) :
-                deserializeHtml(evt.target.result);
+              const htmlNodes = await doDeserializeHtml(evt.target.result, clientId);
               if (htmlNodes.some(node => ['heading-one', 'heading-two', 'heading-three'].includes(node.type))) {
                 needsTitleMaterial = false;
               }
@@ -140,6 +157,9 @@ export async function assembleNote(title, text, url, files, clientId) {
         });
         reader.addEventListener('error', _evt => {
           const msg = `error while reading “${file.name}”`;
+          if ('thematic-break' !== slateNodes.at(-1)?.type) {
+            slateNodes.push(...divider(noteSubtype, undefined, undefined));
+          }
           slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]})
           lastFileWasText = true;
           lastFileHadProblem = true;
@@ -149,6 +169,9 @@ export async function assembleNote(title, text, url, files, clientId) {
           const msg = `read of “${file.name}” was aborted`;
           console.warn(msg, evt);
           transientMsg(`“Import of ${file.name}” was interrupted`, 'warning');
+          if ('thematic-break' !== slateNodes.at(-1)?.type) {
+            slateNodes.push(...divider(noteSubtype, undefined, undefined));
+          }
           slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]});
           lastFileWasText = true;
           lastFileHadProblem = true;
@@ -157,10 +180,13 @@ export async function assembleNote(title, text, url, files, clientId) {
         reader.readAsText(file);
       });
     } catch (err) {
-      const intro = `error processing “${file.name}” (${file.type})`;
-      console.error(intro, err);
-      const msg = intro + ": " + extractUserMessage(err);
+      const genericMsg = `error processing “${file.name}” (${file.type})`;
+      console.error(genericMsg, err);
+      const msg = extractUserMessage(err) + ": " + genericMsg;
       transientMsg(msg);
+      if ('thematic-break' !== slateNodes.at(-1)?.type) {
+        slateNodes.push(...divider(noteSubtype, undefined, undefined));
+      }
       slateNodes.push({type: 'quote', children: [{text: msg, bold: true}]})
       lastFileWasText = true;
       lastFileHadProblem = true;
@@ -168,24 +194,24 @@ export async function assembleNote(title, text, url, files, clientId) {
   }
   if (hasRealContent) {
     if (suffix.length > 0) {
-      slateNodes.push(...divider(subtype, undefined, suffix.join(", ")));
+      slateNodes.push(...divider(noteSubtype, undefined, suffix.join(", ")));
       if (needsTitleMaterial) {
-        slateNodes.unshift(...divider(subtype, suffix.join(", "), undefined));
+        slateNodes.unshift(...divider(noteSubtype, suffix.join(", "), undefined));
       }
     }
-    return new NodeNote(undefined, subtype, slateNodes, date, undefined);
+    return new NodeNote(undefined, noteSubtype, slateNodes, date, undefined);
   } else {
     throw new Error("No usable content in Share");
   }
 }
 
-function divider(subtype, beforeText, afterText) {
+function divider(noteSubtype, beforeText, afterText) {
   const slateNodes = [];
-  if ('html' === subtype) {
+  if ('html' === noteSubtype) {
     beforeText && slateNodes.push({type: 'paragraph', children: [{text: beforeText, italic: true}]});
     slateNodes.push({type: 'thematic-break', children: [{text: ""}]});
     afterText && slateNodes.push({type: 'paragraph', children: [{text: afterText, italic: true}]});
-  } else if ('markdown' === subtype) {
+  } else if ('markdown' === noteSubtype) {
     beforeText && slateNodes.push({type: 'paragraph', children: [{text: `*${beforeText}*`}]});
     slateNodes.push({type: 'paragraph', children: [{text: "------------------------------"}]});
     afterText && slateNodes.push({type: 'paragraph', children: [{text: `*${afterText}*`}]});
@@ -197,12 +223,12 @@ function divider(subtype, beforeText, afterText) {
   return slateNodes;
 }
 
-function textHeuristics(text, subtype) {
+function linkHeuristics(text, noteSubtype) {
   try {
-    if ('html' === subtype) {
+    if ('html' === noteSubtype) {
       if (! /\s/.test(text.trim())) {
         try {                          // Android system Share doesn't have a dedicated url field
-          const url = new URL(text);   // doesn't use the heuristic urlRunningTextRE
+          const url = new URL(text);   // This doesn't use the heuristic urlRunningTextRE.
           return [{type: 'paragraph', children: [{text: ""},
               {type: 'link', url: url.href, children: [{text: text.trim()}]},
               {text: ""}]}];
@@ -215,10 +241,12 @@ function textHeuristics(text, subtype) {
       return text.split("\n").map(line => {return {type: 'paragraph', children: [{text: line}]}});
     }
   } catch (err) {
-    const msg = `error processing text`;
-    console.error(msg, err);
+    const genericMsg = `error processing text`;
+    console.error(genericMsg, err);
+    const msg = extractUserMessage(err) + ": " + genericMsg;
+    transientMsg(msg);
     return [{type: 'paragraph', children: [{text: ""}]},
-      {type: 'quote', children: [{text: msg + ": " + extractUserMessage(err), bold: true}]},
+      {type: 'quote', children: [{text: msg, bold: true}]},
       {type: 'paragraph', children: [{text: ""}]}];
   }
 }
@@ -254,73 +282,4 @@ function urls2links(line) {
     }
     children.push({text: line.slice(chunkStart, line.length)});
     return {type: 'paragraph', children};
-}
-
-
-const CLIENT_TIMEOUT = 9_000;
-
-// These are global to the Service Worker. Ugh.
-let clientMessageResolve = console.warn;
-let clientMessageReject  = console.warn;
-addEventListener('message', evt => {
-  console.debug(`Service Worker received: `, evt.data);
-  const resolve = clientMessageResolve;
-  const reject  = clientMessageReject
-  clientMessageResolve = console.warn;
-  clientMessageReject  = console.warn;
-
-  if (Array.isArray(evt.data?.slateNodes)) {
-    resolve(evt.data.slateNodes);
-  } else {
-    reject(Object.assign(new Error("no slateNodes returned:" + evt.data), {userMsg: "Contact the developer"}));
-  }
-});
-
-
-async function clientDeserializeHtml(html, clientId) {
-  let work;
-  try {
-    const client = await getClient(clientId);
-
-    work = new Promise((resolve, reject) => {
-      clientMessageResolve = resolve;
-      clientMessageReject  = reject;
-      client.postMessage({kind: 'DESERIALIZE_HTML', html});
-    });
-  } catch (err) {
-    throw Object.assign(err, {userMsg: "Restarting your device might help, but probably not"});
-  }
-
-  return Promise.race([
-    work,
-    new Promise((_resolve, reject) =>
-      setTimeout(reject, CLIENT_TIMEOUT, new Error("Your browser took too long to process this")))
-  ]);
-}
-
-const RETRY_INTERVAL = 100;
-const RETRY_TIMEOUT = 9_000;
-
-async function getClient(clientId) {
-  let client = await self.clients.get(clientId);
-  if (client) { return client; }
-
-  let clients, start = Date.now();
-  do {
-    clients = await self.clients.matchAll({includeUncontrolled: true});
-    if (clients.length > 0) {
-      console.debug(`found client after ${Date.now() - start} ms`);
-      return clients[0];
-    }
-    if (Date.now() - start > RETRY_TIMEOUT) { break; }
-    await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
-  } while (true);   // eslint-disable-line no-constant-condition
-
-  console.debug(`opening window because no clients exist`);
-  client = await self.clients.openWindow(self.location.origin + import.meta.env.BASE_URL);
-  if (client) { return client; }
-
-  if (!client) {
-    throw new Error(`no client available for [${clientId}] & can't open window`);
-  }
 }
