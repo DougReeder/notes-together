@@ -201,7 +201,7 @@ export async function assembleNote(title, text, url, files, clientId) {
     }
     return new NodeNote(undefined, noteSubtype, slateNodes, date, undefined);
   } else {
-    throw new Error("No usable content in Share");
+    throw new Error("No usable content");
   }
 }
 

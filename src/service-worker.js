@@ -43,7 +43,7 @@ async function acceptShare({request, event}) {
     }
 
     if (!hasContent) {
-      throw new Error("No usable content");
+      throw new Error("No usable content in Share");
     } else if (!initPrms) {
       const err = new Error("initPrms is falsy when acceptShare called");
       throw Object.assign(err, {userMsg: "Tell the developer about this message"});

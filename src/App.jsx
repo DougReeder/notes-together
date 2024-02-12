@@ -35,6 +35,9 @@ import {setEquals} from "./util/setUtil";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
 import {deserializeHtml} from "./slateHtml.jsx";
+import {assembleNote} from "./assembleNote.js";
+import {shortenTitle} from "./Note.js";
+import {shorten} from "./util/shorten.js";
 
 
 window.doDeserializeHtml = deserializeHtml;
@@ -345,14 +348,19 @@ function App() {
     evt.preventDefault();
   }
 
-  function handleDrop(evt) {
+  async function handleDrop(evt) {
     try {
       evt.stopPropagation();
       evt.preventDefault();
 
-      if (evt.dataTransfer.files.length > 0) {
-        setImportFiles(evt.dataTransfer.files);
-        setIsImportMultiple(false);
+      const files = evt.dataTransfer.files;
+      if (files.length > 0) {
+        const nodeNote = await assembleNote("", "", "", files, null);
+        const storedNote = await upsertNote(nodeNote, undefined);
+        const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
+        console.info(`importing “${label}”`, storedNote.date.toISOString());
+        transientMsg(`importing “${label}”`, 'success');
+        doCloseImport(label);
       } else {
         transientMsg("Drag that to the editor panel", 'warning');
       }
