@@ -6,6 +6,7 @@ import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {shorten} from "./util/shorten.js";
 import {unsupportedTextSubtypes} from "./FileImport.jsx";
 import {clientDeserializeHtml} from "./service-worker-utils.js";
+import {shortenTitle} from "./Note.js";
 
 
 precacheAndRoute(self.__WB_MANIFEST);   // replaced during build w/ serialized precache manifest entries
@@ -51,17 +52,17 @@ async function acceptShare({request, event}) {
       initPrms.then(save).catch(postError);
     }
 
-    return respond(`<h1>Sharing In Progress</h1><p>creating “${title}”</p>`);
+    return respond(`<h1>Sharing In Progress</h1><p>creating “${title}”</p>`, {title, text, url, files});
   } catch (err) {
     const msg = postError(err);
-    return respond(`<h1>Sharing Failed</h1><p>${msg}</p><p>Go to <a href="${import.meta.env.BASE_URL}">list of notes</a></p>`);
+    return respond(`<h1>Sharing Failed</h1><p>${msg}</p><p>Go to <a href="${import.meta.env.BASE_URL}">list of notes</a></p>`, {title, text, url, files});
   }
 
 
   async function save() {
     const nodeNote = await assembleNote(title, text, url, files, event.clientId);
     const storedNote = await upsertNote(nodeNote, undefined);
-    const label = shorten(title) || shorten(text) || shorten(storedNote?.title) ||
+    const label = shorten(title) || shorten(text) || shortenTitle(storedNote?.title) ||
       shorten(files[0]?.name) || shorten(url) || `${files.length} file(s)`;
 
     console.info(`accepting share “${label}”`);
@@ -92,7 +93,7 @@ self.postMessage = async function (msgObj, _targetOrigin) {
   }, 1000);
 }
 
-async function respond(content, status = 303, statusText = "See Other") {
+async function respond(content, {title, text, url, files}, status = 303, statusText = "See Other") {
   const body = `<!doctype html>
 <html lang="en">
   <head>
@@ -108,11 +109,12 @@ ${content}
 </html>
 `;
 
+  let searchWords = encodeURIComponent(title?.trim() || text?.trim() || url?.trim() || files.map(file => file?.name?.trim()).join(", "));
   return new Response(body, {
     status, statusText, headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': body.length.toString(),
-      'Location': self.location.origin + import.meta.env.BASE_URL,
+      'Location': self.location.origin + import.meta.env.BASE_URL + '?words=' + searchWords,
     }
   });
 }
