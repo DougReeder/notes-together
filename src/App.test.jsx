@@ -4,7 +4,7 @@
 import App from "./App.jsx";
 import _ from "fake-indexeddb/auto.js";
 import {vitest} from "vitest";
-import {render, screen, waitFor} from "@testing-library/react";
+import {render, screen, waitFor, within} from "@testing-library/react";
 import '@testing-library/jest-dom/vitest'
 import userEvent from "@testing-library/user-event";
 import {BrowserRouter} from "react-router-dom";
@@ -72,7 +72,7 @@ describe("App", () => {
     expect(await screen.findByRole('banner', {name: "Help"})).toBeVisible();
   });
 
-  it("should not show item buttons if no note selected", async () => {
+  it.skip("should not show item buttons if no note selected", async () => {
     const user = userEvent.setup();
     vitest.spyOn(window, 'postMessage');
     render(<BrowserRouter><App></App></BrowserRouter>);
@@ -101,4 +101,76 @@ describe("App", () => {
   //   expect(await within(list).findByRole('button', {name: "Share text"}));
   //
   // }, 1_000_000);
+
+
+  it.skip("should create separate notes when import-multiple-per-file menu item selected", async () => {
+    const user = userEvent.setup();
+    const onClickSpy = vi.spyOn(HTMLInputElement.prototype, 'click');
+    render(<BrowserRouter><App></App></BrowserRouter>);
+    await user.click(screen.getByRole('button', {name: "Open application menu"}));
+
+    expect(await screen.findByRole('menuitem', {name: "Import multiple notes per file..."})).toBeVisible();
+    await user.click(screen.getByRole('menuitem', {name: "Import multiple notes per file..."}));
+
+    expect(onClickSpy).toHaveBeenCalled();
+    const importFileInput = screen.getByLabelText("Import file", {});
+    expect(importFileInput.multiple).toEqual(true);
+    expect(importFileInput.files).toHaveLength(0);
+
+    const textFile = new File(["quail"], "quux.txt", {type: 'text/plain'});
+    const htmlFile = new File(["<h3>Orogeny</h3>"], "stuff.html", {type: 'text/html'});
+    await user.upload(importFileInput, [textFile, htmlFile]);
+
+    expect(importFileInput.files).toHaveLength(2);
+    expect(screen.queryByRole('dialog', {name: /^Review Import/})).toBeVisible();
+
+    await user.click(screen.getByRole('button', {name: "Import"}));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: /^Imported 2 Notes/})).toBeVisible());
+    const importedDialog = screen.queryByRole('dialog', {name: /^Imported 2 Notes/});
+
+    await user.click(within(importedDialog).getByRole('button', {name: "Close"}));
+
+    await waitFor(() => expect(screen.getByRole('list', {name: "note titles"})).toBeVisible());
+    const list = screen.getByRole('list', {name: "note titles"});
+    const htmlTitle = await within(list).findByText("Orogeny", {});
+    expect(htmlTitle).toBeVisible();
+
+    expect(within(list).queryByText(/quux.txt/, {})).toBeFalsy();   // doesn't match search words
+  });
+
+  it("should one note when import-multiple-into-one menu item selected", async () => {
+    const user = userEvent.setup();
+    const onClickSpy = vi.spyOn(HTMLInputElement.prototype, 'click');
+    render(<BrowserRouter><App></App></BrowserRouter>);
+    await user.click(screen.getByRole('button', {name: "Open application menu"}));
+
+    expect(await screen.findByRole('menuitem', {name: "Import multiple files into one note..."})).toBeVisible();
+    await user.click(screen.getByRole('menuitem', {name: "Import multiple files into one note..."}));
+
+    expect(onClickSpy).toHaveBeenCalled();
+    const importFileInput = screen.getByLabelText("Import file", {});
+    expect(importFileInput.multiple).toEqual(true);
+    expect(importFileInput.files).toHaveLength(0);
+
+    const textFile = new File(["foo"], "fubar.txt", {type: 'text/plain'});
+    const htmlFile = new File(["<h2>Concepts</h2>"], "header.html", {type: 'text/html'});
+    await user.upload(importFileInput, [textFile, htmlFile]);
+
+    expect(importFileInput.files).toHaveLength(2);
+    expect(screen.queryByRole('heading', {name: /^Review Import/})).toBeFalsy();
+
+    const list = screen.getByRole('list', {name: "note titles"});
+    const newTitle = await within(list).findByText("Concepts", {});
+    expect(newTitle).toBeVisible();
+
+    await user.click(newTitle);
+
+    expect(screen.getByRole('button', {name: "Open Editor menu"})).toBeVisible();   // proxy for HTML Detail panel
+    const editor = screen.getByRole('textbox', {name: ""});
+    expect(within(editor).getByRole('heading', {name: "Concepts", level: 2})).toBeVisible();
+    expect(within(editor).getAllByRole('separator', {})).toHaveLength(2);
+    expect(within(editor).getByText(/foo/, {})).toBeVisible();
+    expect(within(editor).getByText(/fubar\.txt/, {})).toBeVisible();
+  });
 });

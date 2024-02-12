@@ -291,32 +291,55 @@ function App() {
     setAppMenuAnchorEl(null);
   }
 
-  const fileInput = useRef(null);
+  const importFileInput = useRef(null);
   const [importFiles, setImportFiles] = useState([]);
   const [isImportMultiple, setIsImportMultiple] = useState(false);
+  const manyFilesIntoOneNote = useRef(false);
+
+  function handleImportManyToOne(_evt) {
+    manyFilesIntoOneNote.current = true;
+    setIsImportMultiple(true);
+    importFileInput.current.click();
+    setAppMenuAnchorEl(null);
+  }
 
   function handleImportFileSingle(_evt) {
+    manyFilesIntoOneNote.current = false;
     setIsImportMultiple(false);
-    fileInput.current.click();
+    importFileInput.current.click();
     setAppMenuAnchorEl(null);
   }
 
   function handleImportFileMultiple(_evt) {
+    manyFilesIntoOneNote.current = false;
     setIsImportMultiple(true);
-    fileInput.current.click();
+    importFileInput.current.click();
     setAppMenuAnchorEl(null);
   }
 
-  function fileChange(evt) {
+  async function fileChange(evt) {
+    setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
     try {
       if (evt.target.files.length > 0) {
-        setImportFiles(evt.target.files);
+        if (manyFilesIntoOneNote.current) {
+          const files = evt.target.files;
+          const nodeNote = await assembleNote("", "", "", files, null);
+          const storedNote = await upsertNote(nodeNote, undefined);
+          const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
+          console.info(`importing “${label}”`, storedNote.date.toISOString());
+          transientMsg(`importing “${label}”`, 'success');
+          doCloseImport(label);
+        } else {
+          setImportFiles(evt.target.files);
+        }
       } else {
         console.warn("no files selected");
       }
     } catch (err) {
       console.error("while selecting files to import:", err);
       transientMsg(extractUserMessage(err));
+    } finally {
+      setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks - 1 );
     }
   }
 
@@ -374,7 +397,7 @@ function App() {
   function doCloseImport(lastSuccessfulFileName) {
     // console.log("doCloseImport", lastSuccessfulFileName);
     setImportFiles([]);
-    fileInput.current.value = "";
+    importFileInput.current.value = "";
     if (lastSuccessfulFileName) {
       setSearchParams(new URLSearchParams({words: lastSuccessfulFileName}));
     }
@@ -541,13 +564,15 @@ function App() {
               <MenuItem onClick={showHideHelp}>Help <Help/></MenuItem>
               <MenuItem className={(searchWords.size) ? '' : 'pseudoDisabled'} onClick={handleSaveTag}>Save search as tag<Label/></MenuItem>
               <MenuItem className={(searchWords.size) ? '' : 'pseudoDisabled'} onClick={handleDeleteTag}>Delete tag <DeleteOutline/></MenuItem>
+              <MenuItem onClick={handleImportManyToOne}>Import multiple files into one note...</MenuItem>
               <MenuItem onClick={handleImportFileSingle}>Import one note per file...</MenuItem>
               <MenuItem onClick={handleImportFileMultiple}>Import multiple notes per file...</MenuItem>
               <MenuItem className={!('showSaveFilePicker' in window && "0" !== count) ? 'pseudoDisabled' : ''} onClick={handleExportSelectedMarkdown}>{`Export ${searchWords.size > 0 ? count : "all"} notes to Markdown...`}</MenuItem>
               <MenuItem className={(selectedNoteId) ? '' : 'pseudoDisabled'} onClick={handleShowItemButtons}>Delete or Share selected note...</MenuItem>
             </Menu>
-            <input id="fileInput" type="file" hidden={true} ref={fileInput} onChange={fileChange} multiple={true}
+            <input id="importFileInput" type="file" hidden={true} ref={importFileInput} onChange={fileChange} multiple={true}
                    accept={"text/plain,text/markdown,text/html,image/*,text/csv,text/tab-separated-values," + allowedFileTypesNonText.join(',') + ',text/uri-list,text/vcard,text/calendar,text/troff,' + allowedExtensions.join(',')}/>
+            <label id="importFileLabel" htmlFor="importFileInput" hidden>Import file</label>
           </Toolbar>
         </AppBar>
         <div style={{height: '4px', flex: '0 0 auto', backgroundColor: 'white'}}></div>
