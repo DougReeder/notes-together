@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {NodeNote} from "./Note";
-import _ from "fake-indexeddb/auto.js";
+import "fake-indexeddb/auto";
 import {
   init,
   parseWords,

@@ -3,7 +3,7 @@
 
 import generateTestId from "./util/generateTestId";
 import {CONTENT_MAX, CONTENT_TOO_LONG, SerializedNote} from "./Note";
-import _ from "fake-indexeddb/auto.js";
+import "fake-indexeddb/auto";
 import RemoteStorage from "remotestoragejs";
 import {RemoteNotes} from "./RemoteNotes";
 import {NIL} from "uuid";

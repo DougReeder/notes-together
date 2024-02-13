@@ -4,7 +4,7 @@
 import generateTestId from "./util/generateTestId";
 import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 import {SerializedNote} from "./Note";
-import _ from "fake-indexeddb/auto.js";
+import "fake-indexeddb/auto";
 import {
   initDb,
   findStubs,

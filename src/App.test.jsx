@@ -2,7 +2,7 @@
 // Copyright © 2024 Doug Reeder
 
 import App from "./App.jsx";
-import _ from "fake-indexeddb/auto.js";
+import "fake-indexeddb/auto";
 import {vitest} from "vitest";
 import {render, screen, waitFor, within} from "@testing-library/react";
 import '@testing-library/jest-dom/vitest'

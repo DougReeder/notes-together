@@ -8,7 +8,7 @@ import {
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event';
 import mockStubs from './mockStubs.json';
-import _ from "fake-indexeddb/auto.js";
+import "fake-indexeddb/auto";
 import {deleteNote, getNote} from './storage';
 import List from "./List";
 import {SerializedNote} from "./Note.js";
