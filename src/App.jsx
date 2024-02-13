@@ -38,6 +38,7 @@ import {deserializeHtml} from "./slateHtml.jsx";
 import {assembleNote} from "./assembleNote.js";
 import {shortenTitle} from "./Note.js";
 import {shorten} from "./util/shorten.js";
+import humanDate from "./util/humanDate.js";
 
 
 window.doDeserializeHtml = deserializeHtml;
@@ -327,7 +328,7 @@ function App() {
           const storedNote = await upsertNote(nodeNote, undefined);
           const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
           console.info(`importing “${label}”`, storedNote.date.toISOString());
-          transientMsg(`importing “${label}”`, 'success');
+          transientMsg(`importing “${label}” ${humanDate(storedNote.date)}`, 'success');
           doCloseImport(label);
         } else {
           setImportFiles(evt.target.files);
@@ -382,7 +383,7 @@ function App() {
         const storedNote = await upsertNote(nodeNote, undefined);
         const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
         console.info(`importing “${label}”`, storedNote.date.toISOString());
-        transientMsg(`importing “${label}”`, 'success');
+        transientMsg(`importing “${label}” ${humanDate(storedNote.date)}`, 'success');
         doCloseImport(label);
       } else {
         transientMsg("Drag that to the editor panel", 'warning');
