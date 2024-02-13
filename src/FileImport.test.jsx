@@ -763,7 +763,7 @@ describe("FileImport", () => {
     expect(cells.length).toEqual(6*3);
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("");
   });
 
   it("should not render Markdown column when not needed", async () => {
@@ -794,7 +794,7 @@ describe("FileImport", () => {
     expect(cells.length).toEqual(4*2);
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("");
   });
 
   it("should import & summarize results", async () => {
@@ -844,7 +844,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("1 note");
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt");
   });
 
   it("should allow changing Markdown flags before importing", async () => {
@@ -900,7 +900,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("2 notes");
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt");
   });
 
   it("should import single notes from text & Markdown files when flagged", async () => {
@@ -950,7 +950,7 @@ describe("FileImport", () => {
     expect(cells[14].textContent).toEqual("1 note");
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("nursery-rhymes.txt");
   });
 
   it("should skip review, when all files are readable, an importable type, and not text", async () => {
@@ -972,6 +972,6 @@ describe("FileImport", () => {
     expect(mockCloseImport).not.toHaveBeenCalled();
 
     await userEvent.click(closeBtn);
-    expect(mockCloseImport).toHaveBeenCalledWith("Burroughs.md", expect.anything());
+    expect(mockCloseImport).toHaveBeenCalledWith("Burroughs.md");
   });
 });

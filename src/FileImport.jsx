@@ -121,11 +121,11 @@ function FileImport({files, isMultiple, doCloseImport}) {
           // console.log(`changing parseType of "${file.name}" to Markdown`)
           parseType = 'text/markdown';
         }
-        const {noteIds, message, coda} = await importFromFile(file, parseType, isMultiple);
+        const {noteIds, message} = await importFromFile(file, parseType, isMultiple);
         record.message = message;
         numNotesCreated.current += noteIds.length
-        if (noteIds.length > 0 && coda) {
-          lastSuccessfulFileName.current = coda;
+        if (noteIds.length > 0 && file.name?.trim()) {
+          lastSuccessfulFileName.current = file.name?.trim();
         }
       } catch (err) {
         record.message = extractUserMessage(err);
@@ -189,7 +189,7 @@ function FileImport({files, isMultiple, doCloseImport}) {
         <Toolbar>
           <IconButton edge="start" color="inherit"
                       title="Close" size="large"
-                      onClick={doCloseImport.bind(this, lastSuccessfulFileName.current)}>
+                      onClick={_evt => doCloseImport(lastSuccessfulFileName.current)}>
             <CloseIcon />
           </IconButton>
           <Typography id="import-title" sx={{ ml: 2, flex: "0 0 auto" }} variant="h6">
