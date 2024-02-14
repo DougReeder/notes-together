@@ -3,7 +3,8 @@
 
 import "fake-indexeddb/auto";
 import {init, getNote} from "./storage";
-import FileImport, {checkForMarkdown, determineParseType, importFromFile} from "./FileImport";
+import FileImport from "./FileImport";
+import {checkForMarkdown, determineParseType, importFromFile} from "./fileImportUtil.js";
 import {
   render,
   screen, waitFor

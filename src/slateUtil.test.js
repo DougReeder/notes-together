@@ -14,7 +14,7 @@ import {
   toggleCheckListItem
 } from "./slateUtil";
 import {createEditor, Editor, Transforms} from 'slate'
-import {withHtml} from "./slateHtml";
+import {withHtml} from "./slateHtmlPlugin.js";
 import {withReact} from "slate-react";
 import {init} from "./storage";
 

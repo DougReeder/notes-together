@@ -3,7 +3,7 @@
 
 import {findNoteIds, getNote} from "./storage";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
-import {deserializeHtml} from "./slateHtml";
+import {deserializeHtml} from "./slateHtmlUtil.js";
 import {serializeMarkdown} from "./slateMark";
 import {shortenTitle} from "./Note.js";
 import {transientMsg} from "./util/extractUserMessage.js";

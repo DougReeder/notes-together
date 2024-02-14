@@ -10,7 +10,8 @@ import {gfmTaskListItem} from 'micromark-extension-gfm-task-list-item';
 import {gfmTaskListItemFromMarkdown} from 'mdast-util-gfm-task-list-item';
 import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough'
 import {gfmStrikethroughFromMarkdown} from 'mdast-util-gfm-strikethrough'
-import {deserializeHtml, INLINE_ELEMENTS} from "./slateHtml";
+import {INLINE_ELEMENTS} from "./constants.js";
+import {deserializeHtml} from "./slateHtmlUtil.js";
 
 function deserializeMarkdown(markdown) {
   const root = fromMarkdown(markdown, {

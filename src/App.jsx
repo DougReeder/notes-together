@@ -25,7 +25,8 @@ import {
 import Slide from '@mui/material/Slide';
 import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
-import FileImport, {allowedExtensions, allowedFileTypesNonText} from './FileImport';
+import FileImport from './FileImport';
+import {allowedExtensions, allowedFileTypesNonText} from './constants.js';
 import {useSnackbar} from "notistack";
 import {randomNote, seedNotes, hammerStorage} from "./fillerNotes";
 import Widget from "remotestorage-widget";
@@ -34,7 +35,7 @@ import {DeleteOutline, Help, Label} from "@mui/icons-material";
 import {setEquals} from "./util/setUtil";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
-import {deserializeHtml} from "./slateHtml.jsx";
+import {deserializeHtml} from "./slateHtmlUtil.js";
 import {assembleNote} from "./assembleNote.js";
 import {shortenTitle} from "./Note.js";
 import {shorten} from "./util/shorten.js";

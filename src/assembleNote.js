@@ -6,7 +6,7 @@ import {NodeNote} from "./Note.js";
 import {imageFileToDataUrl} from "./util/imageFileToDataUrl.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {urlRunningTextRE, normalizeUrl, extractSubtype, extractExtension} from "./util.js";
-import {allowedExtensions, allowedFileTypesNonText, unsupportedTextSubtypes} from "./FileImport.jsx";
+import {allowedExtensions, allowedFileTypesNonText, unsupportedTextSubtypes} from "./constants.js";
 import {shorten} from "./util/shorten.js";
 
 /**

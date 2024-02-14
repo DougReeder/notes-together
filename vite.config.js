@@ -8,15 +8,19 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      injectRegister: 'null',
       registerType: 'autoUpdate',
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'service-worker.js',
-      workbox: {
+      mode: 'production',
+      includeAssets: ['/generated-icons/NotesTogether-Icon.svg', '/generated-icons/favicon.ico',
+          '/icons/NotesTogether-icon-gray.svg', '/icons/NotesTogether-Icon-96x96.png'],
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff,woff2,json}'],
-        globIgnores: ['**/google*.html'],   // TODO: why doesn't this work?
-        additionalManifestEntries: ['/icons/NotesTogether-icon-gray.svg', 'icons/NotesTogether-Icon-96x96.png'],
-        mode: 'production',
+        globIgnores: ['**/node_modules/**/*', '**/google*.html'],
+        minify: false,
+        sourcemap: true,
       },
       manifest: manifest,
     })

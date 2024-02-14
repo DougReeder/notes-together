@@ -1,6 +1,7 @@
 // Copyright © 2022-2023 Doug Reeder under the MIT License
 
-import {withHtml, deserializeHtml, serializeHtml} from "./slateHtml";
+import {deserializeHtml, serializeHtml} from "./slateHtmlUtil.js";
+import {withHtml} from "./slateHtmlPlugin.js";
 import {createEditor, Editor, Element, Text} from "slate";
 import {withReact} from "slate-react";
 import {getRelevantBlockType} from "./slateUtil";

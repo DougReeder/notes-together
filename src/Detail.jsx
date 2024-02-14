@@ -40,7 +40,8 @@ import {Alert, AlertTitle} from '@mui/material';
 import {createEditor, Editor, Node as SlateNode, Range as SlateRange, Transforms, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
-import {withHtml, RenderingElement, Leaf} from './slateHtml';
+import {withHtml} from './slateHtmlPlugin.js';
+import {RenderingElement, Leaf} from './slateHtml.jsx';
 import isHotkey from 'is-hotkey';
 import {
   getRelevantBlockType,
@@ -57,11 +58,11 @@ import {
   getSelectedQuote,
   insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE
 } from "./slateUtil";
-import {globalWordRE, isLikelyMarkdown, visualViewportMatters} from "./util";
+import {isLikelyMarkdown, visualViewportMatters} from "./util";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import DateCompact from "./DateCompact";
 import {clearSubstitutions} from "./urlSubstitutions";
-import {allowedExtensions, allowedFileTypesNonText} from "./FileImport";
+import {globalWordRE, allowedExtensions, allowedFileTypesNonText} from "./constants.js";
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 import {deserializeNote} from "./serializeNote.js";

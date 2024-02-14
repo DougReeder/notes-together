@@ -1,10 +1,10 @@
 // serializeNote.test.js - automated tests for subroutine for Notes module for RemoteStorage
-// Copyright © 2023 Doug Reeder
+// Copyright © 2023–2024 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
 import {deserializeNote, serializeNote} from "./serializeNote";
 import {CONTENT_MAX, NodeNote} from "./Note";
-import {withHtml} from "./slateHtml.jsx";
+import {withHtml} from "./slateHtmlPlugin.js";
 import {withReact} from "slate-react";
 import {createEditor} from "slate";
 import {validate as uuidValidate} from "uuid";

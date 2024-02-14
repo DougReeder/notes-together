@@ -8,7 +8,7 @@ import {RemoteNotes} from "./RemoteNotes";
 // import {mergeConflicts} from "./mergeConflicts";
 import decodeEntities from "./util/decodeEntities";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
-import {globalWordRE} from "./util";
+import {globalWordRE} from "./constants.js";
 import {deserializeNote, serializeNote} from "./serializeNote.js";
 import {NodeNote, SerializedNote, shortenTitle} from "./Note.js";   // eslint-disable-line no-unused-vars
 import QuietError from "./util/QuietError.js";

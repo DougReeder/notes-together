@@ -11,10 +11,6 @@ function extractExtension(file) {
   return /\.[^.\\/:*?"<>|\s]{1,255}$/.exec(file?.name)?.[0]?.toLowerCase() || "";
 }
 
-// ASCII, Unicode, no-break & soft hyphens
-// ASCII apostrophe, right-single-quote, modifier-letter-apostrophe
-const globalWordRE = /[\w\u00AA\u00B2\u00B3\u00B5\u00B9\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u02BC\u037A\u037F\u0384-\u0386\u0388-\u03CE\u03D0-\u03D6\u03D9-\u03E1\u03F3\u1E00-\u1FFC\u2070-\u2079\u207F-\u2089\u2090-\u2094\u2460-\u24FD\u2C60-\u2C7F\uA728-\uA7AF\uFF10-\uFF5A]([-‐‑­'’ʼ.   ^]*[\w\u00AA\u00B2\u00B3\u00B5\u00B9\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u02BC\u037A\u037F\u0384-\u0386\u0388-\u03CE\u03D0-\u03D6\u03D9-\u03E1\u03F3\u1E00-\u1FFC\u2070-\u2079\u207F-\u2089\u2090-\u2094\u2460-\u24FD\u2C60-\u2C7F\uA728-\uA7AF\uFF10-\uFF5A]+)*/g;
-
 function isLikelyMarkdown(text) {
   if (/(^|\s)(__|\*\*|~~)(?=\S).+(\2(\s|$))/.test(text)) {
     return true;   // strong emphasis or strikethrough
@@ -143,4 +139,4 @@ function normalizeUrl(str) {
 }
 
 
-export {extractSubtype, extractExtension, globalWordRE, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters, urlRunningTextRE, normalizeUrl};
+export {extractSubtype, extractExtension, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters, urlRunningTextRE, normalizeUrl};

@@ -4,7 +4,7 @@ import {init, upsertNote} from "./storage.js";
 import {assembleNote} from "./assembleNote.js";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage.js";
 import {shorten} from "./util/shorten.js";
-import {unsupportedTextSubtypes} from "./FileImport.jsx";
+import {unsupportedTextSubtypes} from "./constants.js";
 import {clientDeserializeHtml} from "./service-worker-utils.js";
 import {shortenTitle} from "./Note.js";
 

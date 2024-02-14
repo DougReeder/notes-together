@@ -18,7 +18,7 @@ import {getNoteDb} from "./idbNotes";
 import {findFillerNoteIds} from "./idbNotes";
 import {NIL} from "uuid";
 import {waitFor} from "@testing-library/react";
-import {deserializeHtml, serializeHtml} from "./slateHtml.jsx";
+import {deserializeHtml, serializeHtml} from "./slateHtmlUtil.js";
 import {deserializeNote, serializeNote} from "./serializeNote.js";
 
 

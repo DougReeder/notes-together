@@ -4,7 +4,7 @@
 
 import {assembleNote} from "./assembleNote.js";
 import {dataURItoFile} from "./util/testUtil.js";
-import {deserializeHtml} from "./slateHtml.jsx";
+import {deserializeHtml} from "./slateHtmlUtil.js";
 
 const TEXT1 = `Friends and Citizens:
 The period for a new election of a citizen to administer the executive government of the United States being not far distant, and the time actually arrived when your thoughts must be employed in designating the person who is to be clothed with that important trust, it appears to me proper, especially as it may conduce to a more distinct expression of the public voice, that I should now apprise you of the resolution I have formed, to decline being considered among the number of those out of whom a choice is to be made.

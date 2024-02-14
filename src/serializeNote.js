@@ -2,7 +2,8 @@
 // Copyright © 2023 Doug Reeder
 
 import {CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle, TITLE_MAX} from "./Note.js";
-import {deserializeHtml, INLINE_ELEMENTS, serializeHtml} from "./slateHtml.jsx";
+import {INLINE_ELEMENTS} from "./constants.js";
+import {deserializeHtml, serializeHtml} from "./slateHtmlUtil.js";
 import {Node as SlateNode} from "slate";
 import {parseWords} from "./storage.js";
 import {currentSubstitutions} from "./urlSubstitutions.js";

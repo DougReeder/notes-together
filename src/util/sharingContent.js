@@ -3,7 +3,7 @@
 
 import hasTagsLikeHtml from "./hasTagsLikeHtml.js";
 import {serializeMarkdown} from "../slateMark.js";
-import {deserializeHtml} from "../slateHtml.jsx";
+import {deserializeHtml} from "../slateHtmlUtil.js";
 import {shortenTitle} from "../Note.js";
 
 /**
