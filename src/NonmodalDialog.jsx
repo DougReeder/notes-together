@@ -56,7 +56,7 @@ export function NonmodalDialog({open, title, message, okName = "Ok", onOk, cance
         </Box>
         <Stack gap={2} direction={{ xs: 'row' }}
                sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', sm: 'center' },}}>
-          {onOk &&
+          {'function' === typeof onOk &&
           <Button size="small" onClick={onOk} variant="contained" ref={okButtonRef}>{okName}</Button>}
           <Button size="small" onClick={onCancel} ref={cancelButtonRef}>{cancelName}</Button>
         </Stack>

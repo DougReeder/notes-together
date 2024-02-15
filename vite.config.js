@@ -5,6 +5,7 @@ import manifest from './resources/manifest.json'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {sourcemap: false},
   plugins: [
     react(),
     VitePWA({
@@ -15,7 +16,8 @@ export default defineConfig({
       filename: 'service-worker.js',
       mode: 'production',
       includeAssets: ['/generated-icons/NotesTogether-Icon.svg', '/generated-icons/favicon.ico',
-          '/icons/NotesTogether-icon-gray.svg', '/icons/NotesTogether-Icon-96x96.png'],
+          '/icons/NotesTogether-icon-gray.svg', '/icons/NotesTogether-Icon-96x96.png',
+          '/generated-icons/apple-touch-icon-180x180.png'],
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff,woff2,json}'],
         globIgnores: ['**/node_modules/**/*', '**/google*.html'],

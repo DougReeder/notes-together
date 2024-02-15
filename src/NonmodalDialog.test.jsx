@@ -48,6 +48,7 @@ describe("NonmodalDialog", () => {
                            onOk={mockOk} onCancel={mockCancel} ></NonmodalDialog>);
     expect(screen.queryByRole('dialog', {name: "I have a question"})).toBeVisible();
     expect(screen.queryByRole('button', {name: "Ok"})).toBeVisible();
+    expect(mockOk).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', {name: "Ok"}));
 

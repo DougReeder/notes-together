@@ -12,7 +12,7 @@ import humanDate from "./util/humanDate";
 import {Button, IconButton} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
-import checkIfInstallRecommended from "./webappInstall";
+import InstallCheck from "./InstallCheck.jsx";
 import {shortenTitle} from "./Note.js";
 import {sharingContent, wrapInFile} from "./util/sharingContent.js";
 import {NonmodalDialog} from "./NonmodalDialog.jsx";
@@ -565,8 +565,6 @@ const List = forwardRef( function List (props, imperativeRef) {
     if (isFirstLaunch && notes.length < 16 && 0 === searchWords.size && gettingStartedDisplayed) {
       listItems.push(<div key="advice" className="advice trailing" onClick={handleSelect.bind(this, undefined, 'HELP')}>{adviceGettingStarted}</div>);
     }
-
-    checkIfInstallRecommended(notes.length, isFirstLaunch).catch(console.error);
   } else {
     if (searchWords.size > 0) {
       listItems = <div className="advice solo" onClick={handleSelect.bind(this, undefined, 'HELP')}>
@@ -589,6 +587,7 @@ const List = forwardRef( function List (props, imperativeRef) {
                       okName={sharingIssue?.useShare ? "Share" : "Send email"}
                       onOk={() => tryShare(sharingIssue.data, sharingIssue.useShare)}
                       onCancel={() => setSharingIssue(null)} ></NonmodalDialog>
+      <InstallCheck notesLength={notes.length} isFirstLaunch={isFirstLaunch}></InstallCheck>
     </>;
 });
 
