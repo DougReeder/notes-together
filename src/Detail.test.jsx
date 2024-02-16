@@ -412,6 +412,27 @@ it('renders error if note missing', async () => {
     expect(screen.getAllByRole('menuitem')).toHaveLength(12);
   });
 
+  it("shows text style menu for rich text notes", async () => {
+    const noteId = uuidv4();
+    const noteText = "<p>some text</p>";
+    const noteDate = new Date(2022, 8, 5);
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', noteText, noteDate)));
+
+    render(<Detail noteId={noteId}></Detail>);
+    await screen.findByRole('textbox');
+    await userEvent.click(screen.getByRole('button', {name: "Open text style menu"}));
+    expect(screen.getByRole('menuitem', {name: "Italic"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Bold"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Monospaced"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: /Superscript/i})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: /Subscript/i})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Underlined"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Strikethrough"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Deleted"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Inserted"})).toBeVisible();
+    expect(screen.getAllByRole('menuitem')).toHaveLength(9);
+  });
+
     // it('allows typing enter in blank item to end list', async () => {
   //   const noteId = uuidv4();
   //   const noteText = "<ol><li>first</li><li>second</li></ol>";
