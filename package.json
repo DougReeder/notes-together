@@ -39,10 +39,10 @@
     "react-transition-group": "^4.4.5",
     "remotestorage-widget": "^1.5.5",
     "remotestoragejs": "github:remotestorage/remotestorage.js#a189529",
-    "slate": "^0.101.4",
-    "slate-history": "^0.100.0",
+    "slate": "^0.103.0",
+    "slate-history": "^0.109.0",
     "slate-hyperscript": "^0.100.0",
-    "slate-react": "^0.101.3",
+    "slate-react": "^0.109.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
