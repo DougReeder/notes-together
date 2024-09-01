@@ -205,10 +205,15 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
           <li><p>To create new notes from graphics, from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Import one note per file</b> and select the graphic files.  Or, drag the files to the list panel. Or send them using the system Share feature (if supported).</p>
-            <p>If you don't need text related to the graphic, at least add several key words, so you can find it by search.</p>
+            <p>If you don't need text related to the graphic, at least add several key words, so you can find the note by search.</p>
           </li>
           <li><p>To add graphics to an existing note, drag the files to the editor, or copy and paste them.</p>
             <p>On a phone or tablet, from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/> select <b>Paste files...</b>. That's also how you insert a picture with the camera.</p>
+            <p>There are two approaches to using <b>Paste files & recognize print...</b></p>
+            <ul>
+              <li>Read the text from the graphic yourself — the recognized text is just there so the note can be found by searching.</li>
+              <li>Ensure your phone is square with the page and there are no reflections when taking the photo. Then use a photo editing application to crop out anything extraneous. After pasting the photo and editing the recognized text if necessary, delete the graphic so there's more room for text.</li>
+            </ul>
           </li>
         </ul>
 

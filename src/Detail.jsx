@@ -18,7 +18,7 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Toolbar, Menu, Divider, CircularProgress
+  Toolbar, Menu, Divider, CircularProgress, LinearProgress
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -66,6 +66,8 @@ import {globalWordRE, allowedExtensions, allowedFileTypesNonText} from "./consta
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 import {deserializeNote} from "./serializeNote.js";
+import {createWorker, PSM} from 'tesseract.js';
+import {tesseractBlocksToHTML, tesseractWordsToHTML} from "./util/tesseractUtil.js";
 
 
 const BLOCK_TYPE_DISPLAY = {
@@ -123,6 +125,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isProgressing, setIsProgressing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const loadingIdRef = useRef(NaN);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
@@ -866,10 +870,22 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               Transforms.select(editor, previousSelection.current);
             }
             previousSelection.current = null;
+            setRecognizeTextFlag(false);
             pasteFileInput.current.click();
             setDetailsMenuAnchorEl(null);
           }}>
             Paste files...
+          </MenuItem>
+          <MenuItem onClick={_evt => {
+            if (!editor.selection && previousSelection.current) {
+              Transforms.select(editor, previousSelection.current);
+            }
+            previousSelection.current = null;
+            setRecognizeTextFlag(true);
+            pasteFileInput.current.click();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Paste files & recognize print...
           </MenuItem>
           <MenuItem disabled={!selectedTable} onClick={_evt => {
             if (!editor.selection && previousSelection.current) {
@@ -928,6 +944,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             {outBtn}
             {Boolean(noteDate) && ! noteErr ? noteControls : null}
           </Toolbar>
+          {isProgressing ?
+            <Box sx={{ width: '100%' }}><LinearProgress variant="determinate" value={progress} /></Box> :
+            null}
         </AppBar>
         {isLoading ? <Box sx={
           {position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'rgba(255,255,255,67%)',
@@ -1167,16 +1186,67 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   const pasteFileInput = useRef(null);
 
+  const [recognizeTextFlag, setRecognizeTextFlag] = useState(true);
+
   async function pasteFileChange(evt) {
     try {
-      console.group("Pasting files into editor");
+      console.group("Pasting files into editor" + (recognizeTextFlag ? " and recognizing text" : ""));
       // console.log("paste files:", evt.target.files)
       ReactEditor.focus(editor);
-      const dataTransfer = new DataTransfer();
+      const pasteRefs = [];
       for (const file of evt.target.files) {
+        const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
+        await editor.insertData(dataTransfer);
+        if (recognizeTextFlag) {
+          pasteRefs.push(Editor.pointRef(editor, SlateRange.end(editor.selection), {/*affinity: 'backward'*/ }));
+          console.log(file.name, `pasteRef.current:`, pasteRefs.at(-1)?.current);
+          Transforms.select(editor, Editor.after(editor, editor.selection) || SlateRange.end(editor.selection));
+        }
       }
-      await editor.insertData(dataTransfer);
+      if (recognizeTextFlag) {
+        setIsProgressing(true);
+        setProgress(0);
+        let fileInd = -1;
+        const logProgress = m => setProgress(
+          fileInd < 0 ?
+            5 * m.progress :
+            95 * ((fileInd + m.progress) / evt.target.files.length) + 5
+        );
+        const worker = await createWorker(["osd", "eng"] /*navigator.languages*/, 2,{ logger: logProgress });
+        for (const file of evt.target.files) {
+          ++fileInd;
+          console.groupCollapsed(`OCR:`, file.name, file.type);
+          const dataTransfer2 = new DataTransfer();
+          try {
+            if (['image/bmp', 'image/jpeg', 'image/png', 'image/webp', 'image/x-portable-bitmap', 'image/x-portable-graymap', 'image/x-portable-pixmap', 'image/x-portable-anymap'].includes(file.type)) {
+              console.log(`file:`, file.name, file instanceof File, file.__proto__)
+              await worker.setParameters({
+                tessedit_pageseg_mode: PSM.AUTO_OSD,
+              });
+              const { data: { blocks, words } } = await worker.recognize(file);
+              dataTransfer2.items.add(tesseractBlocksToHTML(blocks) + tesseractWordsToHTML(words), 'text/html');
+            } else {
+              console.log(`not doing image recognition`, file.name, file.type);
+            }
+          } catch (err) {
+            console.log(`OCR:`, file.name, file.type, err);
+            dataTransfer2.items.add(`Text recognition in “${file.name}” of type ${file.type} failed`, 'text/plain');
+          }
+          const pasteRef = pasteRefs.shift();
+          console.log(file.name, `pasteRef.current:`, pasteRef?.current);
+          if (dataTransfer2.items.length > 0) {
+            Transforms.select(editor, pasteRef.current);
+            await editor.insertData(dataTransfer2);
+            Editor.insertBreak(editor);
+          }
+          pasteRef.unref();
+          console.groupEnd();
+        }
+        await worker.terminate();
+        setIsProgressing(false);
+      }
+      console.assert(0 === pasteRefs.length, `some pasteRefs were not used: %o`, pasteRefs);
     } catch (err) {
       console.error("while pasting files:", err);
       transientMsg(UNEXPECTED_ERROR);

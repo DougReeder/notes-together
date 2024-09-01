@@ -360,7 +360,8 @@ it('renders error if note missing', async () => {
     // expect(screen.getByRole('menu', {name: "Details menu"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: /Undo/})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: /Redo/})).toBeVisible();
-    expect(screen.getByRole('menuitem', {name: /Paste files/})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Paste files..."})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Paste files & recognize print..."})).toBeVisible();
     const changeNoteType = screen.getByRole('menuitem', {name: /Change note type/});
     expect(changeNoteType).toBeVisible();
 
@@ -386,6 +387,25 @@ it('renders error if note missing', async () => {
     await userEvent.click(screen.getByRole('menuitem', {name: /Redo/}));
     await waitFor(() => expect(screen.queryByRole('button', {name: "Open text style menu"})).toBeVisible());
     expect(screen.queryByRole('button', {name: "Change content type"})).toBeFalsy();
+  });
+
+  it("text recognition menu item is clickable", async () => {
+    const noteId = uuidv4();
+    const initialText = "Nullam ac lacinia lorem.\nCras sit amet felis sollicitudin, tincidunt elit eget, suscipit turpis.";
+    const noteDate = new Date(1980, 12, 13);
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', initialText, noteDate)));
+    render(<Detail noteId={noteId}></Detail>);
+
+    await waitFor(() => expect(screen.getByRole('button', {name: "Open Editor menu"})).toBeVisible());
+    const detailsMenuBtn = screen.getByRole('button', {name: "Open Editor menu"});
+
+    await userEvent.click(detailsMenuBtn);
+    let menu = await screen.findByRole('menu', {name: "Editor menu"});
+
+    const pasteAndRecognize = within(menu).getByRole('menuitem', {name: "Paste files & recognize print..."});
+    expect(pasteAndRecognize).toBeVisible();
+
+    await userEvent.click(pasteAndRecognize);
   });
 
   it("shows 'no selection' menu when no selection", async () => {
