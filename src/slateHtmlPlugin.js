@@ -486,7 +486,9 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
   }
 
   async function processDataTransfer(dataTransfer, pasteHtml, pasteUriList, pasteMarkdown, pastePlainText, pasteGraphicFile) {
-    if (dataTransfer.types.indexOf('text/html') > -1 && pasteHtml !== pasteHtmlToPlainText) {
+    // Prefers HTML, unless editor is plain text and dataTransfer has plain text
+    if (dataTransfer.types.indexOf('text/html') > -1 &&
+        !(pasteHtml === pasteHtmlToPlainText && dataTransfer.types.indexOf('text/plain') > -1)) {
       let html = dataTransfer.getData('text/html');
       pasteHtml(html);
     } else if (dataTransfer.types.indexOf('text/uri-list') > -1) {

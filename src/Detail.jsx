@@ -18,7 +18,7 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Toolbar, Menu, Divider, CircularProgress
+  Toolbar, Menu, Divider, CircularProgress, LinearProgress
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -37,7 +37,7 @@ import {
   Undo
 } from "@mui/icons-material";
 import {Alert, AlertTitle} from '@mui/material';
-import {createEditor, Editor, Node as SlateNode, Range as SlateRange, Transforms, Text} from 'slate'
+import {createEditor, Editor, Node as SlateNode, Range as SlateRange, Point as SlatePoint, Transforms, Text} from 'slate'
 import {Slate, Editable, withReact, ReactEditor} from 'slate-react';
 import { withHistory } from 'slate-history';
 import {withHtml} from './slateHtmlPlugin.js';
@@ -66,6 +66,8 @@ import {globalWordRE, allowedExtensions, allowedFileTypesNonText} from "./consta
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 import {deserializeNote} from "./serializeNote.js";
+import {createWorker, PSM} from 'tesseract.js';
+import {tesseractBlocksToHTML, tesseractWordsToHTML} from "./util/tesseractUtil.js";
 
 
 const BLOCK_TYPE_DISPLAY = {
@@ -118,11 +120,24 @@ const NO_SELECTION_MENU = [
 const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
 const UNEXPECTED_ERROR = "Switch to another note, then back.";
 
+const SEGMENTATION_MODE_NAMES = {
+  "1": "All Page Elements",
+  "3": "All Page Elements (w/o OSD)",
+  "6": "Uniform Paragraphs",
+  "4": "Single Column or Table",
+  "7": "Single Line",
+  "8": "Single Word",
+  "11": "Scattered Words (w/o OSD)",
+  "12": "Scattered Words"
+}
 
-function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel}) {
+
+function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel, setUninteruptableOpName}) {
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isProgressing, setIsProgressing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const loadingIdRef = useRef(NaN);
   const [editorValue, setEditorValue] = useState([{
     type: 'paragraph',
@@ -633,6 +648,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
 
   const [isLocked, setIsLocked] = useState(false);
 
+
+  const pasteFileInput = useRef(null);
+  const fileInd = useRef(0);
+  const [isRecognizeDialogOpen, setIsRecognizeDialogOpen] = useState(false);
+
   if (noteErr) {
     console.error("error in Details:", noteErr);
   }
@@ -866,10 +886,22 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               Transforms.select(editor, previousSelection.current);
             }
             previousSelection.current = null;
+            setRecognizeTextFlag(false);
             pasteFileInput.current.click();
             setDetailsMenuAnchorEl(null);
           }}>
             Paste files...
+          </MenuItem>
+          <MenuItem onClick={_evt => {
+            if (!editor.selection && previousSelection.current) {
+              Transforms.select(editor, previousSelection.current);
+            }
+            previousSelection.current = null;
+            setRecognizeTextFlag(true);
+            pasteFileInput.current.click();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            Paste files & recognize text...
           </MenuItem>
           <MenuItem disabled={!selectedTable} onClick={_evt => {
             if (!editor.selection && previousSelection.current) {
@@ -928,6 +960,9 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             {outBtn}
             {Boolean(noteDate) && ! noteErr ? noteControls : null}
           </Toolbar>
+          {isProgressing ?
+            <Box sx={{ width: '100%' }}><LinearProgress variant="determinate" value={progress} /></Box> :
+            null}
         </AppBar>
         {isLoading ? <Box sx={
           {position: "absolute", top: '52px', bottom: 0, left: 0, right: 0, zIndex: 1, backgroundColor: 'rgba(255,255,255,67%)',
@@ -1098,7 +1133,35 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
           </Button>
         </DialogActions>
       </Dialog>
-
+      <Dialog open={isRecognizeDialogOpen} onClose={finishInsertFiles.bind(this)} aria-labelledby="recognize-dialog-title">
+        <DialogTitle id="recognize-dialog-title">{`What does “${pasteFileInput.current?.files?.item(fileInd.current)?.name}” contain?`}</DialogTitle>
+        <div className="stackedButtons">
+          <Button onClick={recognizeText.bind(this, PSM.AUTO_OSD)}>
+            All Page Elements
+          </Button>
+          {/*<Button onClick={recognizeText.bind(this, PSM.AUTO)}>*/}
+          {/*  All Page Elements (w/o OSD)*/}
+          {/*</Button>*/}
+          <Button onClick={recognizeText.bind(this, PSM.SINGLE_BLOCK)}>
+            Uniform Paragraphs
+          </Button>
+          <Button onClick={recognizeText.bind(this, PSM.SINGLE_COLUMN)}>
+            Single Column or Table
+          </Button>
+          <Button onClick={recognizeText.bind(this, PSM.SINGLE_LINE)}>
+            Single Line
+          </Button>
+          <Button onClick={recognizeText.bind(this, PSM.SINGLE_WORD)}>
+            Single Word
+          </Button>
+          {/*<Button onClick={recognizeText.bind(this, PSM.SPARSE_TEXT)}>*/}
+          {/*  Scattered Words (w/o OSD)*/}
+          {/*</Button>*/}
+          <Button onClick={recognizeText.bind(this, PSM.SPARSE_TEXT_OSD)}>
+            Scattered Words
+          </Button>
+        </div>
+      </Dialog>
     </>);
   }
 
@@ -1163,7 +1226,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         ReactEditor.blur(editor);
       } else {
         ReactEditor.focus(editor);
-        Transforms.select(editor, Editor.point(editor, [], {edge}));
+        Transforms.select(editor, Editor.point(editor, [], {edge: 'start'}));
         if ('start' === edge) {
           boxRef.current.scrollTop = 0;
         }
@@ -1171,25 +1234,160 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     }
   }
 
-  const pasteFileInput = useRef(null);
+  // React reference to Slate PointRef
+  const pastePointRefRef = useRef(null);
 
-  async function pasteFileChange(evt) {
-    try {
-      console.group("Pasting files into editor");
-      // console.log("paste files:", evt.target.files)
-      ReactEditor.focus(editor);
-      const dataTransfer = new DataTransfer();
-      for (const file of evt.target.files) {
-        dataTransfer.items.add(file);
-      }
-      await editor.insertData(dataTransfer);
-    } catch (err) {
-      console.error("while pasting files:", err);
-      transientMsg(UNEXPECTED_ERROR);
-    } finally {
-      pasteFileInput.current.value = "";
-      console.groupEnd();
+  const [recognizeTextFlag, setRecognizeTextFlag] = useState(false);
+  const worker = useRef(null);
+
+  function logProgress(m) {
+    switch (m.status) {
+      case "loading tesseract core":
+        setProgress(m.progress);
+        break;
+      case "initializing tesseract":
+        setProgress(1 + m.progress);
+        break;
+      case "loading language traineddata":
+        setProgress(2 + m.progress * 2);
+        break;
+      case "initializing api":
+        setProgress(4 + m.progress);
+        break;
+      case "recognizing text":
+      default:
+        const f = fileInd.current;
+        setProgress(5 + 95 * (f + m.progress) / (pasteFileInput.current?.files.length || f + 1));
+        break;
     }
+ }
+
+  async function pasteFileChange(_) {
+    console.group(`Pasting ${pasteFileInput.current?.files.length} files into editor` + (recognizeTextFlag ? " and recognizing text" : ""));
+    setIsProgressing(true);
+    setProgress(0);
+    fileInd.current = 0;
+    ReactEditor.focus(editor);
+    if (recognizeTextFlag) {
+      setUninteruptableOpName("text recognition");
+      worker.current = await createWorker(["osd", "eng"] /*navigator.languages*/, 2, { logger: logProgress });
+    }
+    return insertFile();
+  }
+
+  async function insertFile() {
+    const files = pasteFileInput.current?.files;
+    const file = files?.item(fileInd.current);
+    try {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      await editor.insertData(dataTransfer);
+      Editor.insertBreak(editor);
+      if (recognizeTextFlag && /^image\//.test(file.type)) {
+        pastePointRefRef.current = editor.selection ?
+            Editor.pointRef(editor, SlateRange.end(editor.selection), {/*affinity: 'backward'*/ }) :
+            Editor.pointRef(editor, {path: [editor.children.length], offset: 0});
+        console.debug(file.name, `pastePointRefRef.current?.current:`, pastePointRefRef.current?.current);
+        if (editor.selection) {
+          Transforms.select(editor, Editor.after(editor, editor.selection) || SlateRange.end(editor.selection));
+        }
+        setIsRecognizeDialogOpen(true);
+      } else {
+        return finishInsertFile();
+      }
+    } catch (err) {
+      console.error(`while pasting file “${file.name}”:`, err);
+      transientMsg(`Switch to another note, then back. Can't paste “${file.name}”`,
+          err.severity || 'error');
+      return finishInsertFile();
+    }
+  }
+
+  async function recognizeText(segmentationMode) {
+    const dataTransfer2 = new DataTransfer();
+    const file = pasteFileInput.current?.files?.item(fileInd.current);
+    try {
+      console.groupCollapsed(`OCR ${SEGMENTATION_MODE_NAMES[segmentationMode]}:`, file.name, file.type);
+      setIsRecognizeDialogOpen(false);
+
+      /* tesseract.js only accepts these image types */
+      if (['image/bmp', 'image/jpeg', 'image/png', 'image/webp', 'image/x-portable-bitmap', 'image/x-portable-graymap', 'image/x-portable-pixmap', 'image/x-portable-anymap'].includes(file.type)) {
+        // console.log(`file:`, file.name, file instanceof File, file.__proto__)
+        await worker.current.setParameters({
+          tessedit_pageseg_mode: segmentationMode,
+        });
+        const { data: { blocks, words } } =
+            await worker.current.recognize(file, {}, {blocks: true, hocr: false, text: false, tsv: false});
+
+        if ([PSM.SPARSE_TEXT, PSM.SPARSE_TEXT_OSD].includes(segmentationMode)) {
+          const htmlWords = tesseractWordsToHTML(words);
+          if (htmlWords?.length > 0) {
+            dataTransfer2.setData('text/html', htmlWords);
+            transientMsg(`Scattered word recognition of “${file.name}” complete`, 'success');
+          }
+        } else {
+          const htmlParagraphs = tesseractBlocksToHTML(blocks);
+          if (htmlParagraphs?.length > 0) {
+            dataTransfer2.setData('text/html', htmlParagraphs);
+            transientMsg(`Text recognition of “${file.name}” complete`, 'success');
+          }
+        }
+        if (dataTransfer2.items.length === 0) {
+          const msg = `Try a different mode than “${SEGMENTATION_MODE_NAMES[segmentationMode]}” for “${file.name}”`;
+          console.warn(msg);
+          transientMsg(msg, 'warning');
+          dataTransfer2.setData('text/plain', msg);
+        }
+      } else {
+        const msg = `Text recognition not supported for “${file.name}” of type ${file.type}`;
+        console.warn(msg);
+        transientMsg(msg, 'warning');
+        dataTransfer2.setData('text/plain', msg);
+      }
+    } catch (err) {
+      const msg = `Text recognition in “${file.name}” of type ${file.type} failed`;
+      console.error(msg, err);
+      transientMsg(msg, 'error');
+      dataTransfer2.setData('text/plain', msg);
+    }
+    console.debug(file.name, `pastePointRefRef.current?.current:`, pastePointRefRef.current?.current);
+    if (dataTransfer2.items.length > 0) {
+      // ReactEditor.focus(editor);
+      if (SlatePoint.isPoint(pastePointRefRef.current?.current)) {
+        Transforms.select(editor, pastePointRefRef.current?.current);
+      }
+      await editor.insertData(dataTransfer2);
+      Editor.insertBreak(editor);
+    }
+    pastePointRefRef.current?.unref?.();   // releases Slate reference
+    pastePointRefRef.current = null;   // nulls React reference
+    console.groupEnd();
+
+    return finishInsertFile();
+  }
+
+  async function finishInsertFile() {
+    ++fileInd.current;
+    const files = pasteFileInput.current?.files;
+    setProgress(5 + 95 * (fileInd.current / (files?.length || fileInd.current)));
+    if (fileInd.current < files?.length) {
+      return insertFile();
+    } else {
+      return finishInsertFiles();
+    }
+  }
+
+  async function finishInsertFiles() {
+    setIsRecognizeDialogOpen(false);
+    setUninteruptableOpName("");
+    await worker.current?.terminate();
+    worker.current = null;
+    setIsProgressing(false);
+    setProgress(0);   // reset because indicator may animate from previous value
+    console.groupEnd();
+    if (pasteFileInput.current) { pasteFileInput.current.value = ""; }
+    pastePointRefRef.current?.unref?.();   // releases Slate reference
+    pastePointRefRef.current = null;   // nulls React reference
   }
 
   return (<>
@@ -1235,6 +1433,7 @@ Detail.propTypes = {
   searchWords: PropTypes.instanceOf(Set),
   focusOnLoadCB: PropTypes.func,
   setMustShowPanel: PropTypes.func,
+  setUninteruptableOpName: PropTypes.func,
 };
 
 ErrorFallback.propTypes = {

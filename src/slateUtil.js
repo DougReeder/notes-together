@@ -1,5 +1,5 @@
 // slateUtil.js - utility functions for Slate editor
-// © 2021-2023 Doug Reeder under the MIT License
+// © 2021–2025 Doug Reeder under the MIT License
 
 import {
   Editor,
@@ -689,6 +689,8 @@ function coerceToPlainText(editor) {
   editor.removeMark('code');
   editor.removeMark('underline');
   editor.removeMark('strikethrough');
+  editor.removeMark('deleted');
+  editor.removeMark('inserted');
   Transforms.deselect(editor);
 
   Transforms.unsetNodes(editor, ['type', 'url', 'title'], {

@@ -144,6 +144,13 @@ body {
   color: silver;
 }
 
+
+.stackedButtons {
+  display: flex;
+  flex-direction: column;
+}
+
+
 .error {
   position: absolute;
   margin: 0 auto;

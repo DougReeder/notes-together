@@ -1,4 +1,4 @@
-// Copyright © 2021-2024 Doug Reeder
+// Copyright © 2021–2025 Doug Reeder
 
 import {
   init,
@@ -84,9 +84,14 @@ function App() {
 
   const selectedNoteId = sessionStorage.getItem('selectedNoteId');
   function setSelectedNoteId(id) {
-    sessionStorage.setItem('selectedNoteId', id || '');   // setItem coerces to string
-    forceRender();
+    if (uninteruptableOpName) {
+      transientMsg(`Don't select a different note until ${uninteruptableOpName} is done`, 'warning');
+    } else {
+      sessionStorage.setItem('selectedNoteId', id || '');   // setItem coerces to string
+      forceRender();
+    }
   }
+  const [uninteruptableOpName, setUninteruptableOpName] = useState("");
 
   const searchRef = useRef();
   const lastCheckpointRef = useRef(new Set());
@@ -109,7 +114,7 @@ function App() {
   }
 
   const focusOnLoad = useRef(false);   // no re-render when changed
-  const addNote = useCallback(async () => {
+  async function addNote() {
     try {
       const initialText = searchStr.trim() ? `<h1></h1><p></p><hr /><p><em>${searchStr.trim()}</em></p>` : "<h1></h1><p></p>";
       const raw = {mimeType: 'text/html;hint=SEMANTIC', content: initialText};
@@ -123,7 +128,7 @@ function App() {
       console.error("addNote:", err);
       transientMsg(extractUserMessage(err));
     }
-  }, [searchStr]);
+  }
 
   const clearFocusOnLoad = useCallback(() => {
     focusOnLoad.current = false;   // reference, so doesn't cause re-render
@@ -586,7 +591,7 @@ function App() {
       <div className="panel panelDetail">
         {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchWords={searchWords}
                                             focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
-                                            setMustShowPanel={setMustShowPanel}></Detail> :
+                                            setMustShowPanel={setMustShowPanel} setUninteruptableOpName={setUninteruptableOpName}></Detail> :
           <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
         }
       </div>
