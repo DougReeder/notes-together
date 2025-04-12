@@ -78,7 +78,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How closely must search words match the text?</h4>
         <ul>
           <li>Upper- and lower-case don’t matter, so “scuba” matches “SCUBA”.</li>
-          <li>Dashes, periods, underscores and non-breaking spaces are dropped, so
+          <li>Hyphens, periods, underscores and non-breaking spaces are dropped, so
             <ul>
               <li>“playgroup” matches “play-group”</li>
               <li>“phd” matches “Ph.D.</li>
@@ -117,8 +117,8 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <caption>Anywhere</caption>
           <tbody>
             <tr><td>escape ⎋</td><td>navigate out: close dialog, exit editor, show list panel, focus search, then clear search</td></tr>
-            <tr><td>ctrl+shift+plus<br/>or ​⇧⌘+</td><td>increase application text size</td></tr>
-            <tr><td>ctrl+minus<br/>or ⌘-</td><td>decrease application text size</td></tr>
+            <tr><td>ctrl+shift+plus<br/><i>or</i> ​⇧⌘+</td><td>increase application text size</td></tr>
+            <tr><td>ctrl+minus<br/><i>or</i> ⌘-</td><td>decrease application text size</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
@@ -134,15 +134,15 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift-down-arrow ⇧⬇️</td><td>skip 5 down through the list</td></tr>
             <tr><td>alt-down-arrow ⌥⬇️</td><td>skip 25 down through the list</td></tr>
             <tr><td>Page Down ⇟</td><td>skip 10 down through the list</td></tr>
-            <tr><td>End ↘ or ctrl-down-arrow or ⎈⬇️</td><td>skip to end of list</td></tr>
+            <tr><td>End ↘ <i>or</i> ctrl-down-arrow <i>or</i> ⎈⬇️</td><td>skip to end of list</td></tr>
             <tr><td>up-arrow ⬆️</td><td>select previous note</td></tr>
             <tr><td>shift-up-arrow ⇧⬆️️</td><td>skip 5 up through the list</td></tr>
             <tr><td>alt-up-arrow️ ⌥⬆️</td><td>skip 25 up through the list</td></tr>
             <tr><td>Page Up ⇞</td><td>skip 10 up through the list</td></tr>
-            <tr><td>Home ↖ or ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
-            <tr><td>ctrl+Backspace or ctrl+Delete<br/>or ​⌘+Delete or ​⌘␡</td><td>delete selected note</td></tr>
-            <tr><td>ctrl+. or shift+ctrl+&gt;<br/>or ⌘. or ⌘⇧&gt;</td><td>Share selected note, with file</td></tr>
-            <tr><td>ctrl+, or shift+ctrl+&lt;<br/>or ⌘, or ⌘⇧&lt;</td><td>Share selected note as text</td></tr>
+            <tr><td>Home ↖ <i>or</i> ctrl-up-arrow ⎈⬆️</td><td>skip to beginning of list</td></tr>
+            <tr><td>ctrl+Backspace <i>or</i> ctrl+Delete<br/><i>or</i> ​⌘+Delete <i>or</i> ​⌘␡</td><td>delete selected note</td></tr>
+            <tr><td>ctrl+. <i>or</i> shift+ctrl+&gt;<br/><i>or</i> ⌘. <i>or</i> ⌘⇧&gt;</td><td>Share selected note, with file</td></tr>
+            <tr><td>ctrl+, <i>or</i> shift+ctrl+&lt;<br/><i>or</i> ⌘, <i>or</i> ⌘⇧&lt;</td><td>Share selected note as text</td></tr>
             {/*<tr><td>carriage return</td><td>edit selected note</td></tr>*/}
           </tbody>
         </table>
@@ -156,28 +156,29 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <table className="shortcuts">
           <caption>Inside search field or editor</caption>
           <tbody>
-            <tr><td>ctrl+Z or ​⌘Z</td><td>undo <Undo/></td></tr>
-            <tr><td>ctrl‑Y or ⇧​⌘Z</td><td>redo <Redo/></td></tr>
-            <tr><td>ctrl+A or ​⌘A</td><td>select all</td></tr>
+            <tr><td>ctrl+Z <i>or</i> ​⌘Z</td><td>undo <Undo/></td></tr>
+            <tr><td>ctrl‑Y <i>or</i> ⇧​⌘Z</td><td>redo <Redo/></td></tr>
+            <tr><td>ctrl+A <i>or</i> ​⌘A</td><td>select all</td></tr>
           </tbody>
         </table>
         <table className="shortcuts">
           <caption>Inside editor</caption>
           <tbody>
-            <tr><td>ctrl+return or ⌘⏎</td><td>line break</td></tr>
+            <tr><td>ctrl+return <i>or</i> ⌘⏎</td><td>line break</td></tr>
             <tr><td>shift+space ⇧␠</td><td>toggle checkbox</td></tr>
-            <tr><td>ctrl+B or ⌘B</td><td>bold text</td></tr>
-            <tr><td>ctrl+I or ⌘I</td><td>italic text</td></tr>
-            <tr><td>ctrl+` or ⌘`</td><td>monospaced phrase</td></tr>
-            <tr><td>shift+ctrl+` or ⇧⌘`</td><td>monospaced block</td></tr>
-            <tr><td>ctrl+8 or shift+ctrl+* or ctrl+- or shift-ctrl+-<br/>or ⌘8 or ⇧⌘* or ⌘- or ⇧⌘-</td><td>bulleted list</td></tr>
-            <tr><td>ctrl+1 or shift+ctrl+1<br/>or ⌘1 or ⇧⌘1</td><td>numbered list</td></tr>
-            <tr><td>ctrl+[ or shift+ctrl+[ or ⌘[</td><td>task list</td></tr>
-            <tr><td>ctrl+] or shift+ctrl+] or ⌘]</td><td>sequence</td></tr>
-            <tr><td>shift+ctrl+T or ⇧⌘T (except in Chrome)</td><td>title</td></tr>
-            <tr><td>shift+ctrl+H or ⇧⌘H</td><td>heading</td></tr>
-            <tr><td>shift+ctrl+S or ⇧⌘S</td><td>subheading</td></tr>
-            <tr><td>ctrl+' or shift+ctrl+' or ⌘' or ⇧⌘'</td><td>block quote</td></tr>
+            <tr><td>ctrl+B <i>or</i> ⌘B</td><td>bold text</td></tr>
+            <tr><td>ctrl+I <i>or</i> ⌘I</td><td>italic text</td></tr>
+            <tr><td>ctrl+\ <i>or</i> ⌘\</td><td>strikethrough text</td></tr>
+            <tr><td>ctrl+` <i>or</i> ⌘`</td><td>monospaced text</td></tr>
+            <tr><td>shift+ctrl+` <i>or</i> ⇧⌘`</td><td>monospaced block</td></tr>
+            <tr><td>ctrl+8 <i>or</i> shift+ctrl+* <i>or</i> ctrl+- <i>or</i> shift-ctrl+-<br/><i>or</i> ⌘8 <i>or</i> ⇧⌘* <i>or</i> ⌘- <i>or</i> ⇧⌘-</td><td>bulleted list</td></tr>
+            <tr><td>ctrl+1 <i>or</i> shift+ctrl+1<br/><i>or</i> ⌘1 <i>or</i> ⇧⌘1</td><td>numbered list</td></tr>
+            <tr><td>ctrl+[ <i>or</i> shift+ctrl+[ <i>or</i> ⌘[</td><td>task list</td></tr>
+            <tr><td>ctrl+] <i>or</i> shift+ctrl+] <i>or</i> ⌘]</td><td>sequence</td></tr>
+            <tr><td>shift+ctrl+T <i>or</i> ⇧⌘T <i>(except in Chrome)</i></td><td>title</td></tr>
+            <tr><td>shift+ctrl+H <i>or</i> ⇧⌘H</td><td>heading</td></tr>
+            <tr><td>shift+ctrl+S <i>or</i> ⇧⌘S</td><td>subheading</td></tr>
+            <tr><td>ctrl+' <i>or</i> shift+ctrl+' <i>or</i> ⌘' <i>or</i> ⇧⌘'</td><td>block quote</td></tr>
             <tr><td>tab ⇥</td><td><ul style={{paddingInlineStart: '20px'}}>
               <li>moves list item to child list</li>
               <li>moves cursor to next cell in table</li>

@@ -25,3 +25,6 @@ table.shortcuts {
 .shortcuts td {
     padding: .45em;
 }
+.shortcuts td i {
+    font-variant: small-caps;
+}
