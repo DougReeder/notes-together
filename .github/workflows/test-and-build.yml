@@ -18,8 +18,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: static checks
-        run: npm run lint
+        run: npm run prebuild
       - name: Run automated tests
         run: npm test
       - name: Run vite & rollup
         run: npm run build
+      - name: push archive to S3
+        uses: jakejarvis/s3-sync-action@master
+        if: ${{ github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
+        with:
+          args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: ${{ vars.AWS_S3_ENDPOINT }}
+          SOURCE_DIR: 'dist'      # optional: defaults to entire repository
+          DEST_DIR: 'notestogether'
