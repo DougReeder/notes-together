@@ -1,5 +1,5 @@
 // HelpPane.js - Preferences & HelpPane for Notes Together
-// Copyright © 2022—2024 Doug Reeder
+// Copyright © 2022—2025 Doug Reeder
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
@@ -200,7 +200,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           /<a href="https://support.apple.com/en-us/104996#create" target="_blank" rel="noreferrer">Add to Dock</a>).
           Consult the documentation for your browser.
           Notes Together will appear in the system Share pane when the Share is one it can accept.</p>
-        <p>Some browsers don't support this Sharing. See <a href="https://caniuse.com/mdn-html_manifest_share_target" target="_blank" rel="noreferrer">manifest: share_target</a> on CanIUse.</p>
+        <p>Some browsers don't support this Sharing. See <a href="https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/share_target#browser_compatibility" target="_blank" rel="noreferrer">Browser compatibility</a> on Mozilla Developer Network.</p>
 
         <h4>How do I add pictures and diagrams?</h4>
         <ul>
@@ -219,7 +219,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <li>Paste into the Notes Together editor pane.</li>
         </ol>
         <p>Or, select the text or graphic in the other app, and drag it into the editor pane.</p>
-        <p><i>Note that PDFs and office documents are designed to place ink on a page. They don't necessarily contain semantic markup that can be imported.</i></p>
+        <p><i>Note that PDFs and office documents are designed to place ink on paper. They don't necessarily contain semantic markup that can be imported.</i></p>
 
         <h4>How many graphics can I add to a note?</h4>
         <p>Not more than a couple photos — each takes up as much storage as <em>ten thousand</em> words! A half-dozen SVGs or diagrams should be fine.</p>
@@ -230,21 +230,24 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
         <h4>How do I add a link to a Rich Text note?</h4>
-        <ol>
-          <li>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor pane.</li>
-          <li>Or, make sure Notes Together is installed and use the system Share (if supported by your browser and operating system) to send the URL.</li>
-        </ol>
+        <p>Surf to the page in a web browser. From the browser's URL bar, drag the URL (or the icon next to it) to the Notes Together editor pane.</p>
+        <p>Or, make sure Notes Together is installed and use the system Share (if supported by your browser and operating system) to send the URL.</p>
 
         <h4>How do I follow a link, in a Rich Text note?</h4>
         <p>Right-click the link, then select <b>Open link in new tab</b>.</p>
+        <p>In some browsers, you can just click on the link.</p>
+
+        <h4>How do I convert a Plain Text or Markdown file to Rich Text?</h4>
+        <p>Click on the <b>Plain Text</b> or <b>Markdown</b> button in the upper right of the editor pane.
+          Or, select <b>Change note type...</b> from the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.5ex'}}/>.</p><p>If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
 
         <h4>Does the editor behave differently when editing a Markdown note?</h4>
-        <p>When rich text and graphics are pasted, they are converted to Markdown. If a Markdown note is converted to Rich Text, or vice versa, the markup is translated to the closest available.</p>
+        <p>When rich text and graphics are pasted, they are converted to Markdown.</p>
 
         <a href="https://hominidsoftware.com/notes-together/" target="_blank" rel="noreferrer"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
         <h2>Notes Together</h2>
         <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
-        <p>Copyright © 2021–2024 <a href="https://hominidsoftware.com/" target="_blank" rel="noreferrer">Hominid Software</a></p>
+        <p>Copyright © 2021–2025 <a href="https://hominidsoftware.com/" target="_blank" rel="noreferrer">Hominid Software</a></p>
         <p>&nbsp;</p>
       </div>
     </Box>
