@@ -289,6 +289,17 @@ the single biggest source of inspiration for Markdown's syntax is the format of 
     await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
   });
 
+  it(`should reject a MarkDown note longer than ${CONTENT_MAX} characters`, async () => {
+    const nodes = [];
+    for (let i = 0; i < 100; ++i) {
+      const text = "m".repeat(CONTENT_MAX / 100);
+      nodes.push({type: 'paragraph', children: [{text}]});
+    }
+    const nodeNote = new NodeNote(generateTestId(), 'markdown;hint=COMMONMARK', nodes, new Date(), false);
+
+    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
+  });
+
   it(`should reject a text note longer than ${CONTENT_MAX / 10} characters`, async () => {
     const nodes = [];
     for (let i = 0; i < 100; ++i) {

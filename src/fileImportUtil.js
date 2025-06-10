@@ -11,6 +11,7 @@ import {extractUserMessage} from "./util/extractUserMessage.js";
 import QuietError from "./util/QuietError.js";
 import {CONTENT_MAX} from "./Note.js";
 
+const TOO_LONG_COPY = "Too long. Copy only the parts you need.";
 
 async function determineParseType(file) {
   // console.log(`selected file “${file.name}” "${file.type}"`)
@@ -149,7 +150,7 @@ async function importHtml(html, fileDateValue, coda) {
   } catch (err) {
     let messages = [];
     if ('/properties/content/maxLength' === err?.error?.schemaPath) {
-      messages.push("Too long. Copy the parts you need.");
+      messages.push(TOO_LONG_COPY);
     } else {
       messages.push(extractUserMessage(err));
     }
@@ -283,7 +284,7 @@ async function importText(text, fileDateValue, coda, parseType) {
   } catch (err) {
     let messages = [];
     if ('/properties/content/maxLength' === err?.error?.schemaPath) {
-      messages.push("Too long. Copy the parts you need.");
+      messages.push(TOO_LONG_COPY);
     } else {
       messages.push(extractUserMessage(err));
     }
