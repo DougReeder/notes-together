@@ -1,5 +1,5 @@
 // imageFileToDataUrl.js - downscales an image & converts to data URL
-// Copyright © 2017-2024 Doug Reeder
+// Copyright © 2017–2025 Doug Reeder
 /* eslint-env browser, worker */
 
 const MAX_SIZE = 200_000;   // max content size / 3
@@ -53,10 +53,8 @@ function evaluateImage(blob, objectURL) {
 
     img.onerror = function (_evt) {
       const msg = `img onerror: “${blob.name}” (${blob.type}) ${blob.size} bytes`;
-      console.error(msg);
-      const err = new Error(msg);
-      err.userMsg = "Can you convert to a different format? Not loadable";
-      reject(err);
+      const userMsg = `Convert “${blob.name}” of type ${blob.type} to a different format. It's not loadable`;
+      reject(Object.assign(new Error(msg), {userMsg}));
     }
   });
 }

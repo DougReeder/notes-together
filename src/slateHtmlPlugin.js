@@ -1,5 +1,5 @@
 // slateHtmlPlugin.js — Slate plugin to customize Slate for HTML/JSX for Notes Together
-// Copyright © 2021–2024 Doug Reeder under the MIT License
+// Copyright © 2021–2025 Doug Reeder under the MIT License
 
 import {INLINE_ELEMENTS} from "./constants.js";
 import {
@@ -501,49 +501,54 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
       }
     } else if (dataTransfer.files.length > 0) {
       for (const file of dataTransfer.files) {
-        const fileInfo = await determineParseType(file);
-        if (fileInfo.isMarkdown) {   // presumes Markdown heuristics are correct
-          fileInfo.parseType = 'text/markdown';
-        }
-        if (fileInfo.parseType.startsWith('image/')) {
-          await pasteGraphicFile(file);
-        } else if (!fileInfo.message) {   // no message means usable
-          await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async evt => {
-              try {
-                const text = evt.target.result;
-                switch (fileInfo.parseType) {
-                  case 'text/html':
-                    pasteHtml(text);
-                    break;
-                  case 'text/uri-list':
-                    pasteUriList(text);
-                    break;
-                  case 'text/markdown':
-                    pasteMarkdown(text);
-                    break;
-                  default:   // some kind of text not excluded by determineParseType()
-                    pastePlainText(text)
-                    break;
+        try {
+          const fileInfo = await determineParseType(file);
+          if (fileInfo.isMarkdown) {   // presumes Markdown heuristics are correct
+            fileInfo.parseType = 'text/markdown';
+          }
+          if (fileInfo.parseType.startsWith('image/')) {
+            await pasteGraphicFile(file);
+          } else if (!fileInfo.message) {   // no message means usable
+            await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = async evt => {
+                try {
+                  const text = evt.target.result;
+                  switch (fileInfo.parseType) {
+                    case 'text/html':
+                      pasteHtml(text);
+                      break;
+                    case 'text/uri-list':
+                      pasteUriList(text);
+                      break;
+                    case 'text/markdown':
+                      pasteMarkdown(text);
+                      break;
+                    default:   // some kind of text not excluded by determineParseType()
+                      pastePlainText(text)
+                      break;
+                  }
+                  resolve();
+                } catch (err) {
+                  console.error("while pasting text file:", err);
+                  transientMsg(`Can you open “${file.name}” in another app and copy?`);
+                  reject(err);
                 }
-                resolve();
-              } catch (err) {
-                console.error("while pasting file:", err);
+              };
+              reader.onerror = () => {
+                console.error("reader.onerror:", reader.error);
                 transientMsg(`Can you open “${file.name}” in another app and copy?`);
-                reject(err);
-              }
-            };
-            reader.onerror = () => {
-              console.error("reader.onerror:", reader.error);
-              transientMsg(`Can you open “${file.name}” in another app and copy?`);
-              reject(reader.error);
-            };
-            reader.readAsText(file);
-          });
-        } else {
-          console.warn("not pasteable:", file.name, file.type, fileInfo.message);
-          transientMsg(`Can you open “${file.name}” in another app and copy?`, 'warning');
+                reject(reader.error);
+              };
+              reader.readAsText(file);
+            });
+          } else {
+            console.warn("not pasteable:", file.name, file.type, fileInfo.message);
+            transientMsg(`Can you open “${file.name}” in another app and copy?`, 'warning');
+          }
+        } catch (err) {
+          console.error("while pasting graphic file:", err);
+          transientMsg(extractUserMessage(err));
         }
       }
     } else {   // use default handling, which probably does nothing
