@@ -984,6 +984,12 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                     toggleMark(editor, 'bold');
                   }
                   break;
+                case '/':
+                  if (isHotkey('mod+/', { byKey: true }, evt)) {
+                    evt.preventDefault()
+                    toggleMark(editor, 'underline');
+                  }
+                  break;
                 case '\\':
                   if (isHotkey('mod+\\', { byKey: true }, evt)) {
                     evt.preventDefault()

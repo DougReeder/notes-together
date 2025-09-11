@@ -168,6 +168,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             <tr><td>shift+space ⇧␠</td><td>toggle checkbox</td></tr>
             <tr><td>ctrl+B <i>or</i> ⌘B</td><td>bold text</td></tr>
             <tr><td>ctrl+I <i>or</i> ⌘I</td><td>italic text</td></tr>
+            <tr><td>ctrl+/ <i>or</i> ⌘/</td><td>underlined text</td></tr>
             <tr><td>ctrl+\ <i>or</i> ⌘\</td><td>strikethrough text</td></tr>
             <tr><td>ctrl+` <i>or</i> ⌘`</td><td>monospaced text</td></tr>
             <tr><td>shift+ctrl+` <i>or</i> ⇧⌘`</td><td>monospaced block</td></tr>
