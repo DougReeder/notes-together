@@ -78,7 +78,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How closely must search words match the text?</h4>
         <ul>
           <li>Upper- and lower-case don’t matter, so “scuba” matches “SCUBA”.</li>
-          <li>Hyphens, periods, underscores and non-breaking spaces are dropped, so
+          <li>Hyphens, periods, underscores and non-breaking spaces are used to form words, and then dropped, so
             <ul>
               <li>“playgroup” matches “play-group”</li>
               <li>“phd” matches “Ph.D.</li>
@@ -87,12 +87,12 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             </ul>
           </li>
           <li>Decimal points in numbers <i>are not</i> dropped, so “25” doesn't match “2.5”.</li>
-          <li>“Words” consist only of letters, digits and apostrophes, so
+          <li>“Words” consist only of Unicode letters, unicode digits, and apostrophes, but Unicode word rules are <em>not</em> used, so
             <ul>
               <li>“john@example.com” is two separate words (which match “john” or “examplecom”)</li>
               <li>“614-555-1212” is one word (which matches “6145551212”)</li>
               <li>“ill” doesn’t match “I’ll”</li>
-              <li>“和谐” can’t be searched for.</li>
+              <li>“和” matches 和谐 and 和, but 谐 doesn't match 和谐.</li>
             </ul>
           </li>
           <li>Accented letters match unaccented letters, so
