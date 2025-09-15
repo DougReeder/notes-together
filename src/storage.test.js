@@ -1091,7 +1091,7 @@ Finance: we can't afford it.</ins>`);
         await deleteNote(noteId);
       }
 
-      for (let i = 0; i < 500; ++i) {
+      for (let i = 0; i < 505; ++i) {
         const nodeNote = new NodeNote(generateTestId(), undefined, nodes, new Date(), false);
         await upsertNote(nodeNote, undefined);
       }
@@ -1126,7 +1126,7 @@ Finance: we can't afford it.</ins>`);
             lastDate = stub.date.getTime();
           }
 
-          expect(isPartial).toBeFalsy();
+          expect(isPartial).toBeTruthy();
           expect(isSearch).toBeFalsy();
           done();
         } catch (err2) {
@@ -1164,7 +1164,7 @@ Finance: we can't afford it.</ins>`);
             lastDate = stub.date.getTime();
           }
 
-          expect(isPartial).toBeFalsy();
+          expect(isPartial).toBeTruthy();
           expect(isSearch).toBeTruthy();
           done();
         } catch (err2) {
