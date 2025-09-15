@@ -18,7 +18,7 @@ import {
   IconButton,
   Input,
   MenuItem,
-  Toolbar, Menu, Divider, CircularProgress, LinearProgress
+  Toolbar, Menu, Divider, CircularProgress, LinearProgress, Select
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -66,7 +66,7 @@ import {globalWordRE, allowedExtensions, allowedFileTypesNonText} from "./consta
 import decodeEntities from "./util/decodeEntities";
 import removeDiacritics from "./diacritics";
 import {deserializeNote} from "./serializeNote.js";
-import {createWorker, PSM} from 'tesseract.js';
+import {createWorker, OEM, PSM} from 'tesseract.js';
 import {tesseractBlocksToHTML, tesseractWordsToHTML} from "./util/tesseractUtil.js";
 
 
@@ -652,6 +652,11 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
   const pasteFileInput = useRef(null);
   const fileInd = useRef(0);
   const [isRecognizeDialogOpen, setIsRecognizeDialogOpen] = useState(false);
+  const [recognitionLanguage, setRecognitionLanguage] = useState("eng");   // Tesseract code
+
+  function handleLanguageChange(evt) {
+    setRecognitionLanguage(evt.target.value);
+  }
 
   if (noteErr) {
     console.error("error in Details:", noteErr);
@@ -1134,7 +1139,61 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         </DialogActions>
       </Dialog>
       <Dialog open={isRecognizeDialogOpen} onClose={finishInsertFiles.bind(this)} aria-labelledby="recognize-dialog-title">
-        <DialogTitle id="recognize-dialog-title">{`What does “${pasteFileInput.current?.files?.item(fileInd.current)?.name}” contain?`}</DialogTitle>
+        <DialogTitle id="recognize-dialog-title">{`What language is “${pasteFileInput.current?.files?.item(fileInd.current)?.name}” in?`}</DialogTitle>
+        <DialogContent>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <div>
+              <Select id="language-select"
+                      value={recognitionLanguage} label="Language"
+                      onChange={handleLanguageChange}
+              >
+                <MenuItem value={"ara"}>Arabic</MenuItem>
+                <MenuItem value={"ben"}>Bengali</MenuItem>
+                <MenuItem value={"chi_sim"}>Chinese — Simplified</MenuItem>
+                <MenuItem value={"chi_tra"}>Chinese — Traditional</MenuItem>
+                <MenuItem value={"dan"}>Danish</MenuItem>
+                <MenuItem value={"nld"}>Dutch</MenuItem>
+                <MenuItem value={"eng"}>English</MenuItem>
+                <MenuItem value={"epo"}>Esperanto</MenuItem>
+                <MenuItem value={"fas"}>Farsi (Persian)</MenuItem>
+                <MenuItem value={"fin"}>Finnish</MenuItem>
+                <MenuItem value={"fra"}>French</MenuItem>
+                <MenuItem value={"deu"}>German</MenuItem>
+                <MenuItem value={"guj"}>Gujarati</MenuItem>
+                <MenuItem value={"grc"}>Greek — Ancient</MenuItem>
+                <MenuItem value={"ell"}>Greek — Modern</MenuItem>
+                <MenuItem value={"heb"}>Hebrew</MenuItem>
+                <MenuItem value={"hin"}>Hindi</MenuItem>
+                <MenuItem value={"isl"}>Icelandic</MenuItem>
+                <MenuItem value={"ind"}>Indonesian</MenuItem>
+                <MenuItem value={"gle"}>Irish</MenuItem>
+                <MenuItem value={"ita"}>Italian</MenuItem>
+                <MenuItem value={"jpn"}>Japanese</MenuItem>
+                <MenuItem value={"kan"}>Kannada</MenuItem>
+                <MenuItem value={"kor"}>Korean</MenuItem>
+                <MenuItem value={"kor_vert"}>Korean — vertical</MenuItem>
+                <MenuItem value={"lat"}>Latin</MenuItem>
+                <MenuItem value={"msa"}>Malay</MenuItem>
+                <MenuItem value={"mar"}>Marathi</MenuItem>
+                <MenuItem value={"equ"}>Math (equation)</MenuItem>
+                <MenuItem value={"nor"}>Norwegian</MenuItem>
+                <MenuItem value={"pan"}>Panjabi (Punjabi)</MenuItem>
+                <MenuItem value={"pol"}>Polish</MenuItem>
+                <MenuItem value={"por"}>Portugese</MenuItem>
+                <MenuItem value={"rus"}>Russian</MenuItem>
+                <MenuItem value={"spa"}>Spanish</MenuItem>
+                <MenuItem value={"swa"}>Swahili</MenuItem>
+                <MenuItem value={"swe"}>Swedish</MenuItem>
+                <MenuItem value={"tam"}>Tamil</MenuItem>
+                <MenuItem value={"tel"}>Telugu</MenuItem>
+                <MenuItem value={"ukr"}>Ukrainian</MenuItem>
+                <MenuItem value={"vie"}>Vietnamese</MenuItem>
+              </Select>
+            </div>
+          </Box>
+        </DialogContent>
+
+        <DialogTitle>{`What does it contain?`}</DialogTitle>
         <div className="stackedButtons">
           <Button onClick={recognizeText.bind(this, PSM.AUTO_OSD)}>
             All Page Elements
@@ -1270,7 +1329,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     ReactEditor.focus(editor);
     if (recognizeTextFlag) {
       setUninteruptableOpName("text recognition");
-      worker.current = await createWorker(["osd", "eng"] /*navigator.languages*/, 2, { logger: logProgress });
+      worker.current = await createWorker(["osd", recognitionLanguage], OEM.TESSERACT_LSTM_COMBINED, { logger: logProgress });
+      worker.current.recognitionLanguage = recognitionLanguage;
     }
     return insertFile();
   }
@@ -1307,12 +1367,16 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     const dataTransfer2 = new DataTransfer();
     const file = pasteFileInput.current?.files?.item(fileInd.current);
     try {
-      console.groupCollapsed(`OCR ${SEGMENTATION_MODE_NAMES[segmentationMode]}:`, file.name, file.type);
+      console.groupCollapsed(`OCR ${recognitionLanguage} ${SEGMENTATION_MODE_NAMES[segmentationMode]}:`, file.name, file.type);
       setIsRecognizeDialogOpen(false);
 
       /* tesseract.js only accepts these image types */
       if (['image/bmp', 'image/jpeg', 'image/png', 'image/webp', 'image/x-portable-bitmap', 'image/x-portable-graymap', 'image/x-portable-pixmap', 'image/x-portable-anymap'].includes(file.type)) {
         // console.log(`file:`, file.name, file instanceof File, file.__proto__)
+        if (recognitionLanguage !== worker.current.recognitionLanguage) {
+          await worker.current.reinitialize(["osd", recognitionLanguage], OEM.TESSERACT_LSTM_COMBINED);
+          worker.current.recognitionLanguage = recognitionLanguage;
+        }
         await worker.current.setParameters({
           tessedit_pageseg_mode: segmentationMode,
         });
