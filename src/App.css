@@ -98,7 +98,16 @@ body {
 }
 
 .panel {
-  background: #eee;
+  /* awesome pattern by CSS3 Patterns Gallery */
+  background-color:#e4e4e4;
+  background-image:
+          radial-gradient(circle at 100% 150%, #e4e4e4 24%, #eee 24%, #eee 28%, #e4e4e4 28%, #e4e4e4 36%, #eee 36%, #eee 40%, transparent 40%, transparent),
+          radial-gradient(circle at 0    150%, #e4e4e4 24%, #eee 24%, #eee 28%, #e4e4e4 28%, #e4e4e4 36%, #eee 36%, #eee 40%, transparent 40%, transparent),
+          radial-gradient(circle at 50%  100%, #eee 10%, #e4e4e4 10%, #e4e4e4 23%, #eee 23%, #eee 30%, #e4e4e4 30%, #e4e4e4 43%, #eee 43%, #eee 50%, #e4e4e4 50%, #e4e4e4 63%, #eee 63%, #eee 71%, transparent 71%, transparent),
+          radial-gradient(circle at 100% 50%, #eee 5%, #e4e4e4 5%, #e4e4e4 15%, #eee 15%, #eee 20%, #e4e4e4 20%, #e4e4e4 29%, #eee 29%, #eee 34%, #e4e4e4 34%, #e4e4e4 44%, #eee 44%, #eee 49%, transparent 49%, transparent),
+          radial-gradient(circle at 0    50%, #eee 5%, #e4e4e4 5%, #e4e4e4 15%, #eee 15%, #eee 20%, #e4e4e4 20%, #e4e4e4 29%, #eee 29%, #eee 34%, #e4e4e4 34%, #e4e4e4 44%, #eee 44%, #eee 49%, transparent 49%, transparent);
+  background-size: 100px 50px;
+
   position: relative;
 
   display: flex;
