@@ -121,12 +121,12 @@ const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
 const UNEXPECTED_ERROR = "Switch to another note, then back.";
 
 const SEGMENTATION_MODE_NAMES = {
-  "1": "All Page Elements",
-  "3": "All Page Elements (w/o OSD)",
+  "1": "All Types of Page Elements",
+  "3": "All Types of Page Elements (w/o OSD)",
   "6": "Uniform Paragraphs",
-  "4": "Single Column or Table",
-  "7": "Single Line",
-  "8": "Single Word",
+  "4": "A Single Column or Table",
+  "7": "A Single Line",
+  "8": "A Single Word",
   "11": "Scattered Words (w/o OSD)",
   "12": "Scattered Words"
 }
@@ -1196,22 +1196,22 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         <DialogTitle>{`What does it contain?`}</DialogTitle>
         <div className="stackedButtons">
           <Button onClick={recognizeText.bind(this, PSM.AUTO_OSD)}>
-            All Page Elements
+            All Types of Page Elements
           </Button>
           {/*<Button onClick={recognizeText.bind(this, PSM.AUTO)}>*/}
-          {/*  All Page Elements (w/o OSD)*/}
+          {/*  All Types of Page Elements (w/o OSD)*/}
           {/*</Button>*/}
           <Button onClick={recognizeText.bind(this, PSM.SINGLE_BLOCK)}>
             Uniform Paragraphs
           </Button>
           <Button onClick={recognizeText.bind(this, PSM.SINGLE_COLUMN)}>
-            Single Column or Table
+            A Single Column or Table
           </Button>
           <Button onClick={recognizeText.bind(this, PSM.SINGLE_LINE)}>
-            Single Line
+            A Single Line
           </Button>
           <Button onClick={recognizeText.bind(this, PSM.SINGLE_WORD)}>
-            Single Word
+            A Single Word
           </Button>
           {/*<Button onClick={recognizeText.bind(this, PSM.SPARSE_TEXT)}>*/}
           {/*  Scattered Words (w/o OSD)*/}
@@ -1322,17 +1322,22 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
  }
 
   async function pasteFileChange(_) {
-    console.group(`Pasting ${pasteFileInput.current?.files.length} files into editor` + (recognizeTextFlag ? " and recognizing text" : ""));
-    setIsProgressing(true);
-    setProgress(0);
-    fileInd.current = 0;
-    ReactEditor.focus(editor);
-    if (recognizeTextFlag) {
-      setUninteruptableOpName("text recognition");
-      worker.current = await createWorker(["osd", recognitionLanguage], OEM.TESSERACT_LSTM_COMBINED, { logger: logProgress });
-      worker.current.recognitionLanguage = recognitionLanguage;
+    try {
+      console.group(`Pasting ${pasteFileInput.current?.files.length} files into editor` + (recognizeTextFlag ? " and recognizing text" : ""));
+      setIsProgressing(true);
+      setProgress(0);
+      fileInd.current = 0;
+      ReactEditor.focus(editor);
+      if (recognizeTextFlag) {
+        setUninteruptableOpName("text recognition");
+        worker.current = await createWorker(["osd", recognitionLanguage], OEM.TESSERACT_LSTM_COMBINED, {logger: logProgress});
+        worker.current.recognitionLanguage = recognitionLanguage;
+      }
+      return insertFile();
+    } catch (err) {
+      console.error(`while pasting ${pasteFileInput.current?.files.length} files:`, err);
+      return finishInsertFiles();
     }
-    return insertFile();
   }
 
   async function insertFile() {
