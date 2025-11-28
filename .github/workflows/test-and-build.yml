@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         # Support LTS versions based on https://nodejs.org/en/about/releases/
-        node-version: ['20']
+        node-version: ['20', '22', '24']
     steps:
       - uses: actions/checkout@v5
       - name: Use Node.js ${{ matrix.node-version }}
@@ -25,7 +25,7 @@ jobs:
         run: npm run build
       - name: push archive to S3
         uses: jakejarvis/s3-sync-action@master
-        if: ${{ github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
+        if: ${{ matrix.node-version == '20' && github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
         with:
           args: --follow-symlinks --delete
         env:
