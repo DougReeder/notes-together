@@ -361,11 +361,12 @@ it('renders error if note missing', async () => {
     // expect(screen.getByRole('menu', {name: "Details menu"})).toBeVisible();
     expect(within(menu).getByRole('menuitem', {name: /Undo/})).toBeVisible();
     expect(within(menu).getByRole('menuitem', {name: /Redo/})).toBeVisible();
+    expect(within(menu).getByRole('menuitem', {name: /Keep screen awake for this note/})).toBeVisible();
     expect(within(menu).getByRole('menuitem', {name: "Paste files..."})).toBeVisible();
     expect(within(menu).getByRole('menuitem', {name: "Paste files & recognize text..."})).toBeVisible();
     const changeNoteType = screen.getByRole('menuitem', {name: /Change note type/});
     expect(changeNoteType).toBeVisible();
-    expect(within(menu).getAllByRole('menuitem')).toHaveLength(9);
+    expect(within(menu).getAllByRole('menuitem')).toHaveLength(10);
 
     await userEvent.click(changeNoteType);
     expect(screen.getByRole('dialog', {name: "Change type of note?"})).toBeVisible();
@@ -408,6 +409,27 @@ it('renders error if note missing', async () => {
     expect(pasteAndRecognize).toBeVisible();
 
     await userEvent.click(pasteAndRecognize);
+  });
+
+  it("wakeLock menu item is clickable", async () => {
+    const noteId = uuidv4();
+    const initialText = "Duis eros tellus, molestie id lobortis non, iaculis in metus. ";
+    const noteDate = new Date(1985, 4, 19);
+    getNote.mockResolvedValue(Promise.resolve(new SerializedNote(noteId, 'text/html;hint=SEMANTIC', '', initialText, noteDate)));
+    const mockToggleWakeLock = vitest.fn();
+    render(<Detail noteId={noteId} toggleWakeLock={mockToggleWakeLock}></Detail>);
+
+    await waitFor(() => expect(screen.getByRole('button', {name: "Open Editor menu"})).toBeVisible());
+    const detailsMenuBtn = screen.getByRole('button', {name: "Open Editor menu"});
+
+    await userEvent.click(detailsMenuBtn);
+    let menu = await screen.findByRole('menu', {name: "Editor menu"});
+
+    const acquireWakeLock = within(menu).getByRole('menuitem', {name: "Keep screen awake for this note"});
+    expect(acquireWakeLock).toBeVisible();
+
+    await userEvent.click(acquireWakeLock);
+    expect(mockToggleWakeLock).toHaveBeenCalledTimes(1);
   });
 
   it("shows 'no selection' menu when no selection", async () => {
@@ -475,7 +497,7 @@ it('renders error if note missing', async () => {
   //   expect(screen.queryAllByRole('listitem').length).toEqual(3);
   // });
 
-  it("locks a note when menu item selected", async () => {
+  it("locks a note when menu item selected, then the lock toolbar is shown", async () => {
     const noteId = uuidv4();
     const noteText = "<p>Some paragraph</p>";
     const noteDate = new Date(2022, 8, 3);
@@ -490,10 +512,15 @@ it('renders error if note missing', async () => {
     await userEvent.click(textbox);
     expect(textbox).toHaveFocus();
 
-    await userEvent.click(screen.getByRole('button', {name: "Open Editor menu"}));
-    await userEvent.click(screen.getByRole('menuitem', {name: "Lock note"}));
+    const toolbar = screen.getByRole('banner');
+    await userEvent.click(within(toolbar).getByRole('button', {name: "Open Editor menu"}));
+    const menu = await screen.findByRole('menu', {name: "Editor menu"});
+    await userEvent.click(within(menu).getByRole('menuitem', {name: "Lock note"}));
     await userEvent.click(textbox);
     expect(textbox).not.toHaveFocus();
+
+    const acquireWakeLock = within(toolbar).getByRole('button', {name: "Keep screen awake for this note"});
+    expect(acquireWakeLock).toBeVisible();
 
     await userEvent.click(screen.getByRole('button', {name: "Unlock note"}));
     await userEvent.click(textbox);

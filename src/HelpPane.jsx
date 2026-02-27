@@ -1,10 +1,11 @@
 // HelpPane.js - Preferences & HelpPane for Notes Together
-// Copyright © 2022—2025 Doug Reeder
+// Copyright © 2022—2026 Doug Reeder
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {AppBar, Box, IconButton, Toolbar, Typography} from "@mui/material";
 import PropTypes from 'prop-types';
 import MenuIcon from "@mui/icons-material/Menu";
+import Monitor from "@mui/icons-material/Monitor";
 import {KeyboardVoice, Lock, MoreVert, Redo, Settings, Undo} from "@mui/icons-material";
 import "./HelpPane.css";
 
@@ -63,6 +64,10 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
           <li>Tap the microphone button. <KeyboardVoice style={{position: 'relative', bottom: '-0.5ex'}}/></li>
           <p><i>On Android, you may first need to enable voice dictation in the keyboard Settings.</i> <Settings style={{position: 'relative', bottom: '-0.5ex'}}/></p>
         </ol>
+
+        <h4>How do I keep the screen from turning off while I'm viewing a recipe or typing notes at a meeting?</h4>
+        <p>From the Editor menu <MoreVert style={{position: 'relative', bottom: '-0.4ex'}}/> select <b>Keep screen awake for this note <Monitor style={{position: 'relative', bottom: '-0.4ex'}}/></b>.</p>
+        <p>The screen will sleep after its usual timeout, if you're in Low Power Mode, when the window is hidden, or when you select another note.</p>
 
         <h4>How do I sync notes between devices?</h4>
         <p>Create an <a href="https://remotestorage.io/get/" target="_blank" rel="noreferrer">account native to remoteStorage</a> with a third-party provider (or use an existing Dropbox or Google Drive account, with some limitations). Then use the widget in the lower-left of the list panel to connect to it.</p>
@@ -259,7 +264,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <a href="https://hominidsoftware.com/notes-together/" target="_blank" rel="noreferrer"><img alt="Notes Together" src="icons/NotesTogether-Icon-96x96.png" style={{float: 'right', maxWidth: '30%'}}/></a>
         <h2>Notes Together</h2>
         <p>Questions? Contact <a href={helpEmail}>support@hominidsoftware.com</a></p>
-        <p>Copyright © 2021–2025 <a href="https://hominidsoftware.com/" target="_blank" rel="noreferrer">Hominid Software</a></p>
+        <p>Copyright © 2021–2026 <a href="https://hominidsoftware.com/" target="_blank" rel="noreferrer">Hominid Software</a></p>
         <p>&nbsp;</p>
       </div>
     </Box>

@@ -28,11 +28,11 @@ import CodeIcon from '@mui/icons-material/Code';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import {
   AddCircleOutline, DeleteOutline, GridOn, Lock,
-  MoreVert,
+  Monitor, MoreVert,
   Photo,
   Redo,
   RemoveCircleOutline,
-  StrikethroughS,
+  Snooze, StrikethroughS,
   TextFormat,
   Undo
 } from "@mui/icons-material";
@@ -132,7 +132,7 @@ const SEGMENTATION_MODE_NAMES = {
 }
 
 
-function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel, setUninteruptableOpName}) {
+function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPanel, setUninteruptableOpName, wakeLock, toggleWakeLock}) {
   const [viewportScrollX, viewportScrollY] = useViewportScrollCoords();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -842,6 +842,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     if (isLocked) {
       noteControls = <>
         <div style={{margin: '0 1em'}}>{noteDate.toDateString()}</div>
+        <IconButton title={wakeLock ? "Allow screen to sleep" : "Keep screen awake for this note"} size="large" className={wakeLock ? "live" : ""} onClick={toggleWakeLock}><Monitor/></IconButton>
         <IconButton title="Unlock note" size="large" onClick={async _evt => {
           try {
             setIsLocked(false);
@@ -857,6 +858,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         {dateControl}
         <IconButton aria-controls="details-menu" aria-haspopup="true"
                     title="Open Editor menu" size="large"
+                    className={wakeLock ? "live" : ""}
                     onClick={handleDetailsMenuClick}>
           <MoreVert/>
         </IconButton>
@@ -885,6 +887,13 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
             setDetailsMenuAnchorEl(null);
           }}>
             Redo &nbsp;<Redo/>
+          </MenuItem>
+          <MenuItem onClick={_evt => {
+            previousSelection.current = null;
+            toggleWakeLock();
+            setDetailsMenuAnchorEl(null);
+          }}>
+            {wakeLock ? <>Allow screen to sleep <Snooze/></> : <>Keep screen awake for this note &nbsp; <Monitor/></>}
           </MenuItem>
           <MenuItem onClick={_evt => {
             if (!editor.selection && previousSelection.current) {
@@ -1503,6 +1512,8 @@ Detail.propTypes = {
   focusOnLoadCB: PropTypes.func,
   setMustShowPanel: PropTypes.func,
   setUninteruptableOpName: PropTypes.func,
+  wakeLock: PropTypes.object,
+  toggleWakeLock: PropTypes.func,
 };
 
 ErrorFallback.propTypes = {

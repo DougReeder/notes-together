@@ -1,4 +1,4 @@
-// Copyright © 2021–2025 Doug Reeder
+// Copyright © 2021–2026 Doug Reeder
 
 import {
   init,
@@ -63,6 +63,7 @@ function App() {
       words = "";
     }
     setSearchParams(new URLSearchParams({words}));
+    releaseWakeLock().catch(console.error);
   }
 
   useEffect(() => {
@@ -77,9 +78,47 @@ function App() {
 
   // LIST, DETAIL or HELP
   const mustShowPanel = sessionStorage.getItem('mustShowPanel') || 'LIST';
-  function setMustShowPanel(panel) {
+  const setMustShowPanel = useCallback(panel => {
     sessionStorage.setItem('mustShowPanel', panel);
     forceRender();
+
+    if ('DETAIL' !== panel) {
+      releaseWakeLock().catch(console.error);
+    }
+  }, []);
+
+  // Using ref because a state variable is set to null at unexpected times
+  const wakeLockRef = useRef(null);
+  async function acquireWakeLock() {
+    if (!("wakeLock" in navigator) || wakeLockRef.current) { return; }
+
+    try {
+      const wakeLockSentinel = await navigator.wakeLock.request("screen")
+      wakeLockRef.current = wakeLockSentinel;
+      forceRender();
+      console.info("Wake Lock obtained");
+
+      wakeLockSentinel.addEventListener("release", () => {
+        console.info("Wake Lock released");
+        wakeLockRef.current = null;
+        forceRender();
+      });
+    } catch (err) {
+      console.error("Failed to acquire wake lock:", err);
+      transientMsg(extractUserMessage(err));
+      wakeLockRef.current = null;
+    }
+  }
+  async function releaseWakeLock() {
+    await wakeLockRef.current?.release();
+    wakeLockRef.current = null;   // backstops release event
+  }
+  async function toggleWakeLock() {
+    if (wakeLockRef.current) {
+      await releaseWakeLock();
+    } else {
+      await acquireWakeLock();
+    }
   }
 
   const selectedNoteId = sessionStorage.getItem('selectedNoteId');
@@ -89,6 +128,7 @@ function App() {
     } else {
       sessionStorage.setItem('selectedNoteId', id || '');   // setItem coerces to string
       forceRender();
+      releaseWakeLock().catch(console.error);
     }
   }
   const [uninteruptableOpName, setUninteruptableOpName] = useState("");
@@ -240,8 +280,10 @@ function App() {
         setMustShowPanel('LIST');
       } else if (document.activeElement !== searchRef.current) {
         searchRef.current?.focus();
+        releaseWakeLock().catch(console.error);
       } else {
         setSearchParams(new URLSearchParams());
+        releaseWakeLock().catch(console.error);
       }
     }
     if (evt.target.dataset.slateEditor) {
@@ -268,7 +310,7 @@ function App() {
       // default:
       //   console.log("App keyListener:", evt.code, evt.target, mustShowPanel)
     }
-  }, [mustShowPanel, setSearchParams]);
+  }, [mustShowPanel, setMustShowPanel, setSearchParams]);
   useEffect(() => {
     document.addEventListener('keydown', keyListener);
 
@@ -291,6 +333,7 @@ function App() {
 
   function openAppMenu(evt) {
     setAppMenuAnchorEl(evt.currentTarget);
+    releaseWakeLock().catch(console.error);
   }
 
   function showHideHelp() {
@@ -462,6 +505,7 @@ function App() {
 
   function openTestMenu(evt) {
     setTestMenuAnchorEl(evt.currentTarget);
+    releaseWakeLock().catch(console.error);
   }
   function closeTestMenu() {
     setTestMenuAnchorEl(null);
@@ -502,7 +546,7 @@ function App() {
       console.group("Hammering storage");
       setTestMenuAnchorEl(null);
       setNumBackgroundTasks( prevNumBackgroundTasks => prevNumBackgroundTasks + 1 );
-      await hammerStorage();
+      hammerStorage();
     } catch (err) {
       console.error("handleHammer:", err);
       transientMsg(extractUserMessage(err));
@@ -589,9 +633,11 @@ function App() {
       </div>
       <div className="separator"></div>
       <div className="panel panelDetail">
-        {'HELP' !== mustShowPanel ? <Detail noteId={selectedNoteId} searchWords={searchWords}
-                                            focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
-                                            setMustShowPanel={setMustShowPanel} setUninteruptableOpName={setUninteruptableOpName}></Detail> :
+        {'HELP' !== mustShowPanel ?
+          <Detail noteId={selectedNoteId} searchWords={searchWords}
+            focusOnLoadCB={focusOnLoad.current ? clearFocusOnLoad : null}
+            setMustShowPanel={setMustShowPanel} setUninteruptableOpName={setUninteruptableOpName}
+            wakeLock={wakeLockRef.current} toggleWakeLock={toggleWakeLock} /> :
           <HelpPane setMustShowPanel={setMustShowPanel}></HelpPane>
         }
       </div>

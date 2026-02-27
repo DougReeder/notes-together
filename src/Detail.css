@@ -26,6 +26,10 @@
     max-width: 16ch;
 }
 
+.live {
+    background-color: #fffaad !important;
+}
+
 .MuiSelect-root h1, .MuiSelect-root h2, .MuiSelect-root h3,
 .MuiMenuItem-root h1, .MuiMenuItem-root h2, .MuiMenuItem-root h3 {
     margin-block-start: 0;
