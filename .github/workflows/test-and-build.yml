@@ -1,5 +1,5 @@
 name: test-and-build
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     name: test & build - node.js
