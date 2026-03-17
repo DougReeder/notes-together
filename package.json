@@ -11,7 +11,8 @@
     "betatest": "surge dist https://notes-together.surge.sh/; true",
     "prebuild": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview --host 0.0.0.0",
-    "deploy": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/dist/* root@hominidsoftware.com:/var/www/notestogether/"
+    "deploy": "rsync -v --rsh='ssh -p 2222 -i ~/.ssh/id_passwordless' --archive --delete --prune-empty-dirs --human-readable --exclude '.DS_Store' ~/git/notes-together/dist/* composed@hominidsoftware.com:/var/www/notestogether/",
+    "deploy-scp": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/dist/* root@hominidsoftware.com:/var/www/notestogether/"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
