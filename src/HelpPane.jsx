@@ -41,10 +41,10 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p>No, but you can quickly search one word. If you don’t find the note you’re looking for, then search for the other word.</p>
 
         <h4>Can I create categories or tags?</h4>
-        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search as tag</b>. Tags are listed before search suggestions in the search dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
+        <p>Enter a search, then from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>, select <b>Save search as tag</b>. Saved tags are listed before recent searches in the search suggestion dropdown. Your notes are already tagged with every word in them. Tags are synced to all of your devices.</p>
         <p>If searching for the natural name of a category or tag fetches unrelated results (for example, you search for “star” and get notes on celebrities as well as astronomy) you can use two or more words, append an uncommon word like “asterism” to all of the appropriate notes, or coin a word like “StarAstronomy”.</p>
         <p>If a note doesn't contain the tag word or words you need, just add them to the bottom of the note. For example, if you append “movie review” to each of your notes on a movie, you can find them all by searching for either “movie” or “review”.</p>
-        <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't get in your way. If you need the project notes again, just type the topic into the search field!</p>
+        <p>Tags can be temporary. While you're working on a project, save the topic as a tag. When you're done with the project, delete the tag, and the obsolete tag won't get in your way. If you need the project notes again, just type the topic into the search field! You can re-create the tag if you like.</p>
 
         <h4>How can I organize large amounts of text?</h4>
         <p>Pick a distinctive 1–3 word topic (and add it to any notes that don't have it). Save the topic as a tag. While working, leave the topic selected in the search field. New notes will be tagged with this topic.</p>
@@ -117,11 +117,11 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <p>Task List and Sequence items can be checked or cleared, even when a note is locked.</p>
 
         <h4>What keyboard shortcuts are available?</h4>
-        <p>Many common shortcuts do what you'd expect, so they're not listed here!</p>
+        <p>Many common shortcuts (such as cut and paste) do what you'd expect, so they're not listed here!</p>
         <table className="shortcuts">
           <caption>Anywhere</caption>
           <tbody>
-            <tr><td>escape ⎋</td><td>navigate out: close dialog, exit editor, show list panel, focus search, then clear search</td></tr>
+            <tr><td>escape ⎋</td><td>navigate out: close dialog, exit editor, show list panel, dismiss list item buttons, focus search, then clear search</td></tr>
             <tr><td>ctrl+shift+plus<br/><i>or</i> ​⇧⌘+</td><td>increase application text size</td></tr>
             <tr><td>ctrl+minus<br/><i>or</i> ⌘-</td><td>decrease application text size</td></tr>
           </tbody>
@@ -222,7 +222,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <h4>How do I increase the accuracy of <b>Paste files & recognize text...</b>?</h4>
         <ol>
           <li>Use a screenshot or flatbed scanner. Or use a camera app, square your phone with the page, and ensure there are no reflections when taking the photo.</li>
-          <li>Then use image editing software to crop the image down to a single column without anything extraneous (but including a moderate margin). If the image is light text against a dark background, invert the colors so it's dark text against a light background.</li>
+          <li>Then crop the image down to a single column without anything extraneous (but including a moderate margin). If the image is light text against a dark background, invert the colors so it's dark text against a light background.</li>
           <li>After pasting the graphic and editing the recognized text as necessary, you can delete the graphic so there's more space for text.</li>
         </ol>
 
@@ -243,7 +243,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
 
         <h4>What formatting is supported for imported files and pasted text?</h4>
         <p>Headings, paragraphs, lists, tables, graphics and other semantic HTML are imported, but not custom styles.</p>
-        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus GFM <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">tables</a>, <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists" target="_blank" rel="noreferrer">checklists</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, delete and insert text styles, as usual in Markdown.)</p>
+        <p><a href="https://commonmark.org/help/" target="_blank" rel="noreferrer">Markdown notation (CommonMark 1.0)</a> plus GFM <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables" target="_blank" rel="noreferrer">tables</a>, <a href="https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists" target="_blank" rel="noreferrer">checklists</a> and <a href="https://github.github.com/gfm/#strikethrough-extension-" target="_blank" rel="noreferrer">strikethrough</a> is supported in files with the extension <code>.md</code> or (optionally) text files. (<code>&lt;sup&gt; &lt;sub&gt; &lt;u&gt; &lt;s&gt; &lt;del&gt;</code> and <code>&lt;ins&gt;</code> tags can be used for superscript, subscript, underline, strikethrough, delete and insert text styles, as usual in Markdown.)</p>
         <p>When using <b>Import multiple notes per file</b> (from the application menu <MenuIcon style={{position: 'relative', bottom: '-0.5ex'}}/>), three blank lines separate one note from the next.</p>
 
         <h4>How do I add a link to a Rich Text note?</h4>
