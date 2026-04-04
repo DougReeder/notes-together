@@ -452,7 +452,7 @@ it('renders error if note missing', async () => {
     expect(screen.getByRole('menuitem', {name: "Table"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Block Quote"})).toBeVisible();
     expect(screen.getByRole('menuitem', {name: "Monospaced"})).toBeVisible();
-    expect(screen.getByRole('menuitem', {name: "Rule"})).toBeVisible();
+    expect(screen.getByRole('menuitem', {name: "Separator"})).toBeVisible();
     expect(screen.getAllByRole('menuitem')).toHaveLength(12);
   });
 

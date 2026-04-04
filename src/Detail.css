@@ -92,6 +92,7 @@ details {
 .MuiButton-root {
     font-size: 1em;
     text-transform: none;
+    white-space: nowrap;
 }
 
 @media (any-pointer: coarse) {
@@ -158,6 +159,14 @@ details {
     min-width: 2ch;
     border: 2px solid #cccccc;
     padding: 0.75ch;
+}
+
+hr {
+    border: none;
+    text-align: center;
+}
+hr::before {
+    content: "⸻ ⧏ ✽ ✽ ✽ ⧐ ⸻";
 }
 
 del {

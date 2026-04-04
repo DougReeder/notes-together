@@ -147,6 +147,10 @@ body {
 .MuiMenuItem-root {
   font-size: 1.1rem;
   white-space: normal !important;
+}
+#appMenu .MuiMenuItem-root,
+#details-menu .MuiMenuItem-root,
+#mark-menu .MuiMenuItem-root {
   justify-content: space-between !important;
 }
 .MuiMenuItem-root.pseudoDisabled {

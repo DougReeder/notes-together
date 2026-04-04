@@ -83,9 +83,9 @@ const BLOCK_TYPE_DISPLAY = {
   'table': <>Table <GridOn/></>,
   'table-row': "Table Row",   // not supposed to be returned, currently
   'table-cell': "Table Cell",
-  'quote': <><span/><span>Block Quote</span></>,
+  'quote': <>Block Quote</>,
   'code': <code>Monospaced</code>,
-  'thematic-break': <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
+  'thematic-break': <><div>Separator</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>,
   'image': <><span>Graphic </span><Photo/></>,
   'multiple': "(Multiple)",
   'n/a': "(n/a)",
@@ -101,7 +101,7 @@ const BLOCK_ITEMS_DEFAULT = [
   {cmd: 'task-list', label: "✔️ Task List"},
   {cmd: 'sequence-list', label: "✔️ Sequence"},
   {cmd: 'table', label: <>Table <GridOn/></>},
-  {cmd: 'quote', label: <><span/><span>Block Quote</span></>},
+  {cmd: 'quote', label: <><span>       </span><span>Block Quote</span></>},
   {cmd: 'code', label: <code>Monospaced</code>},
 ];
 
@@ -114,7 +114,7 @@ const BLOCK_ITEMS_DELETE = [
 const NO_SELECTION_MENU = [
     {cmd: '', label: "Append"},
   ...BLOCK_ITEMS_DEFAULT,
-  {cmd: 'insert-thematic-break', label: <><div>Rule</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>}
+  {cmd: 'insert-thematic-break', label: <><div>Separator</div><hr style={{marginLeft: '1ex', flex: '1 1 auto'}} /></>}
 ];
 
 const PLACE_CURSOR_IN_TABLE = "Place the cursor in a table";
@@ -769,7 +769,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
         >
           {menu.map(({cmd, label}) =>
               cmd ?
-                <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, cmd)} key={cmd}>{label}</MenuItem> :
+                <MenuItem onClick={handleSelectedBlockTypeChange.bind(this, cmd)} key={cmd} style={['table', 'insert-table'].includes(cmd) ? {justifyContent: "space-between"} : {}}>{label}</MenuItem> :
                 <Divider key={label}>{label}</Divider>
           )}
         </Menu>
@@ -796,31 +796,31 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
               });
             }}
         >
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'italic')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'italic')}>
             Italic &nbsp;<FormatItalicIcon color={isMarkActive(editor, 'italic') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'bold')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'bold')}>
               Bold &nbsp;<FormatBoldIcon color={isMarkActive(editor, 'bold') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'code')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'code')}>
             Monospaced &nbsp;<CodeIcon color={isMarkActive(editor, 'code') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'superscript')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'superscript')}>
             Superscript &nbsp;<b style={{color: isMarkActive(editor, 'superscript') ? '#3f51b5' : 'inherit'}}>x<sup>2</sup></b>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'subscript')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'subscript')}>
             Subscript &nbsp;<b style={{color: isMarkActive(editor, 'subscript') ? '#3f51b5' : 'inherit'}}>x<sub>a</sub></b>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'underline')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'underline')}>
             Underlined &nbsp;<FormatUnderlinedIcon color={isMarkActive(editor, 'underline') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'strikethrough')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'strikethrough')}>
             Strikethrough &nbsp;<StrikethroughS color={isMarkActive(editor, 'strikethrough') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'deleted')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'deleted')}>
             Deleted &nbsp;<RemoveCircleOutline color={isMarkActive(editor, 'deleted') ? 'primary' : 'inherit'}/>
           </MenuItem>
-          <MenuItem style={{justifyContent: "space-between"}} onClick={handleMarkItem.bind(this, 'inserted')}>
+          <MenuItem onClick={handleMarkItem.bind(this, 'inserted')}>
             Inserted &nbsp;<AddCircleOutline color={isMarkActive(editor, 'inserted') ? 'primary' : 'inherit'}/>
           </MenuItem>
         </Menu>
@@ -1256,7 +1256,7 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
     if (includeThematicBreak && ! listItem && ! table) {
       menu.push({cmd: 'insert-thematic-break',
         label: <>
-          <div>Rule</div>
+          <div>Separator</div>
           <hr style={{marginLeft: '1ex', flex: '1 1 auto'}}/>
         </>
       });
