@@ -47,7 +47,7 @@ init().then((/*{indexedDb, isFirstLaunch, remoteStorage}*/) => {
     catch(err => {
   console.error("while initializing DB:", err);
   requestIdleCallback(() => {   // waits until the UI is up
-    transientMsg("Close & re-open this tab — " + extractUserMessage(err));
+    transientMsg("Close & re-open this tab — " + extractUserMessage(err, ""));
   });
 });
 

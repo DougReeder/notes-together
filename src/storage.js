@@ -149,7 +149,7 @@ async function changeHandler(evt) {
   } catch (err) {
     if (!(err instanceof QuietError)) {
       console.error("remoteStorage changeHandler:", err, evt);
-      transientMsg(extractUserMessage(err));
+      transientMsg(extractUserMessage(err, "error incorporating remote data"));
     }
   }
 }
@@ -199,7 +199,7 @@ function initRemote() {
       if ("SyncError" === err?.name) {
         const timeDiff = Date.now() - lastNotificationTime + 8000;
         if (timeDiff > notificationTimeout) {
-          transientMsg(extractUserMessage(err), 'warning');
+          transientMsg(extractUserMessage(err, "synchronization problem"), 'warning');
           lastNotificationTime = Date.now();
 
           if (Date.now() - lastSyncErrTime > TEN_MINUTES) {
@@ -211,7 +211,7 @@ function initRemote() {
         lastSyncErrTime = Date.now();
       } else {
         console.error(`unforeseen remoteStorage error:`, err);
-        transientMsg(extractUserMessage(err));
+        transientMsg(extractUserMessage(err, "Unclear remoteStorage error"));
       }
     });
 

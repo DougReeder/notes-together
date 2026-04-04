@@ -76,7 +76,7 @@ function postError(err) {
   if ("Failed to fetch" === err.message) {
     msg = "Bad Share. Try breaking up the Share, Copy & Paste, or Importing files.";
   } else {
-    msg = "Sharing failed: " + extractUserMessage(err);
+    msg = "Sharing failed: " + extractUserMessage(err, "");
   }
   transientMsg(msg, 'error');
 

@@ -1,7 +1,7 @@
 // extractUserMessage.js - extracts a message for the end-user from an error
 // Copyright © 2021-2024 Doug Reeder under the MIT license
 
-export function extractUserMessage(err) {
+export function extractUserMessage(err, defaultMessage = "Close and re-open this tab") {
   if (err?.userMsg) {
     return err.userMsg;
   } else if (err?.error?.message) {   // Remote Storage
@@ -9,7 +9,7 @@ export function extractUserMessage(err) {
   } else if (err?.message) {
     return err.message;
   } else {
-    return "Close and re-open this tab";
+    return defaultMessage;
   }
 }
 
