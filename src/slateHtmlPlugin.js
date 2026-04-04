@@ -532,14 +532,12 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
                   }
                   resolve();
                 } catch (err) {
-                  console.error("while pasting text file:", err);
+                  console.error(`while pasting text file “${file.name}” of type ${file.type}:`, err);
                   transientMsg(`Can you open “${file.name}” in another app and copy?`);
                   reject(err);
                 }
               };
               reader.onerror = () => {
-                console.error("reader.onerror:", reader.error);
-                transientMsg(`Can you open “${file.name}” in another app and copy?`);
                 reject(reader.error);
               };
               reader.readAsText(file);
@@ -549,7 +547,12 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
             transientMsg(`Can you open “${file.name}” in another app and copy?`, 'warning');
           }
         } catch (err) {
-          console.error("while pasting graphic file:", err);
+          if (err instanceof DOMException && err.name === 'NotFoundError') {   // FF MacOS
+            const userMsg = `“${file.name}” of type ${file.type} is not readable`;
+            // eslint-disable-next-line no-ex-assign
+            err = Object.assign(new Error("File unreadable", {cause: err}), {userMsg});
+          }
+          console.error(`while pasting file “${file.name}” of type ${file.type}:`, err);
           transientMsg(extractUserMessage(err));
         }
       }
