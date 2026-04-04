@@ -532,8 +532,7 @@ function withHtml(editor) {   // defines Slate plugin for Notes Together
                   }
                   resolve();
                 } catch (err) {
-                  console.error(`while pasting text file “${file.name}” of type ${file.type}:`, err);
-                  transientMsg(`Can you open “${file.name}” in another app and copy?`);
+                  err.userMsg = `Can you open “${file.name}” in another app and copy?`;
                   reject(err);
                 }
               };
