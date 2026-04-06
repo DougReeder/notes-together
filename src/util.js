@@ -1,7 +1,17 @@
 // util.js — various utilty funtions for Notes Together
-// Copyright © 2021–2024 Doug Reeder
+// Copyright © 2021–2026 Doug Reeder
 
 /* eslint-env browser, worker */
+
+import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
+
+function calculateSubtype(mimeType) {
+  if (hasTagsLikeHtml(mimeType)) {
+    return 'html;hint=SEMANTIC';
+  } else {
+    return extractSubtype(mimeType);
+  }
+}
 
 function extractSubtype(mimeType) {
   return /\/(?:x-|vnd\.|x\.)?([^;]+)/.exec(mimeType)?.[1];
@@ -139,4 +149,4 @@ function normalizeUrl(str) {
 }
 
 
-export {extractSubtype, extractExtension, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters, urlRunningTextRE, normalizeUrl};
+export {calculateSubtype, extractSubtype, extractExtension, isLikelyMarkdown, adHocTextReplacements, visualViewportMatters, urlRunningTextRE, normalizeUrl};

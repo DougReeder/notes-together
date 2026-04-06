@@ -1,5 +1,5 @@
 // storage.test.js - automated tests for storage abstraction for Notes Together
-// Copyright © 2021–2024 Doug Reeder
+// Copyright © 2021–2026 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
 import {NodeNote} from "./Note";
@@ -715,7 +715,7 @@ describe("storage", () => {
       expect(retrieved.isLocked).toEqual(localNote.isLocked);
     });
 
-    it.skip("should merge a conflicted HTML note", async () => {
+    it("should merge a conflicted HTML note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -741,20 +741,20 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`<p><em><em>My Day</em></em></p><p><del>It was dull.</del><ins>It was great!</ins></p>`);
+      expect(retrieved.content).toEqual(`<p><em>My Day</em></p><p><del>It was dull.</del><ins>It was great!</ins></p>`);
       expect(retrieved.title).toMatch(/My Day\nIt was dull\. ?It was great!/);
-      expect(retrieved.date).toEqual(remoteNote.date);
+      expect(retrieved.date).toEqual(new Date(remoteNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it.skip("should merge a conflicted text note", async () => {
+    it("should merge a conflicted text note", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
         content: `The movie was well-acted.`,
         title: `The movie was well-acted.`,
         date: new Date(2020, 3, 1).toISOString(),
-        mimeType: 'text/markdown;hint=COMMONMARK',
+        mimeType: 'text/plain;charset=UTF-8',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       const remoteNote = {
@@ -762,7 +762,6 @@ describe("storage", () => {
         content: `The movie has good costuming.`,
         title: `The movie has good costuming.`,
         date: new Date(2020, 0, 1).toISOString(),
-        mimeType: 'text/plain;charset=UTF-8',
         '@context': "http://remotestorage.io/spec/modules/documents/note"
       };
       await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
@@ -773,13 +772,13 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`\n\nThe movie was well-acted.\n\nThe movie has good costuming.\n`);
+      expect(retrieved.content).toEqual(`- The movie was well-acted.\n+ The movie has good costuming.`);
       expect(retrieved.title).toEqual("The movie was well-acted.\nThe movie has good costuming.");
-      expect(retrieved.date).toEqual(localNote.date);
-      expect(retrieved.mimeType).toEqual(localNote.mimeType);
+      expect(retrieved.date).toEqual(new Date(localNote.date));
+      expect(retrieved.mimeType).toEqual(localNote.mimeType.slice(0, retrieved.mimeType.length));
     });
 
-    it.skip("should merge a conflicted local HTML / remote text note as HTML", async () => {
+    it("should merge a conflicted local HTML / remote text note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -806,15 +805,13 @@ Finance: we can't afford it.`,
 
       const retrieved = await getNote(id);
       // TODO: parse text notes into paragraphs
-      expect(retrieved.content).toEqual(`<del><h1>Staff Meeting</h1><p>Mary: let's do it!</p><p>John: let's be cautious</p></del><ins>Staff Meeting
-John: let's be cautious
-Finance: we can't afford it.</ins>`);
+      expect(retrieved.content).toEqual(`<h1><del>Staff Meeting</del></h1><p><del>Mary: let&#39;s do it!</del><ins>Staff Meeting</ins></p><p>John: let&#39;s be cautious</p><p><ins>Finance: we can&#39;t afford it.</ins></p>`);
       expect(retrieved.title).toEqual("Staff Meeting");
-      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.date).toEqual(new Date(localNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
 
-    it.skip("should merge a conflicted local text / remote HTML note as HTML", async () => {
+    it("should merge a conflicted local text / remote HTML note as HTML", async () => {
       const id = generateTestId();
       const localNote = {
         id: id,
@@ -841,9 +838,64 @@ Finance: we can't afford it.</ins>`);
 
       const retrieved = await getNote(id);
       // TODO: parse text notes into paragraphs
-      expect(retrieved.content).toEqual(`<del> my notes on\n# Therapods </del><ins><p>my notes on</p><h2>Therapods</h2></ins>`);
+      expect(retrieved.content).toEqual(`<p>my notes on</p><h1><del>Therapods</del></h1><h2><ins>Therapods</ins></h2>`);
       expect(retrieved.title).toEqual(`Therapods`);
-      expect(retrieved.date).toEqual(localNote.date);
+      expect(retrieved.date).toEqual(new Date(localNote.date));
+      expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
+    });
+
+    it("should, when merging conflicts, match up a MarkDown note with equivalent HTML", async () => {
+      const id = generateTestId();
+      const localNote = {
+        id: id,
+        content: `
+# Outline for the Great American Novel
+
+## Prelude which will only be relevant later
+## Chapter 1: introduce characters
+## Chapter 2: inciting event
+## Chapter 3: repetition
+## Chapter 4: the twist
+`,
+        title: `My Great American Novel`,
+        date: new Date(2025, 10, 1).toISOString(),
+        mimeType: 'text/markdown;hint=COMMONMARK',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
+      };
+      const remoteNote = {
+        id: id,
+        content: `
+<h1>Outline for the Great American Novel</h1>
+<h2>Prelude which will only be relevant later</h2>
+<h2>Chapter 1: introduce characters</h2>
+<h2>Chapter 2: inciting event</h2>
+<img src="https://example.mx/pic">
+<h2>Chapter 3: repetition</h2>
+<h2>Chapter 4: the twist</h2>`,
+        title: `Days of Angst`,
+        date: new Date(2026, 3, 7).toISOString(),
+        mimeType: 'text/html;hint=SEMANTIC',
+        '@context': "http://remotestorage.io/spec/modules/documents/note"
+      };
+      await changeHandler({origin: 'conflict', oldValue: localNote, newValue: remoteNote});
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+
+      const retrieved = await getNote(id);
+      expect(retrieved.content).toEqual(`
+<h1>Outline for the Great American Novel</h1>
+<h2>Prelude which will only be relevant later</h2>
+<h2>Chapter 1: introduce characters</h2>
+<h2>Chapter 2: inciting event</h2>
+<img src="https://example.mx/pic" alt="">
+<h2>Chapter 3: repetition</h2>
+<h2>Chapter 4: the twist</h2>`.split('\n').join(''));
+      // can't indicate that image is added :-(
+      expect(retrieved.title).toEqual("Outline for the Great American Novel");
+      expect(retrieved.date).toEqual(new Date(remoteNote.date));
       expect(retrieved.mimeType).toEqual(remoteNote.mimeType);
     });
 

@@ -1,11 +1,11 @@
 // storage.js - abstraction for for RemoteStorage and IndexedDB for Notes Together
-// Copyright © 2021–2024 Doug Reeder
+// Copyright © 2021–2026 Doug Reeder
 
 import removeDiacritics from "./diacritics";
 import {initDb, upsertNoteDb, getNoteDb, deleteNoteDb, findStubs, findNoteIds, checkpointSearch, listSuggestions} from "./idbNotes";
 import RemoteStorage from 'remotestoragejs';
 import {RemoteNotes} from "./RemoteNotes";
-// import {mergeConflicts} from "./mergeConflicts";
+import {mergeNotes} from "./mergeConflicts";
 import decodeEntities from "./util/decodeEntities";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {globalWordRE} from "./constants.js";
@@ -89,37 +89,21 @@ async function changeHandler(evt) {
                 await upsertNote(deserializeNote(evt.newValue), 'DETAIL');   // DETAIL prevents re-render
                 break;
               }
-              console.warn("remoteStorage changed on both:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-              // setTimeout(async () => {
-              //   let mergedNote;
-              //   try {
-              //     const oldDate = normalizeDate(evt.oldValue.date);
-              //     const newDate = normalizeDate(evt.newValue.date);
-              //     const mergedDate = oldDate > newDate ? oldDate : newDate;
-              //     let mergedMimeType, documentHasTags;
-              //     if (hasTagsLikeHtml(evt.oldValue.mimeType)) {
-              //       mergedMimeType = evt.oldValue.mimeType;
-              //       documentHasTags = true;
-              //     } else if (hasTagsLikeHtml(evt.newValue.mimeType)) {
-              //       mergedMimeType = evt.newValue.mimeType;
-              //       documentHasTags = true;
-              //     } else {
-              //       mergedMimeType = evt.oldValue.mimeType || evt.newValue.mimeType;
-              //       documentHasTags = false;
-              //     }
-              //     let mergedIsLocked = Boolean(evt.oldValue.isLocked || evt.newValue.isLocked);
-              //     const mergedMarkup = mergeConflicts(evt.oldValue.content, evt.newValue.content, documentHasTags);
-              //     mergedNote = new SerializedNote(evt.oldValue.id, mergedMimeType, "", mergedMarkup, mergedDate, mergedIsLocked, []);
-              //     // initiator is conflict resolution, **not** 'REMOTE', for this purpose
-              //     await upsertNote(deserializeNote(mergedNote), undefined);
-              //   } catch (err) {
-              //     console.error("while handling conflict:", err);
-              //   } finally {
-              //     const title = mergedNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "«untitled»";
-              //     const message = `Edit “${shortenTitle(title)}” then select ‘Clear Deleted & Inserted styles’`;
-              //     transientMsg(message, 'warning');
-              //   }
-              // }, 0);
+              console.warn("remoteStorage different changes locally and remote:", evt.lastCommonValue, evt.oldValue, evt.newValue);
+              setTimeout(async () => {
+                let mergedNote;
+                try {
+                  mergedNote = mergeNotes(evt.oldValue, evt.newValue, evt.lastCommonValue);
+                  // initiator is conflict resolution (acting for the user), **not** 'REMOTE'
+                  await upsertNote(deserializeNote(mergedNote), undefined);
+                } catch (err) {
+                  console.error("while handling conflict:", err);
+                } finally {
+                  const title = mergedNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "«untitled»";
+                  const message = `Edit “${shortenTitle(title)}” then select ‘Clear Deleted & Inserted styles’`;
+                  transientMsg(message, 'warning');
+                }
+              }, 0);
             }
             break;
             // case 'local':

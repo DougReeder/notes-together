@@ -1,5 +1,5 @@
 // serializeNote.js — converts Slate nodes to content & calculates title if needed
-// Copyright © 2023 Doug Reeder
+// Copyright © 2023–2026 Doug Reeder
 
 import {CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle, TITLE_MAX} from "./Note.js";
 import {INLINE_ELEMENTS} from "./constants.js";
@@ -129,6 +129,8 @@ function serializeNoteText(nodeNote) {
     for (let line of text.split('\n')) {
       if (nodeNote.subtype?.startsWith('markdown')) {   // quick & dirty removal of Markdown
         line = line.replace(/={3,}|-{3,}|\*|_|^\s{0,3}#+|^\s{0,3}>|`+|!\[|~|\|/gm, '');
+      } else {
+        line = line.replace(/^[-+]\s/, '');
       }
       line = line.trim();
 
