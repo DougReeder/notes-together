@@ -741,8 +741,8 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`<p><em>My Day</em></p><p><del>It was dull.</del><ins>It was great!</ins></p>`);
-      expect(retrieved.title).toMatch(/My Day\nIt was dull\. ?It was great!/);
+      expect(retrieved.content).toEqual(`<p><em>My Day</em></p><p>It was <del>dull.</del><ins>great!</ins></p>`);
+      expect(retrieved.title).toMatch(/My Day\nIt was dull\.great!/);
       expect(retrieved.date).toEqual(new Date(remoteNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType);
     });
@@ -772,8 +772,8 @@ describe("storage", () => {
       });
 
       const retrieved = await getNote(id);
-      expect(retrieved.content).toEqual(`- The movie was well-acted.\n+ The movie has good costuming.`);
-      expect(retrieved.title).toEqual("The movie was well-acted.\nThe movie has good costuming.");
+      expect(retrieved.content).toEqual(`The movie \n- was well-acted\n+ has good costuming\n.`);
+      expect(retrieved.title).toEqual("The movie\nwas well-acted");
       expect(retrieved.date).toEqual(new Date(localNote.date));
       expect(retrieved.mimeType).toEqual(localNote.mimeType.slice(0, retrieved.mimeType.length));
     });

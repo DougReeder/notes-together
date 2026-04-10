@@ -90,20 +90,21 @@ async function changeHandler(evt) {
                 break;
               }
               console.warn("remoteStorage different changes locally and remote:", evt.lastCommonValue, evt.oldValue, evt.newValue);
-              setTimeout(async () => {
-                let mergedNote;
+              requestIdleCallback(async () => {
+                let mergedNote, severity = 'warning';
                 try {
                   mergedNote = mergeNotes(evt.oldValue, evt.newValue, evt.lastCommonValue);
                   // initiator is conflict resolution (acting for the user), **not** 'REMOTE'
                   await upsertNote(deserializeNote(mergedNote), undefined);
                 } catch (err) {
                   console.error("while handling conflict:", err);
+                  severity = 'error';
                 } finally {
                   const title = mergedNote?.title || evt.oldValue?.title || evt.newValue?.title || evt.lastCommonValue?.title || "«untitled»";
                   const message = `Edit “${shortenTitle(title)}” then select ‘Clear Deleted & Inserted styles’`;
-                  transientMsg(message, 'warning');
+                  transientMsg(message, severity);
                 }
-              }, 0);
+              });
             }
             break;
             // case 'local':

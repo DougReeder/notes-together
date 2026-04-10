@@ -8,33 +8,21 @@ import {INLINE_ELEMENTS} from "./constants.js";
 import {SerializedNote} from "./Note.js";
 import normalizeDate from "./util/normalizeDate.js";
 import {calculateSubtype} from "./util.js";
+import {commonPrefixLength, commonSuffixLength} from "./util/commonPrefixSuffix.js";
 
 
-// doesn't handle all the edge cases of a general-purpose deep equals
-function equals(o1, o2) {
-  if (typeof o1 !== typeof o2) {
-    return false;
+function matchTextNodes(node1, node2) {
+  // allows undefined property to match property w/ undefined value
+  const propSet = new Set(Object.keys(node1));
+  for (const prop of Object.keys(node2)) {
+    propSet.add(prop);
   }
-  if ('object' !== typeof o1) {
-    return o1 === o2;
-  } else {
-    for (const [key, value] of Object.entries(o1)) {
-      if (! equals(value, o2[key])) {
-        return false;
-      }
+  for (const prop of propSet) {
+    if ('text' !== prop && node1[prop] !== node2[prop]) {
+      return 'DIFFERENT';
     }
-    return true;
   }
-}
-
-function isInline(node) {
-  return Text.isText(node) || INLINE_ELEMENTS.includes(node?.type);
-}
-
-function hasInlines(element) {
-  return element.children.every(
-      c => isInline(c)
-  );
+  return node1.text === node2.text ? 'EQUAL' : 'MERGEABLE';
 }
 
 function matchElements(element1, element2) {
@@ -43,36 +31,37 @@ function matchElements(element1, element2) {
   for (const prop of Object.keys(element2)) {
     propSet.add(prop);
   }
+  // The title property of links and images is unimportant.
   for (const prop of propSet) {
     if (!(['children', 'title'].includes(prop)) && element1[prop] !== element2[prop]) {
       return 'DIFFERENT';
     }
   }
 
-  const element1hasInlines = hasInlines(element1);
-  const element2hasInlines = hasInlines(element2);
-  if (element1hasInlines && !element2hasInlines || !element1hasInlines && element2hasInlines) {
-    return 'DIFFERENT';
-  }
   if (element1.children.length !== element2.children.length) {
     return 'MERGEABLE';
   }
-  if (element1hasInlines) {   // both have inlines
-    for (let i = 0; i < element1.children.length; ++i) {
-      if (! equals(element1.children[i], element2.children[i])) {
+  for (let i = 0; i < element1.children.length; ++i) {
+    const child1 = element1.children[i];
+    const child2 = element2.children[i];
+    const child1IsText = Text.isText(child1);
+    const child2IsText = Text.isText(child2);
+    if (child1IsText && child2IsText) {
+      if (matchTextNodes(child1, child2) !== 'EQUAL') {
         return 'MERGEABLE';
       }
-    }
-    return 'EQUAL';
-  } else {   // both have blocks
-    for (let i = 0; i < element1.children.length; ++i) {
-      const matchResult = matchElements(element1.children[i], element2.children[i]);
-      if ('EQUAL' !== matchResult) {
+    } else if (!child1IsText && !child2IsText) {
+      if (matchElements(child1, child2) !== 'EQUAL') {
         return 'MERGEABLE';
       }
+    } else if (child1IsText && INLINE_ELEMENTS.includes(child2?.type) ||
+        INLINE_ELEMENTS.includes(child1?.type) && child2IsText) {
+      return 'MERGEABLE';
+    } else {
+      return 'DIFFERENT';
     }
-    return 'EQUAL';
   }
+  return 'EQUAL';
 }
 
 /**
@@ -152,6 +141,9 @@ function mergeNotes(oldNote, newNote, lastCommonNote) {
 }
 
 function mergeNodes(nodes1, nodes2) {
+  nodes1 = splitTextNodes(nodes1);
+  nodes2 = splitTextNodes(nodes2);
+
   const matchedInd = {one: 0, two: 0};
   let diagonal = 0, searchInd1 = 0;
   let numChecksThisDiagonal = 0;
@@ -172,7 +164,7 @@ function mergeNodes(nodes1, nodes2) {
       if (node1IsElement && node2IsElement) {
         nodeMatch = matchElements(node1, node2);
       } else if (!node1IsElement && !node2IsElement) {
-        nodeMatch = equals(node1, node2) ? 'EQUAL' : 'DIFFERENT';
+        nodeMatch = matchTextNodes(node1, node2);
       } else {
         nodeMatch = 'DIFFERENT';
       }
@@ -197,6 +189,23 @@ function mergeNodes(nodes1, nodes2) {
       numChecksThisDiagonal = 0;
     }
   }
+}
+
+function splitTextNodes(inNodes) {
+  const outNodes = [];
+  for (let i = 0; i < inNodes.length; ++i) {
+    const node = inNodes[i];
+    if (Text.isText(node)) {
+      const newTexts = node.text?.split("\n") ?? [];
+      newTexts.forEach((text, i) => {
+        if (i < newTexts.length-1) { text += "\n"; }
+        outNodes.push(Object.assign({}, node, {text}));
+      });
+    } else {   // Element
+      outNodes.push(node);
+    }
+  }
+  return outNodes;
 }
 
 function selectFinal(nodes1, nodes2, equalPoints, finalMergeableIndexes) {
@@ -279,12 +288,20 @@ function pushConflictAndMergeable(nodes1, nodes2, matchedInd, mergedNodes, index
   for (const indexes of indexesToMerge) {
     mergedNodes.push(...conflictNodes(nodes1, matchedInd.one, indexes.one, 'deleted'));
     mergedNodes.push(...conflictNodes(nodes2, matchedInd.two, indexes.two, 'inserted'));
-    const newElement = Object.assign({}, nodes1[indexes.one],
-        {children: mergeNodes(
-          nodes1[indexes.one].children,
-          nodes2[indexes.two].children
-      )});
-    mergedNodes.push(newElement);
+    const node1 = nodes1[indexes.one];
+    const node2 = nodes2[indexes.two];
+    if (Text.isText(node1) || Text.isText(node2)) {
+      conflictTextNodes(node1, node2, mergedNodes);
+    } else {
+      const newElement = Object.assign({}, node1,
+          {
+            children: mergeNodes(
+                node1.children,
+                node2.children
+            )
+          });
+      mergedNodes.push(newElement);
+    }
     matchedInd.one = indexes.one + 1;
     matchedInd.two = indexes.two + 1;
   }
@@ -299,6 +316,47 @@ function conflictNodes(source, start, end, mark) {
   marks[mark] = true;
   applyTextStyle(source.slice(start, end), marks);
   return source.slice(start, end);
+}
+
+function conflictTextNodes(node1, node2, mergedNodes) {
+  // allows undefined property to match property w/ undefined value
+  const propSet = new Set(Object.keys(node1));
+  for (const prop of Object.keys(node2)) {
+    propSet.add(prop);
+  }
+  let marksEqual = true;
+  for (const prop of propSet) {
+    if ('text' !== prop && node1[prop] !== node2[prop]) {
+      marksEqual = false;
+      break;
+    }
+  }
+
+  if (!marksEqual) {
+    mergedNodes.push(Object.assign({}, node1, {deleted: true}));
+    mergedNodes.push(Object.assign({}, node2, {inserted: true}));
+  } else {
+    const text1 = node1.text;
+    const text2 = node2.text;
+    const prefixLength = commonPrefixLength(text1, text2);
+    const suffixLength = Math.min(commonSuffixLength(text1, text2), Math.min(text1.length, text2.length) - prefixLength);
+    if (prefixLength > 0) {
+      mergedNodes.push(Object.assign({}, node1,
+          {text: text1.slice(0, prefixLength)}));
+    }
+    if (text1.length - suffixLength - prefixLength > 0) {
+      mergedNodes.push(Object.assign({}, node1,
+          {text: text1.slice(prefixLength, text1.length - suffixLength), deleted: true}));
+    }
+    if (text2.length - suffixLength - prefixLength > 0) {
+      mergedNodes.push(Object.assign({}, node2,
+          {text: text2.slice(prefixLength, text2.length - suffixLength), inserted: true}));
+    }
+    if (suffixLength > 0) {
+      mergedNodes.push(Object.assign({}, node1,
+          {text: text1.slice(text1.length - suffixLength)}));
+    }
+  }
 }
 
 function applyTextStyle(nodes, marks) {

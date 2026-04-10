@@ -187,10 +187,10 @@ you bring fresh toner
 
     const mergedText = mergeConflicts(oldText, newText, 'plain');
     expect(mergedText).toEqual(`The Dao that is seen
-- is not the true Dao
-+ is not the true Dao, until
-- until you bring fresh toner
-+ you bring fresh toner
+is not the true Dao
++ , until
+- until 
+you bring fresh toner
 -- anonymous
 + `);
   });
@@ -282,6 +282,27 @@ let a = b + c;
     // can't put <del> tags inside MarkDown code block
   });
 
+  it("should find common prefixes & suffixes in conflicting text nodes", () => {
+    const mergedMarkup = mergeConflicts(
+        `<pre><b>first</b> line\nsecond line with difference\nthird line</pre>`,
+        `<pre><b>first</b> line\nsecond chunk containing difference\nthird line</pre>`);
+    expect(mergedMarkup).toEqual(`<pre><code><strong>first</strong> line\nsecond <del>line with</del><ins>chunk containing</ins> difference\nthird line</code></pre>`);
+  });
+
+  it("should handle overlapping prefixes & suffixes in conflicting text nodes", () => {
+    const mergedMarkup = mergeConflicts(
+        `<pre>abbccc</pre>`,
+        `<pre>abbxxxxbbccc</pre>`);
+    expect(mergedMarkup).toEqual(`<pre><code>abb<ins>xxxxbb</ins>ccc</code></pre>`);
+  });
+
+  it("should split text nodes on newlines before comparing", () => {
+    const mergedMarkup = mergeConflicts(
+        `<pre>first line\nsecond line\nthird line</pre>`,
+        `<pre>first inserted line\nsec line\nthi∂ line</pre>`);
+    expect(mergedMarkup).toEqual(`<pre><code>first <ins>inserted </ins>line\nsec<del>ond</del> line\nthi<del>rd</del><ins>∂</ins> line</code></pre>`);
+  });
+
   it("should handle different beginnings", () => {
     const mergedMarkup = mergeConflicts('<p>foo</p><p><b>bold</b></p><p>end</p>', '<p>bar<p><i>italic</i><p>end');
     expect(mergedMarkup).toEqual('<p><del>foo</del><ins>bar</ins></p><p><del><strong>bold</strong></del><ins><em>italic</em></ins></p><p>end</p>');
@@ -312,7 +333,7 @@ let a = b + c;
     expect(mergedMarkup).toEqual('<h3>start</h3><p><del><strong>bold</strong></del><ins><em>italic</em></ins></p><p><del>foo</del><ins>bar</ins></p>');
 
     const mergedMarkup2 = mergeConflicts('<hr><p>alpha</p>', '<hr><p>beta</p>');
-    expect(mergedMarkup2).toEqual('<hr /><p><del>alpha</del><ins>beta</ins></p>');
+    expect(mergedMarkup2).toEqual('<hr /><p><del>alph</del><ins>bet</ins>a</p>');
   });
 
   it("should include all of totally different markups", () => {
@@ -330,7 +351,7 @@ let a = b + c;
 
   it("should handle text replaced by tag", () => {
     const mergedMarkup = mergeConflicts('<p>Figure 1: (image goes here)</p>', '<p>Figure 1: </p><img src="fig1.jpg">');
-    expect(mergedMarkup).toEqual('<p><del>Figure 1: (image goes here)</del><ins>Figure 1: </ins></p><img src="fig1.jpg" alt="">');
+    expect(mergedMarkup).toEqual('<p>Figure 1: <del>(image goes here)</del></p><img src="fig1.jpg" alt="">');
   });
 
   it("should recognize equal links", () => {
@@ -349,8 +370,8 @@ let a = b + c;
   });
 
   it("should merge alt attributes of images differing only by alt", () => {
-    const mergedMarkup = mergeConflicts('<img src="fig1.jpg" alt="description 1">', '<img src="fig1.jpg" alt="description 2">');
-    expect(mergedMarkup).toEqual('<img src="fig1.jpg" alt="description 1description 2">');
+    const mergedMarkup = mergeConflicts('<img src="fig1.jpg" alt="good thing">', '<img src="fig1.jpg" alt="bad thing">');
+    expect(mergedMarkup).toEqual('<img src="fig1.jpg" alt="goobad thing">');
   });
 
   it("should include both versions of images differing by src", () => {
@@ -370,7 +391,7 @@ let a = b + c;
           '<ul><li>first</li><li>second changed</li><li>third</li></ul>'
       );
       expect(mergedMarkup).toEqual(
-          '<ul><li>first</li><li><del>second</del><ins>second changed</ins></li><li>third</li></ul>'
+          '<ul><li>first</li><li>second<ins> changed</ins></li><li>third</li></ul>'
       );
   });
 
@@ -379,7 +400,7 @@ let a = b + c;
           '<table><tr><td>A1</td><td>A2</td></tr><tr><td>B1</td><td>B2</td></tr></table>',
           '<table><tr><td>A1</td><td>A2</td></tr><tr><td>B1 changed</td><td>B2</td></tr></table>'
       );
-      expect(mergedMarkup).toEqual('<table><tbody><tr><td>A1</td><td>A2</td></tr><tr><td><del>B1</del><ins>B1 changed</ins></td><td>B2</td></tr></tbody></table>');
+      expect(mergedMarkup).toEqual('<table><tbody><tr><td>A1</td><td>A2</td></tr><tr><td>B1<ins> changed</ins></td><td>B2</td></tr></tbody></table>');
   });
 
   it("should handle changes in number of rows or columns in table", () => {
