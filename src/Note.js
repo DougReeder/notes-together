@@ -1,5 +1,5 @@
 // Note.js - in-memory Note models for Notes Together
-// Copyright © 2021-2024 Doug Reeder
+// Copyright © 2021-2026 Doug Reeder
 
 
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
@@ -8,7 +8,6 @@ import {shorten} from "./util/shorten.js";
 
 const TITLE_MAX = 400;
 const CONTENT_MAX = 600_000;
-const CONTENT_TOO_LONG = "Too long. Split into multiple notes";
 
 /**
  * @property {string} id: UUID
@@ -95,4 +94,4 @@ function shortenTitle(title, maxLength = 27) {
   }
 }
 
-export {TITLE_MAX, CONTENT_MAX, CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle};
+export {TITLE_MAX, CONTENT_MAX, NodeNote, SerializedNote, shortenTitle};

@@ -1,7 +1,7 @@
 // serializeNote.js — converts Slate nodes to content & calculates title if needed
 // Copyright © 2023–2026 Doug Reeder
 
-import {CONTENT_TOO_LONG, NodeNote, SerializedNote, shortenTitle, TITLE_MAX} from "./Note.js";
+import {NodeNote, SerializedNote, TITLE_MAX} from "./Note.js";
 import {INLINE_ELEMENTS} from "./constants.js";
 import {deserializeHtml, serializeHtml} from "./slateHtmlUtil.js";
 import {Node as SlateNode} from "slate";
@@ -10,6 +10,7 @@ import {currentSubstitutions} from "./urlSubstitutions.js";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml.js";
 import {CONTENT_MAX} from "./Note.js";
 import {extractSubtype} from "./util.js";
+import ContentTooLongError from "./util/ContentTooLongError.js";
 
 /**
  * Converts Slate nodes to text & extracts keywords
@@ -30,9 +31,7 @@ async function serializeNote(nodeNote) {
   const limit = nodeNote.subtype?.startsWith('html') || nodeNote.subtype?.startsWith('markdown') ?
     CONTENT_MAX : CONTENT_MAX / 10;
   if (content.length > limit) {
-    const err = new Error(`“${shortenTitle(title)}” is too long: ${content.length} characters`);
-    err.userMsg = CONTENT_TOO_LONG;
-    throw err;
+    throw new ContentTooLongError(title, undefined, content.length);
   }
 
   for (let candidateWord of wordSet) {

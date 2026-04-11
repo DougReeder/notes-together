@@ -1,7 +1,7 @@
 // noinspection ExceptionCaughtLocallyJS
 
 import {validate as uuidValidate} from 'uuid';
-import {CONTENT_TOO_LONG, NodeNote} from './Note';
+import {NodeNote} from './Note';
 import React, {useEffect, useState, useMemo, useCallback, useReducer, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {ErrorBoundary} from 'react-error-boundary'
@@ -290,8 +290,8 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
       }
     } catch (err) {
       console.error("handleSlateChange:", err);
-      if (CONTENT_TOO_LONG === err.userMsg) {
-        transientMsg(CONTENT_TOO_LONG);
+      if ('ContentTooLongError' === err.name) {
+        transientMsg(err.userMsg);
       } else {
         setNoteErr(err);
       }

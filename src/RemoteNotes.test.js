@@ -1,8 +1,8 @@
 // RemoteNotes.test.js - automated tests for Notes module for RemoteStorage
-// Copyright © 2021 Doug Reeder
+// Copyright © 2021–2026 Doug Reeder
 
 import generateTestId from "./util/generateTestId";
-import {CONTENT_MAX, CONTENT_TOO_LONG, SerializedNote} from "./Note";
+import {CONTENT_MAX, SerializedNote} from "./Note";
 import "fake-indexeddb/auto";
 import RemoteStorage from "remotestoragejs";
 import {RemoteNotes} from "./RemoteNotes";
@@ -181,7 +181,7 @@ describe("RemoteNotes", () => {
       expect(retrieved.title).toEqual(original.title);   // not updated
       expect(mockPostMessage).toHaveBeenCalledOnce();
       expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining( {kind: 'TRANSIENT_MSG',
-        message: CONTENT_TOO_LONG, severity: 'error'}), '/');
+        message: "“longer” is too long. Split into multiple notes.", severity: 'error'}), '/');
       expect(mockConsoleError).toHaveBeenCalledOnce();
     });
   });

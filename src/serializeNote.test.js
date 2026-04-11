@@ -286,7 +286,7 @@ the single biggest source of inspiration for Markdown's syntax is the format of 
     }
     const nodeNote = new NodeNote(generateTestId(), 'html;hint=SEMANTIC', nodes, new Date(), false);
 
-    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
+    await expect(serializeNote(nodeNote)).rejects.toThrow(/has \d{6} characters/);
   });
 
   it(`should reject a MarkDown note longer than ${CONTENT_MAX} characters`, async () => {
@@ -297,7 +297,7 @@ the single biggest source of inspiration for Markdown's syntax is the format of 
     }
     const nodeNote = new NodeNote(generateTestId(), 'markdown;hint=COMMONMARK', nodes, new Date(), false);
 
-    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
+    await expect(serializeNote(nodeNote)).rejects.toThrow(/has \d{6} characters/);
   });
 
   it(`should reject a text note longer than ${CONTENT_MAX / 10} characters`, async () => {
@@ -308,7 +308,7 @@ the single biggest source of inspiration for Markdown's syntax is the format of 
     }
     const nodeNote = new NodeNote(generateTestId(), 'plain', nodes, new Date(), false);
 
-    await expect(serializeNote(nodeNote)).rejects.toThrow("too long");
+    await expect(serializeNote(nodeNote)).rejects.toThrow(/has \d{5} characters/);
   });
 });
 

@@ -1,5 +1,5 @@
 // FileImport.test.js - automated tests for importing notes from files
-// Copyright © 2021-2024 Doug Reeder
+// Copyright © 2021-2026 Doug Reeder
 
 import "fake-indexeddb/auto";
 import {init, getNote} from "./storage";
@@ -14,7 +14,6 @@ import userEvent from '@testing-library/user-event';
 import {validate as uuidValidate} from "uuid";
 import {dataURItoFile} from "./util/testUtil";
 import {CONTENT_MAX} from "./Note.js";
-import {CONTENT_TOO_LONG} from "./Note.js";
 
 describe("determineParseType", () => {
   it("should parse graphics as their mime type", async () => {
@@ -205,7 +204,7 @@ describe("importFromFile", () => {
     const {noteIds, message} = await importFromFile(file, 'text/html', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
-    expect(message).toEqual(CONTENT_TOO_LONG);
+    expect(message).toEqual("“list.html” is too long. Split into multiple notes.");
   });
 
   it("should parse an empty text file as 0 notes in multiple mode", async () => {
@@ -554,7 +553,7 @@ Feb 16 00:15:30 frodo spindump[24839]: Removing excessive log: file:///Library/L
     const {noteIds, message} = await importFromFile(file, 'text/csv', true);
     expect(noteIds).toBeInstanceOf(Array);
     expect(noteIds.length).toEqual(0);
-    expect(message).toEqual(CONTENT_TOO_LONG);
+    expect(message).toEqual("“too-long.csv” is too long. Split into multiple notes.");
   });
 
   it("should parse a text file as one note when flagged single", async () => {

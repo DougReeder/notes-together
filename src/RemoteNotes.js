@@ -1,12 +1,13 @@
 // RemoteNotes.js - RemoteStorage module for notes containing semantic HTML
-// Copyright © 2021–2024 Doug Reeder under the MIT License
+// Copyright © 2021–2026 Doug Reeder under the MIT License
 
 import {validate as uuidValidate} from 'uuid';
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {TAG_LENGTH_MAX} from "./storage";
 import normalizeDate from "./util/normalizeDate.js";
-import {CONTENT_MAX, CONTENT_TOO_LONG, shortenTitle, TITLE_MAX} from "./Note.js";
+import {CONTENT_MAX, shortenTitle, TITLE_MAX} from "./Note.js";
 import QuietError from "./util/QuietError.js";
+import ContentTooLongError from "./util/ContentTooLongError.js";
 
 const DATE_DEFAULT_REMOTE = new Date(2020, 11, 31, 12, 0);
 const SAVED_SEARCH_PATH = 'notes/savedSearches/';
@@ -91,8 +92,9 @@ const RemoteNotes = {
           } catch (err) {
             if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
               console.error(`while storing “${shortenTitle(remoteNote.title)}”:`, err);
-              transientMsg(CONTENT_TOO_LONG);
-              throw new QuietError(CONTENT_TOO_LONG, err?.error);
+              const e = new ContentTooLongError(remoteNote.title, err);
+              transientMsg(e.userMsg);
+              throw new QuietError(e.userMsg, err?.error);
             } else {
               throw err;
             }
