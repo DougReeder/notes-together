@@ -56,7 +56,7 @@ import {
   flipTableRowsToColumns,
   insertAfter,
   getSelectedQuote,
-  insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE
+  insertCheckListAfter, deleteCompletedTasks, toggleCheckListItem, DEFAULT_TABLE, getCommonBlock
 } from "./slateUtil";
 import {isLikelyMarkdown, visualViewportMatters} from "./util";
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
@@ -1003,9 +1003,20 @@ function Detail({noteId, searchWords = new Set(), focusOnLoadCB, setMustShowPane
                   }
                   break;
                 case 'Enter':
-                  if (isHotkey('mod+Enter', { byKey: true }, evt)) {
-                    evt.preventDefault();
-                    editor.insertText('\n');
+                  const {block} = getCommonBlock(editor);
+                  if (block.type === 'code') {
+                    if (isHotkey('mod+Enter', { byKey: true }, evt)) {
+                      evt.preventDefault();
+                      editor.insertBreak();
+                    } else {
+                      evt.preventDefault();
+                      editor.insertText('\n');
+                    }
+                  } else {
+                    if (isHotkey('mod+Enter', {byKey: true}, evt)) {
+                      evt.preventDefault();
+                      editor.insertText('\n');
+                    }
                   }
                   break;
                 case ' ':

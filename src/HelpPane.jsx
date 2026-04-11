@@ -169,7 +169,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
         <table className="shortcuts">
           <caption>Inside editor</caption>
           <tbody>
-            <tr><td>ctrl+return <i>or</i> ⌘⏎</td><td>line break</td></tr>
+            <tr><td>ctrl+return <i>or</i> ⌘⏎</td><td>line break <a href="#monospace-reverse">*</a></td></tr>
             <tr><td>shift+space ⇧␠</td><td>toggle checkbox</td></tr>
             <tr><td>ctrl+B <i>or</i> ⌘B</td><td>bold text</td></tr>
             <tr><td>ctrl+I <i>or</i> ⌘I</td><td>italic text</td></tr>
@@ -196,6 +196,7 @@ mobile: ${navigator.userAgentData?.mobile || ''}` +
             </ul></td></tr>
           </tbody>
         </table>
+        <p id="monospace-reverse">* In monospaced blocks, return ⏎ and ctrl+return are reversed</p>
 
         <h4>Which browsers on which operating systems allow me to Share notes <i>to</i> other apps?</h4>
         <p>See <a href="https://caniuse.com/web-share" target="_blank" rel="noreferrer">Web Share API</a> on CanIUse.</p>
