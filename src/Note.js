@@ -7,6 +7,7 @@ import normalizeDate from "./util/normalizeDate.js";
 import {shorten} from "./util/shorten.js";
 
 const TITLE_MAX = 400;
+const TITLE_LOG_MAX = 50;
 const CONTENT_MAX = 600_000;
 
 /**
@@ -94,4 +95,4 @@ function shortenTitle(title, maxLength = 27) {
   }
 }
 
-export {TITLE_MAX, CONTENT_MAX, NodeNote, SerializedNote, shortenTitle};
+export {TITLE_MAX, TITLE_LOG_MAX, CONTENT_MAX, NodeNote, SerializedNote, shortenTitle};

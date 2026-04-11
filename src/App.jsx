@@ -37,7 +37,7 @@ import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {fileExportMarkdown} from "./fileExport";
 import {deserializeHtml} from "./slateHtmlUtil.js";
 import {assembleNote} from "./assembleNote.js";
-import {shortenTitle} from "./Note.js";
+import {shortenTitle, TITLE_LOG_MAX} from "./Note.js";
 import {shorten} from "./util/shorten.js";
 import humanDate from "./util/humanDate.js";
 
@@ -375,7 +375,7 @@ function App() {
           const files = evt.target.files;
           const nodeNote = await assembleNote("", "", "", files, null);
           const storedNote = await upsertNote(nodeNote, undefined);
-          const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
+          const label = shortenTitle(storedNote?.title, TITLE_LOG_MAX) || shorten(files[0]?.name) || `${files.length} file(s)`;
           console.info(`importing “${label}”`, storedNote.date.toISOString());
           transientMsg(`importing “${label}” ${humanDate(storedNote.date)}`, 'success');
           doCloseImport(label);
@@ -430,7 +430,7 @@ function App() {
       if (files.length > 0) {
         const nodeNote = await assembleNote("", "", "", files, null);
         const storedNote = await upsertNote(nodeNote, undefined);
-        const label = shortenTitle(storedNote?.title, 50) || shorten(files[0]?.name) || `${files.length} file(s)`;
+        const label = shortenTitle(storedNote?.title, TITLE_LOG_MAX) || shorten(files[0]?.name) || `${files.length} file(s)`;
         console.info(`importing “${label}”`, storedNote.date.toISOString());
         transientMsg(`importing “${label}” ${humanDate(storedNote.date)}`, 'success');
         doCloseImport(label);

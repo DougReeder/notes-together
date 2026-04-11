@@ -5,7 +5,7 @@ import {validate as uuidValidate} from 'uuid';
 import {extractUserMessage, transientMsg} from "./util/extractUserMessage";
 import {TAG_LENGTH_MAX} from "./storage";
 import normalizeDate from "./util/normalizeDate.js";
-import {CONTENT_MAX, shortenTitle, TITLE_MAX} from "./Note.js";
+import {CONTENT_MAX, shortenTitle, TITLE_LOG_MAX, TITLE_MAX} from "./Note.js";
 import QuietError from "./util/QuietError.js";
 import ContentTooLongError from "./util/ContentTooLongError.js";
 
@@ -91,7 +91,7 @@ const RemoteNotes = {
             await privateClient.storeObject("note", 'notes/' + remoteNote.id, remoteNote);
           } catch (err) {
             if (201 === err?.error?.code && '/content' === err?.error?.dataPath) {
-              console.error(`while storing “${shortenTitle(remoteNote.title)}”:`, err);
+              console.error(`while storing “${shortenTitle(remoteNote.title, TITLE_LOG_MAX)}”:`, err);
               const e = new ContentTooLongError(remoteNote.title, err);
               transientMsg(e.userMsg);
               throw new QuietError(e.userMsg, err?.error);

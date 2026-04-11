@@ -1,7 +1,7 @@
 // ContentTooLongError.js — Throwable
 // Copyright © 2026 Doug Reeder
 
-import {shortenTitle} from "../Note.js";
+import {shortenTitle, TITLE_LOG_MAX} from "../Note.js";
 
 export default class ContentTooLongError extends Error {
   /**
@@ -11,7 +11,7 @@ export default class ContentTooLongError extends Error {
    * @param {number} [contentLength]
    */
   constructor(title, cause, contentLength) {
-    super(`“${shortenTitle(title, 40)}” has ${contentLength ?? "too many"} characters`);
+    super(`“${shortenTitle(title, TITLE_LOG_MAX)}” has ${contentLength ?? "too many"} characters`);
     this.userMsg = `“${shortenTitle(title)}” is too long. Split into multiple notes.`;
     if (cause) {
       this.cause = cause;

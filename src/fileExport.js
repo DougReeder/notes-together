@@ -1,11 +1,11 @@
 // fileExport.js - file export function for Notes Together
-// Copyright © 2024 Doug Reeder
+// Copyright © 2024–2026 Doug Reeder
 
 import {findNoteIds, getNote} from "./storage";
 import hasTagsLikeHtml from "./util/hasTagsLikeHtml";
 import {deserializeHtml} from "./slateHtmlUtil.js";
 import {serializeMarkdown} from "./slateMark";
-import {shortenTitle} from "./Note.js";
+import {shortenTitle, TITLE_LOG_MAX} from "./Note.js";
 import {transientMsg} from "./util/extractUserMessage.js";
 import {extractExtension} from "./util.js";
 
@@ -52,7 +52,7 @@ export async function fileExportMarkdown(searchStr, searchWords) {
     }
 
     const blob = new Blob([content, "\n", note.date?.toISOString(), "\n\n\n\n"], {type: 'text/plain'});
-    console.info(`writing “${shortenTitle(note.title)}” ${note.date.toISOString()}`);
+    console.info(`writing “${shortenTitle(note.title, TITLE_LOG_MAX)}” ${note.date.toISOString()}`);
     await writableStream.write(blob);
     ++numWritten;
   }
