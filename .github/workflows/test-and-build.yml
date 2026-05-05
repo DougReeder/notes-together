@@ -24,7 +24,7 @@ jobs:
       - name: Run vite & rollup
         run: npm run build
       - name: push archive to S3
-        uses: jakejarvis/s3-sync-action@master
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
         if: ${{ matrix.node-version == '20' && github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
         with:
           args: --follow-symlinks --delete
