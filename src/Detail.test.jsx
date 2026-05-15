@@ -172,12 +172,11 @@ it('renders error if note missing', async () => {
 
     await user.click(await screen.findByRole('button', {name: "1979"}));
 
-    let dialog = await screen.findByRole('dialog');
-    let input = within(dialog).getByDisplayValue('1979-08-22');
+    let toolbar = await screen.findByRole('banner');
+    let input = within(toolbar).getByDisplayValue('1979-08-22');
     const newDateStr = "2005-10-30";
 
     fireEvent.change(input, { target: { value: newDateStr } });
-    await user.click(await within(dialog).findByRole('button', {name: "Set"}));
 
     expect(upsertNote).toHaveBeenCalledTimes(1);
     const nodes = [{type: 'paragraph', noteSubtype: "html;hint=SEMANTIC", children: [{text: " Proin sagittis quam sit amet eros dictum "}]}];
@@ -187,11 +186,10 @@ it('renders error if note missing', async () => {
     expect(upsertNote).toHaveBeenLastCalledWith(partialNote, 'DETAIL');
 
     await user.click(await screen.findByRole('button', {name: "2005"}));
-    dialog = await screen.findByRole('dialog');
-    input = within(dialog).getByDisplayValue(newDateStr);
+    toolbar = await screen.findByRole('banner');
+    input = within(toolbar).getByDisplayValue(newDateStr);
 
     fireEvent.change(input, { target: { value: "2005-12-01" } });
-    await user.click(await within(dialog).findByRole('button', {name: "Set"}));
 
     expect(upsertNote).toHaveBeenCalledTimes(2);
     const updatedNote = new NodeNote(noteId, 'html;hint=SEMANTIC', nodes,
