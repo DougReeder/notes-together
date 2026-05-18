@@ -14,6 +14,10 @@
     "deploy": "rsync -v --rsh='ssh -p 2222 -i ~/.ssh/id_passwordless' --archive --delete --prune-empty-dirs --human-readable --exclude '.DS_Store' ~/git/notes-together/dist/* composed@hominidsoftware.com:/var/www/notestogether/",
     "deploy-scp": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/dist/* root@hominidsoftware.com:/var/www/notestogether/"
   },
+  "devEngines": {
+    "runtime": { "name": "node", "version": "24", "onFail": "warn" },
+    "packageManager": { "name": "npm", "version": "11", "onFail": "warn" }
+  },
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",

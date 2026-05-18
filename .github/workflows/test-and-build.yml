@@ -7,11 +7,11 @@ jobs:
   build:
     name: test & build - node.js
     runs-on: ubuntu-latest
-    continue-on-error: true
+    continue-on-error: false
     strategy:
       matrix:
         # Support LTS versions based on https://nodejs.org/en/about/releases/
-        node-version: ['20', '22', '24']
+        node-version: ['24']
     steps:
       - uses: actions/checkout@v5
         with:
@@ -30,7 +30,7 @@ jobs:
         run: npm run build
       - name: push archive to S3
         uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        if: ${{ matrix.node-version == '20' && github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
+        if: ${{ matrix.node-version == '24' && github.ref == 'refs/heads/main' && github.repository == 'DougReeder/notes-together' }}
         with:
           args: --follow-symlinks --delete
         env:
