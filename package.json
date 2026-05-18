@@ -15,8 +15,16 @@
     "deploy-scp": "scp -p -r -o PreferredAuthentications=publickey,password ~/git/notes-together/dist/* root@hominidsoftware.com:/var/www/notestogether/"
   },
   "devEngines": {
-    "runtime": { "name": "node", "version": "24", "onFail": "warn" },
-    "packageManager": { "name": "npm", "version": "11", "onFail": "warn" }
+    "runtime": {
+      "name": "node",
+      "version": "24",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "npm",
+      "version": "11",
+      "onFail": "warn"
+    }
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -24,7 +32,6 @@
     "@fontsource/roboto": "^4.5.3",
     "@mui/icons-material": "^5.14.16",
     "@mui/material": "^5.14.17",
-    "canvas": "^3.2.1",
     "escape-html": "^1.0.3",
     "htmlparser2": "^3.10.1",
     "is-hotkey": "^0.2.0",
