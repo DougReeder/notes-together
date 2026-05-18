@@ -30,6 +30,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     environmentOptions: {jsdom: {url: "https://testorigin.org/", resources: "usable", pretendToBeVisual: true}},
+    env: {
+      NODE_OPTIONS: '--no-webstorage'
+    },
     globals: true,
     // testTimeout: 5000,
     coverage: {enabled: false},
