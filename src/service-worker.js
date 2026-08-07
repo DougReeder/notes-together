@@ -99,7 +99,8 @@ async function respond(content, {title, text, url, files}, status = 303, statusT
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#d1e8f1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#94bbe6" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Notes Together</title>
   </head>
